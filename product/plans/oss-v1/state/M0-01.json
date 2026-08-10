@@ -2,32 +2,36 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "M0-01",
-  "revision": 1,
-  "state": "in_progress",
+  "revision": 2,
+  "state": "accepted",
   "attempt": 1,
-  "candidate": null,
+  "candidate": {
+    "baseCommit": "e4e896e9e8341a9ac7b437ea3346a5a1bf4e510c",
+    "commit": "86d1097a1a5a57edda1534b7808943e587335665",
+    "executor": "davidahmann"
+  },
   "criteria": [
     {
       "criterionId": "PROCESS-001",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-01-contracts-86d1097"]
     },
     {
       "criterionId": "PROCESS-002",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-01-repo-check-86d1097"]
     }
   ],
   "gates": [
     {
       "gateId": "QG-REPO-CHECK",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-01-repo-check-86d1097"]
     },
     {
       "gateId": "QG-CONTRACTS",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-01-contracts-86d1097"]
     }
   ],
   "reviews": [],
@@ -46,6 +50,13 @@
       "at": "2026-08-10T16:45:45Z",
       "actor": "davidahmann",
       "reason": "Started the explicit delivery-policy task before rebinding V1-01 to the reviewed candidate."
+    },
+    {
+      "from": "in_progress",
+      "to": "accepted",
+      "at": "2026-08-10T16:49:23Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer accepted the exact delivery-policy candidate after active contract and repository command gates passed."
     }
   ]
 }

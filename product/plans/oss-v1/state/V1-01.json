@@ -2,46 +2,46 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "V1-01",
-  "revision": 3,
-  "state": "planned",
+  "revision": 4,
+  "state": "accepted",
   "attempt": 2,
   "candidate": {
     "baseCommit": "e4e896e9e8341a9ac7b437ea3346a5a1bf4e510c",
-    "commit": "ecde77da2c703a93d0d56cb232ec46c21080f846",
+    "commit": "86d1097a1a5a57edda1534b7808943e587335665",
     "executor": "davidahmann"
   },
   "criteria": [
     {
       "criterionId": "CONTRACT-001",
       "status": "pass",
-      "evidenceRefs": ["ev-v1-01-contracts-ecde77d"]
+      "evidenceRefs": ["ev-v1-01-contracts-86d1097"]
     },
     {
       "criterionId": "CONTRACT-002",
       "status": "pass",
-      "evidenceRefs": ["ev-v1-01-contracts-ecde77d"]
+      "evidenceRefs": ["ev-v1-01-contracts-86d1097"]
     },
     {
       "criterionId": "CONTRACT-003",
       "status": "pass",
-      "evidenceRefs": ["ev-v1-01-repo-check-ecde77d"]
+      "evidenceRefs": ["ev-v1-01-repo-check-86d1097"]
     },
     {
       "criterionId": "CONTRACT-004",
       "status": "pass",
-      "evidenceRefs": ["ev-v1-01-contracts-ecde77d"]
+      "evidenceRefs": ["ev-v1-01-contracts-86d1097"]
     }
   ],
   "gates": [
     {
       "gateId": "QG-REPO-CHECK",
       "status": "pass",
-      "evidenceRefs": ["ev-v1-01-repo-check-ecde77d"]
+      "evidenceRefs": ["ev-v1-01-repo-check-86d1097"]
     },
     {
       "gateId": "QG-CONTRACTS",
       "status": "pass",
-      "evidenceRefs": ["ev-v1-01-contracts-ecde77d"]
+      "evidenceRefs": ["ev-v1-01-contracts-86d1097"]
     },
     {
       "gateId": "QG-INDEPENDENT-VERIFY",
@@ -109,6 +109,13 @@
       "at": "2026-08-10T16:45:45Z",
       "actor": "davidahmann",
       "reason": "Reopened V1-01 so delivery-policy changes are owned by M0-01 and the final reviewed candidate can be rebound."
+    },
+    {
+      "from": "planned",
+      "to": "accepted",
+      "at": "2026-08-10T16:49:23Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer rebound V1-01 to the exact candidate after M0-01 accepted the delivery-policy boundary and active command gates passed."
     }
   ]
 }
