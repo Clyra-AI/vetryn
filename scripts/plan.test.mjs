@@ -1,4 +1,4 @@
-import { cp, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { cp, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -11,6 +11,7 @@ const repositoryRoot = path.resolve(import.meta.dirname, "..");
 const planScript = path.join(repositoryRoot, "scripts/plan.mjs");
 const temporaryRoots = [];
 const bootstrapCommentId = 987654321;
+const v1TaskId = "V1-00";
 
 function bootstrapBody(overrides = {}) {
   const values = {
@@ -43,6 +44,7 @@ async function createFixture() {
     { recursive: true },
   );
   await cp(path.join(repositoryRoot, "pnpm-lock.yaml"), path.join(root, "pnpm-lock.yaml"));
+  await normalizeV1Fixture(root);
   return root;
 }
 
@@ -64,6 +66,58 @@ function runPlan(root, command = "check", env = {}) {
     encoding: "utf8",
     env: { ...process.env, ...env, VETRYN_PLAN_REPO_ROOT: root },
   });
+}
+
+async function normalizeV1Fixture(root) {
+  const statePath = "product/plans/oss-v1/state/V1-00.json";
+  const state = await readFixtureJson(root, statePath);
+  Object.assign(state, {
+    revision: 0,
+    state: "in_progress",
+    attempt: 1,
+    candidate: null,
+    criteria: state.criteria.map((criterion) => ({
+      ...criterion,
+      status: "pending",
+      evidenceRefs: [],
+    })),
+    gates: state.gates.map((gate) => ({ ...gate, status: "pending", evidenceRefs: [] })),
+    reviews: state.reviews.map((review) => ({
+      ...review,
+      status: "pending",
+      evidenceRefs: [],
+    })),
+    blockers: [],
+    history: [
+      {
+        from: null,
+        to: "in_progress",
+        at: "2026-08-10T00:00:00Z",
+        actor: "plan-test-fixture",
+        reason: "Deterministic V1-00 validator fixture baseline.",
+      },
+    ],
+  });
+  await writeFixtureJson(root, statePath, state);
+
+  const ledgerPath = "product/plans/oss-v1/acceptance-ledger.json";
+  const ledger = await readFixtureJson(root, ledgerPath);
+  ledger.items = ledger.items.map((item) =>
+    item.taskId === v1TaskId ? { ...item, status: "planned", evidenceRefs: [] } : item,
+  );
+  await writeFixtureJson(root, ledgerPath, ledger);
+
+  const evidenceDirectory = path.join(root, "product/plans/oss-v1/evidence");
+  for (const filename of await readdir(evidenceDirectory)) {
+    if (!filename.endsWith(".json")) continue;
+    const evidencePath = path.join(evidenceDirectory, filename);
+    const evidence = JSON.parse(await readFile(evidencePath, "utf8"));
+    if (evidence.taskId === v1TaskId) await rm(evidencePath);
+  }
+
+  const writeResult = runPlan(root, "write");
+  if (writeResult.status !== 0)
+    throw new Error(`could not normalize V1-00 plan fixture: ${writeResult.stderr}`);
 }
 
 async function createV1Evidence(root, overrides = {}) {
@@ -161,6 +215,83 @@ afterEach(async () => {
 });
 
 describe("implementation plan validator", () => {
+  it("normalizes promoted V1-00 lifecycle data back to the isolated fixture baseline", async () => {
+    const root = await createFixture();
+    const evidence = await createV1Evidence(root, { id: "ev-v1-promoted-fixture" });
+    const statePath = "product/plans/oss-v1/state/V1-00.json";
+    const state = await readFixtureJson(root, statePath);
+    state.revision = 9;
+    state.state = "accepted";
+    state.candidate = {
+      baseCommit: "b".repeat(40),
+      commit: evidence.commit,
+      executor: "implementation-agent",
+    };
+    state.criteria = state.criteria.map((criterion) => ({
+      ...criterion,
+      status: "pass",
+      evidenceRefs: [evidence.id],
+    }));
+    state.gates = state.gates.map((gate) => ({
+      ...gate,
+      status: "pass",
+      evidenceRefs: [evidence.id],
+    }));
+    state.reviews = state.reviews.map((review) => ({
+      ...review,
+      status: "approved",
+      evidenceRefs: [evidence.id],
+    }));
+    await writeFixtureJson(root, statePath, state);
+
+    const ledgerPath = "product/plans/oss-v1/acceptance-ledger.json";
+    const ledger = await readFixtureJson(root, ledgerPath);
+    ledger.items = ledger.items.map((item) =>
+      item.taskId === v1TaskId
+        ? { ...item, status: "accepted", evidenceRefs: [evidence.id] }
+        : item,
+    );
+    await writeFixtureJson(root, ledgerPath, ledger);
+
+    const progressPath = "product/plans/oss-v1/progress.json";
+    const progress = await readFixtureJson(root, progressPath);
+    const taskProgress = progress.tasks.find((task) => task.taskId === v1TaskId);
+    taskProgress.state = "accepted";
+    taskProgress.acceptedCriteria = taskProgress.totalCriteria;
+    await writeFixtureJson(root, progressPath, progress);
+
+    await normalizeV1Fixture(root);
+
+    const normalizedState = await readFixtureJson(root, statePath);
+    const normalizedLedger = await readFixtureJson(root, ledgerPath);
+    const normalizedProgress = await readFixtureJson(root, progressPath);
+    expect(normalizedState).toMatchObject({
+      revision: 0,
+      state: "in_progress",
+      attempt: 1,
+      candidate: null,
+    });
+    expect(
+      [...normalizedState.criteria, ...normalizedState.gates, ...normalizedState.reviews].every(
+        (record) => record.status === "pending" && record.evidenceRefs.length === 0,
+      ),
+    ).toBe(true);
+    expect(
+      normalizedLedger.items
+        .filter((item) => item.taskId === v1TaskId)
+        .every((item) => item.status === "planned" && item.evidenceRefs.length === 0),
+    ).toBe(true);
+    expect(normalizedProgress.tasks.find((task) => task.taskId === v1TaskId)).toMatchObject({
+      state: "in_progress",
+      acceptedCriteria: 0,
+    });
+    await expect(
+      readFile(path.join(root, `product/plans/oss-v1/evidence/${evidence.id}.json`), "utf8"),
+    ).rejects.toMatchObject({ code: "ENOENT" });
+    const result = runPlan(root);
+    expect(result.status, result.stderr).toBe(0);
+  });
+
   it("regenerates a missing progress roll-up in write mode", async () => {
     const root = await createFixture();
     const progressPath = path.join(root, "product/plans/oss-v1/progress.json");
