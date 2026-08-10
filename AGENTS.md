@@ -17,6 +17,14 @@ These instructions apply to the entire repository.
   rewrite acceptance criteria, or mark their own work accepted.
 - Treat `WORKFLOW.md` as the repository operating contract. Compile one explicit task with
   `pnpm --silent task:compile -- TASK-ID` before implementation or verification.
+- Use `docs/agent-map.md` to navigate repository responsibilities, route work to the right skill, and
+  evaluate planned skill activation. It is guidance, not a second backlog and never expands a compiled
+  task packet.
+- Keep durable agent guidance committed. Ignored local notes, prompts, and Factory runtime state are
+  non-authoritative and must not be required to understand or safely change the repository.
+- Create a repository skill only when the activation and maturity rules in `docs/agent-map.md` are met and
+  an explicit task permits `.agents/**`. If a trigger is reached without legal scope, stop and request a
+  narrow process task rather than adding the skill inside unrelated implementation work.
 - Passing review records require role-bound GitHub review evidence authenticated against the public GitHub API
   and CODEOWNERS fetched from protected `main`, the candidate PR author as authenticated executor, and a reviewer
   distinct from that executor. The approval must target the exact candidate commit and remain the reviewer's latest decisive
