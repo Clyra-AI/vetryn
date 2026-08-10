@@ -70,7 +70,7 @@ describe("task packet compiler", () => {
     expect(second.stdout).toBe(first.stdout);
     const packet = JSON.parse(first.stdout);
     expect(packet).toMatchObject({
-      packetId: "oss-v1:V1-00:r2",
+      packetId: "oss-v1:V1-00:r3",
       source: { productContract: "docs/oss-v1.md" },
       task: { id: "V1-00" },
       currentState: { state: "in_progress", attempt: 1, maxAttempts: 2 },

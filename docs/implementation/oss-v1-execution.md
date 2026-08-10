@@ -58,6 +58,13 @@ not executable. The full repository lifecycle is in `WORKFLOW.md`.
 Agents should work on one task per branch/PR. Parallel work is permitted only when the DAG allows it
 and paths do not overlap. A task brief is disposable; canonical state and evidence are committed.
 
+Ordinary role approval requires a distinct CODEOWNER's current exact-candidate GitHub review. During the
+single-owner ADR-0006 bootstrap only, the repository owner may instead use the exact structured PR issue-comment
+marker documented in `WORKFLOW.md`, including when that owner authored the PR. The validator authenticates the
+comment's current body, ID, URL, repository, PR, task, candidate, decision, named roles, `OWNER` association, and
+protected-main CODEOWNERS authority. This does not replace independent agent verification, CI, Codex settlement,
+merge authorization, or canonical promotion.
+
 ## Runner-ready task packet
 
 The compiler preserves Vetryn's canonical `source`, `task`, state, acceptance, gate, review, and execution

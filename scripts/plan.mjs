@@ -78,18 +78,25 @@ async function assertReviewEvidence(evidenceRef, state, evidenceById, expectedRo
     evidence.review.subjectActor.toLowerCase() === state.candidate.executor.toLowerCase(),
     `${source} review evidence ${evidenceRef} does not name the candidate executor`,
   );
-  assert(
-    evidence.actor.toLowerCase() !== state.candidate.executor.toLowerCase(),
-    `${source} review evidence ${evidenceRef} is self-approved by the executor`,
-  );
+  const bootstrapOwnerComment = evidence.review.source === "github-bootstrap-owner-comment";
+  if (!bootstrapOwnerComment)
+    assert(
+      evidence.actor.toLowerCase() !== state.candidate.executor.toLowerCase(),
+      `${source} review evidence ${evidenceRef} is self-approved by the executor`,
+    );
   assert(
     evidence.review.observedCommit === state.candidate.commit,
     `${source} review evidence ${evidenceRef} was observed on a different commit`,
   );
-  const reviewIdMatch = evidence.review.authorizationRef.match(/#pullrequestreview-([0-9]+)$/);
+  const authorizationIdMatch = evidence.review.authorizationRef.match(
+    bootstrapOwnerComment ? /#issuecomment-([0-9]+)$/ : /#pullrequestreview-([0-9]+)$/,
+  );
+  const expectedAuthorizationId = bootstrapOwnerComment
+    ? evidence.review.commentId
+    : evidence.review.reviewId;
   assert(
-    reviewIdMatch && Number(reviewIdMatch[1]) === evidence.review.reviewId,
-    `${source} review evidence ${evidenceRef} has mismatched GitHub review identity`,
+    authorizationIdMatch && Number(authorizationIdMatch[1]) === expectedAuthorizationId,
+    `${source} review evidence ${evidenceRef} has mismatched GitHub ${bootstrapOwnerComment ? "comment" : "review"} identity`,
   );
   await authenticateGitHubReview(evidence, expectedRole, source);
 }

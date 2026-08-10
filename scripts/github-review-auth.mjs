@@ -1,4 +1,13 @@
 const githubRepository = "Clyra-AI/vetryn";
+const pullRequestReviewSource = "github-pull-request-review";
+const bootstrapOwnerCommentSource = "github-bootstrap-owner-comment";
+const bootstrapMarker = "<!-- vetryn-bootstrap-review:v1 -->";
+const rolePaths = {
+  maintainer: ".github/CODEOWNERS",
+  "independent-verifier": "product/plans/oss-v1/plan.json",
+  "trust-reviewer": "AGENTS.md",
+  "security-reviewer": "SECURITY.md",
+};
 
 function fail(message) {
   throw new Error(message);
@@ -55,6 +64,52 @@ function codeownersForPath(codeowners, targetPath) {
     if (matches) owners = principals;
   }
   return owners;
+}
+
+function parseBootstrapAuthorization(body, source, evidenceId) {
+  const keys = ["repository", "pull_request", "task_id", "candidate_sha", "decision", "roles"];
+  const lines = body.split("\n");
+  assert(
+    lines.length === keys.length + 1 && lines[0] === bootstrapMarker,
+    `${source} review evidence ${evidenceId} has a malformed bootstrap authorization body`,
+  );
+  const values = {};
+  for (const [index, key] of keys.entries()) {
+    const prefix = `${key}=`;
+    const line = lines[index + 1];
+    assert(
+      line.startsWith(prefix) && line.length > prefix.length,
+      `${source} review evidence ${evidenceId} has a malformed bootstrap field ${key}`,
+    );
+    values[key] = line.slice(prefix.length);
+  }
+  assert(
+    /^[0-9]+$/.test(values.pull_request),
+    `${source} review evidence ${evidenceId} has an invalid bootstrap pull request`,
+  );
+  assert(
+    /^(M0|V1)-[0-9]{2}$/.test(values.task_id),
+    `${source} review evidence ${evidenceId} has an invalid bootstrap task ID`,
+  );
+  assert(
+    /^[0-9a-f]{40}$/.test(values.candidate_sha),
+    `${source} review evidence ${evidenceId} has an invalid bootstrap candidate SHA`,
+  );
+  const roles = values.roles.split(",");
+  assert(
+    roles.length > 0 &&
+      new Set(roles).size === roles.length &&
+      roles.every((role) => /^[a-z][a-z0-9-]*$/.test(role)),
+    `${source} review evidence ${evidenceId} has invalid bootstrap roles`,
+  );
+  return {
+    repository: values.repository,
+    pullRequest: Number(values.pull_request),
+    taskId: values.task_id,
+    candidateSha: values.candidate_sha,
+    decision: values.decision,
+    roles,
+  };
 }
 
 function isAllowedPromotionPath(filename, taskId) {
@@ -124,22 +179,50 @@ export function createGitHubReviewAuthenticator({
   const authenticatedLedgers = new Map();
   const authenticatedEvidenceFiles = new Map();
   const authenticatedReviewHistories = new Map();
+  const authenticatedIssueComments = new Map();
   let authenticatedCodeowners;
 
   return async function authenticateGitHubReview(evidence, expectedRole, source) {
+    const reviewSource = evidence.review.source;
+    const isPullRequestReview = reviewSource === pullRequestReviewSource;
+    const isBootstrapOwnerComment = reviewSource === bootstrapOwnerCommentSource;
+    assert(
+      isPullRequestReview || isBootstrapOwnerComment,
+      `${source} review evidence ${evidence.id} has unsupported source ${reviewSource ?? "none"}`,
+    );
+    assert(
+      evidence.review.role === expectedRole,
+      `${source} review evidence ${evidence.id} does not declare role ${expectedRole}`,
+    );
     const authorizationMatch = evidence.review.authorizationRef.match(
-      /^https:\/\/github\.com\/Clyra-AI\/vetryn\/pull\/([0-9]+)#pullrequestreview-([0-9]+)$/,
+      isPullRequestReview
+        ? /^https:\/\/github\.com\/Clyra-AI\/vetryn\/pull\/([0-9]+)#pullrequestreview-([0-9]+)$/
+        : /^https:\/\/github\.com\/Clyra-AI\/vetryn\/pull\/([0-9]+)#issuecomment-([0-9]+)$/,
     );
     assert(
       authorizationMatch,
-      `${source} review evidence ${evidence.id} is not a Vetryn GitHub review`,
+      `${source} review evidence ${evidence.id} is not a Vetryn GitHub ${isPullRequestReview ? "review" : "bootstrap owner comment"}`,
+    );
+    assert(
+      evidence.review.state === "APPROVED",
+      `${source} review evidence ${evidence.id} is not declared APPROVED`,
     );
     assert(
       evidence.review.observedCommit === evidence.commit,
       `review evidence ${evidence.id} observed commit differs from its evidence commit`,
     );
+    if (isPullRequestReview)
+      assert(
+        evidence.actor.toLowerCase() !== evidence.review.subjectActor.toLowerCase(),
+        `${source} review evidence ${evidence.id} is self-approved by the executor`,
+      );
+    else
+      assert(
+        evidence.review.authorAssociation === "OWNER",
+        `${source} review evidence ${evidence.id} is not an OWNER bootstrap authorization`,
+      );
     const pullRequest = Number(authorizationMatch[1]);
-    const reviewId = Number(authorizationMatch[2]);
+    const authorizationId = Number(authorizationMatch[2]);
 
     let pullRequestData = authenticatedPullRequests.get(pullRequest);
     if (!pullRequestData) {
@@ -272,66 +355,126 @@ export function createGitHubReviewAuthenticator({
       }
     }
 
-    let reviewHistory = authenticatedReviewHistories.get(pullRequest);
-    if (!reviewHistory) {
-      reviewHistory = await fetchPublicGitHubJson(
-        `https://api.github.com/repos/${githubRepository}/pulls/${pullRequest}/reviews?per_page=100`,
-        `${source} could not authenticate pull request review history`,
-        fetchImpl,
+    if (isPullRequestReview) {
+      assert(
+        evidence.review.reviewId === authorizationId,
+        `${source} review evidence ${evidence.id} does not match the authenticated review ID`,
+      );
+      let reviewHistory = authenticatedReviewHistories.get(pullRequest);
+      if (!reviewHistory) {
+        reviewHistory = await fetchPublicGitHubJson(
+          `https://api.github.com/repos/${githubRepository}/pulls/${pullRequest}/reviews?per_page=100`,
+          `${source} could not authenticate pull request review history`,
+          fetchImpl,
+        );
+        assert(
+          Array.isArray(reviewHistory) && reviewHistory.length < 100,
+          `${source} review history is incomplete or exceeds the unauthenticated verification limit`,
+        );
+        authenticatedReviewHistories.set(pullRequest, reviewHistory);
+      }
+      const authenticated = reviewHistory.find((review) => review.id === authorizationId);
+      assert(
+        authenticated,
+        `${source} review evidence ${evidence.id} could not be authenticated from GitHub review history`,
       );
       assert(
-        Array.isArray(reviewHistory) && reviewHistory.length < 100,
-        `${source} review history is incomplete or exceeds the unauthenticated verification limit`,
+        authenticated.user?.login === evidence.actor,
+        `${source} review evidence ${evidence.id} does not match the authenticated reviewer`,
       );
-      authenticatedReviewHistories.set(pullRequest, reviewHistory);
+      assert(
+        authenticated.author_association === evidence.review.authorAssociation,
+        `${source} review evidence ${evidence.id} does not match the authenticated author association`,
+      );
+      assert(
+        authenticated.state === "APPROVED",
+        `${source} review evidence ${evidence.id} is not an authenticated approval`,
+      );
+      assert(
+        authenticated.commit_id === evidence.commit,
+        `${source} review evidence ${evidence.id} does not approve the candidate commit`,
+      );
+      assert(
+        authenticated.html_url === evidence.review.authorizationRef &&
+          authenticated.pull_request_url ===
+            `https://api.github.com/repos/${githubRepository}/pulls/${pullRequest}`,
+        `${source} review evidence ${evidence.id} is authenticated for a different pull request`,
+      );
+      const decisiveReviews = reviewHistory
+        .filter(
+          (review) =>
+            review.user?.login?.toLowerCase() === evidence.actor.toLowerCase() &&
+            review.commit_id === evidence.commit &&
+            ["APPROVED", "CHANGES_REQUESTED", "DISMISSED"].includes(review.state),
+        )
+        .sort((left, right) => {
+          const submittedOrder = String(left.submitted_at).localeCompare(
+            String(right.submitted_at),
+          );
+          return submittedOrder || left.id - right.id;
+        });
+      const latestDecision = decisiveReviews.at(-1);
+      assert(
+        latestDecision?.id === evidence.review.reviewId && latestDecision.state === "APPROVED",
+        `${source} review evidence ${evidence.id} is superseded by the reviewer's current decision`,
+      );
+    } else {
+      assert(
+        evidence.review.commentId === authorizationId,
+        `${source} review evidence ${evidence.id} does not match the authenticated comment ID`,
+      );
+      let authenticated = authenticatedIssueComments.get(authorizationId);
+      if (!authenticated) {
+        authenticated = await fetchPublicGitHubJson(
+          `https://api.github.com/repos/${githubRepository}/issues/comments/${authorizationId}`,
+          `${source} could not authenticate bootstrap owner comment ${authorizationId}`,
+          fetchImpl,
+        );
+        authenticatedIssueComments.set(authorizationId, authenticated);
+      }
+      assert(
+        authenticated.id === evidence.review.commentId &&
+          authenticated.user?.login === evidence.actor,
+        `${source} review evidence ${evidence.id} does not match the authenticated bootstrap owner`,
+      );
+      assert(
+        authenticated.author_association === "OWNER" &&
+          authenticated.author_association === evidence.review.authorAssociation,
+        `${source} review evidence ${evidence.id} is not authenticated with OWNER association`,
+      );
+      assert(
+        authenticated.body === evidence.review.authorizationBody,
+        `${source} review evidence ${evidence.id} does not match the current durable comment body`,
+      );
+      assert(
+        authenticated.html_url === evidence.review.authorizationRef &&
+          authenticated.issue_url ===
+            `https://api.github.com/repos/${githubRepository}/issues/${pullRequest}`,
+        `${source} review evidence ${evidence.id} is authenticated for a different pull request`,
+      );
+      const authorization = parseBootstrapAuthorization(authenticated.body, source, evidence.id);
+      assert(
+        authorization.repository === githubRepository && authorization.pullRequest === pullRequest,
+        `${source} review evidence ${evidence.id} has a bootstrap authorization for a different repository or pull request`,
+      );
+      assert(
+        authorization.taskId === evidence.taskId,
+        `${source} review evidence ${evidence.id} has a bootstrap authorization for a different task`,
+      );
+      assert(
+        authorization.candidateSha === evidence.commit &&
+          authorization.candidateSha === evidence.review.observedCommit,
+        `${source} review evidence ${evidence.id} has a bootstrap authorization for a different candidate`,
+      );
+      assert(
+        authorization.decision === "APPROVED",
+        `${source} review evidence ${evidence.id} is not an APPROVED bootstrap authorization`,
+      );
+      assert(
+        authorization.roles.includes(expectedRole),
+        `${source} review evidence ${evidence.id} does not authorize role ${expectedRole}`,
+      );
     }
-    const authenticated = reviewHistory.find((review) => review.id === reviewId);
-    assert(
-      authenticated,
-      `${source} review evidence ${evidence.id} could not be authenticated from GitHub review history`,
-    );
-    assert(
-      authenticated.id === evidence.review.reviewId,
-      `${source} review evidence ${evidence.id} does not match the authenticated review ID`,
-    );
-    assert(
-      authenticated.user?.login === evidence.actor,
-      `${source} review evidence ${evidence.id} does not match the authenticated reviewer`,
-    );
-    assert(
-      authenticated.author_association === evidence.review.authorAssociation,
-      `${source} review evidence ${evidence.id} does not match the authenticated author association`,
-    );
-    assert(
-      authenticated.state === "APPROVED",
-      `${source} review evidence ${evidence.id} is not an authenticated approval`,
-    );
-    assert(
-      authenticated.commit_id === evidence.commit,
-      `${source} review evidence ${evidence.id} does not approve the candidate commit`,
-    );
-    assert(
-      authenticated.html_url === evidence.review.authorizationRef &&
-        authenticated.pull_request_url ===
-          `https://api.github.com/repos/${githubRepository}/pulls/${pullRequest}`,
-      `${source} review evidence ${evidence.id} is authenticated for a different pull request`,
-    );
-    const decisiveReviews = reviewHistory
-      .filter(
-        (review) =>
-          review.user?.login?.toLowerCase() === evidence.actor.toLowerCase() &&
-          review.commit_id === evidence.commit &&
-          ["APPROVED", "CHANGES_REQUESTED", "DISMISSED"].includes(review.state),
-      )
-      .sort((left, right) => {
-        const submittedOrder = String(left.submitted_at).localeCompare(String(right.submitted_at));
-        return submittedOrder || left.id - right.id;
-      });
-    const latestDecision = decisiveReviews.at(-1);
-    assert(
-      latestDecision?.id === evidence.review.reviewId && latestDecision.state === "APPROVED",
-      `${source} review evidence ${evidence.id} is superseded by the reviewer's current decision`,
-    );
 
     if (!authenticatedCodeowners) {
       authenticatedCodeowners = await fetchPublicGitHub(
@@ -340,12 +483,6 @@ export function createGitHubReviewAuthenticator({
         fetchImpl,
       );
     }
-    const rolePaths = {
-      maintainer: ".github/CODEOWNERS",
-      "independent-verifier": "product/plans/oss-v1/plan.json",
-      "trust-reviewer": "AGENTS.md",
-      "security-reviewer": "SECURITY.md",
-    };
     const protectedPath = rolePaths[expectedRole];
     assert(protectedPath, `${source} has no trusted CODEOWNERS path for role ${expectedRole}`);
     const principals = codeownersForPath(authenticatedCodeowners, protectedPath);

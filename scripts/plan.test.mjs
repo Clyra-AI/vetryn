@@ -10,6 +10,28 @@ import { afterEach, describe, expect, it } from "vitest";
 const repositoryRoot = path.resolve(import.meta.dirname, "..");
 const planScript = path.join(repositoryRoot, "scripts/plan.mjs");
 const temporaryRoots = [];
+const bootstrapCommentId = 987654321;
+
+function bootstrapBody(overrides = {}) {
+  const values = {
+    repository: "Clyra-AI/vetryn",
+    pull_request: "5",
+    task_id: "V1-00",
+    candidate_sha: "a".repeat(40),
+    decision: "APPROVED",
+    roles: "maintainer,trust-reviewer",
+    ...overrides,
+  };
+  return [
+    "<!-- vetryn-bootstrap-review:v1 -->",
+    `repository=${values.repository}`,
+    `pull_request=${values.pull_request}`,
+    `task_id=${values.task_id}`,
+    `candidate_sha=${values.candidate_sha}`,
+    `decision=${values.decision}`,
+    `roles=${values.roles}`,
+  ].join("\n");
+}
 
 async function createFixture() {
   const root = await mkdtemp(path.join(tmpdir(), "vetryn-plan-"));
@@ -70,6 +92,41 @@ async function createV1Evidence(root, overrides = {}) {
   const relativePath = `product/plans/oss-v1/evidence/${evidence.id}.json`;
   await writeFixtureJson(root, relativePath, evidence);
   return evidence;
+}
+
+async function createBootstrapReviewEvidence(root, reviewOverrides = {}) {
+  return createV1Evidence(root, {
+    id: "ev-v1-bootstrap-review",
+    type: "review",
+    actor: "implementation-agent",
+    gateBinding: null,
+    review: {
+      role: "maintainer",
+      subjectActor: "implementation-agent",
+      source: "github-bootstrap-owner-comment",
+      state: "APPROVED",
+      authorAssociation: "OWNER",
+      commentId: bootstrapCommentId,
+      observedCommit: "a".repeat(40),
+      authorizationBody: bootstrapBody(),
+      authorizationRef: `https://github.com/Clyra-AI/vetryn/pull/5#issuecomment-${bootstrapCommentId}`,
+      ...reviewOverrides,
+    },
+  });
+}
+
+async function approveMaintainerReview(root, evidence) {
+  const statePath = "product/plans/oss-v1/state/V1-00.json";
+  const state = await readFixtureJson(root, statePath);
+  state.candidate = {
+    baseCommit: "eb970bf3708ceb7a0d93d93481812dac090428b9",
+    commit: evidence.commit,
+    executor: "implementation-agent",
+  };
+  const review = state.reviews.find((candidate) => candidate.role === "maintainer");
+  review.status = "approved";
+  review.evidenceRefs = [evidence.id];
+  await writeFixtureJson(root, statePath, state);
 }
 
 async function passFirstPlanningCriterion(root, evidenceId, candidateCommit = "a".repeat(40)) {
@@ -199,6 +256,40 @@ describe("implementation plan validator", () => {
     const result = runPlan(root);
     expect(result.status).not.toBe(0);
     expect(result.stderr).toContain("requires review evidence for role maintainer");
+  });
+
+  it("accepts the bootstrap owner-comment shape without treating it as command evidence", async () => {
+    const root = await createFixture();
+    await createBootstrapReviewEvidence(root);
+
+    const result = runPlan(root);
+
+    expect(result.status, result.stderr).toBe(0);
+  });
+
+  it("allows bootstrap owner identity overlap only through the authenticated comment path", async () => {
+    const root = await createFixture();
+    const evidence = await createBootstrapReviewEvidence(root, {
+      commentId: bootstrapCommentId + 1,
+    });
+    await approveMaintainerReview(root, evidence);
+
+    const result = runPlan(root);
+
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain("mismatched GitHub comment identity");
+    expect(result.stderr).not.toContain("self-approved by the executor");
+  });
+
+  it("rejects a bootstrap comment shape without OWNER association", async () => {
+    const root = await createFixture();
+    await createBootstrapReviewEvidence(root, { authorAssociation: "MEMBER" });
+
+    const result = runPlan(root);
+
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain("evidence/ev-v1-bootstrap-review.json");
+    expect(result.stderr).toContain("authorAssociation must be equal to constant");
   });
 
   it("rejects review evidence issued by the candidate executor", async () => {

@@ -15,6 +15,37 @@ const approval = {
   html_url: "https://github.com/Clyra-AI/vetryn/pull/1#pullrequestreview-123456789",
   pull_request_url: "https://api.github.com/repos/Clyra-AI/vetryn/pulls/1",
 };
+const ownerCommentId = 987654321;
+
+function bootstrapBody(overrides = {}) {
+  const values = {
+    repository: "Clyra-AI/vetryn",
+    pull_request: "5",
+    task_id: "V1-00",
+    candidate_sha: commit,
+    decision: "APPROVED",
+    roles: "maintainer,trust-reviewer",
+    ...overrides,
+  };
+  return [
+    "<!-- vetryn-bootstrap-review:v1 -->",
+    `repository=${values.repository}`,
+    `pull_request=${values.pull_request}`,
+    `task_id=${values.task_id}`,
+    `candidate_sha=${values.candidate_sha}`,
+    `decision=${values.decision}`,
+    `roles=${values.roles}`,
+  ].join("\n");
+}
+
+const ownerComment = {
+  id: ownerCommentId,
+  user: { login: "implementation-agent" },
+  author_association: "OWNER",
+  body: bootstrapBody(),
+  html_url: `https://github.com/Clyra-AI/vetryn/pull/5#issuecomment-${ownerCommentId}`,
+  issue_url: "https://api.github.com/repos/Clyra-AI/vetryn/issues/5",
+};
 const candidateLedger = {
   schemaVersion: "1.0.0",
   planId: "oss-v1",
@@ -47,14 +78,35 @@ function evidence(overrides = {}) {
     actor: "maintainer-reviewer",
     commit,
     review: {
+      role: "maintainer",
       reviewId: 123456789,
       subjectActor: "implementation-agent",
+      source: "github-pull-request-review",
+      state: "APPROVED",
       observedCommit: commit,
       authorAssociation: "MEMBER",
       authorizationRef: "https://github.com/Clyra-AI/vetryn/pull/1#pullrequestreview-123456789",
     },
     ...overrides,
   };
+}
+
+function bootstrapEvidence(overrides = {}) {
+  return evidence({
+    actor: "implementation-agent",
+    review: {
+      role: "maintainer",
+      subjectActor: "implementation-agent",
+      source: "github-bootstrap-owner-comment",
+      state: "APPROVED",
+      authorAssociation: "OWNER",
+      commentId: ownerCommentId,
+      observedCommit: commit,
+      authorizationBody: bootstrapBody(),
+      authorizationRef: `https://github.com/Clyra-AI/vetryn/pull/5#issuecomment-${ownerCommentId}`,
+    },
+    ...overrides,
+  });
 }
 
 function responseFor(body, status = 200) {
@@ -65,6 +117,7 @@ function responseFor(body, status = 200) {
 
 function githubFetch({
   reviewHistory = [approval],
+  issueComment = ownerComment,
   headSha = commit,
   merged = false,
   mergeCommitSha = null,
@@ -94,6 +147,7 @@ function githubFetch({
       return responseFor(url.includes(`/${commit}/`) ? ledgerAtCandidate : ledgerAtHead);
     if (url.includes("/evidence/")) return responseFor(addedEvidence);
     if (url.includes("/compare/")) return responseFor(comparison);
+    if (url.includes("/issues/comments/")) return responseFor(issueComment);
     if (url.includes("/reviews?")) return responseFor(reviewHistory);
     return responseFor({
       head: { sha: headSha },
@@ -131,6 +185,154 @@ describe("GitHub review authentication", () => {
     expect(fetchImpl).toHaveBeenCalledTimes(3);
     expect(fetchImpl.mock.calls.map(([url]) => String(url))).not.toContain(
       "https://api.github.com/repos/Clyra-AI/vetryn/pulls/1/reviews/123456789",
+    );
+  });
+
+  it("accepts an exact-head bootstrap owner comment for a named role from the PR author", async () => {
+    const fetchImpl = githubFetch({
+      codeowners: "* @implementation-agent\n/.github/ @implementation-agent\n",
+    });
+    const authenticate = authenticator({ fetchImpl });
+
+    await expect(
+      authenticate(bootstrapEvidence(), "maintainer", "fixture"),
+    ).resolves.toBeUndefined();
+    expect(fetchImpl.mock.calls.map(([url]) => String(url))).toContain(
+      `https://api.github.com/repos/Clyra-AI/vetryn/issues/comments/${ownerCommentId}`,
+    );
+  });
+
+  it("authenticates one bootstrap owner comment once when it authorizes multiple roles", async () => {
+    const fetchImpl = githubFetch({
+      codeowners: "* @implementation-agent\n/.github/ @implementation-agent\n",
+    });
+    const authenticate = authenticator({ fetchImpl });
+    const trustEvidence = bootstrapEvidence({
+      id: "ev-bootstrap-trust",
+      review: { ...bootstrapEvidence().review, role: "trust-reviewer" },
+    });
+
+    await authenticate(bootstrapEvidence(), "maintainer", "maintainer fixture");
+    await authenticate(trustEvidence, "trust-reviewer", "trust fixture");
+
+    expect(
+      fetchImpl.mock.calls.filter(([url]) => String(url).includes("/issues/comments/")),
+    ).toHaveLength(1);
+    expect(fetchImpl).toHaveBeenCalledTimes(3);
+  });
+
+  it.each([
+    ["repository", bootstrapBody({ repository: "Clyra-AI/other" }), "different repository"],
+    ["pull request", bootstrapBody({ pull_request: "6" }), "different repository or pull request"],
+    ["task", bootstrapBody({ task_id: "V1-01" }), "different task"],
+    ["candidate", bootstrapBody({ candidate_sha: "b".repeat(40) }), "different candidate"],
+    ["decision", bootstrapBody({ decision: "CHANGES_REQUESTED" }), "not an APPROVED"],
+    ["role", bootstrapBody({ roles: "trust-reviewer" }), "does not authorize role maintainer"],
+    [
+      "extra field",
+      `${bootstrapBody()}\nextra=forbidden`,
+      "malformed bootstrap authorization body",
+    ],
+  ])("rejects a bootstrap comment with the wrong %s binding", async (_name, body, expected) => {
+    const bootstrap = bootstrapEvidence({
+      review: { ...bootstrapEvidence().review, authorizationBody: body },
+    });
+    const authenticate = authenticator({
+      fetchImpl: githubFetch({
+        issueComment: { ...ownerComment, body },
+        codeowners: "* @implementation-agent\n/.github/ @implementation-agent\n",
+      }),
+    });
+
+    await expect(authenticate(bootstrap, "maintainer", "fixture")).rejects.toThrow(expected);
+  });
+
+  it("rejects a bootstrap comment whose durable GitHub body changed", async () => {
+    const authenticate = authenticator({
+      fetchImpl: githubFetch({
+        issueComment: { ...ownerComment, body: bootstrapBody({ roles: "trust-reviewer" }) },
+      }),
+    });
+
+    await expect(authenticate(bootstrapEvidence(), "maintainer", "fixture")).rejects.toThrow(
+      "does not match the current durable comment body",
+    );
+  });
+
+  it("rejects a bootstrap comment from a different actor or non-owner association", async () => {
+    const wrongActor = authenticator({
+      fetchImpl: githubFetch({
+        issueComment: { ...ownerComment, user: { login: "different-owner" } },
+      }),
+    });
+    const nonOwner = authenticator({
+      fetchImpl: githubFetch({
+        issueComment: { ...ownerComment, author_association: "MEMBER" },
+      }),
+    });
+
+    await expect(wrongActor(bootstrapEvidence(), "maintainer", "fixture")).rejects.toThrow(
+      "does not match the authenticated bootstrap owner",
+    );
+    await expect(nonOwner(bootstrapEvidence(), "maintainer", "fixture")).rejects.toThrow(
+      "is not authenticated with OWNER association",
+    );
+  });
+
+  it("rejects a bootstrap comment whose source, ID, URL, PR author, or CODEOWNER binding is wrong", async () => {
+    const unsupported = bootstrapEvidence({
+      review: { ...bootstrapEvidence().review, source: "github-issue-comment" },
+    });
+    const wrongId = bootstrapEvidence({
+      review: { ...bootstrapEvidence().review, commentId: ownerCommentId + 1 },
+    });
+    const wrongAuthor = bootstrapEvidence({
+      review: { ...bootstrapEvidence().review, subjectActor: "different-author" },
+    });
+    const wrongRole = bootstrapEvidence({
+      review: { ...bootstrapEvidence().review, role: "trust-reviewer" },
+    });
+    const wrongState = bootstrapEvidence({
+      review: { ...bootstrapEvidence().review, state: "CHANGES_REQUESTED" },
+    });
+
+    await expect(authenticator()(unsupported, "maintainer", "source fixture")).rejects.toThrow(
+      "unsupported source",
+    );
+    await expect(authenticator()(wrongId, "maintainer", "ID fixture")).rejects.toThrow(
+      "does not match the authenticated comment ID",
+    );
+    await expect(authenticator()(wrongAuthor, "maintainer", "author fixture")).rejects.toThrow(
+      "does not name the authenticated candidate PR author",
+    );
+    await expect(authenticator()(wrongRole, "maintainer", "role fixture")).rejects.toThrow(
+      "does not declare role maintainer",
+    );
+    await expect(authenticator()(wrongState, "maintainer", "state fixture")).rejects.toThrow(
+      "is not declared APPROVED",
+    );
+    await expect(
+      authenticator({
+        fetchImpl: githubFetch({
+          issueComment: {
+            ...ownerComment,
+            issue_url: "https://api.github.com/repos/Clyra-AI/vetryn/issues/6",
+          },
+        }),
+      })(bootstrapEvidence(), "maintainer", "URL fixture"),
+    ).rejects.toThrow("authenticated for a different pull request");
+    await expect(
+      authenticator({
+        fetchImpl: githubFetch({ codeowners: "* @different-owner\n" }),
+      })(bootstrapEvidence(), "maintainer", "CODEOWNERS fixture"),
+    ).rejects.toThrow("not authorized for role maintainer");
+  });
+
+  it("keeps the ordinary pull-request review path separated from the executor", async () => {
+    const selfReview = evidence({ actor: "implementation-agent" });
+
+    await expect(authenticator()(selfReview, "maintainer", "fixture")).rejects.toThrow(
+      "self-approved by the executor",
     );
   });
 
