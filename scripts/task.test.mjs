@@ -1,4 +1,4 @@
-import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { cp, mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import process from "node:process";
@@ -12,6 +12,8 @@ const repositoryRoot = path.resolve(import.meta.dirname, "..");
 const taskScript = path.join(repositoryRoot, "scripts/task.mjs");
 const planScript = path.join(repositoryRoot, "scripts/plan.mjs");
 const temporaryRoots = [];
+const v1TaskId = "V1-00";
+const v1FixtureRevision = 5;
 
 async function createFixture() {
   const root = await mkdtemp(path.join(tmpdir(), "vetryn-task-"));
@@ -25,7 +27,16 @@ async function createFixture() {
     { recursive: true },
   );
   await cp(path.join(repositoryRoot, "pnpm-lock.yaml"), path.join(root, "pnpm-lock.yaml"));
+  await normalizeV1Fixture(root);
   return root;
+}
+
+async function readFixtureJson(root, relativePath) {
+  return JSON.parse(await readFile(path.join(root, relativePath), "utf8"));
+}
+
+async function writeFixtureJson(root, relativePath, document) {
+  await writeFile(path.join(root, relativePath), `${JSON.stringify(document, null, 2)}\n`);
 }
 
 function runTask(root, ...args) {
@@ -42,11 +53,135 @@ function runPlan(root, command) {
   });
 }
 
+async function normalizeV1Fixture(root) {
+  const statePath = "product/plans/oss-v1/state/V1-00.json";
+  const state = await readFixtureJson(root, statePath);
+  Object.assign(state, {
+    revision: v1FixtureRevision,
+    state: "in_progress",
+    attempt: 1,
+    candidate: null,
+    criteria: state.criteria.map((criterion) => ({
+      ...criterion,
+      status: "pending",
+      evidenceRefs: [],
+    })),
+    gates: state.gates.map((gate) => ({ ...gate, status: "pending", evidenceRefs: [] })),
+    reviews: state.reviews.map((review) => ({
+      ...review,
+      status: "pending",
+      evidenceRefs: [],
+    })),
+    blockers: [],
+    history: [
+      {
+        from: null,
+        to: "in_progress",
+        at: "2026-08-10T00:00:00Z",
+        actor: "task-test-fixture",
+        reason: "Deterministic V1-00 task-compiler fixture baseline.",
+      },
+    ],
+  });
+  await writeFixtureJson(root, statePath, state);
+
+  const ledgerPath = "product/plans/oss-v1/acceptance-ledger.json";
+  const ledger = await readFixtureJson(root, ledgerPath);
+  ledger.items = ledger.items.map((item) =>
+    item.taskId === v1TaskId ? { ...item, status: "planned", evidenceRefs: [] } : item,
+  );
+  await writeFixtureJson(root, ledgerPath, ledger);
+
+  const evidenceDirectory = path.join(root, "product/plans/oss-v1/evidence");
+  for (const filename of await readdir(evidenceDirectory)) {
+    if (!filename.endsWith(".json")) continue;
+    const evidencePath = path.join(evidenceDirectory, filename);
+    const evidence = JSON.parse(await readFile(evidencePath, "utf8"));
+    if (evidence.taskId === v1TaskId) await rm(evidencePath);
+  }
+
+  const writeResult = runPlan(root, "write");
+  if (writeResult.status !== 0)
+    throw new Error(`could not normalize V1-00 task fixture: ${writeResult.stderr}`);
+}
+
 afterEach(async () => {
   await Promise.all(temporaryRoots.splice(0).map((root) => rm(root, { recursive: true })));
 });
 
 describe("task packet compiler", () => {
+  it("isolates task fixtures from promoted canonical V1-00 lifecycle data", async () => {
+    const root = await createFixture();
+    const evidenceId = "ev-v1-promoted-review-fixture";
+    const evidencePath = `product/plans/oss-v1/evidence/${evidenceId}.json`;
+    await writeFixtureJson(root, evidencePath, {
+      id: evidenceId,
+      taskId: v1TaskId,
+      type: "review",
+    });
+
+    const statePath = "product/plans/oss-v1/state/V1-00.json";
+    const state = await readFixtureJson(root, statePath);
+    state.revision = 99;
+    state.state = "accepted";
+    state.candidate = {
+      baseCommit: "b".repeat(40),
+      commit: "a".repeat(40),
+      executor: "implementation-agent",
+    };
+    state.criteria = state.criteria.map((criterion) => ({
+      ...criterion,
+      status: "pass",
+      evidenceRefs: [evidenceId],
+    }));
+    state.gates = state.gates.map((gate) => ({
+      ...gate,
+      status: "pass",
+      evidenceRefs: [evidenceId],
+    }));
+    state.reviews = state.reviews.map((review) => ({
+      ...review,
+      status: "approved",
+      evidenceRefs: [evidenceId],
+    }));
+    await writeFixtureJson(root, statePath, state);
+
+    const ledgerPath = "product/plans/oss-v1/acceptance-ledger.json";
+    const ledger = await readFixtureJson(root, ledgerPath);
+    ledger.items = ledger.items.map((item) =>
+      item.taskId === v1TaskId ? { ...item, status: "accepted", evidenceRefs: [evidenceId] } : item,
+    );
+    await writeFixtureJson(root, ledgerPath, ledger);
+
+    const progressPath = "product/plans/oss-v1/progress.json";
+    const progress = await readFixtureJson(root, progressPath);
+    const taskProgress = progress.tasks.find((task) => task.taskId === v1TaskId);
+    taskProgress.state = "accepted";
+    taskProgress.acceptedCriteria = taskProgress.totalCriteria;
+    progress.nextLegalTasks = ["V1-01", "V1-02"];
+    await writeFixtureJson(root, progressPath, progress);
+
+    await normalizeV1Fixture(root);
+
+    await expect(readFile(path.join(root, evidencePath), "utf8")).rejects.toMatchObject({
+      code: "ENOENT",
+    });
+    const nextResult = runTask(root, "next");
+    expect(nextResult.status, nextResult.stderr).toBe(0);
+    expect(JSON.parse(nextResult.stdout)).toEqual({
+      planId: "oss-v1",
+      activeTasks: [{ taskId: v1TaskId, state: "in_progress" }],
+      nextLegalTasks: [],
+      blockedTasks: [],
+    });
+    const compileResult = runTask(root, "compile", v1TaskId);
+    expect(compileResult.status, compileResult.stderr).toBe(0);
+    expect(JSON.parse(compileResult.stdout)).toMatchObject({
+      packetId: "oss-v1:V1-00:r5",
+      currentState: { state: "in_progress", candidate: null },
+    });
+  });
+
   it("reports active and next legal work from generated progress", async () => {
     const root = await createFixture();
     const result = runTask(root, "next");
