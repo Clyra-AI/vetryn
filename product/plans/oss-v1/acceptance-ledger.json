@@ -85,7 +85,7 @@
       "verification": { "method": "test", "testLevel": "contract", "gateId": "QG-CONTRACTS" },
       "waivable": false,
       "status": "accepted",
-      "evidenceRefs": ["ev-v1-01-contracts-82dac34"]
+      "evidenceRefs": ["ev-v1-01-contracts-ecde77d"]
     },
     {
       "id": "CONTRACT-002",
@@ -94,7 +94,7 @@
       "verification": { "method": "test", "testLevel": "adversarial", "gateId": "QG-CONTRACTS" },
       "waivable": false,
       "status": "accepted",
-      "evidenceRefs": ["ev-v1-01-contracts-82dac34"]
+      "evidenceRefs": ["ev-v1-01-contracts-ecde77d"]
     },
     {
       "id": "CONTRACT-003",
@@ -103,7 +103,7 @@
       "verification": { "method": "inspection", "testLevel": "static", "gateId": "QG-REPO-CHECK" },
       "waivable": false,
       "status": "accepted",
-      "evidenceRefs": ["ev-v1-01-repo-check-82dac34"]
+      "evidenceRefs": ["ev-v1-01-repo-check-ecde77d"]
     },
     {
       "id": "CONTRACT-004",
@@ -116,7 +116,7 @@
       },
       "waivable": false,
       "status": "accepted",
-      "evidenceRefs": ["ev-v1-01-contracts-82dac34"]
+      "evidenceRefs": ["ev-v1-01-contracts-ecde77d"]
     },
     {
       "id": "GOLDEN-001",
