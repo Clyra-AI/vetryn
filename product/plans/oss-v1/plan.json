@@ -170,7 +170,9 @@
       "semanticInvariants": [
         "This task does not implement scanner, evaluation, recommendation, or patch behavior.",
         "Progress is derived from canonical state and ledger files.",
-        "No task executor can accept its own candidate."
+        "No task executor can accept its own candidate.",
+        "As constrained by docs/adr/0005-authorize-bounded-task-shipping.md, network, stored GitHub authentication, and GitHub writes are limited to initial publication after exact-candidate independent local preflight and explicit maintainer authorization, followed by the Factory commit-push lifecycle; the local preflight never satisfies a canonical review gate, and provider access and unrelated network use remain forbidden.",
+        "The temporary branch-level bootstrap merge mode in docs/adr/0006-bootstrap-merge-governance.md never supplies task review evidence, acceptance, promotion, or reviewer separation."
       ],
       "deliverables": [
         "docs/implementation/oss-v1-execution.md",
@@ -187,16 +189,18 @@
       ],
       "requiredReviews": ["maintainer", "trust-reviewer"],
       "capabilities": {
-        "network": false,
-        "credentials": false,
+        "network": true,
+        "credentials": true,
         "provider": false,
-        "githubWrite": false
+        "githubWrite": true
       },
       "maxAttempts": 2,
       "stopConditions": [
         "The product contract and task DAG disagree.",
         "Generated progress differs from canonical state.",
-        "Implementation code enters the planning-only change."
+        "Implementation code enters the planning-only change.",
+        "Initial GitHub publication occurs before exact-candidate independent local preflight, a canonical review gate is credited with that preflight, or a lifecycle write targets anything outside the authorized V1-00 branch, pull request, merge, or post-merge monitoring flow.",
+        "A bootstrap merge authorization is represented as authenticated task review or acceptance evidence."
       ]
     },
     {
