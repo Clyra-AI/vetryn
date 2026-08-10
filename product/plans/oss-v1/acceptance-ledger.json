@@ -84,8 +84,8 @@
       "statement": "Every V1 artifact has a versioned strict schema and canonical serializer.",
       "verification": { "method": "test", "testLevel": "contract", "gateId": "QG-CONTRACTS" },
       "waivable": false,
-      "status": "planned",
-      "evidenceRefs": []
+      "status": "accepted",
+      "evidenceRefs": ["ev-v1-01-contracts-82dac34"]
     },
     {
       "id": "CONTRACT-002",
@@ -93,8 +93,8 @@
       "statement": "Malformed, unknown-version, and logically impossible artifacts fail closed with actionable diagnostics.",
       "verification": { "method": "test", "testLevel": "adversarial", "gateId": "QG-CONTRACTS" },
       "waivable": false,
-      "status": "planned",
-      "evidenceRefs": []
+      "status": "accepted",
+      "evidenceRefs": ["ev-v1-01-contracts-82dac34"]
     },
     {
       "id": "CONTRACT-003",
@@ -102,8 +102,8 @@
       "statement": "Core has no filesystem, network, provider, GitHub, or AST dependency.",
       "verification": { "method": "inspection", "testLevel": "static", "gateId": "QG-REPO-CHECK" },
       "waivable": false,
-      "status": "planned",
-      "evidenceRefs": []
+      "status": "accepted",
+      "evidenceRefs": ["ev-v1-01-repo-check-82dac34"]
     },
     {
       "id": "CONTRACT-004",
@@ -115,8 +115,8 @@
         "gateId": "QG-TRUST-REVIEW"
       },
       "waivable": false,
-      "status": "planned",
-      "evidenceRefs": []
+      "status": "accepted",
+      "evidenceRefs": ["ev-v1-01-contracts-82dac34"]
     },
     {
       "id": "GOLDEN-001",

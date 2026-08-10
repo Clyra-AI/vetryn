@@ -2,42 +2,46 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "V1-01",
-  "revision": 0,
-  "state": "planned",
-  "attempt": 0,
-  "candidate": null,
+  "revision": 1,
+  "state": "accepted",
+  "attempt": 1,
+  "candidate": {
+    "baseCommit": "e4e896e9e8341a9ac7b437ea3346a5a1bf4e510c",
+    "commit": "82dac344bc9189f4a9c314d966b65f6dc99b2d96",
+    "executor": "davidahmann"
+  },
   "criteria": [
     {
       "criterionId": "CONTRACT-001",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-01-contracts-82dac34"]
     },
     {
       "criterionId": "CONTRACT-002",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-01-contracts-82dac34"]
     },
     {
       "criterionId": "CONTRACT-003",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-01-repo-check-82dac34"]
     },
     {
       "criterionId": "CONTRACT-004",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-01-contracts-82dac34"]
     }
   ],
   "gates": [
     {
       "gateId": "QG-REPO-CHECK",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-01-repo-check-82dac34"]
     },
     {
       "gateId": "QG-CONTRACTS",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-01-contracts-82dac34"]
     },
     {
       "gateId": "QG-INDEPENDENT-VERIFY",
@@ -70,6 +74,20 @@
       "at": "2026-08-10T00:30:00Z",
       "actor": "planning-agent",
       "reason": "Task created by the canonical OSS V1 plan."
+    },
+    {
+      "from": "planned",
+      "to": "in_progress",
+      "at": "2026-08-10T16:29:56Z",
+      "actor": "davidahmann",
+      "reason": "Started the exact candidate after V1-00 acceptance made the task legal."
+    },
+    {
+      "from": "in_progress",
+      "to": "accepted",
+      "at": "2026-08-10T16:29:56Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer accepted the exact candidate after active contract and repository command gates passed under ADR 0009 single-maintainer delivery."
     }
   ]
 }
