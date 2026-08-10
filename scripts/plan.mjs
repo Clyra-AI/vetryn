@@ -72,11 +72,11 @@ async function assertReviewEvidence(evidenceRef, state, evidenceById, expectedRo
     `${source} cites review evidence ${evidenceRef} for role ${evidence.review?.role ?? "none"}`,
   );
   assert(
-    evidence.review.subjectActor === state.candidate.executor,
+    evidence.review.subjectActor.toLowerCase() === state.candidate.executor.toLowerCase(),
     `${source} review evidence ${evidenceRef} does not name the candidate executor`,
   );
   assert(
-    evidence.actor !== state.candidate.executor,
+    evidence.actor.toLowerCase() !== state.candidate.executor.toLowerCase(),
     `${source} review evidence ${evidenceRef} is self-approved by the executor`,
   );
   assert(

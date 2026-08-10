@@ -57,10 +57,20 @@ function codeownersForPath(codeowners, targetPath) {
   return owners;
 }
 
+function isAllowedPromotionPath(filename, taskId) {
+  return (
+    filename === `product/plans/oss-v1/state/${taskId}.json` ||
+    filename === "product/plans/oss-v1/acceptance-ledger.json" ||
+    filename === "product/plans/oss-v1/progress.json" ||
+    /^product\/plans\/oss-v1\/evidence\/[^/]+\.json$/.test(filename)
+  );
+}
+
 export function createGitHubReviewAuthenticator({ fetchImpl = globalThis.fetch } = {}) {
   assert(typeof fetchImpl === "function", "GitHub review authentication requires built-in fetch");
   const authenticatedReviews = new Map();
   const authenticatedPullRequests = new Map();
+  const authenticatedPromotionTails = new Map();
   const authenticatedReviewHistories = new Map();
   let authenticatedCodeowners;
 
@@ -126,10 +136,45 @@ export function createGitHubReviewAuthenticator({ fetchImpl = globalThis.fetch }
       );
       authenticatedPullRequests.set(pullRequest, pullRequestData);
     }
+    const currentHead = pullRequestData.head?.sha;
     assert(
-      pullRequestData.head?.sha === evidence.commit,
-      `${source} review evidence ${evidence.id} is not for the current pull request head`,
+      typeof currentHead === "string" && /^[0-9a-f]{40}$/.test(currentHead),
+      `${source} could not authenticate the current pull request head`,
     );
+    if (currentHead !== evidence.commit) {
+      const promotionKey = `${evidence.commit}:${currentHead}`;
+      let comparison = authenticatedPromotionTails.get(promotionKey);
+      if (!comparison) {
+        comparison = await fetchPublicGitHubJson(
+          `https://api.github.com/repos/${githubRepository}/compare/${evidence.commit}...${currentHead}`,
+          `${source} could not authenticate the promotion tail for review evidence ${evidence.id}`,
+          fetchImpl,
+        );
+        authenticatedPromotionTails.set(promotionKey, comparison);
+      }
+      assert(
+        comparison.status === "ahead" && comparison.merge_base_commit?.sha === evidence.commit,
+        `${source} review evidence ${evidence.id} is not an ancestor of the current pull request head`,
+      );
+      assert(
+        Number.isInteger(comparison.total_commits) &&
+          comparison.total_commits > 0 &&
+          comparison.total_commits < 250 &&
+          comparison.commits?.length === comparison.total_commits,
+        `${source} promotion tail for review evidence ${evidence.id} is incomplete or too large`,
+      );
+      assert(
+        Array.isArray(comparison.files) && comparison.files.length < 300,
+        `${source} promotion tail files for review evidence ${evidence.id} are incomplete or too large`,
+      );
+      const forbiddenFile = comparison.files.find(
+        (file) => !isAllowedPromotionPath(file.filename, evidence.taskId),
+      );
+      assert(
+        !forbiddenFile,
+        `${source} promotion tail for review evidence ${evidence.id} changes forbidden path ${forbiddenFile?.filename}`,
+      );
+    }
 
     let reviewHistory = authenticatedReviewHistories.get(pullRequest);
     if (!reviewHistory) {

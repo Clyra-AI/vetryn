@@ -19,6 +19,7 @@ const approval = {
 function evidence(overrides = {}) {
   return {
     id: "ev-review",
+    taskId: "V1-00",
     actor: "maintainer-reviewer",
     commit,
     review: {
@@ -41,11 +42,22 @@ function githubFetch({
   exactReview = approval,
   reviewHistory = [approval],
   headSha = commit,
+  comparison = {
+    status: "ahead",
+    merge_base_commit: { sha: commit },
+    total_commits: 1,
+    commits: [{ sha: "b".repeat(40) }],
+    files: [
+      { filename: "product/plans/oss-v1/state/V1-00.json" },
+      { filename: "product/plans/oss-v1/evidence/ev-review.json" },
+    ],
+  },
   codeowners = "* @maintainer-reviewer\n/.github/ @maintainer-reviewer\n/SECURITY.md @maintainer-reviewer\n",
 } = {}) {
   return vi.fn(async (input) => {
     const url = String(input);
     if (url.includes("CODEOWNERS")) return responseFor(codeowners);
+    if (url.includes("/compare/")) return responseFor(comparison);
     if (url.includes("/reviews?")) return responseFor(reviewHistory);
     if (url.includes("/reviews/")) return responseFor(exactReview);
     return responseFor({ head: { sha: headSha } });
@@ -120,13 +132,49 @@ describe("GitHub review authentication", () => {
     );
   });
 
-  it("rejects an approval after the pull request head advances", async () => {
+  it("accepts an approval followed only by a canonical promotion commit", async () => {
     const authenticate = createGitHubReviewAuthenticator({
       fetchImpl: githubFetch({ headSha: "b".repeat(40) }),
     });
 
+    await expect(authenticate(evidence(), "maintainer", "fixture")).resolves.toBeUndefined();
+  });
+
+  it("rejects a promotion tail that changes product code", async () => {
+    const authenticate = createGitHubReviewAuthenticator({
+      fetchImpl: githubFetch({
+        headSha: "b".repeat(40),
+        comparison: {
+          status: "ahead",
+          merge_base_commit: { sha: commit },
+          total_commits: 1,
+          commits: [{ sha: "b".repeat(40) }],
+          files: [{ filename: "packages/core/src/index.ts" }],
+        },
+      }),
+    });
+
     await expect(authenticate(evidence(), "maintainer", "fixture")).rejects.toThrow(
-      "not for the current pull request head",
+      "changes forbidden path packages/core/src/index.ts",
+    );
+  });
+
+  it("rejects a promotion head that does not descend from the approved candidate", async () => {
+    const authenticate = createGitHubReviewAuthenticator({
+      fetchImpl: githubFetch({
+        headSha: "b".repeat(40),
+        comparison: {
+          status: "diverged",
+          merge_base_commit: { sha: "c".repeat(40) },
+          total_commits: 1,
+          commits: [{ sha: "b".repeat(40) }],
+          files: [{ filename: "product/plans/oss-v1/state/V1-00.json" }],
+        },
+      }),
+    });
+
+    await expect(authenticate(evidence(), "maintainer", "fixture")).rejects.toThrow(
+      "is not an ancestor of the current pull request head",
     );
   });
 

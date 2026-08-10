@@ -10,7 +10,8 @@ Rules:
 - One task owns one state file to reduce concurrent-agent conflicts.
 - Evidence is immutable and bound to an exact commit, the reviewed plan and lockfile digests, and—when it
   represents approval—an authenticated GitHub approval, eligible author association, review identity, and role
-  whose actor differs from the candidate executor and whose observed commit matches the candidate.
+  whose actor differs case-insensitively from the candidate executor and whose observed commit matches the
+  candidate. A later promotion head must descend from that commit and may change only canonical promotion files.
 - Executors may add candidate evidence but cannot broaden scope, rewrite criteria, or accept their own
   task.
 - `progress.json` is generated with `pnpm plan:write` and verified with `pnpm plan:check`.

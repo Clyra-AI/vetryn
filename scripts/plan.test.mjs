@@ -233,6 +233,39 @@ describe("implementation plan validator", () => {
     expect(result.stderr).toContain("self-approved by the executor");
   });
 
+  it("rejects self-review when the executor and reviewer logins differ only by case", async () => {
+    const root = await createFixture();
+    const evidence = await createV1Evidence(root, {
+      type: "review",
+      actor: "IMPLEMENTATION-AGENT",
+      gateBinding: null,
+      review: {
+        role: "maintainer",
+        subjectActor: "Implementation-Agent",
+        source: "github-pull-request-review",
+        state: "APPROVED",
+        authorAssociation: "MEMBER",
+        reviewId: 123456789,
+        observedCommit: "a".repeat(40),
+        authorizationRef: "https://github.com/Clyra-AI/vetryn/pull/1#pullrequestreview-123456789",
+      },
+    });
+    const statePath = "product/plans/oss-v1/state/V1-00.json";
+    const state = await readFixtureJson(root, statePath);
+    state.candidate = {
+      baseCommit: "eb970bf3708ceb7a0d93d93481812dac090428b9",
+      commit: evidence.commit,
+      executor: "implementation-agent",
+    };
+    state.reviews.find((review) => review.role === "maintainer").status = "approved";
+    state.reviews.find((review) => review.role === "maintainer").evidenceRefs = [evidence.id];
+    await writeFixtureJson(root, statePath, state);
+
+    const result = runPlan(root);
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain("self-approved by the executor");
+  });
+
   it("rejects a review attestation whose ID does not match its GitHub URL", async () => {
     const root = await createFixture();
     const evidence = await createV1Evidence(root, {

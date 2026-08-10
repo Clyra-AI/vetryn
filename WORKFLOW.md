@@ -36,9 +36,12 @@ Command evidence names the exact gate and canonical command it proves; evidence 
 another gate. Approval evidence is re-fetched from GitHub's public API during validation and must match the
 repository, pull request, review ID, reviewer, eligible association, approved state, URL, and candidate commit.
 The reviewer must also own the role's protected surface under CODEOWNERS fetched from protected `main`.
-The approval must remain the reviewer's latest decisive review on the current pull-request head. Editable branch
-evidence and role fields are never sufficient on their own. Authentication uses Node's built-in HTTPS fetch, not
-a PATH-resolved repository executable; network or response failures fail closed.
+The approval must remain the reviewer's latest decisive review on the exact candidate commit. The same task PR
+may advance past that commit only for promotion: GitHub's comparison must prove that the candidate is an ancestor
+and that the complete tail changes only the task's canonical state, acceptance ledger, compact evidence, or
+generated progress. Editable branch evidence and role fields are never sufficient on their own. Authentication
+uses Node's built-in HTTPS fetch, not a PATH-resolved repository executable; network or response failures fail
+closed.
 
 The repository preserves these test levels as the product grows: static, unit, property, contract,
 integration, end-to-end, acceptance, adversarial/hardening, chaos, performance/soak, scenario, and field.
