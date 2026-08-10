@@ -91,14 +91,22 @@
     {
       "id": "bounded-candidate-shortlist",
       "category": "catalog",
-      "description": "More compatible models are available than the repository's configured candidate bound.",
+      "description": "More than five compatible models are available and the repository does not override the default candidate bound.",
       "expectedDisposition": "idempotent",
-      "expectedReason": "Hard filters and deterministic ordering produce the same bounded shortlist.",
+      "expectedReason": "Hard filters and deterministic ordering produce the same default-five shortlist.",
       "assertions": [
-        "The baseline is recorded separately from no more than the configured candidate count.",
+        "The baseline is recorded separately from exactly five candidates.",
         "Canonical model IDs provide the final deterministic tie-breaker.",
         "Models outside the shortlist are not executed."
       ]
+    },
+    {
+      "id": "candidate-limit-above-five",
+      "category": "catalog",
+      "description": "Repository policy requests a candidate limit greater than the V1 maximum of five.",
+      "expectedDisposition": "refuse",
+      "expectedReason": "The configured candidate limit exceeds the supported maximum.",
+      "assertions": ["Configuration fails validation.", "No candidate model is executed."]
     },
     {
       "id": "unchanged-catalog-refresh",
@@ -146,12 +154,48 @@
       ]
     },
     {
+      "id": "scorer-policy-change-invalidates-reuse",
+      "category": "action",
+      "description": "Source, manifest, fixtures, and catalog are unchanged but a deterministic scorer threshold changes.",
+      "expectedDisposition": "recommend",
+      "expectedReason": "The scorer-policy change produces a new evaluation-input digest.",
+      "assertions": [
+        "Candidate evaluation runs again within the configured budget.",
+        "A new run and evidence identity is produced.",
+        "Prior recommendation evidence is not reused as current."
+      ]
+    },
+    {
+      "id": "execution-config-change-invalidates-reuse",
+      "category": "action",
+      "description": "Source, manifest, fixtures, catalog, and scorer policy are unchanged but relevant execution configuration changes.",
+      "expectedDisposition": "recommend",
+      "expectedReason": "The execution-configuration change produces a new evaluation-input digest.",
+      "assertions": [
+        "Candidate evaluation runs again within the new limits.",
+        "A new run and evidence identity is produced.",
+        "Prior recommendation evidence is not reused as current."
+      ]
+    },
+    {
       "id": "scheduled-assessment-without-opt-in",
       "category": "action",
       "description": "A scheduled provider-backed assessment is attempted without explicit repository opt-in.",
       "expectedDisposition": "refuse",
       "expectedReason": "Provider-backed scheduling is disabled by default.",
       "assertions": ["No provider call occurs.", "No GitHub write occurs."]
+    },
+    {
+      "id": "scheduled-assessment-with-opt-in",
+      "category": "action",
+      "description": "Repository policy explicitly enables a scheduled provider-backed assessment with candidate, spend, retry, and timeout limits.",
+      "expectedDisposition": "recommend",
+      "expectedReason": "Explicit schedule consent permits the bounded assessment to run.",
+      "assertions": [
+        "The mock provider receives only the bounded candidate calls.",
+        "Evidence records schedule consent and every execution limit.",
+        "No permission is granted beyond assessment and the configured draft-PR mode."
+      ]
     },
     {
       "id": "secret-and-output-redaction",
