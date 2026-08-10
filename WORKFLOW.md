@@ -33,19 +33,42 @@ Run the smallest relevant checks during implementation and `pnpm check` before h
 must cover deterministic success, failure, and stale-evidence behavior. Evidence is candidate-bound,
 compact, and redacted; raw prompts, model output, credentials, private traces, and full logs are not committed.
 Command evidence names the exact gate and canonical command it proves; evidence for one command cannot satisfy
-another gate. Approval evidence is re-fetched from GitHub's public API during validation and must match the
-repository, pull request, review ID, reviewer, eligible association, approved state, URL, and candidate commit.
-The candidate executor is the candidate PR author authenticated by GitHub, not editable branch text. The reviewer
-must differ from that actor and own the role's protected surface under CODEOWNERS fetched from protected `main`.
-The approval must remain the reviewer's latest decisive review on the exact candidate commit. The same task PR
-may advance past that commit only for promotion: GitHub's comparison must prove that the candidate is an ancestor
+another gate. Approval evidence is re-fetched from GitHub's public API during validation. The normal path must
+match the repository, pull request, review ID, reviewer, eligible association, approved state, URL, and candidate
+commit. The candidate executor is the candidate PR author authenticated by GitHub, not editable branch text. The
+reviewer must differ from that actor, own the role's protected surface under CODEOWNERS fetched from protected
+`main`, and remain the latest decisive reviewer on the exact candidate commit.
+
+During ADR-0006 bootstrap, one alternative is allowed: a PR issue comment from a GitHub user who owns the
+requested role's protected-main CODEOWNERS surface. Anonymous public API association can hide private
+organization membership, so `OWNER`, `MEMBER`, and `CONTRIBUTOR` are allowed as exact public provenance;
+CODEOWNERS remains the authorization source. The authenticated current comment body must exactly use this
+seven-line format, with no extra text or fields:
+
+```text
+<!-- vetryn-bootstrap-review:v1 -->
+repository=Clyra-AI/vetryn
+pull_request=<number>
+task_id=<TASK-ID>
+candidate_sha=<40-lowercase-hex-sha>
+decision=APPROVED
+roles=<comma-separated-role-names>
+```
+
+The durable evidence records the issue-comment ID, exact URL, exact body, and public association provenance.
+Validation re-fetches the comment and requires its actor, association, body, repository, PR, task, candidate,
+decision, and requested role to match exactly. `NONE` and `COLLABORATOR` fail closed, and protected-main
+CODEOWNERS must authorize the actor for every requested role. The maintainer may also be the authenticated PR
+author only on this path. The same task PR may advance past that commit only for promotion: GitHub's comparison
+must prove that the candidate is an ancestor
 and that the complete tail changes only the task's canonical state, acceptance ledger, compact evidence, or
 generated progress. Within the shared ledger, only status and evidence references for that task may change;
 reviewed fields and other tasks are immutable. Evidence files present at the candidate are immutable; promotion
 may only add evidence whose contents and filename bind to that task. Rename source and destination paths are both
 restricted. Validation must run from a clean committed checkout equal to the authenticated open-PR head or its
-GitHub synthetic merge commit; later checkouts require GitHub-authenticated ancestry from the merged PR. Review
-records are authenticated from one bounded history fetch per PR to stay within the public API budget. Editable
+GitHub synthetic merge commit; later checkouts require GitHub-authenticated ancestry from the merged PR. Normal
+review records are authenticated from one bounded history fetch per PR, while bootstrap comments are
+fetched once by globally unique issue-comment ID and cached, to stay within the public API budget. Editable
 branch evidence and role fields are never sufficient on their own. Authentication uses Node's built-in HTTPS
 fetch and absolute system Git, not a PATH-resolved repository executable; network, Git, or response failures fail
 closed.
@@ -74,10 +97,12 @@ implemented review threads must be resolved.
 ADR 0006 defines a temporary single-maintainer bootstrap mode in which GitHub branch protection may require zero
 approvals and no CODEOWNER review. A merge in that mode still requires explicit maintainer authorization for the
 exact task or pull request, green latest-head CI, CodeQL, and dependency review, a terminal latest-head Codex
-approval or thumbs-up, and no unresolved actionable findings. Bootstrap merge authorization is lifecycle
-authority only: it cannot be recorded as task review evidence, cannot accept or promote a task, and does not
-weaken any task's declared review roles or reviewer-separation requirements. Restore at least one independent
-approval and CODEOWNER review when the ADR's exit condition is met.
+approval or thumbs-up, and no unresolved actionable findings. Bootstrap merge authorization is lifecycle-only
+and cannot be recorded as task review evidence. A separate structured comment with exact public association
+provenance and protected-main CODEOWNERS authorization may satisfy only the roles it names under the evidence
+rules above; it cannot supply acceptance or promotion by itself and does not turn CI, Codex settlement, or local
+agent verification into review evidence. Restore at least one
+independent approval and CODEOWNER review when the ADR's exit condition is met.
 
 A profile may allow a **standalone P2 exception** only when all of the following are true: a human explicitly
 authorizes that exact task or pull request; the finding is on the current head; exactly one classified P2 and

@@ -80,34 +80,8 @@
     "review": {
       "oneOf": [
         { "type": "null" },
-        {
-          "type": "object",
-          "additionalProperties": false,
-          "required": [
-            "role",
-            "subjectActor",
-            "source",
-            "state",
-            "authorAssociation",
-            "reviewId",
-            "observedCommit",
-            "authorizationRef"
-          ],
-          "properties": {
-            "role": { "type": "string", "minLength": 1 },
-            "subjectActor": { "type": "string", "minLength": 1 },
-            "source": { "const": "github-pull-request-review" },
-            "state": { "const": "APPROVED" },
-            "authorAssociation": { "enum": ["OWNER", "MEMBER", "COLLABORATOR"] },
-            "reviewId": { "type": "integer", "minimum": 1 },
-            "observedCommit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
-            "authorizationRef": {
-              "type": "string",
-              "format": "uri",
-              "pattern": "^https://github\\.com/Clyra-AI/vetryn/pull/[0-9]+#pullrequestreview-[0-9]+$"
-            }
-          }
-        }
+        { "$ref": "#/$defs/pullRequestReview" },
+        { "$ref": "#/$defs/bootstrapOwnerComment" }
       ]
     },
     "redaction": {
@@ -157,5 +131,68 @@
         }
       }
     }
-  ]
+  ],
+  "$defs": {
+    "pullRequestReview": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "role",
+        "subjectActor",
+        "source",
+        "state",
+        "authorAssociation",
+        "reviewId",
+        "observedCommit",
+        "authorizationRef"
+      ],
+      "properties": {
+        "role": { "type": "string", "minLength": 1 },
+        "subjectActor": { "type": "string", "minLength": 1 },
+        "source": { "const": "github-pull-request-review" },
+        "state": { "const": "APPROVED" },
+        "authorAssociation": { "enum": ["OWNER", "MEMBER", "COLLABORATOR"] },
+        "reviewId": { "type": "integer", "minimum": 1 },
+        "observedCommit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+        "authorizationRef": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^https://github\\.com/Clyra-AI/vetryn/pull/[0-9]+#pullrequestreview-[0-9]+$"
+        }
+      }
+    },
+    "bootstrapOwnerComment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "role",
+        "subjectActor",
+        "source",
+        "state",
+        "authorAssociation",
+        "commentId",
+        "observedCommit",
+        "authorizationBody",
+        "authorizationRef"
+      ],
+      "properties": {
+        "role": { "type": "string", "minLength": 1 },
+        "subjectActor": { "type": "string", "minLength": 1 },
+        "source": { "const": "github-bootstrap-owner-comment" },
+        "state": { "const": "APPROVED" },
+        "authorAssociation": { "enum": ["OWNER", "MEMBER", "CONTRIBUTOR"] },
+        "commentId": { "type": "integer", "minimum": 1 },
+        "observedCommit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+        "authorizationBody": {
+          "type": "string",
+          "pattern": "^<!-- vetryn-bootstrap-review:v1 -->\\nrepository=Clyra-AI/vetryn\\npull_request=[0-9]+\\ntask_id=(M0|V1)-[0-9]{2}\\ncandidate_sha=[0-9a-f]{40}\\ndecision=APPROVED\\nroles=[a-z][a-z0-9-]*(,[a-z][a-z0-9-]*)*$"
+        },
+        "authorizationRef": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^https://github\\.com/Clyra-AI/vetryn/pull/[0-9]+#issuecomment-[0-9]+$"
+        }
+      }
+    }
+  }
 }

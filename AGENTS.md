@@ -27,18 +27,27 @@ These instructions apply to the entire repository.
   narrow process task rather than adding the skill inside unrelated implementation work.
 - During the single-maintainer bootstrap mode in `docs/adr/0006-bootstrap-merge-governance.md`, a maintainer may
   explicitly authorize merge without a GitHub human or CODEOWNER approval only after required latest-head CI,
-  CodeQL, dependency review, passive Codex settlement, and review-thread resolution. This affects branch merge
-  protection only; it never satisfies task-required review evidence, acceptance, promotion, or reviewer
-  separation.
+  CodeQL, dependency review, passive Codex settlement, and review-thread resolution. That merge authorization
+  remains lifecycle-only. Separately, a protected-main CODEOWNER may satisfy named task review roles, including
+  when they authored the PR, only through the structured exact-candidate issue-comment evidence defined by ADR 0006. The anonymous public API association must be recorded exactly and be `OWNER`, `MEMBER`, or `CONTRIBUTOR`,
+  but it is provenance rather than authority; protected-main CODEOWNERS authorizes every named role. The comment
+  never supplies CI, Codex settlement, agent verification, merge authority, or canonical promotion.
 - Passing review records require role-bound GitHub review evidence authenticated against the public GitHub API
-  and CODEOWNERS fetched from protected `main`, the candidate PR author as authenticated executor, and a reviewer
-  distinct from that executor. The approval must target the exact candidate commit and remain the reviewer's latest decisive
-  review on that commit. A later pull-request head is valid only when GitHub proves that it descends from the
-  candidate and its complete promotion tail changes canonical state, task-scoped ledger status/evidence, newly
+  and CODEOWNERS fetched from protected `main`, with the candidate PR author as authenticated executor. The normal
+  path requires an `APPROVED` pull-request review from a reviewer distinct from that executor, targeting the exact
+  candidate and remaining that reviewer's latest decisive review. During ADR-0006 bootstrap only, the alternative
+  path requires a current durable PR issue comment whose public association provenance is exactly `OWNER`,
+  `MEMBER`, or `CONTRIBUTOR`, in the documented marker format and bound to this repository, PR, task, exact
+  candidate, `APPROVED` decision, and requested role; only this path permits actor overlap. Protected-main
+  CODEOWNERS, not the public association, authorizes the actor for the role. A later pull-request head is valid
+  only when GitHub proves that it descends from the candidate and its complete promotion tail changes canonical
+  state, task-scoped ledger status/evidence, newly
   added task-bound evidence, or generated progress only. Existing evidence, reviewed ledger fields, and every
   other task's items remain immutable. Validation requires a clean local commit bound to the authenticated PR
   head or GitHub synthetic merge commit; later ancestry is authenticated remotely from the merged PR. Review
-  identity is resolved from one bounded history fetch per PR, not one request per record. These fail-closed reads use built-in HTTPS and
+  identity for normal reviews is resolved from one bounded history fetch per PR, not one request per record;
+  bootstrap comments are fetched once by globally unique issue-comment ID and cached. These fail-closed reads use
+  built-in HTTPS and
   absolute system Git with no repository credential or PATH-resolved executable. Non-baseline evidence must
   match the reviewed plan and lockfile digests.
 - `product/plans/oss-v1/progress.json` is generated. Update task state and evidence through the plan

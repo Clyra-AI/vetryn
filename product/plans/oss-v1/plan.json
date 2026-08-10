@@ -177,6 +177,7 @@
           ".gitignore",
           "package.json",
           "pnpm-lock.yaml",
+          "vitest.config.ts",
           "scripts/**"
         ],
         "forbiddenPaths": ["packages/**", ".github/workflows/**"]
@@ -186,7 +187,7 @@
         "Progress is derived from canonical state and ledger files.",
         "No task executor can accept its own candidate.",
         "As constrained by docs/adr/0005-authorize-bounded-task-shipping.md, network, stored GitHub authentication, and GitHub writes are limited to initial publication after exact-candidate independent local preflight and explicit maintainer authorization, followed by the Factory commit-push lifecycle; the local preflight never satisfies a canonical review gate, and provider access and unrelated network use remain forbidden.",
-        "The temporary branch-level bootstrap merge mode in docs/adr/0006-bootstrap-merge-governance.md never supplies task review evidence, acceptance, promotion, or reviewer separation."
+        "The temporary bootstrap mode in docs/adr/0006-bootstrap-merge-governance.md may satisfy a declared review role only through an authenticated exact-candidate issue comment whose public association provenance is exactly OWNER, MEMBER, or CONTRIBUTOR and whose actor is authorized for the named role by protected-main CODEOWNERS; CODEOWNERS is authoritative, and merge authorization, CI, Codex settlement, and local agent verification remain separate and never supply task review evidence or canonical promotion."
       ],
       "deliverables": [
         "docs/implementation/oss-v1-execution.md",
@@ -214,7 +215,7 @@
         "Generated progress differs from canonical state.",
         "Implementation code enters the planning-only change.",
         "Initial GitHub publication occurs before exact-candidate independent local preflight, a canonical review gate is credited with that preflight, or a lifecycle write targets anything outside the authorized V1-00 branch, pull request, merge, or post-merge monitoring flow.",
-        "A bootstrap merge authorization is represented as authenticated task review or acceptance evidence."
+        "A bootstrap review is accepted without an authenticated current-body issue comment whose exact public association provenance is OWNER, MEMBER, or CONTRIBUTOR, bound to this repository, pull request, task, exact candidate, APPROVED decision, and requested role, with the actor authorized by protected-main CODEOWNERS, or merge authorization, CI, Codex settlement, or local agent verification is represented as task review evidence."
       ]
     },
     {

@@ -11,12 +11,17 @@
   semantic-rubric scorer, including representative no-findings and explicit insufficient-coverage
   outcomes that cannot authorize expansion.
 - Added deterministic repo-native task compilation and role-separated Vetryn implementation skills.
+- Made compiled task packets runner-ready for Factory's `task-executor`, including staged commands, explicit
+  runtime and policy refs, lifecycle ownership, and item-level acceptance-result requirements.
 - Added a committed agent operating map with repository ownership, skill routing, maturity rules, and
   phase-gated domain, field-evaluation, and Factory release guidance.
 - Limited V1-00 network, stored GitHub authentication, and GitHub writes to its independently verified,
   maintainer-authorized Factory shipping lifecycle.
 - Added a temporary single-maintainer bootstrap merge mode that preserves required CI, CodeQL, Codex review,
   thread resolution, and task-acceptance separation while GitHub approval requirements are disabled.
+- Added an authenticated ADR-0006 bootstrap review path in which protected-main CODEOWNERS authorizes named roles
+  for one task and candidate through a current, exact-format PR issue comment, while the anonymous public GitHub
+  association is retained as exact `OWNER`, `MEMBER`, or `CONTRIBUTOR` provenance.
 - Added exact-gate command evidence, live GitHub approval and role authentication, product-contract packet
   binding, and post-execution packet compilation.
 - Rejects superseded approvals, stale pull-request heads, and passing evidence for planned gates.

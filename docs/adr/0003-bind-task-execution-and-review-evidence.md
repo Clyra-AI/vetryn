@@ -14,6 +14,10 @@ boundary was descriptive rather than enforced.
 ## Decision
 
 - Compile one deterministic task packet from the canonical plan, acceptance ledger, task state, and lockfile.
+- Expose an additive runner-ready surface for Factory's `task-executor`: explicit task/risk identity, path
+  policy, staged validation commands, worker chain, lifecycle gates, worker-versus-lifecycle evidence ownership,
+  retry and runtime pins, compatibility and policy references, documentation/release intent, and item-level
+  acceptance-result requirements. Preserve the existing Vetryn-native packet objects for repository tooling.
 - Include the product contract in the packet's required digest set so documentation drift invalidates handoff.
 - Reject packet compilation when the plan is stale or the task is not legal to execute.
 - Record the candidate executor in task state.
@@ -42,5 +46,7 @@ boundary was descriptive rather than enforced.
 - Plan or dependency drift invalidates old passing evidence instead of silently carrying it forward.
 - External agents can consume a stable task packet without making Factory a runtime or git-submodule
   dependency.
+- Executors can start from the compiled packet without inferring missing runtime, validation, lifecycle, or
+  acceptance-result policy from private chat. Reporting `implemented` remains a handoff result, not acceptance.
 - Promotion requires slightly richer evidence and candidate metadata, but the validator can now enforce the
   role separation promised by the workflow.

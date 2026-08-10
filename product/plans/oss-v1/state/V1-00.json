@@ -2,64 +2,68 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "V1-00",
-  "revision": 1,
-  "state": "in_progress",
+  "revision": 6,
+  "state": "accepted",
   "attempt": 1,
-  "candidate": null,
+  "candidate": {
+    "baseCommit": "8c5bd603c0271061cce21372abc353ab52bef882",
+    "commit": "4dba91adcd98b1b337c75d748f0fbe1d792f58d6",
+    "executor": "davidahmann"
+  },
   "criteria": [
     {
       "criterionId": "PLAN-001",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-00-independent-review-4dba91a"]
     },
     {
       "criterionId": "PLAN-002",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-00-plan-check-4dba91a"]
     },
     {
       "criterionId": "PLAN-003",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-00-trust-review-4dba91a"]
     },
     {
       "criterionId": "PLAN-004",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-00-repo-check-4dba91a"]
     }
   ],
   "gates": [
     {
       "gateId": "QG-PLAN-CHECK",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-00-plan-check-4dba91a"]
     },
     {
       "gateId": "QG-REPO-CHECK",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-00-repo-check-4dba91a"]
     },
     {
       "gateId": "QG-INDEPENDENT-VERIFY",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-00-independent-review-4dba91a"]
     },
     {
       "gateId": "QG-TRUST-REVIEW",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-00-trust-review-4dba91a"]
     }
   ],
   "reviews": [
     {
       "role": "maintainer",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "approved",
+      "evidenceRefs": ["ev-v1-00-maintainer-review-4dba91a"]
     },
     {
       "role": "trust-reviewer",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "approved",
+      "evidenceRefs": ["ev-v1-00-trust-review-4dba91a"]
     }
   ],
   "blockers": [],
@@ -70,6 +74,41 @@
       "at": "2026-08-10T00:30:00Z",
       "actor": "planning-agent",
       "reason": "Planning-only task authorized by the maintainer."
+    },
+    {
+      "from": "in_progress",
+      "to": "in_progress",
+      "at": "2026-08-10T14:10:00Z",
+      "actor": "planning-contract-repair-agent",
+      "reason": "Recompiled the task packet after reconciling historical planning-test scope and adding the explicit runner-ready contract; acceptance remains pending."
+    },
+    {
+      "from": "in_progress",
+      "to": "in_progress",
+      "at": "2026-08-10T14:45:00Z",
+      "actor": "planning-contract-repair-agent",
+      "reason": "Recompiled the review contract for the authenticated ADR-0006 bootstrap owner-comment path; candidate, acceptance, gates, and reviews remain pending."
+    },
+    {
+      "from": "in_progress",
+      "to": "in_progress",
+      "at": "2026-08-10T14:55:00Z",
+      "actor": "planning-contract-repair-agent",
+      "reason": "Aligned the bootstrap review contract with GitHub's OWNER-or-MEMBER association semantics for organization repositories; candidate, acceptance, gates, and reviews remain pending."
+    },
+    {
+      "from": "in_progress",
+      "to": "in_progress",
+      "at": "2026-08-10T15:13:00Z",
+      "actor": "planning-contract-repair-agent",
+      "reason": "Made protected-main CODEOWNERS authoritative for bootstrap roles while retaining the anonymous public association as exact provenance; candidate, acceptance, gates, and reviews remain pending."
+    },
+    {
+      "from": "in_progress",
+      "to": "accepted",
+      "at": "2026-08-10T15:39:00Z",
+      "actor": "davidahmann",
+      "reason": "Promoted the independently verified exact candidate after both command gates passed and the authenticated protected-main CODEOWNER comment authorized every required review role."
     }
   ]
 }

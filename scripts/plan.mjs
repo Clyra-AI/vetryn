@@ -5,7 +5,9 @@ import process from "node:process";
 
 import Ajv2020 from "ajv/dist/2020.js";
 import addFormats from "ajv-formats";
+import { format as formatPrettier } from "prettier";
 
+import prettierConfig from "../prettier.config.mjs";
 import { createGitHubReviewAuthenticator } from "./github-review-auth.mjs";
 import { createGitCheckoutProvider } from "./git-checkout-auth.mjs";
 
@@ -78,18 +80,25 @@ async function assertReviewEvidence(evidenceRef, state, evidenceById, expectedRo
     evidence.review.subjectActor.toLowerCase() === state.candidate.executor.toLowerCase(),
     `${source} review evidence ${evidenceRef} does not name the candidate executor`,
   );
-  assert(
-    evidence.actor.toLowerCase() !== state.candidate.executor.toLowerCase(),
-    `${source} review evidence ${evidenceRef} is self-approved by the executor`,
-  );
+  const bootstrapOwnerComment = evidence.review.source === "github-bootstrap-owner-comment";
+  if (!bootstrapOwnerComment)
+    assert(
+      evidence.actor.toLowerCase() !== state.candidate.executor.toLowerCase(),
+      `${source} review evidence ${evidenceRef} is self-approved by the executor`,
+    );
   assert(
     evidence.review.observedCommit === state.candidate.commit,
     `${source} review evidence ${evidenceRef} was observed on a different commit`,
   );
-  const reviewIdMatch = evidence.review.authorizationRef.match(/#pullrequestreview-([0-9]+)$/);
+  const authorizationIdMatch = evidence.review.authorizationRef.match(
+    bootstrapOwnerComment ? /#issuecomment-([0-9]+)$/ : /#pullrequestreview-([0-9]+)$/,
+  );
+  const expectedAuthorizationId = bootstrapOwnerComment
+    ? evidence.review.commentId
+    : evidence.review.reviewId;
   assert(
-    reviewIdMatch && Number(reviewIdMatch[1]) === evidence.review.reviewId,
-    `${source} review evidence ${evidenceRef} has mismatched GitHub review identity`,
+    authorizationIdMatch && Number(authorizationIdMatch[1]) === expectedAuthorizationId,
+    `${source} review evidence ${evidenceRef} has mismatched GitHub ${bootstrapOwnerComment ? "comment" : "review"} identity`,
   );
   await authenticateGitHubReview(evidence, expectedRole, source);
 }
@@ -234,8 +243,9 @@ async function main() {
   const index = await readJson("product/plans/index.json");
   const plan = await readJson("product/plans/oss-v1/plan.json");
   const ledger = await readJson("product/plans/oss-v1/acceptance-ledger.json");
-  const progress =
-    command === "check" ? await readJson("product/plans/oss-v1/progress.json") : null;
+  const progressContents =
+    command === "check" ? await readFile(path.join(planRoot, "progress.json"), "utf8") : null;
+  const progress = progressContents === null ? null : JSON.parse(progressContents);
   const scenarios = await readJson("examples/openrouter-typescript/fixtures/scenarios.json");
   const stateFiles = await loadStateFiles();
   const evidenceFiles = await loadEvidenceFiles();
@@ -510,15 +520,15 @@ async function main() {
     stateFiles.map(({ document }) => document),
   );
   await validateDocument(ajv, validators, "progress.schema.json", "generated progress", generated);
-  const serialized = `${JSON.stringify(generated, null, 2)}\n`;
+  const serialized = await formatPrettier(JSON.stringify(generated, null, 2), {
+    ...prettierConfig,
+    parser: "json",
+  });
   if (command === "write") {
     await writeFile(path.join(planRoot, "progress.json"), serialized);
     process.stdout.write("updated product/plans/oss-v1/progress.json\n");
   } else {
-    assert(
-      JSON.stringify(progress) === JSON.stringify(generated),
-      "progress.json is stale; run pnpm plan:write",
-    );
+    assert(progressContents === serialized, "progress.json is stale; run pnpm plan:write");
     process.stdout.write("implementation plan is valid and progress is current\n");
   }
 }
