@@ -19,8 +19,9 @@ These instructions apply to the entire repository.
   `pnpm --silent task:compile -- TASK-ID` before implementation or verification.
 - Passing review records require role-bound GitHub review evidence authenticated against the public GitHub API
   and CODEOWNERS fetched from protected `main`, the exact candidate executor, and a reviewer distinct from that
-  executor. These fail-closed control-plane reads use no repository credential. Non-baseline evidence must match
-  the reviewed plan and lockfile digests.
+  executor. The approval must target the current pull-request head and remain the reviewer's latest decisive
+  review on that commit. These fail-closed control-plane reads use no repository credential. Non-baseline
+  evidence must match the reviewed plan and lockfile digests.
 - `product/plans/oss-v1/progress.json` is generated. Update task state and evidence through the plan
   tooling rather than editing the roll-up directly.
 - Keep Factory-compatible planning artifacts separate from Vetryn product-domain schemas. Transient

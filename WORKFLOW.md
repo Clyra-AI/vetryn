@@ -36,11 +36,13 @@ Command evidence names the exact gate and canonical command it proves; evidence 
 another gate. Approval evidence is re-fetched from GitHub's public API during validation and must match the
 repository, pull request, review ID, reviewer, eligible association, approved state, URL, and candidate commit.
 The reviewer must also own the role's protected surface under CODEOWNERS fetched from protected `main`.
-Editable branch evidence and role fields are never sufficient on their own; failed authentication fails closed.
+The approval must remain the reviewer's latest decisive review on the current pull-request head. Editable branch
+evidence and role fields are never sufficient on their own; failed authentication fails closed.
 
 The repository preserves these test levels as the product grows: static, unit, property, contract,
 integration, end-to-end, acceptance, adversarial/hardening, chaos, performance/soak, scenario, and field.
-Only gates marked active in the canonical plan may be claimed as run; planned gates remain explicit gaps.
+Only gates marked active in the canonical plan may be claimed as run or pass; planned gates remain explicit gaps
+even if an evidence record names their future command.
 
 ## Pull requests and review
 

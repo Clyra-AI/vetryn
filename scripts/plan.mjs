@@ -13,6 +13,8 @@ const root = path.resolve(
 const planRoot = path.join(root, "product/plans/oss-v1");
 const githubRepository = "Clyra-AI/vetryn";
 const authenticatedReviews = new Map();
+const authenticatedPullRequests = new Map();
+const authenticatedReviewHistories = new Map();
 let authenticatedCodeowners;
 
 async function readJson(relativePath) {
@@ -114,8 +116,9 @@ function fetchPublicGitHub(url, failureMessage) {
 }
 
 function fetchPublicGitHubJson(url, failureMessage) {
+  const response = fetchPublicGitHub(url, failureMessage);
   try {
-    return JSON.parse(fetchPublicGitHub(url, failureMessage));
+    return JSON.parse(response);
   } catch {
     fail(`${failureMessage}; GitHub returned invalid JSON`);
   }
@@ -167,6 +170,46 @@ function authenticateGitHubReview(evidence, expectedRole, source) {
       authenticated.pull_request_url ===
         `https://api.github.com/repos/${githubRepository}/pulls/${pullRequest}`,
     `${source} review evidence ${evidence.id} is authenticated for a different pull request`,
+  );
+  let pullRequestData = authenticatedPullRequests.get(pullRequest);
+  if (!pullRequestData) {
+    pullRequestData = fetchPublicGitHubJson(
+      `https://api.github.com/repos/${githubRepository}/pulls/${pullRequest}`,
+      `${source} could not authenticate pull request ${pullRequest}`,
+    );
+    authenticatedPullRequests.set(pullRequest, pullRequestData);
+  }
+  assert(
+    pullRequestData.head?.sha === evidence.commit,
+    `${source} review evidence ${evidence.id} is not for the current pull request head`,
+  );
+  let reviewHistory = authenticatedReviewHistories.get(pullRequest);
+  if (!reviewHistory) {
+    reviewHistory = fetchPublicGitHubJson(
+      `https://api.github.com/repos/${githubRepository}/pulls/${pullRequest}/reviews?per_page=100`,
+      `${source} could not authenticate pull request review history`,
+    );
+    assert(
+      Array.isArray(reviewHistory) && reviewHistory.length < 100,
+      `${source} review history is incomplete or exceeds the unauthenticated verification limit`,
+    );
+    authenticatedReviewHistories.set(pullRequest, reviewHistory);
+  }
+  const decisiveReviews = reviewHistory
+    .filter(
+      (review) =>
+        review.user?.login?.toLowerCase() === evidence.actor.toLowerCase() &&
+        review.commit_id === evidence.commit &&
+        ["APPROVED", "CHANGES_REQUESTED", "DISMISSED"].includes(review.state),
+    )
+    .sort((left, right) => {
+      const submittedOrder = String(left.submitted_at).localeCompare(String(right.submitted_at));
+      return submittedOrder || left.id - right.id;
+    });
+  const latestDecision = decisiveReviews.at(-1);
+  assert(
+    latestDecision?.id === evidence.review.reviewId && latestDecision.state === "APPROVED",
+    `${source} review evidence ${evidence.id} is superseded by the reviewer's current decision`,
   );
   authenticateGitHubRole(evidence.actor, expectedRole, source);
 }
@@ -232,6 +275,10 @@ function assertGateEvidence(evidenceRef, gateDefinition, evidenceById, source) {
   assert(
     allowedTypes.includes(evidence.type),
     `${source} cites ${evidence.type} evidence for ${gateDefinition.kind} gate ${gateDefinition.id}`,
+  );
+  assert(
+    gateDefinition.availability === "active",
+    `${source} records pass for ${gateDefinition.availability} gate ${gateDefinition.id}`,
   );
   if (evidence.type === "baseline-verification") return;
   if (gateDefinition.kind === "command") {
