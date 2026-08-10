@@ -1,0 +1,65 @@
+name: Bug report
+description: Report reproducible incorrect behavior in Vetryn.
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve Vetryn. Remove secrets, private prompts, model outputs, and customer data before submitting.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched existing issues for this problem.
+          required: true
+        - label: I removed sensitive data and credentials.
+          required: true
+        - label: This is not a security vulnerability (those must be reported privately under SECURITY.md).
+          required: true
+  - type: input
+    id: version
+    attributes:
+      label: Vetryn version or commit
+      placeholder: 0.1.0 or commit SHA
+    validations:
+      required: true
+  - type: dropdown
+    id: command
+    attributes:
+      label: Area
+      options:
+        - CLI
+        - Scanner
+        - Evaluation
+        - Recommendation
+        - Source patching
+        - GitHub Actions
+        - Documentation
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: What happened?
+      description: Include the expected and actual behavior.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      description: Provide sanitized commands, source, fixtures, and output needed to reproduce the problem.
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, Node.js version, package manager, provider, and SDK version.
+    validations:
+      required: true

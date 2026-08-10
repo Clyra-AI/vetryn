@@ -1,0 +1,39 @@
+name: Feature request
+description: Propose a focused addition to Vetryn's repository-native upgrade workflow.
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched existing issues and the roadmap.
+          required: true
+        - label: This request fits Vetryn's model-upgrade workflow rather than runtime routing.
+          required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem and user
+      description: Who has this problem, and what are they trying to accomplish?
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Desired outcome
+      description: Describe the evidence or behavior that would make the problem solved.
+    validations:
+      required: true
+  - type: textarea
+    id: example
+    attributes:
+      label: Concrete example
+      description: Include a sanitized call site, command, manifest, or PR/report shape where useful.
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Explain any current workaround or adjacent tool.

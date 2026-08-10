@@ -1,0 +1,50 @@
+{
+  "name": "vetryn",
+  "version": "0.0.0",
+  "description": "Dependabot for AI model dependencies.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "files": [
+    "dist"
+  ],
+  "bin": {
+    "vetryn": "./dist/index.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Clyra-AI/vetryn.git",
+    "directory": "packages/cli"
+  },
+  "bugs": {
+    "url": "https://github.com/Clyra-AI/vetryn/issues"
+  },
+  "homepage": "https://github.com/Clyra-AI/vetryn#readme",
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts --sourcemap --clean",
+    "clean": "rm -rf dist",
+    "pack:check": "pnpm pack --pack-destination ../../.artifacts",
+    "start": "node dist/index.js",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "commander": "15.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "26.2.0",
+    "tsup": "8.5.1",
+    "typescript": "6.0.3"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
