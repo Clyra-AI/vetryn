@@ -6,6 +6,9 @@ import process from "node:process";
 import { spawnSync } from "node:child_process";
 
 import { afterEach, describe, expect, it } from "vitest";
+import { check as checkPrettier } from "prettier";
+
+import prettierConfig from "../prettier.config.mjs";
 
 const repositoryRoot = path.resolve(import.meta.dirname, "..");
 const planScript = path.join(repositoryRoot, "scripts/plan.mjs");
@@ -146,6 +149,49 @@ async function createV1Evidence(root, overrides = {}) {
   const relativePath = `product/plans/oss-v1/evidence/${evidence.id}.json`;
   await writeFixtureJson(root, relativePath, evidence);
   return evidence;
+}
+
+async function acceptV1ForProgressFixture(root) {
+  const planPath = "product/plans/oss-v1/plan.json";
+  const plan = await readFixtureJson(root, planPath);
+  const task = plan.tasks.find((candidate) => candidate.id === v1TaskId);
+  task.requiredGates = ["QG-PLAN-CHECK"];
+  task.requiredReviews = [];
+  await writeFixtureJson(root, planPath, plan);
+
+  const ledgerPath = "product/plans/oss-v1/acceptance-ledger.json";
+  const ledger = await readFixtureJson(root, ledgerPath);
+  for (const item of ledger.items.filter((candidate) => candidate.taskId === v1TaskId))
+    item.verification = {
+      ...item.verification,
+      method: "command",
+      gateId: "QG-PLAN-CHECK",
+    };
+  await writeFixtureJson(root, ledgerPath, ledger);
+
+  const evidence = await createV1Evidence(root);
+  const statePath = "product/plans/oss-v1/state/V1-00.json";
+  const state = await readFixtureJson(root, statePath);
+  state.state = "accepted";
+  state.candidate = {
+    baseCommit: "b".repeat(40),
+    commit: evidence.commit,
+    executor: "implementation-agent",
+  };
+  state.criteria = state.criteria.map((criterion) => ({
+    ...criterion,
+    status: "pass",
+    evidenceRefs: [evidence.id],
+  }));
+  state.gates = [{ gateId: "QG-PLAN-CHECK", status: "pass", evidenceRefs: [evidence.id] }];
+  state.reviews = [];
+  await writeFixtureJson(root, statePath, state);
+
+  for (const item of ledger.items.filter((candidate) => candidate.taskId === v1TaskId)) {
+    item.status = "accepted";
+    item.evidenceRefs = [evidence.id];
+  }
+  await writeFixtureJson(root, ledgerPath, ledger);
 }
 
 async function createBootstrapReviewEvidence(root, reviewOverrides = {}) {
@@ -300,6 +346,22 @@ describe("implementation plan validator", () => {
     const writeResult = runPlan(root, "write");
     expect(writeResult.status, writeResult.stderr).toBe(0);
     expect(writeResult.stdout).toContain("updated product/plans/oss-v1/progress.json");
+
+    const checkResult = runPlan(root);
+    expect(checkResult.status, checkResult.stderr).toBe(0);
+  });
+
+  it("writes Prettier-stable progress when accepted dependencies expose next legal work", async () => {
+    const root = await createFixture();
+    await acceptV1ForProgressFixture(root);
+
+    const writeResult = runPlan(root, "write");
+    expect(writeResult.status, writeResult.stderr).toBe(0);
+
+    const progressPath = path.join(root, "product/plans/oss-v1/progress.json");
+    const contents = await readFile(progressPath, "utf8");
+    expect(JSON.parse(contents).nextLegalTasks).toEqual(["V1-01", "V1-02"]);
+    expect(await checkPrettier(contents, { ...prettierConfig, filepath: progressPath })).toBe(true);
 
     const checkResult = runPlan(root);
     expect(checkResult.status, checkResult.stderr).toBe(0);

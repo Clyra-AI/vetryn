@@ -5,7 +5,9 @@ import process from "node:process";
 
 import Ajv2020 from "ajv/dist/2020.js";
 import addFormats from "ajv-formats";
+import { format as formatPrettier } from "prettier";
 
+import prettierConfig from "../prettier.config.mjs";
 import { createGitHubReviewAuthenticator } from "./github-review-auth.mjs";
 import { createGitCheckoutProvider } from "./git-checkout-auth.mjs";
 
@@ -241,8 +243,9 @@ async function main() {
   const index = await readJson("product/plans/index.json");
   const plan = await readJson("product/plans/oss-v1/plan.json");
   const ledger = await readJson("product/plans/oss-v1/acceptance-ledger.json");
-  const progress =
-    command === "check" ? await readJson("product/plans/oss-v1/progress.json") : null;
+  const progressContents =
+    command === "check" ? await readFile(path.join(planRoot, "progress.json"), "utf8") : null;
+  const progress = progressContents === null ? null : JSON.parse(progressContents);
   const scenarios = await readJson("examples/openrouter-typescript/fixtures/scenarios.json");
   const stateFiles = await loadStateFiles();
   const evidenceFiles = await loadEvidenceFiles();
@@ -517,15 +520,15 @@ async function main() {
     stateFiles.map(({ document }) => document),
   );
   await validateDocument(ajv, validators, "progress.schema.json", "generated progress", generated);
-  const serialized = `${JSON.stringify(generated, null, 2)}\n`;
+  const serialized = await formatPrettier(JSON.stringify(generated, null, 2), {
+    ...prettierConfig,
+    parser: "json",
+  });
   if (command === "write") {
     await writeFile(path.join(planRoot, "progress.json"), serialized);
     process.stdout.write("updated product/plans/oss-v1/progress.json\n");
   } else {
-    assert(
-      JSON.stringify(progress) === JSON.stringify(generated),
-      "progress.json is stale; run pnpm plan:write",
-    );
+    assert(progressContents === serialized, "progress.json is stale; run pnpm plan:write");
     process.stdout.write("implementation plan is valid and progress is current\n");
   }
 }
