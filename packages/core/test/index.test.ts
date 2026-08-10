@@ -19,6 +19,7 @@ const validSpec = {
   id: "support-classification",
   name: "Support classification",
   owner: "support-platform",
+  providerPolicy: { allowedProviders: ["openai"] },
   requiredCapabilities: {
     structuredOutput: true,
     textGeneration: true,

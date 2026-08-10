@@ -159,6 +159,17 @@ export const callSiteCapabilityRequirementsSchema = z
 
 export type CallSiteCapabilityRequirements = z.infer<typeof callSiteCapabilityRequirementsSchema>;
 
+export const providerPolicySchema = z
+  .object({
+    allowedProviders: z.array(stableIdSchema).min(1),
+  })
+  .strict()
+  .superRefine((policy, context) =>
+    assertUniqueValues(policy.allowedProviders, context, "approved provider", ["allowedProviders"]),
+  );
+
+export type ProviderPolicy = z.infer<typeof providerPolicySchema>;
+
 export const callSiteSpecSchema = z
   .object({
     binding: sourceBindingSchema,
@@ -167,6 +178,7 @@ export const callSiteSpecSchema = z
     id: stableIdSchema,
     name: z.string().min(1),
     owner: z.string().min(1),
+    providerPolicy: providerPolicySchema,
     requiredCapabilities: callSiteCapabilityRequirementsSchema,
   })
   .strict();
@@ -185,6 +197,7 @@ export const callSiteSchema = z
     id: stableIdSchema,
     name: z.string().min(1),
     owner: z.string().min(1),
+    providerPolicy: providerPolicySchema,
     requiredCapabilities: callSiteCapabilityRequirementsSchema,
     representativeUsage: representativeUsageSchema,
     sourceBinding: boundSourceBindingSchema,
@@ -1028,6 +1041,18 @@ function assertCandidateRunCatalog(
   if (candidateModel.retired) {
     throw new VetrynContractError(
       `Recommendation evidence candidate model ${candidateRun.candidateModel} is retired.`,
+    );
+  }
+
+  if (!callSite.providerPolicy.allowedProviders.includes(candidateModel.provider)) {
+    throw new VetrynContractError(
+      `Recommendation evidence candidate model ${candidateRun.candidateModel} provider ${candidateModel.provider} is not in the call site's approved provider policy.`,
+    );
+  }
+
+  if (candidateRun.status === "complete" && candidateRun.gateOutcomes?.privacy !== "pass") {
+    throw new VetrynContractError(
+      `Candidate run ${candidateRun.id} has an invalid privacy gate outcome for its approved provider policy.`,
     );
   }
 

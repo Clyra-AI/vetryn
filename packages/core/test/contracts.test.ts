@@ -43,6 +43,7 @@ const callSite = {
   id: "support-classification",
   name: "Support classification",
   owner: "support-platform",
+  providerPolicy: { allowedProviders: ["openai"] },
   requiredCapabilities: {
     structuredOutput: true,
     textGeneration: true,
@@ -266,6 +267,9 @@ describe("V1 artifact contracts", () => {
     ).toThrow(/drive-qualified/i);
     expect(() => callSiteSchema.parse({ ...callSite, requiredCapabilities: undefined })).toThrow(
       /required.?capabilities/i,
+    );
+    expect(() => callSiteSchema.parse({ ...callSite, providerPolicy: undefined })).toThrow(
+      /providerPolicy/i,
     );
     expect(() =>
       parseVetrynArtifact({ ...recommendation, recommendedModel: callSite.currentModel }),
@@ -595,6 +599,33 @@ describe("V1 artifact contracts", () => {
         }),
       ),
     ).toThrow(/retired/i);
+    const candidateFromUnapprovedProvider = catalogSnapshot.models.map((model) =>
+      model.id === candidateRun.candidateModel ? { ...model, provider: "other-provider" } : model,
+    );
+    expect(() =>
+      assertRecommendationEvidence(
+        parsedRecommendation,
+        [parsedRun],
+        candidateRun.evaluationInputDigest,
+        parsedCallSite,
+        parsedEvalSuite,
+        catalogSnapshotSchema.parse({
+          ...catalogSnapshot,
+          contentDigest: createCatalogContentDigest(candidateFromUnapprovedProvider),
+          models: candidateFromUnapprovedProvider,
+        }),
+      ),
+    ).toThrow(/approved provider policy/i);
+    expect(() =>
+      assertRecommendationEvidence(
+        parsedRecommendation,
+        [candidateRunWith({ gateOutcomes: { ...candidateRun.gateOutcomes, privacy: "fail" } })],
+        candidateRun.evaluationInputDigest,
+        parsedCallSite,
+        parsedEvalSuite,
+        parsedCatalogSnapshot,
+      ),
+    ).toThrow(/privacy gate outcome/i);
     const candidateWithoutStructuredOutput = catalogSnapshot.models.map((model) =>
       model.id === candidateRun.candidateModel
         ? { ...model, capabilities: { ...model.capabilities, structuredOutput: false } }

@@ -53,15 +53,16 @@ patches. The scanner does not assign the human-owned stable call-site ID.
 
 ### Manifest
 
-The repository owns the call-site manifest. It records source binding, owner, fixture, gates, provider
-constraints, and a human-reviewed representative prompt/completion token-weight profile with provenance,
+The repository owns the call-site manifest. It records source binding, owner, fixture, gates, an explicit approved
+provider allowlist used to derive privacy outcomes, and a human-reviewed representative prompt/completion token-weight profile with provenance,
 without storing credentials or raw traces. Generated changes remain reviewable in Git.
 
 ### Candidate resolver and catalog
 
 Catalog adapters normalize model capabilities, context limits, retirement state, provider, region, and
 timestamped pricing. Every run pins its catalog snapshot so a result remains explainable after prices
-or aliases change. Hard compatibility and repository policy filters run before shortlisting. V1 selects
+or aliases change. The core derives the privacy gate by comparing each candidate's provider with the manifest's
+approved-provider allowlist. Hard compatibility and repository policy filters run before shortlisting. V1 selects
 at most five candidates by default and permits only a lower repository-configured bound. It ranks by
 exact-decimal projected workload cost, computed from normalized catalog prices and the manifest's pinned
 prompt/completion token weights, ascending; then context limit descending; then canonical model ID

@@ -2,46 +2,42 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "V1-01",
-  "revision": 18,
-  "state": "accepted",
+  "revision": 19,
+  "state": "in_progress",
   "attempt": 2,
-  "candidate": {
-    "baseCommit": "e4e896e9e8341a9ac7b437ea3346a5a1bf4e510c",
-    "commit": "0de7bf5c8331a7c66a055f970be0ea71c210e9e3",
-    "executor": "davidahmann"
-  },
+  "candidate": null,
   "criteria": [
     {
       "criterionId": "CONTRACT-001",
-      "status": "pass",
-      "evidenceRefs": ["ev-v1-01-contracts-0de7bf5"]
+      "status": "pending",
+      "evidenceRefs": []
     },
     {
       "criterionId": "CONTRACT-002",
-      "status": "pass",
-      "evidenceRefs": ["ev-v1-01-contracts-0de7bf5"]
+      "status": "pending",
+      "evidenceRefs": []
     },
     {
       "criterionId": "CONTRACT-003",
-      "status": "pass",
-      "evidenceRefs": ["ev-v1-01-repo-check-0de7bf5"]
+      "status": "pending",
+      "evidenceRefs": []
     },
     {
       "criterionId": "CONTRACT-004",
-      "status": "pass",
-      "evidenceRefs": ["ev-v1-01-contracts-0de7bf5"]
+      "status": "pending",
+      "evidenceRefs": []
     }
   ],
   "gates": [
     {
       "gateId": "QG-REPO-CHECK",
-      "status": "pass",
-      "evidenceRefs": ["ev-v1-01-repo-check-0de7bf5"]
+      "status": "pending",
+      "evidenceRefs": []
     },
     {
       "gateId": "QG-CONTRACTS",
-      "status": "pass",
-      "evidenceRefs": ["ev-v1-01-contracts-0de7bf5"]
+      "status": "pending",
+      "evidenceRefs": []
     },
     {
       "gateId": "QG-INDEPENDENT-VERIFY",
@@ -214,6 +210,13 @@
       "at": "2026-08-10T18:16:14Z",
       "actor": "davidahmann",
       "reason": "Maintainer accepted the reviewed exact candidate after the active contract and repository command gates passed under ADR 0009 single-maintainer delivery."
+    },
+    {
+      "from": "accepted",
+      "to": "in_progress",
+      "at": "2026-08-10T18:25:33Z",
+      "actor": "davidahmann",
+      "reason": "Reopened after current-head review identified missing provider-policy privacy binding."
     }
   ]
 }
