@@ -15,6 +15,7 @@ const planScript = path.join(repositoryRoot, "scripts/plan.mjs");
 const temporaryRoots = [];
 const bootstrapCommentId = 987654321;
 const v1TaskId = "V1-00";
+const v1FixtureTaskIds = [v1TaskId, "V1-01"];
 
 function bootstrapBody(overrides = {}) {
   const values = {
@@ -103,10 +104,43 @@ async function normalizeV1Fixture(root) {
   });
   await writeFixtureJson(root, statePath, state);
 
+  const dependentStatePath = "product/plans/oss-v1/state/V1-01.json";
+  const dependentState = await readFixtureJson(root, dependentStatePath);
+  Object.assign(dependentState, {
+    revision: 0,
+    state: "planned",
+    attempt: 0,
+    candidate: null,
+    criteria: dependentState.criteria.map((criterion) => ({
+      ...criterion,
+      status: "pending",
+      evidenceRefs: [],
+    })),
+    gates: dependentState.gates.map((gate) => ({ ...gate, status: "pending", evidenceRefs: [] })),
+    reviews: dependentState.reviews.map((review) => ({
+      ...review,
+      status: "pending",
+      evidenceRefs: [],
+    })),
+    blockers: [],
+    history: [
+      {
+        from: null,
+        to: "planned",
+        at: "2026-08-10T00:00:00Z",
+        actor: "plan-test-fixture",
+        reason: "Reset dependent V1-01 lifecycle data with the V1-00 fixture baseline.",
+      },
+    ],
+  });
+  await writeFixtureJson(root, dependentStatePath, dependentState);
+
   const ledgerPath = "product/plans/oss-v1/acceptance-ledger.json";
   const ledger = await readFixtureJson(root, ledgerPath);
   ledger.items = ledger.items.map((item) =>
-    item.taskId === v1TaskId ? { ...item, status: "planned", evidenceRefs: [] } : item,
+    v1FixtureTaskIds.includes(item.taskId)
+      ? { ...item, status: "planned", evidenceRefs: [] }
+      : item,
   );
   await writeFixtureJson(root, ledgerPath, ledger);
 
@@ -115,7 +149,7 @@ async function normalizeV1Fixture(root) {
     if (!filename.endsWith(".json")) continue;
     const evidencePath = path.join(evidenceDirectory, filename);
     const evidence = JSON.parse(await readFile(evidencePath, "utf8"));
-    if (evidence.taskId === v1TaskId) await rm(evidencePath);
+    if (v1FixtureTaskIds.includes(evidence.taskId)) await rm(evidencePath);
   }
 
   const writeResult = runPlan(root, "write");
