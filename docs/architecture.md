@@ -50,8 +50,9 @@ at most five candidates by default, permits only a lower repository-configured b
 ordering with canonical model IDs as the final tie-breaker.
 
 Live refresh computes a normalized catalog content digest. Unchanged content reuses the existing
-immutable snapshot; a failed refresh is explicit and cannot make an older snapshot appear current.
-Historical replay always uses its original snapshot.
+immutable snapshot and records a separate immutable refresh observation containing source, time, and
+content digest. A failed refresh is explicit and cannot make an older snapshot appear current. Historical
+replay always uses its original snapshot.
 
 ### Evaluation runner
 
@@ -77,7 +78,9 @@ confidence, limitations, failed cases, and reproduction commands.
 The patcher verifies the source fingerprint and changes only the bound literal. The GitHub integration
 opens a draft PR from that patch, is idempotent per call site and candidate, and never merges or deploys.
 Provider-backed assessment is manual by default. A repository may opt into a schedule, but unchanged
-catalog and evaluation-input digests skip paid candidate execution.
+catalog and evaluation-input digests skip paid candidate execution only when prior evidence is complete,
+integrity-valid, and reusable under current policy. Failed, partial, exhausted, privacy-unsafe, or
+otherwise non-reusable evidence never suppresses a later bounded retry.
 
 ## Package direction
 

@@ -2,7 +2,7 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "V1-05",
-  "revision": 1,
+  "revision": 2,
   "state": "planned",
   "attempt": 0,
   "candidate": null,
@@ -77,6 +77,13 @@
       "at": "2026-08-10T11:56:03Z",
       "actor": "planning-agent",
       "reason": "Added bounded candidate-selection and catalog-refresh acceptance contracts."
+    },
+    {
+      "from": "planned",
+      "to": "planned",
+      "at": "2026-08-10T12:19:11Z",
+      "actor": "planning-agent",
+      "reason": "Required immutable freshness observations when content-addressed snapshots are reused."
     }
   ]
 }

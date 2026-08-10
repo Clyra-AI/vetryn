@@ -47,7 +47,7 @@
     {
       "id": "DEC-REFRESH",
       "status": "locked",
-      "decision": "Catalog assessment is manual by default, scheduling is explicit opt-in, unchanged normalized catalog and evaluation inputs do not trigger paid candidate execution, and a failed live refresh cannot be represented as current.",
+      "decision": "Catalog assessment is manual by default, scheduling is explicit opt-in, unchanged normalized catalog and evaluation inputs skip paid candidate execution only when prior evidence is complete and policy-reusable, every successful refresh records immutable freshness evidence, and a failed live refresh cannot be represented as current.",
       "rationale": "Installation must not create surprise recurring spend or silently make recommendations from stale provider state.",
       "blocks": []
     },
@@ -409,6 +409,7 @@
         "Every evaluation cites an immutable catalog snapshot.",
         "Missing or ambiguous pricing and capability data excludes the candidate.",
         "Candidate selection is bounded by repository policy and reproducible from normalized catalog data.",
+        "Every successful live refresh records immutable freshness evidence even when its content-addressed snapshot is reused.",
         "A failed live refresh cannot silently relabel an older snapshot as current."
       ],
       "deliverables": ["packages/openrouter/**", "packages/cli/**"],
@@ -426,7 +427,7 @@
         "A run can silently use a mutable live catalog.",
         "Unknown pricing is treated as zero.",
         "Candidate selection exceeds its configured bound or changes under identical inputs.",
-        "An unchanged normalized catalog creates a distinct snapshot or a failed refresh is reported as fresh."
+        "An unchanged normalized catalog creates a distinct snapshot, omits its new refresh observation, or a failed refresh is reported as fresh."
       ]
     },
     {
@@ -604,7 +605,7 @@
         "The Action requests only the permissions needed for the selected mode.",
         "Unchanged inputs do not create duplicate PRs or mutable evidence.",
         "Provider-backed assessment is manual by default and scheduled execution requires explicit repository opt-in.",
-        "An unchanged catalog and evaluation-input digest cannot trigger paid candidate execution."
+        "An unchanged catalog and evaluation-input digest skips paid candidate execution only when prior evidence is complete, integrity-valid, and reusable under current policy."
       ],
       "deliverables": ["action.yml", ".github/workflows/**", "examples/openrouter-typescript/**"],
       "requiredTestLevels": ["static", "contract", "integration", "e2e", "adversarial"],
@@ -629,23 +630,25 @@
         "A failed or abstained run can open a migration PR.",
         "Action reruns duplicate output.",
         "Installation alone enables recurring provider spend.",
-        "Unchanged catalog and evaluation inputs trigger provider execution."
+        "Complete reusable evidence is ignored and unchanged inputs trigger provider execution.",
+        "Failed, partial, exhausted, privacy-unsafe, or otherwise non-reusable evidence suppresses a later bounded retry."
       ]
     },
     {
       "id": "V1-10",
       "milestone": "FIELD",
       "title": "Validate the beachhead in real repositories",
-      "objective": "Prove that qualified recommendation PRs are trusted, merged, safe, and economically meaningful before expanding scope.",
+      "objective": "Prove that qualified recommendation PRs are trusted, merged, safe, and economically meaningful, and record valuable open-ended call sites blocked by deterministic evaluation before expanding scope.",
       "risk": { "level": "high", "domains": ["field-validation", "customer-trust", "economics"] },
       "dependsOn": [{ "taskId": "V1-09", "kind": "field" }],
-      "acceptanceItemIds": ["FIELD-001", "FIELD-002", "FIELD-003", "FIELD-004"],
+      "acceptanceItemIds": ["FIELD-001", "FIELD-002", "FIELD-003", "FIELD-004", "FIELD-005"],
       "scope": {
         "allowedPaths": ["docs/**", "product/plans/**"],
         "forbiddenPaths": ["packages/**", "action.yml", ".github/workflows/**"]
       },
       "semanticInvariants": [
-        "Field metrics count only qualified, evidence-backed recommendations.",
+        "Recommendation and rollout metrics count only qualified, evidence-backed recommendations.",
+        "Blocked open-ended call sites are recorded separately with sanitized evidence and never counted as qualified recommendations.",
         "Customer data and outcomes are recorded without raw prompts or outputs."
       ],
       "deliverables": ["product/plans/oss-v1/evidence/**", "docs/**"],
@@ -662,7 +665,8 @@
       "stopConditions": [
         "A serious quality, safety, privacy, or operational regression occurs.",
         "Savings cannot be attributed to the recommendation.",
-        "Customer consent or data handling is unclear."
+        "Customer consent or data handling is unclear.",
+        "A semantic-scorer expansion claim lacks sanitized evidence of valuable open-ended call sites blocked specifically by deterministic evaluation."
       ]
     }
   ]

@@ -52,6 +52,7 @@ these checkboxes are a human summary, not execution truth.
 - [ ] Ten qualified recommendation PRs across at least three companies
 - [ ] At least a 40% qualified-PR merge rate
 - [ ] Zero serious escaped regressions
+- [ ] Sanitized evidence of valuable open-ended call sites blocked specifically by deterministic evaluation
 
 ## Post-V1 candidates
 

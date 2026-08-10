@@ -276,7 +276,7 @@
     {
       "id": "CATALOG-005",
       "taskId": "V1-05",
-      "statement": "An unchanged normalized catalog content digest reuses its immutable snapshot, while a failed live refresh reports failure and never represents a prior snapshot as current.",
+      "statement": "An unchanged normalized catalog content digest reuses its immutable snapshot while recording a new immutable refresh observation; a failed live refresh reports failure and never represents a prior snapshot as current.",
       "verification": { "method": "test", "testLevel": "integration", "gateId": "QG-SCENARIOS" },
       "waivable": false,
       "status": "planned",
@@ -445,7 +445,7 @@
     {
       "id": "ACTION-005",
       "taskId": "V1-09",
-      "statement": "Provider-backed assessment is manual by default, scheduling requires explicit repository opt-in, and unchanged catalog plus evaluation-input digests skip paid candidate execution.",
+      "statement": "Provider-backed assessment is manual by default, scheduling requires explicit repository opt-in, and unchanged catalog plus evaluation-input digests skip paid candidate execution only when prior evidence is complete, integrity-valid, and reusable under current policy.",
       "verification": { "method": "test", "testLevel": "adversarial", "gateId": "QG-SCENARIOS" },
       "waivable": false,
       "status": "planned",
@@ -487,6 +487,15 @@
         "testLevel": "field",
         "gateId": "QG-INDEPENDENT-VERIFY"
       },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
+      "id": "FIELD-005",
+      "taskId": "V1-10",
+      "statement": "Sanitized field evidence separately records valuable open-ended call sites that cannot produce a qualified recommendation specifically because deterministic evaluation cannot establish semantic non-inferiority.",
+      "verification": { "method": "field", "testLevel": "field", "gateId": "QG-FIELD" },
       "waivable": false,
       "status": "planned",
       "evidenceRefs": []

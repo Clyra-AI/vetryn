@@ -111,8 +111,9 @@ serious escaped regressions. Twenty safe rollouts remain a later confidence mile
 deterministic build gate.
 
 An optional calibrated semantic-rubric scorer may be designed only after that field work demonstrates
-that deterministic evaluation blocks valuable open-ended call sites. It remains supplementary to hard
-gates, requires human calibration and explicit spend policy, and is not implied by V1 completion.
+through separate sanitized evidence that deterministic evaluation blocks valuable open-ended call sites.
+Those blocked call sites are not counted as qualified recommendations. The scorer remains supplementary
+to hard gates, requires human calibration and explicit spend policy, and is not implied by V1 completion.
 
 ## Locked implementation decisions
 
@@ -126,7 +127,10 @@ gates, requires human calibration and explicit spend policy, and is not implied 
 - OpenRouter supplies the V1 catalog universe, but hard compatibility and policy filters run before a
   deterministic shortlist whose default and maximum size is five candidates.
 - Provider-backed assessment is manual by default. A repository may explicitly opt into a schedule;
-  unchanged normalized catalog and evaluation-input digests do not trigger paid candidate execution.
+  unchanged normalized catalog and evaluation-input digests skip paid candidate execution only when
+  prior evidence is complete, integrity-valid, and reusable under current policy.
+- Every successful catalog refresh records immutable freshness evidence even when its unchanged,
+  content-addressed snapshot is reused.
 - A failed live catalog refresh is reported as a failure and never relabels an older snapshot as current.
 - Unknown compatibility, insufficient evidence, ambiguous binding, stale source, or failed hard gates
   always produce a report without a patch.

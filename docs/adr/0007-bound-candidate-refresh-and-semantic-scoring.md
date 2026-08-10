@@ -18,15 +18,19 @@ open-ended workload.
 - Select at most five candidates by default and permit repositories only to lower that bound. Use stable
   ordering and canonical model IDs as the final tie-breaker.
 - Normalize live catalog content and compute a content digest. Reuse the immutable snapshot when the
-  digest is unchanged; never mutate an existing snapshot.
+  digest is unchanged; never mutate an existing snapshot. Record each successful refresh as separate
+  immutable freshness evidence containing its source, observation time, and normalized content digest.
 - Report a live refresh failure explicitly. An older snapshot may be used for explicit historical replay
   but must not be represented as current.
 - Make provider-backed assessment manual by default. Scheduling requires explicit repository opt-in.
 - Bind an evaluation-input digest to the catalog, source, manifest, fixtures, scorer policy, and relevant
   execution configuration. When both catalog and evaluation inputs are unchanged, skip paid candidate
-  execution and reuse the existing recommendation identity and evidence.
+  execution and reuse the existing recommendation identity and evidence only if that evidence is complete,
+  integrity-valid, and reusable under current policy. Failed, partial, exhausted, privacy-unsafe, or
+  otherwise non-reusable evidence must not suppress a later bounded retry.
 - Keep LLM judges outside OSS V1. Design an optional calibrated semantic-rubric scorer only after V1 field
-  validation demonstrates that deterministic evaluation blocks valuable open-ended call sites.
+  validation separately records sanitized evidence that deterministic evaluation blocks valuable
+  open-ended call sites; those cases are not qualified recommendations.
 
 ## Consequences
 
@@ -35,6 +39,7 @@ open-ended workload.
   pull requests.
 - Refresh and replay have distinct semantics, so stale provider state cannot silently support a current
   recommendation.
+- Transient and incomplete failures remain retryable even when their input digests are unchanged.
 - Users opt into recurring spend rather than inheriting it from installation.
 - A later semantic scorer requires a separate reviewed decision covering human calibration, judge-model
   provenance, bias controls, abstention, privacy, and spend. It supplements deterministic and hard gates;

@@ -127,6 +127,7 @@
       "expectedReason": "The normalized content digest is unchanged, so the immutable snapshot is reused.",
       "assertions": [
         "No duplicate snapshot is created.",
+        "A new immutable refresh observation records source, observation time, and normalized content digest and references the reused snapshot.",
         "The refresh observation cannot change historical replay."
       ]
     },
@@ -155,13 +156,25 @@
     {
       "id": "action-rerun-idempotency",
       "category": "action",
-      "description": "The GitHub Action is rerun with unchanged source, manifests, cases, and catalog snapshot.",
+      "description": "The GitHub Action is rerun with unchanged inputs after a complete, integrity-valid recommendation whose policy permits reuse.",
       "expectedDisposition": "idempotent",
-      "expectedReason": "Identical inputs produce identical artifacts and do not duplicate PR output.",
+      "expectedReason": "Identical inputs and reusable prior evidence preserve artifacts without duplicate execution or PR output.",
       "assertions": [
         "Artifact digests match.",
         "The existing recommendation identity is reused.",
         "No paid candidate execution occurs."
+      ]
+    },
+    {
+      "id": "unchanged-input-rerun-after-incomplete-run",
+      "category": "action",
+      "description": "A prior rate-limited run exhausted its retry budget, then an unchanged-input rerun occurs after the mock provider recovers.",
+      "expectedDisposition": "recommend",
+      "expectedReason": "Incomplete exhausted evidence is not reusable and cannot suppress a later bounded retry.",
+      "assertions": [
+        "Candidates execute again within the configured retry, timeout, and spend limits.",
+        "The failed run remains immutable and is not reused as current evidence.",
+        "The successful rerun receives a new run and evidence identity."
       ]
     },
     {
