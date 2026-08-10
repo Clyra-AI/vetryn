@@ -4,6 +4,8 @@ import path from "node:path";
 import process from "node:process";
 import { spawnSync } from "node:child_process";
 
+import Ajv2020 from "ajv/dist/2020.js";
+import addFormats from "ajv-formats";
 import { afterEach, describe, expect, it } from "vitest";
 
 const repositoryRoot = path.resolve(import.meta.dirname, "..");
@@ -68,10 +70,14 @@ describe("task packet compiler", () => {
     expect(second.stdout).toBe(first.stdout);
     const packet = JSON.parse(first.stdout);
     expect(packet).toMatchObject({
-      packetId: "oss-v1:V1-00:r1",
+      packetId: "oss-v1:V1-00:r2",
       source: { productContract: "docs/oss-v1.md" },
       task: { id: "V1-00" },
       currentState: { state: "in_progress", attempt: 1, maxAttempts: 2 },
+      task_id: "V1-00",
+      risk_class: "medium",
+      worker_type: "task-executor",
+      retry_budget: { max_attempts: 2, current_attempt: 1, remaining_attempts: 1 },
       execution: {
         executorMayAccept: false,
         verifierMustDifferFromExecutor: true,
@@ -83,6 +89,75 @@ describe("task packet compiler", () => {
       packet.source.digests[packet.source.productContract],
     );
     expect(Object.keys(packet.source.digests)).toHaveLength(5);
+    expect(packet.allowed_paths).toContain("vitest.config.ts");
+    expect(packet.required_worker_chain).toEqual(packet.execution.factorySkills);
+    expect(packet.required_worker_chain).toEqual([
+      "task-executor",
+      "validation-gate",
+      "commit-push",
+    ]);
+    expect(packet.required_worker_chain).not.toContain("ship-pr");
+    expect(packet.worker_evidence_required).toEqual(packet.evidence_required);
+    expect(packet.lifecycle_evidence_required).toEqual([
+      "validation_report",
+      "github_review_evidence",
+      "ship_packet",
+      "pr_lifecycle_report",
+      "post_merge_report",
+      "canonical_promotion",
+    ]);
+    expect(packet.lifecycle_evidence_required).not.toContain("scope_closure_report");
+    expect(packet.lifecycle_gates).toMatchObject({
+      code_review_required: false,
+      codex_review_required: true,
+      post_merge_monitor_required: true,
+      pr_lifecycle_report_required: true,
+    });
+    expect(packet.acceptance_result_requirements[0].lifecycle_evidence_required).toEqual([
+      "github_review_evidence",
+      "canonical_promotion",
+    ]);
+    expect(packet.acceptance_result_requirements[1].lifecycle_evidence_required).toEqual([
+      "validation_report",
+      "canonical_promotion",
+    ]);
+    expect(
+      packet.acceptance_result_requirements.every(
+        (item) => !item.lifecycle_evidence_required.includes("scope_closure_report"),
+      ),
+    ).toBe(true);
+    expect(packet.changelog_intent.semver_marker).toBe("none");
+    expect(packet.acceptance_result_requirements.map((item) => item.acceptance_item_id)).toEqual([
+      "PLAN-001",
+      "PLAN-002",
+      "PLAN-003",
+      "PLAN-004",
+    ]);
+  });
+
+  it("fails schema validation when a runner-required field is missing", async () => {
+    const root = await createFixture();
+    const result = runTask(root, "compile", "V1-00");
+    expect(result.status, result.stderr).toBe(0);
+    const packet = JSON.parse(result.stdout);
+    delete packet.validation_commands;
+
+    const schema = JSON.parse(
+      await readFile(path.join(root, "product/plans/schemas/task-packet.schema.json"), "utf8"),
+    );
+    const ajv = new Ajv2020({ allErrors: true, strict: true, allowUnionTypes: true });
+    addFormats(ajv);
+    const validate = ajv.compile(schema);
+
+    expect(validate(packet)).toBe(false);
+    expect(validate.errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          keyword: "required",
+          params: { missingProperty: "validation_commands" },
+        }),
+      ]),
+    );
   });
 
   it("changes the packet digest when the product contract changes", async () => {

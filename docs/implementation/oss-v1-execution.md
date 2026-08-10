@@ -58,6 +58,22 @@ not executable. The full repository lifecycle is in `WORKFLOW.md`.
 Agents should work on one task per branch/PR. Parallel work is permitted only when the DAG allows it
 and paths do not overlap. A task brief is disposable; canonical state and evidence are committed.
 
+## Runner-ready task packet
+
+The compiler preserves Vetryn's canonical `source`, `task`, state, acceptance, gate, review, and execution
+objects and adds the explicit snake-case fields consumed by Factory's `task-executor`. Those fields name the
+task and risk, allowed and forbidden paths, scope exclusions, baseline/red-first/focused/final commands, worker
+chain, lifecycle gates, retry budget, runtime pins, Factory compatibility, policy references, documentation and
+release intent, and item-level acceptance-result requirements.
+
+`evidence_required` and `worker_evidence_required` contain only evidence the executor can produce before
+shipping. `lifecycle_evidence_required` names the real outputs produced later by `validation-gate`, `commit-push`,
+and Vetryn's specialized verify/promote roles: validation, authenticated GitHub review, ship packet, pull-request
+lifecycle, post-merge, and canonical-promotion evidence. Factoryd-only scope-closure artifacts are not required
+while Factoryd remains deferred. An executor may report an acceptance item as implemented, partial, missing, or
+blocked, but that result does not change the ledger, accept the task, or satisfy a pending review. Any source
+digest or plan drift requires recompilation before handoff.
+
 ## Quality lanes
 
 | Lane               | Purpose                                                      | Merge policy                                       |

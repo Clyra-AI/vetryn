@@ -11,6 +11,8 @@
   semantic-rubric scorer, including representative no-findings and explicit insufficient-coverage
   outcomes that cannot authorize expansion.
 - Added deterministic repo-native task compilation and role-separated Vetryn implementation skills.
+- Made compiled task packets runner-ready for Factory's `task-executor`, including staged commands, explicit
+  runtime and policy refs, lifecycle ownership, and item-level acceptance-result requirements.
 - Added a committed agent operating map with repository ownership, skill routing, maturity rules, and
   phase-gated domain, field-evaluation, and Factory release guidance.
 - Limited V1-00 network, stored GitHub authentication, and GitHub writes to its independently verified,

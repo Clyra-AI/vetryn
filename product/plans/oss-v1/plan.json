@@ -177,6 +177,7 @@
           ".gitignore",
           "package.json",
           "pnpm-lock.yaml",
+          "vitest.config.ts",
           "scripts/**"
         ],
         "forbiddenPaths": ["packages/**", ".github/workflows/**"]

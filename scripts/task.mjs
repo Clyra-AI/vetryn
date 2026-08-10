@@ -18,6 +18,48 @@ const sourcePaths = {
   progress: "product/plans/oss-v1/progress.json",
 };
 
+const workerEvidenceRequired = ["work_proof_marker", "command_evidence", "acceptance_results"];
+const factorySkills = ["task-executor", "validation-gate", "commit-push"];
+const lifecycleEvidenceRequired = [
+  "validation_report",
+  "github_review_evidence",
+  "ship_packet",
+  "pr_lifecycle_report",
+  "post_merge_report",
+  "canonical_promotion",
+];
+
+const runtimePins = {
+  language: "typescript",
+  toolchain_version: "node-22 / pnpm-10.23.0 / typescript-6.0.3",
+  module_or_package_path: "github.com/Clyra-AI/vetryn",
+  dependency_policy:
+    "Frozen pnpm lockfile; minimal Apache-2.0-compatible dependencies; runtime additions require justification and dependency review.",
+  distribution_target: "npm_cli_packages_and_composite_github_action",
+  provider_policy:
+    "Offline deterministic CI; provider access requires explicit task capability, scoped credentials, an allowlist, and human approval.",
+  artifact_namespace: "product/plans/oss-v1/evidence",
+  live_work_policy:
+    "No ambient secrets or paid APIs; field evaluation is manual or explicitly scheduled and never a pull-request merge gate.",
+};
+
+const factoryCompatibility = {
+  factory_contract_version: "1.0",
+  profile_ref: ".factory/profile.yaml",
+  skill_vocabulary_version: "2026-06-09",
+  skill_inventory_ref: "docs/agent-map.md#current-skill-routing",
+  generated_by: "vetryn-task-compiler",
+  deprecated_worker_policy: "block_active_aliases",
+  deprecated_worker_aliases: [
+    {
+      deprecated: "ship-pr",
+      replacement: "commit-push",
+      status: "deprecated",
+      migration_behavior: "Block active task packets until required_worker_chain uses commit-push.",
+    },
+  ],
+};
+
 function fail(message) {
   throw new Error(message);
 }
@@ -103,6 +145,28 @@ async function compile(taskId) {
 
   const gateById = new Map(plan.gateCatalog.map((gate) => [gate.id, gate]));
   const acceptanceItems = ledger.items.filter((item) => item.taskId === taskId);
+  const gates = task.requiredGates.map((gateId) => gateById.get(gateId));
+  const validationCommands = [
+    ...new Set([
+      ...gates.filter((gate) => gate.kind === "command").map((gate) => gate.command),
+      `pnpm --silent task:compile -- ${taskId}`,
+    ]),
+  ];
+  const acceptanceResultRequirements = acceptanceItems.map((item) => {
+    const manualReview = new Set(["review", "inspection"]).has(item.verification.method);
+    return {
+      acceptance_item_id: item.id,
+      allowed_statuses: ["implemented", "partial", "missing", "blocked"],
+      evidence_mode: manualReview ? "manual_review" : "automated",
+      closure_evidence: manualReview ? "acceptance_evidence_record" : "validation_ref",
+      evidence_required: workerEvidenceRequired,
+      worker_evidence_required: workerEvidenceRequired,
+      lifecycle_evidence_required: manualReview
+        ? ["github_review_evidence", "canonical_promotion"]
+        : ["validation_report", "canonical_promotion"],
+    };
+  });
+  const planningContractTask = task.deliverables.includes("product/plans/**");
   const sourceFiles = [
     plan.productContract,
     sourcePaths.plan,
@@ -117,6 +181,141 @@ async function compile(taskId) {
     $schema: "https://vetryn.dev/schemas/planning/task-packet-v1.json",
     schemaVersion: "1.0.0",
     packetId: `${plan.planId}:${taskId}:r${state.revision}`,
+    task_id: task.id,
+    objective: task.objective,
+    risk_class: task.risk.level,
+    worker_type: "task-executor",
+    allowed_paths: task.scope.allowedPaths,
+    forbidden_paths: task.scope.forbiddenPaths,
+    scope_exclusions: [
+      ...task.scope.forbiddenPaths.map((pattern) => `Do not change ${pattern}.`),
+      "Do not change paths outside allowed_paths.",
+      "Do not accept, promote, merge, or edit generated progress from the executor role.",
+    ],
+    acceptance_checks: acceptanceItems.map((item) => item.statement),
+    validation_commands: validationCommands,
+    baseline_commands: ["pnpm format:check", "pnpm plan:check"],
+    red_first_commands: ["pnpm test"],
+    final_validation_commands: ["pnpm check"],
+    required_worker_chain: factorySkills,
+    lifecycle_gates: {
+      local_validation_required: true,
+      ci_required: true,
+      code_review_required: false,
+      codex_review_required: true,
+      commit_push_required: true,
+      post_merge_monitor_required: true,
+      pr_lifecycle_report_required: true,
+      skip_policy: "approved_exception_required",
+    },
+    evidence_required: workerEvidenceRequired,
+    worker_evidence_required: workerEvidenceRequired,
+    lifecycle_evidence_required: lifecycleEvidenceRequired,
+    stop_conditions: [
+      ...task.stopConditions,
+      "A changed path is outside allowed_paths or matches forbidden_paths.",
+      "A required validation command fails.",
+      "The compiled packet or its source digests drift before handoff.",
+    ],
+    retry_budget: {
+      max_attempts: task.maxAttempts,
+      current_attempt: state.attempt,
+      remaining_attempts: Math.max(task.maxAttempts - state.attempt, 0),
+    },
+    runtime_pins: runtimePins,
+    alignment_gate_ref: "docs/implementation/oss-v1-execution.md#agent-roles-and-handoff",
+    plan_drift_policy_ref: "WORKFLOW.md#select-and-compile-work",
+    factory_compatibility: factoryCompatibility,
+    acceptance_ledger_ref: sourcePaths.ledger,
+    acceptance_item_ids: task.acceptanceItemIds,
+    acceptance_result_requirements: acceptanceResultRequirements,
+    ci_lane_refs: [
+      {
+        source_ref: ".factory/profile.yaml#/ci_lanes",
+        rule: "Run the active task gates locally and require the repository's latest-head CI lanes before shipping.",
+        command_refs: validationCommands,
+      },
+    ],
+    test_matrix_refs: [
+      {
+        source_ref: ".factory/profile.yaml#/test_matrix",
+        rule: `Preserve the declared ${task.requiredTestLevels.join(", ")} test levels for this task.`,
+        command_refs: validationCommands,
+      },
+    ],
+    coverage_policy_refs: {
+      required: false,
+      source_ref: ".factory/profile.yaml#/coverage_policy",
+      policy:
+        "Numeric coverage is advisory until V1-01; behavior and contract changes still require focused deterministic tests.",
+      command_refs: ["pnpm test:coverage", "pnpm check"],
+    },
+    security_scanner_gates: {
+      required: true,
+      source_ref: ".factory/profile.yaml#/security_scanning",
+      policy:
+        "CodeQL must settle for schema, contract, evidence, workflow, or release-sensitive changes.",
+      command_refs: ["GitHub Actions CodeQL analyze (javascript-typescript)"],
+    },
+    engineering_policy_refs: [
+      {
+        source_ref: ".factory/profile.yaml#/engineering_policies/docs_parity",
+        rule: "Keep public commands, schemas, compiler output, documentation, and changelog aligned.",
+      },
+      {
+        source_ref: ".factory/profile.yaml#/engineering_policies/provenance_evidence",
+        rule: "Keep executor evidence distinct from lifecycle-owned review, shipping, and post-merge evidence.",
+      },
+    ],
+    architecture_guidance_refs: [
+      {
+        source_ref: "docs/architecture.md#trust-boundaries",
+        rule: "Preserve repository-owned evidence, explicit authority, and fail-closed boundaries.",
+      },
+      {
+        source_ref: ".factory/profile.yaml#/architecture_policies",
+        rule: "Apply the repository ADR, TDD, reliability, and failure-semantics policies.",
+      },
+    ],
+    changelog_intent: {
+      impact: planningContractTask ? "required" : "not_required",
+      section: planningContractTask ? "Added" : "Unreleased",
+      draft_entry: planningContractTask
+        ? "Made compiled Vetryn task packets runner-ready for Factory task-executor."
+        : "No changelog edit is authorized unless the task scope explicitly includes CHANGELOG.md.",
+      semver_marker: "none",
+    },
+    versioning_impact: "No package version change or release is authorized by this task packet.",
+    migration_impact: planningContractTask
+      ? "Packet consumers must accept the additive runner-ready fields; existing Vetryn packet fields remain available."
+      : "No migration work is authorized by this task packet.",
+    docs_sync_refs: planningContractTask
+      ? [
+          {
+            path: "docs/implementation/oss-v1-execution.md",
+            reason: "Document the runner-ready packet and executor/lifecycle evidence split.",
+          },
+          {
+            path: "docs/adr/0003-bind-task-execution-and-review-evidence.md",
+            reason: "Record the additive public task-packet contract decision.",
+          },
+          {
+            path: "product/plans/oss-v1/README.md",
+            reason: "Keep plan consumer instructions aligned with compiled packet behavior.",
+          },
+          {
+            path: ".factory/README.md",
+            reason:
+              "Keep the portable Factory adapter description aligned with the packet surface.",
+          },
+        ]
+      : [
+          {
+            path: plan.productContract,
+            reason:
+              "Product-facing documentation changes require explicit task scope and contract alignment.",
+          },
+        ],
     source: {
       repository: plan.baseline.repository,
       baselineCommit: plan.baseline.commit,
@@ -147,13 +346,13 @@ async function compile(taskId) {
       candidate: state.candidate,
     },
     acceptanceItems,
-    gates: task.requiredGates.map((gateId) => gateById.get(gateId)),
+    gates,
     requiredReviews: task.requiredReviews,
     execution: {
       implementSkill: "vetryn-implement-task",
       verifySkill: "vetryn-verify-task",
       promoteSkill: "vetryn-promote-task",
-      factorySkills: ["task-executor", "validation-gate", "commit-push"],
+      factorySkills,
       executorMayAccept: false,
       verifierMustDifferFromExecutor: true,
       maintainerApprovalRequired: true,

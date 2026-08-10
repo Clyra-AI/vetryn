@@ -2,7 +2,7 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "V1-00",
-  "revision": 1,
+  "revision": 2,
   "state": "in_progress",
   "attempt": 1,
   "candidate": null,
@@ -70,6 +70,13 @@
       "at": "2026-08-10T00:30:00Z",
       "actor": "planning-agent",
       "reason": "Planning-only task authorized by the maintainer."
+    },
+    {
+      "from": "in_progress",
+      "to": "in_progress",
+      "at": "2026-08-10T14:10:00Z",
+      "actor": "planning-contract-repair-agent",
+      "reason": "Recompiled the task packet after reconciling historical planning-test scope and adding the explicit runner-ready contract; acceptance remains pending."
     }
   ]
 }

@@ -18,3 +18,7 @@ and credentials are transient runtime state.
 Use `pnpm --silent task:next` and `pnpm --silent task:compile -- TASK-ID` as the stable adapter surface. The canonical Factory
 specialization lives in Factory's `profiles/vetryn.yaml`; this local file remains a portable summary and does
 not make Factory a Vetryn runtime dependency.
+
+Compiled packets expose Factory's runner-ready task, scope, validation, worker-chain, lifecycle, evidence,
+runtime, compatibility, and acceptance-result fields directly. The executor still cannot fabricate lifecycle
+artifacts, accept the task, edit generated progress, or broaden canonical scope.
