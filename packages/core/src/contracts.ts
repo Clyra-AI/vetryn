@@ -331,7 +331,9 @@ export const candidateRunSchema = z
     catalogSnapshotId: artifactIdSchema,
     confidenceFloor: confidenceSchema,
     evaluationInputDigest: digestSchema,
+    evalSuiteId: artifactIdSchema,
     failureCode: candidateRunFailureCodeSchema.optional(),
+    fixtureDigest: digestSchema,
     gateOutcomes: hardGateOutcomesSchema.optional(),
     ...artifactEnvelope,
     metrics: candidateMetricsSchema.optional(),
@@ -430,6 +432,7 @@ export const candidateRunSchema = z
     assertArtifactReferencePrefix(artifact.catalogSnapshotId, context, "catalog-snapshot", [
       "catalogSnapshotId",
     ]);
+    assertArtifactReferencePrefix(artifact.evalSuiteId, context, "eval-suite", ["evalSuiteId"]);
   });
 
 export type CandidateRun = z.infer<typeof candidateRunSchema>;
@@ -695,6 +698,7 @@ export function assertRecommendationEvidence(
   candidateRuns: readonly CandidateRun[],
   expectedEvaluationInputDigest: string,
   callSite: CallSite,
+  evalSuite: EvalSuite,
   catalogSnapshot: CatalogSnapshot,
 ): Recommendation {
   assertEvaluationInputDigest(recommendation, expectedEvaluationInputDigest);
@@ -746,6 +750,7 @@ export function assertRecommendationEvidence(
 
     assertEvaluationInputDigest(candidateRun, expectedEvaluationInputDigest);
     assertCandidateRunPolicy(candidateRun, callSite);
+    assertCandidateRunEvalSuite(candidateRun, callSite, evalSuite);
 
     if (recommendation.status !== "recommend") continue;
 
@@ -966,6 +971,42 @@ function assertCandidateRunCatalog(
   if (candidateModel.contextWindowTokens < requiredTokens) {
     throw new VetrynContractError(
       `Recommendation evidence candidate model ${candidateRun.candidateModel} lacks the required context window.`,
+    );
+  }
+}
+
+function assertCandidateRunEvalSuite(
+  candidateRun: CandidateRun,
+  callSite: CallSite,
+  evalSuite: EvalSuite,
+): void {
+  if (evalSuite.callSiteId !== callSite.id) {
+    throw new VetrynContractError(
+      "Evaluation suite has a different call site than its evaluation policy.",
+    );
+  }
+
+  if (candidateRun.evalSuiteId !== evalSuite.id) {
+    throw new VetrynContractError(
+      "Candidate run has a different evaluation suite than its evidence.",
+    );
+  }
+
+  if (candidateRun.fixtureDigest !== evalSuite.fixtureDigest) {
+    throw new VetrynContractError(
+      "Candidate run has a different fixture binding than its evaluation suite.",
+    );
+  }
+
+  if (
+    candidateRun.status === "complete" &&
+    (candidateRun.metrics === undefined ||
+      candidateRun.baselineMetrics === undefined ||
+      candidateRun.metrics.caseCount !== evalSuite.caseCount ||
+      candidateRun.baselineMetrics.caseCount !== evalSuite.caseCount)
+  ) {
+    throw new VetrynContractError(
+      "Candidate run metrics must use the reviewed evaluation suite case count.",
     );
   }
 }

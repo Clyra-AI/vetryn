@@ -98,7 +98,8 @@ run to match the call site, baseline, catalog, candidate model, confidence floor
 with every hard gate passing and the recommendation confidence meeting that floor. An abstention retains the same
 provenance bindings for any cited runs but may cite incomplete or failed runs to explain why no patch was produced.
 The core derives measurable quality, cost, and latency gate outcomes from paired metrics and the call-site policy,
-and verifies that the proposed model is active, text-capable, and has enough context in the bound snapshot.
+verifies that the proposed model is active, text-capable, and has enough context in the bound snapshot, and binds
+every cited run to the reviewed suite's call site, fixture digest, and case count.
 Recommendation artifacts include provenance, finite status-compatible reason codes, confidence, limitations,
 failed cases, and reproduction commands.
 

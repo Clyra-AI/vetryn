@@ -13,6 +13,7 @@ import {
   catalogSnapshotSchema,
   callSiteSchema,
   createArtifactId,
+  evalSuiteSchema,
   parsePatchPlan,
   parseRecommendation,
   parseVetrynArtifact,
@@ -122,6 +123,8 @@ const candidateRun = {
   catalogSnapshotId: catalogSnapshot.id,
   confidenceFloor: 0.8,
   evaluationInputDigest: digest("d"),
+  evalSuiteId: evalSuite.id,
+  fixtureDigest: evalSuite.fixtureDigest,
   id: "candidate-run:support-classification-openai-gpt-4o",
   gateOutcomes: {
     context: "pass",
@@ -318,6 +321,7 @@ describe("V1 artifact contracts", () => {
   it("rejects stale evaluation evidence before it can support a recommendation", () => {
     const parsedRun = candidateRunSchema.parse(candidateRun);
     const parsedCallSite = callSiteSchema.parse(callSite);
+    const parsedEvalSuite = evalSuiteSchema.parse(evalSuite);
     const parsedCatalogSnapshot = catalogSnapshotSchema.parse(catalogSnapshot);
 
     const defaultGates = { ...callSite.gates };
@@ -355,6 +359,7 @@ describe("V1 artifact contracts", () => {
         [incompleteRun],
         candidateRun.evaluationInputDigest,
         parsedCallSite,
+        parsedEvalSuite,
         parsedCatalogSnapshot,
       ),
     ).toThrow(/cannot use incomplete candidate run/);
@@ -371,6 +376,7 @@ describe("V1 artifact contracts", () => {
         [candidateRunWith({ callSiteId: "other-call-site" })],
         candidateRun.evaluationInputDigest,
         parsedCallSite,
+        parsedEvalSuite,
         parsedCatalogSnapshot,
       ),
     ).toThrow(/call site/i);
@@ -380,6 +386,7 @@ describe("V1 artifact contracts", () => {
         [candidateRunWith({ baselineModel: "openai/gpt-4.1-mini" })],
         candidateRun.evaluationInputDigest,
         parsedCallSite,
+        parsedEvalSuite,
         parsedCatalogSnapshot,
       ),
     ).toThrow(/baseline model/i);
@@ -389,6 +396,7 @@ describe("V1 artifact contracts", () => {
         [candidateRunWith({ catalogSnapshotId: "catalog-snapshot:other-catalog" })],
         candidateRun.evaluationInputDigest,
         parsedCallSite,
+        parsedEvalSuite,
         parsedCatalogSnapshot,
       ),
     ).toThrow(/catalog snapshot/i);
@@ -398,6 +406,7 @@ describe("V1 artifact contracts", () => {
         [candidateRunWith({ candidateModel: "openai/gpt-4.1" })],
         candidateRun.evaluationInputDigest,
         parsedCallSite,
+        parsedEvalSuite,
         parsedCatalogSnapshot,
       ),
     ).toThrow(/recommended model/i);
@@ -407,6 +416,7 @@ describe("V1 artifact contracts", () => {
         [candidateRunWith({ confidenceFloor: 0.7 })],
         candidateRun.evaluationInputDigest,
         parsedCallSite,
+        parsedEvalSuite,
         parsedCatalogSnapshot,
       ),
     ).toThrow(/confidence floor/i);
@@ -425,6 +435,7 @@ describe("V1 artifact contracts", () => {
         ],
         candidateRun.evaluationInputDigest,
         parsedCallSite,
+        parsedEvalSuite,
         parsedCatalogSnapshot,
       ),
     ).toThrow(/hard gate/i);
@@ -442,6 +453,7 @@ describe("V1 artifact contracts", () => {
         [candidateRunWith({ callSiteId: "other-call-site" })],
         candidateRun.evaluationInputDigest,
         parsedCallSite,
+        parsedEvalSuite,
         parsedCatalogSnapshot,
       ),
     ).toThrow(/call site/i);
@@ -460,6 +472,7 @@ describe("V1 artifact contracts", () => {
         ],
         candidateRun.evaluationInputDigest,
         parsedCallSite,
+        parsedEvalSuite,
         parsedCatalogSnapshot,
       ),
     ).toThrow(/quality gate outcome/i);
@@ -469,6 +482,7 @@ describe("V1 artifact contracts", () => {
         [candidateRunWith({ metrics: { ...candidateRun.metrics, costUsd: "0.0600" } })],
         candidateRun.evaluationInputDigest,
         parsedCallSite,
+        parsedEvalSuite,
         parsedCatalogSnapshot,
       ),
     ).toThrow(/cost gate outcome/i);
@@ -478,6 +492,7 @@ describe("V1 artifact contracts", () => {
         [candidateRunWith({ metrics: { ...candidateRun.metrics, p95LatencyMs: 800 } })],
         candidateRun.evaluationInputDigest,
         parsedCallSite,
+        parsedEvalSuite,
         parsedCatalogSnapshot,
       ),
     ).toThrow(/latency gate outcome/i);
@@ -487,6 +502,7 @@ describe("V1 artifact contracts", () => {
         [parsedRun],
         candidateRun.evaluationInputDigest,
         parsedCallSite,
+        parsedEvalSuite,
         catalogSnapshotSchema.parse({
           ...catalogSnapshot,
           models: catalogSnapshot.models.filter(
@@ -501,6 +517,7 @@ describe("V1 artifact contracts", () => {
         [parsedRun],
         candidateRun.evaluationInputDigest,
         parsedCallSite,
+        parsedEvalSuite,
         catalogSnapshotSchema.parse({
           ...catalogSnapshot,
           models: catalogSnapshot.models.map((model) =>
@@ -515,9 +532,30 @@ describe("V1 artifact contracts", () => {
         [parsedRun],
         candidateRun.evaluationInputDigest,
         { ...parsedCallSite, sourceBinding: { ...sourceBinding, symbol: "otherCallSite" } },
+        parsedEvalSuite,
         parsedCatalogSnapshot,
       ),
     ).toThrow(/source binding/i);
+    expect(() =>
+      assertRecommendationEvidence(
+        parsedRecommendation,
+        [parsedRun],
+        candidateRun.evaluationInputDigest,
+        parsedCallSite,
+        evalSuiteSchema.parse({ ...evalSuite, caseCount: 29 }),
+        parsedCatalogSnapshot,
+      ),
+    ).toThrow(/case count/i);
+    expect(() =>
+      assertRecommendationEvidence(
+        parsedRecommendation,
+        [parsedRun],
+        candidateRun.evaluationInputDigest,
+        parsedCallSite,
+        evalSuiteSchema.parse({ ...evalSuite, fixtureDigest: digest("f") }),
+        parsedCatalogSnapshot,
+      ),
+    ).toThrow(/fixture binding/i);
 
     const parsedPatchPlan = parsePatchPlan(patchPlan);
     expect(assertPatchPlanEvidence(parsedPatchPlan, parsedRecommendation)).toEqual(parsedPatchPlan);
