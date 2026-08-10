@@ -267,6 +267,15 @@ describe("implementation plan validator", () => {
     expect(result.status, result.stderr).toBe(0);
   });
 
+  it("accepts MEMBER association in the bootstrap owner-comment shape", async () => {
+    const root = await createFixture();
+    await createBootstrapReviewEvidence(root, { authorAssociation: "MEMBER" });
+
+    const result = runPlan(root);
+
+    expect(result.status, result.stderr).toBe(0);
+  });
+
   it("allows bootstrap owner identity overlap only through the authenticated comment path", async () => {
     const root = await createFixture();
     const evidence = await createBootstrapReviewEvidence(root, {
@@ -281,16 +290,21 @@ describe("implementation plan validator", () => {
     expect(result.stderr).not.toContain("self-approved by the executor");
   });
 
-  it("rejects a bootstrap comment shape without OWNER association", async () => {
-    const root = await createFixture();
-    await createBootstrapReviewEvidence(root, { authorAssociation: "MEMBER" });
+  it.each(["COLLABORATOR", "NONE"])(
+    "rejects a bootstrap comment shape with %s association",
+    async (authorAssociation) => {
+      const root = await createFixture();
+      await createBootstrapReviewEvidence(root, { authorAssociation });
 
-    const result = runPlan(root);
+      const result = runPlan(root);
 
-    expect(result.status).not.toBe(0);
-    expect(result.stderr).toContain("evidence/ev-v1-bootstrap-review.json");
-    expect(result.stderr).toContain("authorAssociation must be equal to constant");
-  });
+      expect(result.status).not.toBe(0);
+      expect(result.stderr).toContain("evidence/ev-v1-bootstrap-review.json");
+      expect(result.stderr).toContain(
+        "authorAssociation must be equal to one of the allowed values",
+      );
+    },
+  );
 
   it("rejects review evidence issued by the candidate executor", async () => {
     const root = await createFixture();

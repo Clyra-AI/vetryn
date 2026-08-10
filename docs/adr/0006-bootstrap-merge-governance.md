@@ -16,6 +16,8 @@ policy differ from `AGENTS.md`, `WORKFLOW.md`, and branch protection. Treating m
 Codex settlement, or an agent verification as authenticated task review evidence would also weaken ADRs 0003
 and 0004. GitHub cannot record an approving PR review from its author, so bootstrap additionally needs a narrow,
 public, exact-candidate owner attestation that the validator can authenticate without relaxing the normal path.
+For comments in the organization-owned repository, GitHub may report the sole repository owner as either
+`OWNER` or `MEMBER`; protected-main CODEOWNERS remains the role-authorization source in both cases.
 
 ## Decision
 
@@ -27,7 +29,7 @@ public, exact-candidate owner attestation that the validator can authenticate wi
   exact task or pull request before merge.
 - Preserve the normal task-review path: an authenticated exact-candidate GitHub `APPROVED` review from a
   CODEOWNER distinct from the PR author, still current in that reviewer's decisive history.
-- Add one bootstrap-only alternative. A GitHub user with `OWNER` association may post the exact seven-line
+- Add one bootstrap-only alternative. A GitHub user with `OWNER` or `MEMBER` association may post the exact seven-line
   `vetryn-bootstrap-review:v1` PR issue-comment marker defined in `WORKFLOW.md`, naming this repository, PR,
   task, candidate SHA, `APPROVED` decision, and one or more roles. The evidence records the issue-comment ID,
   exact URL, and exact body. Validation re-fetches the PR, comment, and protected-main CODEOWNERS and fails closed
@@ -46,8 +48,8 @@ public, exact-candidate owner attestation that the validator can authenticate wi
 - A sole maintainer can land independently checked repository work without an undocumented administrator bypass.
 - Branch merge readiness remains materially protected by required automation and explicit maintainer intent, but
   its task review may temporarily be owner-authenticated rather than independent human approval.
-- The same owner can author a PR and authorize named review roles only through the public, exact-candidate marker;
-  deleted, edited, stale, malformed, mis-scoped, non-owner, or non-CODEOWNER comments fail closed.
+- The same maintainer can author a PR and authorize named review roles only through the public, exact-candidate
+  marker; deleted, edited, stale, malformed, mis-scoped, `COLLABORATOR`, `NONE`, or non-CODEOWNER comments fail closed.
 - Merged work can remain unaccepted in the canonical task DAG until all declared gates and canonical promotion
   evidence exist; merge and product-task acceptance remain deliberately separate states.
 - Branch protection does not require CODEOWNER approval during bootstrap mode, but validation still uses

@@ -2,7 +2,7 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "V1-00",
-  "revision": 3,
+  "revision": 4,
   "state": "in_progress",
   "attempt": 1,
   "candidate": null,
@@ -84,6 +84,13 @@
       "at": "2026-08-10T14:45:00Z",
       "actor": "planning-contract-repair-agent",
       "reason": "Recompiled the review contract for the authenticated ADR-0006 bootstrap owner-comment path; candidate, acceptance, gates, and reviews remain pending."
+    },
+    {
+      "from": "in_progress",
+      "to": "in_progress",
+      "at": "2026-08-10T14:55:00Z",
+      "actor": "planning-contract-repair-agent",
+      "reason": "Aligned the bootstrap review contract with GitHub's OWNER-or-MEMBER association semantics for organization repositories; candidate, acceptance, gates, and reviews remain pending."
     }
   ]
 }

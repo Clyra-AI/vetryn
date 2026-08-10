@@ -19,8 +19,8 @@
   maintainer-authorized Factory shipping lifecycle.
 - Added a temporary single-maintainer bootstrap merge mode that preserves required CI, CodeQL, Codex review,
   thread resolution, and task-acceptance separation while GitHub approval requirements are disabled.
-- Added an authenticated ADR-0006 bootstrap review path in which a repository OWNER may authorize named roles
-  for one task and candidate through a current, exact-format PR issue comment backed by protected-main CODEOWNERS.
+- Added an authenticated ADR-0006 bootstrap review path in which a repository `OWNER` or `MEMBER` may authorize
+  named roles for one task and candidate through a current, exact-format PR issue comment backed by protected-main CODEOWNERS.
 - Added exact-gate command evidence, live GitHub approval and role authentication, product-contract packet
   binding, and post-execution packet compilation.
 - Rejects superseded approvals, stale pull-request heads, and passing evidence for planned gates.

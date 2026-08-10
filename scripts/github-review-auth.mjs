@@ -2,6 +2,7 @@ const githubRepository = "Clyra-AI/vetryn";
 const pullRequestReviewSource = "github-pull-request-review";
 const bootstrapOwnerCommentSource = "github-bootstrap-owner-comment";
 const bootstrapMarker = "<!-- vetryn-bootstrap-review:v1 -->";
+const bootstrapAuthorAssociations = new Set(["OWNER", "MEMBER"]);
 const rolePaths = {
   maintainer: ".github/CODEOWNERS",
   "independent-verifier": "product/plans/oss-v1/plan.json",
@@ -218,8 +219,8 @@ export function createGitHubReviewAuthenticator({
       );
     else
       assert(
-        evidence.review.authorAssociation === "OWNER",
-        `${source} review evidence ${evidence.id} is not an OWNER bootstrap authorization`,
+        bootstrapAuthorAssociations.has(evidence.review.authorAssociation),
+        `${source} review evidence ${evidence.id} is not an OWNER or MEMBER bootstrap authorization`,
       );
     const pullRequest = Number(authorizationMatch[1]);
     const authorizationId = Number(authorizationMatch[2]);
@@ -438,9 +439,9 @@ export function createGitHubReviewAuthenticator({
         `${source} review evidence ${evidence.id} does not match the authenticated bootstrap owner`,
       );
       assert(
-        authenticated.author_association === "OWNER" &&
+        bootstrapAuthorAssociations.has(authenticated.author_association) &&
           authenticated.author_association === evidence.review.authorAssociation,
-        `${source} review evidence ${evidence.id} is not authenticated with OWNER association`,
+        `${source} review evidence ${evidence.id} is not authenticated with OWNER or MEMBER association`,
       );
       assert(
         authenticated.body === evidence.review.authorizationBody,

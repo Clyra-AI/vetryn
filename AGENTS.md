@@ -28,7 +28,7 @@ These instructions apply to the entire repository.
 - During the single-maintainer bootstrap mode in `docs/adr/0006-bootstrap-merge-governance.md`, a maintainer may
   explicitly authorize merge without a GitHub human or CODEOWNER approval only after required latest-head CI,
   CodeQL, dependency review, passive Codex settlement, and review-thread resolution. That merge authorization
-  remains lifecycle-only. Separately, a protected-main CODEOWNER with GitHub `OWNER` association may satisfy
+  remains lifecycle-only. Separately, a protected-main CODEOWNER with GitHub `OWNER` or `MEMBER` association may satisfy
   named task review roles, including when they authored the PR, only through the structured exact-candidate
   issue-comment evidence defined by ADR 0006. The comment never supplies CI, Codex settlement, agent verification,
   merge authority, or canonical promotion.
@@ -36,7 +36,7 @@ These instructions apply to the entire repository.
   and CODEOWNERS fetched from protected `main`, with the candidate PR author as authenticated executor. The normal
   path requires an `APPROVED` pull-request review from a reviewer distinct from that executor, targeting the exact
   candidate and remaining that reviewer's latest decisive review. During ADR-0006 bootstrap only, the alternative
-  path requires a current durable PR issue comment from an `OWNER`, in the exact documented marker format, bound
+  path requires a current durable PR issue comment from an `OWNER` or `MEMBER`, in the exact documented marker format, bound
   to this repository, PR, task, exact candidate, `APPROVED` decision, and requested role; only this path permits
   actor overlap. A later pull-request head is valid only when GitHub proves that it descends from the
   candidate and its complete promotion tail changes canonical state, task-scoped ledger status/evidence, newly

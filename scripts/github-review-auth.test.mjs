@@ -202,6 +202,21 @@ describe("GitHub review authentication", () => {
     );
   });
 
+  it("accepts MEMBER association for the same exact-bound bootstrap path", async () => {
+    const memberComment = { ...ownerComment, author_association: "MEMBER" };
+    const memberEvidence = bootstrapEvidence({
+      review: { ...bootstrapEvidence().review, authorAssociation: "MEMBER" },
+    });
+    const authenticate = authenticator({
+      fetchImpl: githubFetch({
+        issueComment: memberComment,
+        codeowners: "* @implementation-agent\n/.github/ @implementation-agent\n",
+      }),
+    });
+
+    await expect(authenticate(memberEvidence, "maintainer", "fixture")).resolves.toBeUndefined();
+  });
+
   it("authenticates one bootstrap owner comment once when it authorizes multiple roles", async () => {
     const fetchImpl = githubFetch({
       codeowners: "* @implementation-agent\n/.github/ @implementation-agent\n",
@@ -259,23 +274,42 @@ describe("GitHub review authentication", () => {
     );
   });
 
-  it("rejects a bootstrap comment from a different actor or non-owner association", async () => {
+  it("rejects a bootstrap comment from a different actor", async () => {
     const wrongActor = authenticator({
       fetchImpl: githubFetch({
         issueComment: { ...ownerComment, user: { login: "different-owner" } },
-      }),
-    });
-    const nonOwner = authenticator({
-      fetchImpl: githubFetch({
-        issueComment: { ...ownerComment, author_association: "MEMBER" },
       }),
     });
 
     await expect(wrongActor(bootstrapEvidence(), "maintainer", "fixture")).rejects.toThrow(
       "does not match the authenticated bootstrap owner",
     );
-    await expect(nonOwner(bootstrapEvidence(), "maintainer", "fixture")).rejects.toThrow(
-      "is not authenticated with OWNER association",
+  });
+
+  it.each(["COLLABORATOR", "NONE"])(
+    "rejects %s association on the bootstrap path",
+    async (authorAssociation) => {
+      const disallowedComment = { ...ownerComment, author_association: authorAssociation };
+      const disallowedEvidence = bootstrapEvidence({
+        review: { ...bootstrapEvidence().review, authorAssociation },
+      });
+      const authenticate = authenticator({
+        fetchImpl: githubFetch({ issueComment: disallowedComment }),
+      });
+
+      await expect(authenticate(disallowedEvidence, "maintainer", "fixture")).rejects.toThrow(
+        "is not an OWNER or MEMBER bootstrap authorization",
+      );
+    },
+  );
+
+  it("rejects a bootstrap association claim that differs from GitHub", async () => {
+    const memberEvidence = bootstrapEvidence({
+      review: { ...bootstrapEvidence().review, authorAssociation: "MEMBER" },
+    });
+
+    await expect(authenticator()(memberEvidence, "maintainer", "fixture")).rejects.toThrow(
+      "is not authenticated with OWNER or MEMBER association",
     );
   });
 
