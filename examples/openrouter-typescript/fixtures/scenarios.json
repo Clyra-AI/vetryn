@@ -93,10 +93,12 @@
       "category": "catalog",
       "description": "More than five compatible models are available and the repository does not override the default candidate bound.",
       "expectedDisposition": "idempotent",
-      "expectedReason": "Hard filters and deterministic ordering produce the same default-five shortlist.",
+      "expectedReason": "The locked catalog ranking tuple produces the same default-five shortlist.",
       "assertions": [
         "The baseline is recorded separately from exactly five candidates.",
-        "Canonical model IDs provide the final deterministic tie-breaker.",
+        "The compatible fixture tuples (blended price, context) are mock/alpha=(0.80,32768), mock/bravo=(1.10,65536), mock/charlie=(1.10,65536), mock/delta=(1.10,32768), mock/echo=(1.50,131072), and mock/foxtrot=(2.00,131072).",
+        "The ordered candidate IDs are mock/alpha, mock/bravo, mock/charlie, mock/delta, and mock/echo.",
+        "The pinned catalog ranks exact-decimal normalized prompt-plus-completion unit price ascending, context limit descending, then canonical model ID ascending.",
         "Models outside the shortlist are not executed."
       ]
     },
@@ -113,9 +115,10 @@
       "category": "catalog",
       "description": "More than two compatible models are available and repository policy lowers the candidate limit to two.",
       "expectedDisposition": "idempotent",
-      "expectedReason": "The valid lower repository bound deterministically limits the shortlist.",
+      "expectedReason": "The valid lower repository bound truncates the locked ranked shortlist.",
       "assertions": [
         "The baseline is recorded separately from exactly two candidates.",
+        "The ordered candidate IDs are mock/alpha and mock/bravo.",
         "Models outside the two-candidate shortlist are not executed."
       ]
     },

@@ -40,8 +40,8 @@
     {
       "id": "DEC-CANDIDATES",
       "status": "locked",
-      "decision": "V1 resolves at most five candidates by default, configurable downward, after hard compatibility and policy filters; ordering and tie-breaking are deterministic.",
-      "rationale": "A bounded shortlist controls spend and runtime while preserving reproducible candidate selection.",
+      "decision": "V1 resolves at most five candidates by default, configurable downward, after hard compatibility and policy filters; it ranks exact-decimal normalized prompt-plus-completion unit price ascending, context limit descending, then canonical model ID ascending.",
+      "rationale": "A bounded, cost-first shortlist controls spend and runtime while preserving reproducible candidate selection from catalog fields available before evaluation.",
       "blocks": []
     },
     {
@@ -409,6 +409,7 @@
         "Every evaluation cites an immutable catalog snapshot.",
         "Missing or ambiguous pricing and capability data excludes the candidate.",
         "Candidate selection is bounded by repository policy and reproducible from normalized catalog data.",
+        "Candidate ranking uses exact-decimal normalized prompt-plus-completion unit price ascending, context limit descending, and canonical model ID ascending.",
         "Every successful live refresh records immutable freshness evidence even when its content-addressed snapshot is reused.",
         "A failed live refresh cannot silently relabel an older snapshot as current."
       ],
@@ -427,6 +428,7 @@
         "A run can silently use a mutable live catalog.",
         "Unknown pricing is treated as zero.",
         "Candidate selection exceeds its configured bound or changes under identical inputs.",
+        "Candidate ranking uses a different field, direction, or tie-break order than the locked ranking tuple.",
         "An unchanged normalized catalog creates a distinct snapshot, omits its new refresh observation, or a failed refresh is reported as fresh."
       ]
     },
@@ -640,7 +642,7 @@
       "id": "V1-10",
       "milestone": "FIELD",
       "title": "Validate the beachhead in real repositories",
-      "objective": "Prove that qualified recommendation PRs are trusted, merged, safe, and economically meaningful, and record valuable open-ended call sites blocked by deterministic evaluation before expanding scope.",
+      "objective": "Prove that qualified recommendation PRs are trusted, merged, safe, and economically meaningful, and determine whether deterministic evaluation blocks valuable open-ended call sites before expanding scope.",
       "risk": { "level": "high", "domains": ["field-validation", "customer-trust", "economics"] },
       "dependsOn": [{ "taskId": "V1-09", "kind": "field" }],
       "acceptanceItemIds": ["FIELD-001", "FIELD-002", "FIELD-003", "FIELD-004", "FIELD-005"],
@@ -650,7 +652,8 @@
       },
       "semanticInvariants": [
         "Recommendation and rollout metrics count only qualified, evidence-backed recommendations.",
-        "Blocked open-ended call sites are recorded separately with sanitized evidence and never counted as qualified recommendations.",
+        "The field assessment separately records either sanitized blocked-call-site evidence or a verified no-findings outcome with its sample, method, and coverage.",
+        "Blocked open-ended call sites are never counted as qualified recommendations, and a no-findings outcome cannot authorize semantic-scorer expansion.",
         "Customer data and outcomes are recorded without raw prompts or outputs."
       ],
       "deliverables": ["product/plans/oss-v1/evidence/**", "docs/**"],

@@ -15,8 +15,10 @@ open-ended workload.
 
 - Treat OpenRouter as the V1 catalog universe, not as the candidate set.
 - Apply hard compatibility and repository policy filters before selection.
-- Select at most five candidates by default and permit repositories only to lower that bound. Use stable
-  ordering and canonical model IDs as the final tie-breaker.
+- Select at most five candidates by default and permit repositories only to lower that bound. Rank by
+  exact-decimal normalized prompt-plus-completion unit price ascending, context limit descending, then
+  canonical model ID ascending. The current baseline is recorded separately and is never counted toward
+  the bound.
 - Normalize live catalog content and compute a content digest. Reuse the immutable snapshot when the
   digest is unchanged; never mutate an existing snapshot. Record each successful refresh as separate
   immutable freshness evidence containing its source, observation time, and normalized content digest.
@@ -29,9 +31,10 @@ open-ended workload.
   existing recommendation identity and evidence only if that evidence is complete, integrity-valid, and
   reusable under current policy. Failed, partial, exhausted, privacy-unsafe, or otherwise non-reusable
   evidence must not suppress a later bounded retry.
-- Keep LLM judges outside OSS V1. Design an optional calibrated semantic-rubric scorer only after V1 field
-  validation separately records sanitized evidence that deterministic evaluation blocks valuable
-  open-ended call sites; those cases are not qualified recommendations.
+- Keep LLM judges outside OSS V1. The V1 field criterion accepts either sanitized positive evidence that
+  deterministic evaluation blocks valuable open-ended call sites or an independently verified no-findings
+  outcome with sample, method, and coverage. Only positive blocked-call-site evidence may justify designing
+  an optional calibrated semantic-rubric scorer; those cases are not qualified recommendations.
 
 ## Consequences
 

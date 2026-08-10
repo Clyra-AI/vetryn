@@ -267,7 +267,7 @@
     {
       "id": "CATALOG-004",
       "taskId": "V1-05",
-      "statement": "After hard compatibility and policy filters, candidate resolution applies a default maximum of five, permits only a lower repository-configured bound, and uses stable ordering and canonical-model-ID tie-breaking.",
+      "statement": "After hard compatibility and policy filters, candidate resolution applies a default maximum of five, permits only a lower repository-configured bound, and ranks exact-decimal normalized prompt-plus-completion unit price ascending, context limit descending, then canonical model ID ascending.",
       "verification": { "method": "test", "testLevel": "adversarial", "gateId": "QG-SCENARIOS" },
       "waivable": false,
       "status": "planned",
@@ -494,7 +494,7 @@
     {
       "id": "FIELD-005",
       "taskId": "V1-10",
-      "statement": "Sanitized field evidence separately records valuable open-ended call sites that cannot produce a qualified recommendation specifically because deterministic evaluation cannot establish semantic non-inferiority.",
+      "statement": "Sanitized field evidence records either valuable open-ended call sites blocked specifically because deterministic evaluation cannot establish semantic non-inferiority, or an independently verified no-findings outcome with the assessed sample, method, and coverage; only positive blocked-call-site evidence may justify semantic-scorer design.",
       "verification": { "method": "field", "testLevel": "field", "gateId": "QG-FIELD" },
       "waivable": false,
       "status": "planned",

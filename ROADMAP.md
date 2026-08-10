@@ -32,7 +32,7 @@ these checkboxes are a human summary, not execution truth.
 
 - [ ] OpenRouter catalog adapter
 - [ ] Compatibility and policy filtering
-- [ ] Deterministic candidate shortlist with a default and maximum size of five
+- [ ] Deterministic cost-first candidate shortlist with a default and maximum size of five
 - [ ] Immutable, idempotent catalog refresh with explicit stale/failure semantics
 - [ ] Bounded candidate runner
 - [ ] Deterministic schema, classification, and tool-call scorers
@@ -52,7 +52,7 @@ these checkboxes are a human summary, not execution truth.
 - [ ] Ten qualified recommendation PRs across at least three companies
 - [ ] At least a 40% qualified-PR merge rate
 - [ ] Zero serious escaped regressions
-- [ ] Sanitized evidence of valuable open-ended call sites blocked specifically by deterministic evaluation
+- [ ] Sanitized field determination: blocked open-ended call sites or a verified no-findings outcome
 
 ## Post-V1 candidates
 

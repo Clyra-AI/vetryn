@@ -114,6 +114,7 @@ An optional calibrated semantic-rubric scorer may be designed only after that fi
 through separate sanitized evidence that deterministic evaluation blocks valuable open-ended call sites.
 Those blocked call sites are not counted as qualified recommendations. The scorer remains supplementary
 to hard gates, requires human calibration and explicit spend policy, and is not implied by V1 completion.
+A verified no-findings field outcome satisfies V1 validation but does not authorize scorer design.
 
 ## Locked implementation decisions
 
@@ -125,7 +126,9 @@ to hard gates, requires human calibration and explicit spend policy, and is not 
   created.
 - `Rollout`, optional judges, Python, hosted execution, and production canaries are outside OSS V1.
 - OpenRouter supplies the V1 catalog universe, but hard compatibility and policy filters run before a
-  deterministic shortlist whose default and maximum size is five candidates.
+  deterministic shortlist whose default and maximum size is five candidates. Ranking is exact-decimal
+  normalized prompt-plus-completion unit price ascending, context limit descending, then canonical model
+  ID ascending.
 - Provider-backed assessment is manual by default. A repository may explicitly opt into a schedule;
   unchanged normalized catalog and evaluation-input digests skip paid candidate execution only when
   prior evidence is complete, integrity-valid, and reusable under current policy.
