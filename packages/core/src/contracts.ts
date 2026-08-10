@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+
 import { z } from "zod";
 
 export const VETRYN_ARTIFACT_SCHEMA_VERSION = "1.0.0" as const;
@@ -23,6 +25,10 @@ const artifactIdSchema = z
     /^(?:call-site-manifest|eval-suite|catalog-snapshot|candidate-run|recommendation|patch-plan):[a-z][a-z0-9]*(?:-[a-z0-9]+)*(?:--[a-z][a-z0-9]*(?:-[a-z0-9]+)*)*$/,
     "Use a deterministic Vetryn artifact ID.",
   );
+const evalSuiteArtifactIdSchema = artifactIdSchema.refine(
+  (value) => value.startsWith("eval-suite:"),
+  "Use an eval-suite artifact ID.",
+);
 const digestSchema = z.string().regex(/^sha256:[0-9a-f]{64}$/, "Use a sha256 digest.");
 const decimalSchema = z
   .string()
@@ -143,7 +149,7 @@ export function parseCallSiteSpec(value: unknown): CallSiteSpec {
 export const callSiteSchema = z
   .object({
     currentModel: modelIdSchema,
-    evalSuiteId: stableIdSchema,
+    evalSuiteId: evalSuiteArtifactIdSchema,
     gates: evaluationGatesSchema,
     id: stableIdSchema,
     name: z.string().min(1),
@@ -208,6 +214,16 @@ const catalogModelSchema = z
   })
   .strict();
 
+export type CatalogModel = z.infer<typeof catalogModelSchema>;
+
+export function createCatalogContentDigest(models: readonly CatalogModel[]): string {
+  const normalizedModels = [...models].sort((left, right) =>
+    left.id < right.id ? -1 : left.id > right.id ? 1 : 0,
+  );
+  const content = canonicalizeJson(normalizedModels);
+  return `sha256:${createHash("sha256").update(content, "utf8").digest("hex")}`;
+}
+
 export const catalogSnapshotSchema = z
   .object({
     artifactType: z.literal("catalog-snapshot"),
@@ -226,6 +242,13 @@ export const catalogSnapshotSchema = z
       "catalog model ID",
       ["models"],
     );
+    if (artifact.contentDigest !== createCatalogContentDigest(artifact.models)) {
+      context.addIssue({
+        code: "custom",
+        message: "Catalog snapshot contentDigest must match normalized model content.",
+        path: ["contentDigest"],
+      });
+    }
   });
 
 export type CatalogSnapshot = z.infer<typeof catalogSnapshotSchema>;
@@ -980,6 +1003,12 @@ function assertCandidateRunEvalSuite(
   callSite: CallSite,
   evalSuite: EvalSuite,
 ): void {
+  if (callSite.evalSuiteId !== evalSuite.id) {
+    throw new VetrynContractError(
+      "Evaluation suite does not match the call site's manifest declaration.",
+    );
+  }
+
   if (evalSuite.callSiteId !== callSite.id) {
     throw new VetrynContractError(
       "Evaluation suite has a different call site than its evaluation policy.",

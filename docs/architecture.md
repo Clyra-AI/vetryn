@@ -68,7 +68,8 @@ prompt/completion token weights, ascending; then context limit descending; then 
 ascending. Missing, invalid, unreviewed, or unprovenanced weights fail closed. The current baseline is
 recorded separately from the candidate bound.
 
-Live refresh computes a normalized catalog content digest. Unchanged content reuses the existing
+Live refresh computes a SHA-256 digest over the canonical, model-ID-sorted normalized model list, and the
+core rejects a snapshot whose declared digest does not match that content. Unchanged content reuses the existing
 immutable snapshot and records a separate immutable refresh observation containing source, time, and
 content digest. A failed refresh is explicit and cannot make an older snapshot appear current. Historical
 replay always uses its original snapshot.
@@ -99,7 +100,8 @@ with every hard gate passing and the recommendation confidence meeting that floo
 provenance bindings for any cited runs but may cite incomplete or failed runs to explain why no patch was produced.
 The core derives measurable quality, cost, and latency gate outcomes from paired metrics and the call-site policy,
 verifies that the proposed model is active, text-capable, and has enough context in the bound snapshot, and binds
-every cited run to the reviewed suite's call site, fixture digest, and case count.
+every cited run to the call site's declared reviewed eval-suite artifact, that suite's call site, fixture digest,
+and case count.
 Recommendation artifacts include provenance, finite status-compatible reason codes, confidence, limitations,
 failed cases, and reproduction commands.
 

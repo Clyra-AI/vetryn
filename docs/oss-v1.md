@@ -92,7 +92,7 @@ Reason codes are finite and status-compatible. A recommendation can cite only ma
 gates all pass. The core derives quality, cost, and latency outcomes from the bound call-site policy and paired
 metrics rather than trusting producer labels, and proves that a recommended model is present, active, text-capable,
 and sufficiently context-capable in the bound catalog snapshot. Recommendation evidence also binds every cited
-run to the reviewed eval suite's call site, immutable fixture digest, and exact case count. Abstentions still
+run to the call site's declared reviewed eval-suite artifact, that suite's call site, immutable fixture digest, and exact case count. Catalog snapshots validate their content digest against the canonical, model-ID-sorted model list, so a retained snapshot ID or digest cannot authorize altered capabilities or pricing. Abstentions still
 validate the provenance of every cited run. A patch plan must exactly bind its call site, models, and source
 fingerprint to its recommendation. Artifact definitions and pure validation live in `@vetryn/core`; filesystem,
 provider, AST, and GitHub behavior stay outside that package.

@@ -13,6 +13,7 @@ import {
   catalogSnapshotSchema,
   callSiteSchema,
   createArtifactId,
+  createCatalogContentDigest,
   evalSuiteSchema,
   parsePatchPlan,
   parseRecommendation,
@@ -30,7 +31,7 @@ const sourceBinding = {
 
 const callSite = {
   currentModel: "openai/gpt-4o-mini",
-  evalSuiteId: "support-classification-eval",
+  evalSuiteId: "eval-suite:support-classification",
   gates: {
     maxP95LatencyMs: 750,
     minRecommendationConfidence: 0.8,
@@ -70,38 +71,40 @@ const evalSuite = {
   schemaVersion: VETRYN_ARTIFACT_SCHEMA_VERSION,
 };
 
+const catalogModels = [
+  {
+    capabilities: {
+      structuredOutput: true,
+      textGeneration: true,
+      toolCalls: false,
+    },
+    contextWindowTokens: 128000,
+    id: "openai/gpt-4o-mini",
+    inputPricePerMillionUsd: "0.15",
+    outputPricePerMillionUsd: "0.60",
+    provider: "openai",
+    retired: false,
+  },
+  {
+    capabilities: {
+      structuredOutput: true,
+      textGeneration: true,
+      toolCalls: false,
+    },
+    contextWindowTokens: 128000,
+    id: "openai/gpt-4o",
+    inputPricePerMillionUsd: "2.50",
+    outputPricePerMillionUsd: "10.00",
+    provider: "openai",
+    retired: false,
+  },
+];
+
 const catalogSnapshot = {
   artifactType: "catalog-snapshot",
-  contentDigest: digest("c"),
+  contentDigest: createCatalogContentDigest(catalogModels),
   id: "catalog-snapshot:openrouter-2026-08-10",
-  models: [
-    {
-      capabilities: {
-        structuredOutput: true,
-        textGeneration: true,
-        toolCalls: false,
-      },
-      contextWindowTokens: 128000,
-      id: "openai/gpt-4o-mini",
-      inputPricePerMillionUsd: "0.15",
-      outputPricePerMillionUsd: "0.60",
-      provider: "openai",
-      retired: false,
-    },
-    {
-      capabilities: {
-        structuredOutput: true,
-        textGeneration: true,
-        toolCalls: false,
-      },
-      contextWindowTokens: 128000,
-      id: "openai/gpt-4o",
-      inputPricePerMillionUsd: "2.50",
-      outputPricePerMillionUsd: "10.00",
-      provider: "openai",
-      retired: false,
-    },
-  ],
+  models: catalogModels,
   observedAt: "2026-08-10T00:00:00.000Z",
   schemaVersion: VETRYN_ARTIFACT_SCHEMA_VERSION,
   source: "openrouter",
@@ -241,6 +244,9 @@ describe("V1 artifact contracts", () => {
       parseVetrynArtifact({ ...manifest, callSites: [callSite, { ...callSite }] }),
     ).toThrow(/duplicate call-site ID/i);
     expect(() =>
+      callSiteSchema.parse({ ...callSite, evalSuiteId: "candidate-run:not-an-eval-suite" }),
+    ).toThrow(/eval-suite/i);
+    expect(() =>
       parseVetrynArtifact({ ...recommendation, recommendedModel: callSite.currentModel }),
     ).toThrow(/different/);
     expect(() => parseVetrynArtifact({ ...patchPlan, recommendationStatus: "no-change" })).toThrow(
@@ -263,6 +269,20 @@ describe("V1 artifact contracts", () => {
     expect(() => parseVetrynArtifact({ ...candidateRun, baselineMetrics: undefined })).toThrow(
       /baseline metrics/i,
     );
+    expect(() =>
+      parseVetrynArtifact({
+        ...catalogSnapshot,
+        models: catalogSnapshot.models.map((model) =>
+          model.id === "openai/gpt-4o" ? { ...model, retired: true } : model,
+        ),
+      }),
+    ).toThrow(/content.?digest/i);
+    expect(
+      catalogSnapshotSchema.parse({
+        ...catalogSnapshot,
+        models: [...catalogSnapshot.models].reverse(),
+      }).contentDigest,
+    ).toBe(catalogSnapshot.contentDigest);
     expect(() => parseVetrynArtifact({ ...candidateRun, gateOutcomes: undefined })).toThrow(
       /hard-gate outcomes/i,
     );
@@ -508,6 +528,9 @@ describe("V1 artifact contracts", () => {
           models: catalogSnapshot.models.filter(
             (model) => model.id !== candidateRun.candidateModel,
           ),
+          contentDigest: createCatalogContentDigest(
+            catalogSnapshot.models.filter((model) => model.id !== candidateRun.candidateModel),
+          ),
         }),
       ),
     ).toThrow(/missing candidate model/i);
@@ -523,6 +546,11 @@ describe("V1 artifact contracts", () => {
           models: catalogSnapshot.models.map((model) =>
             model.id === candidateRun.candidateModel ? { ...model, retired: true } : model,
           ),
+          contentDigest: createCatalogContentDigest(
+            catalogSnapshot.models.map((model) =>
+              model.id === candidateRun.candidateModel ? { ...model, retired: true } : model,
+            ),
+          ),
         }),
       ),
     ).toThrow(/not compatible/i);
@@ -536,6 +564,16 @@ describe("V1 artifact contracts", () => {
         parsedCatalogSnapshot,
       ),
     ).toThrow(/source binding/i);
+    expect(() =>
+      assertRecommendationEvidence(
+        parsedRecommendation,
+        [parsedRun],
+        candidateRun.evaluationInputDigest,
+        { ...parsedCallSite, evalSuiteId: "eval-suite:other-reviewed-suite" },
+        parsedEvalSuite,
+        parsedCatalogSnapshot,
+      ),
+    ).toThrow(/manifest/i);
     expect(() =>
       assertRecommendationEvidence(
         parsedRecommendation,
@@ -594,7 +632,7 @@ describe("V1 artifact contracts", () => {
     ).toThrow(/source binding/i);
   });
 
-  it("keeps every core source file free of runtime side-effect imports", async () => {
+  it("keeps every core source file free of provider and side-effect system integrations", async () => {
     const sourceDirectory = new URL("../src/", import.meta.url);
     const sourceNames = await readdir(sourceDirectory);
     const sources = await Promise.all(
@@ -604,7 +642,8 @@ describe("V1 artifact contracts", () => {
     );
 
     for (const source of sources) {
-      expect(source).not.toMatch(/from ["']node:|from ["']openai|from ["']@octokit|typescript/);
+      expect(source).not.toMatch(/from ["']node:(?!crypto["'])/);
+      expect(source).not.toMatch(/from ["']openai|from ["']@octokit|typescript/);
     }
   });
 });
