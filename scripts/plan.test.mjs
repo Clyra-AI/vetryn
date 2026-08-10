@@ -407,6 +407,15 @@ describe("implementation plan validator", () => {
     expect(result.status, result.stderr).toBe(0);
   });
 
+  it("accepts CONTRIBUTOR as exact public provenance in the bootstrap owner-comment shape", async () => {
+    const root = await createFixture();
+    await createBootstrapReviewEvidence(root, { authorAssociation: "CONTRIBUTOR" });
+
+    const result = runPlan(root);
+
+    expect(result.status, result.stderr).toBe(0);
+  });
+
   it("allows bootstrap owner identity overlap only through the authenticated comment path", async () => {
     const root = await createFixture();
     const evidence = await createBootstrapReviewEvidence(root, {

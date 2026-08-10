@@ -16,8 +16,10 @@ policy differ from `AGENTS.md`, `WORKFLOW.md`, and branch protection. Treating m
 Codex settlement, or an agent verification as authenticated task review evidence would also weaken ADRs 0003
 and 0004. GitHub cannot record an approving PR review from its author, so bootstrap additionally needs a narrow,
 public, exact-candidate owner attestation that the validator can authenticate without relaxing the normal path.
-For comments in the organization-owned repository, GitHub may report the sole repository owner as either
-`OWNER` or `MEMBER`; protected-main CODEOWNERS remains the role-authorization source in both cases.
+For comments in the organization-owned repository, the anonymous public API may report the sole repository owner
+as `CONTRIBUTOR` when private organization membership is hidden, even when authenticated GitHub surfaces report
+`MEMBER`. Public association is therefore exact provenance, not authorization. Protected-main CODEOWNERS remains
+the role-authorization source.
 
 ## Decision
 
@@ -29,11 +31,13 @@ For comments in the organization-owned repository, GitHub may report the sole re
   exact task or pull request before merge.
 - Preserve the normal task-review path: an authenticated exact-candidate GitHub `APPROVED` review from a
   CODEOWNER distinct from the PR author, still current in that reviewer's decisive history.
-- Add one bootstrap-only alternative. A GitHub user with `OWNER` or `MEMBER` association may post the exact seven-line
-  `vetryn-bootstrap-review:v1` PR issue-comment marker defined in `WORKFLOW.md`, naming this repository, PR,
-  task, candidate SHA, `APPROVED` decision, and one or more roles. The evidence records the issue-comment ID,
-  exact URL, and exact body. Validation re-fetches the PR, comment, and protected-main CODEOWNERS and fails closed
-  unless the current durable comment and every binding match. The owner may also be the authenticated PR author.
+- Add one bootstrap-only alternative. A protected-main CODEOWNER may post the exact seven-line
+  `vetryn-bootstrap-review:v1` PR issue-comment marker defined in `WORKFLOW.md`, naming this repository, PR, task,
+  candidate SHA, `APPROVED` decision, and one or more roles. The evidence records the issue-comment ID, exact URL,
+  exact body, and the anonymous public API association. Validation re-fetches the PR, comment, and protected-main
+  CODEOWNERS and fails closed unless the current durable comment and every binding match. Public association must
+  match the evidence and be `OWNER`, `MEMBER`, or `CONTRIBUTOR`; `NONE` and `COLLABORATOR` fail. The CODEOWNER may
+  also be the authenticated PR author.
 - Treat that comment only as evidence for roles it names. Bootstrap merge authorization, agent verification, CI,
   Codex settlement, and the merge itself remain separate and cannot substitute for the comment, task acceptance,
   or canonical promotion.
@@ -49,10 +53,12 @@ For comments in the organization-owned repository, GitHub may report the sole re
 - Branch merge readiness remains materially protected by required automation and explicit maintainer intent, but
   its task review may temporarily be owner-authenticated rather than independent human approval.
 - The same maintainer can author a PR and authorize named review roles only through the public, exact-candidate
-  marker; deleted, edited, stale, malformed, mis-scoped, `COLLABORATOR`, `NONE`, or non-CODEOWNER comments fail closed.
+  marker; deleted, edited, stale, malformed, mis-scoped, `COLLABORATOR`, `NONE`, mismatched-association, or
+  non-CODEOWNER comments fail closed.
 - Merged work can remain unaccepted in the canonical task DAG until all declared gates and canonical promotion
   evidence exist; merge and product-task acceptance remain deliberately separate states.
 - Branch protection does not require CODEOWNER approval during bootstrap mode, but validation still uses
-  protected-main `CODEOWNERS` to authorize both normal reviewers and owner-comment roles.
+  protected-main `CODEOWNERS` as the authority for both normal reviewers and owner-comment roles; the public
+  association is retained only as authenticated provenance.
 - The temporary policy is visible, reviewable, and has an objective reinstatement trigger instead of becoming an
   accidental permanent weakening.

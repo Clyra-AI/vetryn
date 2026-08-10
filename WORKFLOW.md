@@ -39,9 +39,11 @@ commit. The candidate executor is the candidate PR author authenticated by GitHu
 reviewer must differ from that actor, own the role's protected surface under CODEOWNERS fetched from protected
 `main`, and remain the latest decisive reviewer on the exact candidate commit.
 
-During ADR-0006 bootstrap, one alternative is allowed: a PR issue comment from a GitHub user whose authenticated
-association is `OWNER` or `MEMBER` and who owns the requested role's protected-main CODEOWNERS surface. The
-authenticated current comment body must exactly use this seven-line format, with no extra text or fields:
+During ADR-0006 bootstrap, one alternative is allowed: a PR issue comment from a GitHub user who owns the
+requested role's protected-main CODEOWNERS surface. Anonymous public API association can hide private
+organization membership, so `OWNER`, `MEMBER`, and `CONTRIBUTOR` are allowed as exact public provenance;
+CODEOWNERS remains the authorization source. The authenticated current comment body must exactly use this
+seven-line format, with no extra text or fields:
 
 ```text
 <!-- vetryn-bootstrap-review:v1 -->
@@ -53,10 +55,12 @@ decision=APPROVED
 roles=<comma-separated-role-names>
 ```
 
-The durable evidence records the issue-comment ID, exact URL, and exact body. Validation re-fetches the comment
-and requires its actor, `OWNER` or `MEMBER` association, body, repository, PR, task, candidate, decision, and
-requested role to match. The maintainer may also be the authenticated PR author only on this path. The same task PR
-may advance past that commit only for promotion: GitHub's comparison must prove that the candidate is an ancestor
+The durable evidence records the issue-comment ID, exact URL, exact body, and public association provenance.
+Validation re-fetches the comment and requires its actor, association, body, repository, PR, task, candidate,
+decision, and requested role to match exactly. `NONE` and `COLLABORATOR` fail closed, and protected-main
+CODEOWNERS must authorize the actor for every requested role. The maintainer may also be the authenticated PR
+author only on this path. The same task PR may advance past that commit only for promotion: GitHub's comparison
+must prove that the candidate is an ancestor
 and that the complete tail changes only the task's canonical state, acceptance ledger, compact evidence, or
 generated progress. Within the shared ledger, only status and evidence references for that task may change;
 reviewed fields and other tasks are immutable. Evidence files present at the candidate are immutable; promotion
@@ -94,10 +98,10 @@ ADR 0006 defines a temporary single-maintainer bootstrap mode in which GitHub br
 approvals and no CODEOWNER review. A merge in that mode still requires explicit maintainer authorization for the
 exact task or pull request, green latest-head CI, CodeQL, and dependency review, a terminal latest-head Codex
 approval or thumbs-up, and no unresolved actionable findings. Bootstrap merge authorization is lifecycle-only
-and cannot be recorded as task review evidence. A separate structured comment with authenticated `OWNER` or
-`MEMBER` association may satisfy only the roles it names under the evidence rules above; it cannot supply
-acceptance or promotion by itself and does not turn CI, Codex settlement, or local agent verification into review
-evidence. Restore at least one
+and cannot be recorded as task review evidence. A separate structured comment with exact public association
+provenance and protected-main CODEOWNERS authorization may satisfy only the roles it names under the evidence
+rules above; it cannot supply acceptance or promotion by itself and does not turn CI, Codex settlement, or local
+agent verification into review evidence. Restore at least one
 independent approval and CODEOWNER review when the ADR's exit condition is met.
 
 A profile may allow a **standalone P2 exception** only when all of the following are true: a human explicitly

@@ -16,6 +16,7 @@ const approval = {
   pull_request_url: "https://api.github.com/repos/Clyra-AI/vetryn/pulls/1",
 };
 const ownerCommentId = 987654321;
+const contributorCommentId = 5242139438;
 
 function bootstrapBody(overrides = {}) {
   const values = {
@@ -217,6 +218,60 @@ describe("GitHub review authentication", () => {
     await expect(authenticate(memberEvidence, "maintainer", "fixture")).resolves.toBeUndefined();
   });
 
+  it("accepts public CONTRIBUTOR provenance when protected-main CODEOWNERS authorizes the actor", async () => {
+    const contributorComment = {
+      ...ownerComment,
+      id: contributorCommentId,
+      author_association: "CONTRIBUTOR",
+      html_url: `https://github.com/Clyra-AI/vetryn/pull/5#issuecomment-${contributorCommentId}`,
+    };
+    const contributorEvidence = bootstrapEvidence({
+      review: {
+        ...bootstrapEvidence().review,
+        authorAssociation: "CONTRIBUTOR",
+        commentId: contributorCommentId,
+        authorizationRef: `https://github.com/Clyra-AI/vetryn/pull/5#issuecomment-${contributorCommentId}`,
+      },
+    });
+    const authenticate = authenticator({
+      fetchImpl: githubFetch({
+        issueComment: contributorComment,
+        codeowners: "* @implementation-agent\n/.github/ @implementation-agent\n",
+      }),
+    });
+
+    await expect(
+      authenticate(contributorEvidence, "maintainer", "fixture"),
+    ).resolves.toBeUndefined();
+  });
+
+  it("rejects public CONTRIBUTOR provenance when protected-main CODEOWNERS does not authorize the actor", async () => {
+    const contributorComment = {
+      ...ownerComment,
+      id: contributorCommentId,
+      author_association: "CONTRIBUTOR",
+      html_url: `https://github.com/Clyra-AI/vetryn/pull/5#issuecomment-${contributorCommentId}`,
+    };
+    const contributorEvidence = bootstrapEvidence({
+      review: {
+        ...bootstrapEvidence().review,
+        authorAssociation: "CONTRIBUTOR",
+        commentId: contributorCommentId,
+        authorizationRef: `https://github.com/Clyra-AI/vetryn/pull/5#issuecomment-${contributorCommentId}`,
+      },
+    });
+    const authenticate = authenticator({
+      fetchImpl: githubFetch({
+        issueComment: contributorComment,
+        codeowners: "* @different-owner\n",
+      }),
+    });
+
+    await expect(authenticate(contributorEvidence, "maintainer", "fixture")).rejects.toThrow(
+      "not authorized for role maintainer by trusted main-branch CODEOWNERS",
+    );
+  });
+
   it("authenticates one bootstrap owner comment once when it authorizes multiple roles", async () => {
     const fetchImpl = githubFetch({
       codeowners: "* @implementation-agent\n/.github/ @implementation-agent\n",
@@ -298,7 +353,7 @@ describe("GitHub review authentication", () => {
       });
 
       await expect(authenticate(disallowedEvidence, "maintainer", "fixture")).rejects.toThrow(
-        "is not an OWNER or MEMBER bootstrap authorization",
+        "has unsupported public association provenance",
       );
     },
   );
@@ -309,7 +364,7 @@ describe("GitHub review authentication", () => {
     });
 
     await expect(authenticator()(memberEvidence, "maintainer", "fixture")).rejects.toThrow(
-      "is not authenticated with OWNER or MEMBER association",
+      "has mismatched or unsupported public association provenance",
     );
   });
 
