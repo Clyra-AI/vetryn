@@ -66,8 +66,15 @@ function isAllowedPromotionPath(filename, taskId) {
   );
 }
 
-export function createGitHubReviewAuthenticator({ fetchImpl = globalThis.fetch } = {}) {
+export function createGitHubReviewAuthenticator({
+  fetchImpl = globalThis.fetch,
+  checkoutProvider,
+} = {}) {
   assert(typeof fetchImpl === "function", "GitHub review authentication requires built-in fetch");
+  assert(
+    typeof checkoutProvider === "function",
+    "GitHub review authentication requires a trusted checkout provider",
+  );
   const authenticatedReviews = new Map();
   const authenticatedPullRequests = new Map();
   const authenticatedPromotionTails = new Map();
@@ -141,6 +148,14 @@ export function createGitHubReviewAuthenticator({ fetchImpl = globalThis.fetch }
       typeof currentHead === "string" && /^[0-9a-f]{40}$/.test(currentHead),
       `${source} could not authenticate the current pull request head`,
     );
+    const checkout = checkoutProvider();
+    assert(
+      checkout?.commit === currentHead ||
+        (pullRequestData.merged === true &&
+          /^[0-9a-f]{40}$/.test(pullRequestData.merge_commit_sha ?? "") &&
+          checkout?.containsCommit(pullRequestData.merge_commit_sha)),
+      `${source} authenticated review pull request is unrelated to checkout ${checkout?.commit ?? "unknown"}`,
+    );
     if (currentHead !== evidence.commit) {
       const promotionKey = `${evidence.commit}:${currentHead}`;
       let comparison = authenticatedPromotionTails.get(promotionKey);
@@ -167,12 +182,21 @@ export function createGitHubReviewAuthenticator({ fetchImpl = globalThis.fetch }
         Array.isArray(comparison.files) && comparison.files.length < 300,
         `${source} promotion tail files for review evidence ${evidence.id} are incomplete or too large`,
       );
-      const forbiddenFile = comparison.files.find(
-        (file) => !isAllowedPromotionPath(file.filename, evidence.taskId),
-      );
+      const forbiddenFile = comparison.files.find((file) => {
+        if (!isAllowedPromotionPath(file.filename, evidence.taskId)) return true;
+        return (
+          file.status === "renamed" &&
+          !isAllowedPromotionPath(file.previous_filename, evidence.taskId)
+        );
+      });
+      const forbiddenPath = forbiddenFile
+        ? !isAllowedPromotionPath(forbiddenFile.filename, evidence.taskId)
+          ? forbiddenFile.filename
+          : forbiddenFile.previous_filename
+        : null;
       assert(
         !forbiddenFile,
-        `${source} promotion tail for review evidence ${evidence.id} changes forbidden path ${forbiddenFile?.filename}`,
+        `${source} promotion tail for review evidence ${evidence.id} changes forbidden path ${forbiddenPath}`,
       );
     }
 

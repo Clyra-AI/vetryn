@@ -42,6 +42,8 @@ function githubFetch({
   exactReview = approval,
   reviewHistory = [approval],
   headSha = commit,
+  merged = false,
+  mergeCommitSha = null,
   comparison = {
     status: "ahead",
     merge_base_commit: { sha: commit },
@@ -60,7 +62,22 @@ function githubFetch({
     if (url.includes("/compare/")) return responseFor(comparison);
     if (url.includes("/reviews?")) return responseFor(reviewHistory);
     if (url.includes("/reviews/")) return responseFor(exactReview);
-    return responseFor({ head: { sha: headSha } });
+    return responseFor({
+      head: { sha: headSha },
+      merged,
+      merge_commit_sha: mergeCommitSha,
+    });
+  });
+}
+
+function authenticator({
+  fetchImpl = githubFetch(),
+  checkoutCommit = commit,
+  containsCommit = () => false,
+} = {}) {
+  return createGitHubReviewAuthenticator({
+    fetchImpl,
+    checkoutProvider: () => ({ commit: checkoutCommit, containsCommit }),
   });
 }
 
@@ -78,14 +95,14 @@ describe("GitHub review authentication", () => {
 
   it("accepts the latest current-head approval from a role-owning reviewer", async () => {
     const fetchImpl = githubFetch();
-    const authenticate = createGitHubReviewAuthenticator({ fetchImpl });
+    const authenticate = authenticator({ fetchImpl });
 
     await expect(authenticate(evidence(), "maintainer", "fixture")).resolves.toBeUndefined();
     expect(fetchImpl).toHaveBeenCalledTimes(4);
   });
 
   it("fails closed when GitHub cannot authenticate the cited review", async () => {
-    const authenticate = createGitHubReviewAuthenticator({
+    const authenticate = authenticator({
       fetchImpl: vi.fn(async () => responseFor("", 404)),
     });
 
@@ -95,7 +112,7 @@ describe("GitHub review authentication", () => {
   });
 
   it("rejects reviewer identity that differs from GitHub", async () => {
-    const authenticate = createGitHubReviewAuthenticator({
+    const authenticate = authenticator({
       fetchImpl: githubFetch({
         exactReview: { ...approval, user: { login: "actual-reviewer" } },
       }),
@@ -107,7 +124,7 @@ describe("GitHub review authentication", () => {
   });
 
   it("rejects a reviewer who does not own the required protected surface", async () => {
-    const authenticate = createGitHubReviewAuthenticator({
+    const authenticate = authenticator({
       fetchImpl: githubFetch({ codeowners: "* @different-reviewer\n" }),
     });
 
@@ -123,7 +140,7 @@ describe("GitHub review authentication", () => {
       state: "CHANGES_REQUESTED",
       submitted_at: "2026-08-10T00:01:00Z",
     };
-    const authenticate = createGitHubReviewAuthenticator({
+    const authenticate = authenticator({
       fetchImpl: githubFetch({ reviewHistory: [approval, changesRequested] }),
     });
 
@@ -133,15 +150,16 @@ describe("GitHub review authentication", () => {
   });
 
   it("accepts an approval followed only by a canonical promotion commit", async () => {
-    const authenticate = createGitHubReviewAuthenticator({
+    const authenticate = authenticator({
       fetchImpl: githubFetch({ headSha: "b".repeat(40) }),
+      checkoutCommit: "b".repeat(40),
     });
 
     await expect(authenticate(evidence(), "maintainer", "fixture")).resolves.toBeUndefined();
   });
 
   it("rejects a promotion tail that changes product code", async () => {
-    const authenticate = createGitHubReviewAuthenticator({
+    const authenticate = authenticator({
       fetchImpl: githubFetch({
         headSha: "b".repeat(40),
         comparison: {
@@ -152,6 +170,7 @@ describe("GitHub review authentication", () => {
           files: [{ filename: "packages/core/src/index.ts" }],
         },
       }),
+      checkoutCommit: "b".repeat(40),
     });
 
     await expect(authenticate(evidence(), "maintainer", "fixture")).rejects.toThrow(
@@ -160,7 +179,7 @@ describe("GitHub review authentication", () => {
   });
 
   it("rejects a promotion head that does not descend from the approved candidate", async () => {
-    const authenticate = createGitHubReviewAuthenticator({
+    const authenticate = authenticator({
       fetchImpl: githubFetch({
         headSha: "b".repeat(40),
         comparison: {
@@ -171,6 +190,7 @@ describe("GitHub review authentication", () => {
           files: [{ filename: "product/plans/oss-v1/state/V1-00.json" }],
         },
       }),
+      checkoutCommit: "b".repeat(40),
     });
 
     await expect(authenticate(evidence(), "maintainer", "fixture")).rejects.toThrow(
@@ -179,12 +199,58 @@ describe("GitHub review authentication", () => {
   });
 
   it("fails closed on unsupported protected-main CODEOWNERS patterns", async () => {
-    const authenticate = createGitHubReviewAuthenticator({
+    const authenticate = authenticator({
       fetchImpl: githubFetch({ codeowners: "*.md @maintainer-reviewer\n" }),
     });
 
     await expect(authenticate(evidence(), "maintainer", "fixture")).rejects.toThrow(
       "unsupported pattern",
+    );
+  });
+
+  it("rejects an open review pull request unrelated to the validated checkout", async () => {
+    const authenticate = authenticator({ checkoutCommit: "b".repeat(40) });
+
+    await expect(authenticate(evidence(), "maintainer", "fixture")).rejects.toThrow(
+      "authenticated review pull request is unrelated to checkout",
+    );
+  });
+
+  it("accepts durable evidence after its authenticated pull request is merged", async () => {
+    const mergeCommit = "c".repeat(40);
+    const authenticate = authenticator({
+      fetchImpl: githubFetch({ merged: true, mergeCommitSha: mergeCommit }),
+      checkoutCommit: "d".repeat(40),
+      containsCommit: (candidate) => candidate === mergeCommit,
+    });
+
+    await expect(authenticate(evidence(), "maintainer", "fixture")).resolves.toBeUndefined();
+  });
+
+  it("rejects a rename whose source is outside canonical promotion paths", async () => {
+    const advancedHead = "b".repeat(40);
+    const authenticate = authenticator({
+      fetchImpl: githubFetch({
+        headSha: advancedHead,
+        comparison: {
+          status: "ahead",
+          merge_base_commit: { sha: commit },
+          total_commits: 1,
+          commits: [{ sha: advancedHead }],
+          files: [
+            {
+              status: "renamed",
+              filename: "product/plans/oss-v1/evidence/ev-review.json",
+              previous_filename: "packages/core/src/index.ts",
+            },
+          ],
+        },
+      }),
+      checkoutCommit: advancedHead,
+    });
+
+    await expect(authenticate(evidence(), "maintainer", "fixture")).rejects.toThrow(
+      "changes forbidden path packages/core/src/index.ts",
     );
   });
 });

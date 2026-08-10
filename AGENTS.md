@@ -22,8 +22,10 @@ These instructions apply to the entire repository.
   executor. The approval must target the exact candidate commit and remain the reviewer's latest decisive
   review on that commit. A later pull-request head is valid only when GitHub proves that it descends from the
   candidate and its complete promotion tail changes canonical state, ledger, evidence, or generated progress
-  only. These fail-closed control-plane reads use built-in HTTPS with no repository credential or PATH-resolved
-  executable. Non-baseline evidence must match the reviewed plan and lockfile digests.
+  only. Validation requires a clean local commit bound to that authenticated PR head, or—after merge—a checkout
+  containing its authenticated merge commit. These fail-closed control-plane reads use built-in HTTPS and
+  absolute system Git with no repository credential or PATH-resolved executable. Non-baseline evidence must
+  match the reviewed plan and lockfile digests.
 - `product/plans/oss-v1/progress.json` is generated. Update task state and evidence through the plan
   tooling rather than editing the roll-up directly.
 - Keep Factory-compatible planning artifacts separate from Vetryn product-domain schemas. Transient

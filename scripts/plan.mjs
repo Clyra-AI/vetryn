@@ -7,12 +7,15 @@ import Ajv2020 from "ajv/dist/2020.js";
 import addFormats from "ajv-formats";
 
 import { createGitHubReviewAuthenticator } from "./github-review-auth.mjs";
+import { createGitCheckoutProvider } from "./git-checkout-auth.mjs";
 
 const root = path.resolve(
   process.env.VETRYN_PLAN_REPO_ROOT ?? path.resolve(import.meta.dirname, ".."),
 );
 const planRoot = path.join(root, "product/plans/oss-v1");
-const authenticateGitHubReview = createGitHubReviewAuthenticator();
+const authenticateGitHubReview = createGitHubReviewAuthenticator({
+  checkoutProvider: createGitCheckoutProvider(root),
+});
 
 async function readJson(relativePath) {
   return JSON.parse(await readFile(path.join(root, relativePath), "utf8"));
