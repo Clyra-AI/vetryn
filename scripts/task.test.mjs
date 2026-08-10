@@ -1,4 +1,4 @@
-import { cp, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { cp, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import process from "node:process";
@@ -8,6 +8,7 @@ import { afterEach, describe, expect, it } from "vitest";
 
 const repositoryRoot = path.resolve(import.meta.dirname, "..");
 const taskScript = path.join(repositoryRoot, "scripts/task.mjs");
+const planScript = path.join(repositoryRoot, "scripts/plan.mjs");
 const temporaryRoots = [];
 
 async function createFixture() {
@@ -25,6 +26,13 @@ async function createFixture() {
 
 function runTask(root, ...args) {
   return spawnSync(process.execPath, [taskScript, ...args], {
+    encoding: "utf8",
+    env: { ...process.env, VETRYN_PLAN_REPO_ROOT: root },
+  });
+}
+
+function runPlan(root, command) {
+  return spawnSync(process.execPath, [planScript, command], {
     encoding: "utf8",
     env: { ...process.env, VETRYN_PLAN_REPO_ROOT: root },
   });
@@ -68,6 +76,24 @@ describe("task packet compiler", () => {
       },
     });
   });
+
+  it.each(["verification_pending", "review_pending"])(
+    "compiles a packet while a candidate is %s",
+    async (stateName) => {
+      const root = await createFixture();
+      const statePath = path.join(root, "product/plans/oss-v1/state/V1-00.json");
+      const state = JSON.parse(await readFile(statePath, "utf8"));
+      state.state = stateName;
+      await writeFile(statePath, `${JSON.stringify(state, null, 2)}\n`);
+      const writeResult = runPlan(root, "write");
+      expect(writeResult.status, writeResult.stderr).toBe(0);
+
+      const result = runTask(root, "compile", "V1-00");
+
+      expect(result.status, result.stderr).toBe(0);
+      expect(JSON.parse(result.stdout).currentState.state).toBe(stateName);
+    },
+  );
 
   it("refuses a planned task whose dependency is not accepted", async () => {
     const root = await createFixture();

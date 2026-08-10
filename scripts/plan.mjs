@@ -1,5 +1,6 @@
 import { readFile, readdir, writeFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
+import { spawnSync } from "node:child_process";
 import path from "node:path";
 import process from "node:process";
 
@@ -10,6 +11,8 @@ const root = path.resolve(
   process.env.VETRYN_PLAN_REPO_ROOT ?? path.resolve(import.meta.dirname, ".."),
 );
 const planRoot = path.join(root, "product/plans/oss-v1");
+const githubRepository = "Clyra-AI/vetryn";
+const authenticatedReviews = new Map();
 
 async function readJson(relativePath) {
   return JSON.parse(await readFile(path.join(root, relativePath), "utf8"));
@@ -85,6 +88,85 @@ function assertReviewEvidence(evidenceRef, state, evidenceById, expectedRole, so
     reviewIdMatch && Number(reviewIdMatch[1]) === evidence.review.reviewId,
     `${source} review evidence ${evidenceRef} has mismatched GitHub review identity`,
   );
+  authenticateGitHubReview(evidence, source);
+}
+
+function authenticateGitHubReview(evidence, source) {
+  const authorizationMatch = evidence.review.authorizationRef.match(
+    /^https:\/\/github\.com\/Clyra-AI\/vetryn\/pull\/([0-9]+)#pullrequestreview-([0-9]+)$/,
+  );
+  assert(
+    authorizationMatch,
+    `${source} review evidence ${evidence.id} is not a Vetryn GitHub review`,
+  );
+  const pullRequest = Number(authorizationMatch[1]);
+  const reviewId = Number(authorizationMatch[2]);
+  const cacheKey = `${pullRequest}:${reviewId}`;
+  let authenticated = authenticatedReviews.get(cacheKey);
+  if (!authenticated) {
+    const apiUrl = `https://api.github.com/repos/${githubRepository}/pulls/${pullRequest}/reviews/${reviewId}`;
+    const result = spawnSync(
+      "curl",
+      [
+        "--fail",
+        "--silent",
+        "--show-error",
+        "--max-time",
+        "10",
+        "-H",
+        "Accept: application/vnd.github+json",
+        "-H",
+        "X-GitHub-Api-Version: 2022-11-28",
+        apiUrl,
+      ],
+      { encoding: "utf8" },
+    );
+    assert(
+      !result.error && result.status === 0,
+      `${source} review evidence ${evidence.id} could not be authenticated by GitHub`,
+    );
+    try {
+      authenticated = JSON.parse(result.stdout);
+    } catch {
+      fail(`${source} review evidence ${evidence.id} received invalid GitHub review data`);
+    }
+    authenticatedReviews.set(cacheKey, authenticated);
+  }
+
+  assert(
+    authenticated.id === evidence.review.reviewId,
+    `${source} review evidence ${evidence.id} does not match the authenticated review ID`,
+  );
+  assert(
+    authenticated.user?.login === evidence.actor,
+    `${source} review evidence ${evidence.id} does not match the authenticated reviewer`,
+  );
+  assert(
+    authenticated.author_association === evidence.review.authorAssociation,
+    `${source} review evidence ${evidence.id} does not match the authenticated author association`,
+  );
+  assert(
+    authenticated.state === "APPROVED",
+    `${source} review evidence ${evidence.id} is not an authenticated approval`,
+  );
+  assert(
+    authenticated.commit_id === stateCandidateCommit(evidence),
+    `${source} review evidence ${evidence.id} does not approve the candidate commit`,
+  );
+  assert(
+    authenticated.html_url === evidence.review.authorizationRef &&
+      authenticated.pull_request_url ===
+        `https://api.github.com/repos/${githubRepository}/pulls/${pullRequest}`,
+    `${source} review evidence ${evidence.id} is authenticated for a different pull request`,
+  );
+}
+
+function stateCandidateCommit(evidence) {
+  assert(
+    evidence.review.observedCommit === evidence.commit,
+    `review evidence ${evidence.id} observed commit differs from its evidence commit`,
+  );
+  return evidence.commit;
 }
 
 function assertGateEvidence(evidenceRef, gateDefinition, evidenceById, source) {
@@ -98,6 +180,18 @@ function assertGateEvidence(evidenceRef, gateDefinition, evidenceById, source) {
     allowedTypes.includes(evidence.type),
     `${source} cites ${evidence.type} evidence for ${gateDefinition.kind} gate ${gateDefinition.id}`,
   );
+  if (evidence.type === "baseline-verification") return;
+  if (gateDefinition.kind === "command") {
+    assert(
+      evidence.gateBinding?.gateId === gateDefinition.id,
+      `${source} cites evidence ${evidenceRef} bound to ${evidence.gateBinding?.gateId ?? "no gate"}, not ${gateDefinition.id}`,
+    );
+    assert(
+      evidence.gateBinding.kind === "command" &&
+        evidence.gateBinding.command === gateDefinition.command,
+      `${source} cites evidence ${evidenceRef} with a command that differs from ${gateDefinition.id}`,
+    );
+  }
 }
 
 async function sha256(relativePath) {
@@ -379,15 +473,23 @@ async function main() {
       const criterionGate = plan.gateCatalog.find(
         (item) => item.id === ledgerItem.verification.gateId,
       );
-      if (criterion.status === "pass" && criterionGate?.kind === "review")
-        for (const evidenceRef of criterion.evidenceRefs)
-          assertReviewEvidence(
+      if (criterion.status === "pass" && criterionGate)
+        for (const evidenceRef of criterion.evidenceRefs) {
+          assertGateEvidence(
             evidenceRef,
-            state,
+            criterionGate,
             evidenceById,
-            criterionGate.reviewRole,
             `${file} criterion ${criterion.criterionId}`,
           );
+          if (criterionGate.kind === "review")
+            assertReviewEvidence(
+              evidenceRef,
+              state,
+              evidenceById,
+              criterionGate.reviewRole,
+              `${file} criterion ${criterion.criterionId}`,
+            );
+        }
       if (criterion.status === "waived")
         assert(
           ledgerItem.waivable,

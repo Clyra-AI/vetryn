@@ -88,7 +88,13 @@ async function compile(taskId) {
   assert(task, `unknown task ${taskId}`);
   const statePath = `product/plans/oss-v1/state/${taskId}.json`;
   const state = await readJson(statePath);
-  const runnableStates = new Set(["ready", "in_progress", "changes_requested"]);
+  const runnableStates = new Set([
+    "ready",
+    "in_progress",
+    "verification_pending",
+    "review_pending",
+    "changes_requested",
+  ]);
   const isNextLegal = progress.nextLegalTasks.includes(taskId);
   assert(
     runnableStates.has(state.state) || (state.state === "planned" && isNextLegal),

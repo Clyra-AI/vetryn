@@ -1,4 +1,4 @@
-import { cp, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { chmod, cp, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -37,11 +37,24 @@ async function digestFixture(root, relativePath) {
   return `sha256:${createHash("sha256").update(contents).digest("hex")}`;
 }
 
-function runPlan(root, command = "check") {
+function runPlan(root, command = "check", env = {}) {
   return spawnSync(process.execPath, [planScript, command], {
     encoding: "utf8",
-    env: { ...process.env, VETRYN_PLAN_REPO_ROOT: root },
+    env: { ...process.env, ...env, VETRYN_PLAN_REPO_ROOT: root },
   });
+}
+
+async function fakeCurlEnvironment(root, response) {
+  const binDirectory = path.join(root, "test-bin");
+  await mkdir(binDirectory);
+  const executable = path.join(binDirectory, "curl");
+  const source =
+    response === null
+      ? "#!/bin/sh\nexit 22\n"
+      : `#!/usr/bin/env node\nprocess.stdout.write(${JSON.stringify(JSON.stringify(response))});\n`;
+  await writeFile(executable, source);
+  await chmod(executable, 0o755);
+  return { PATH: `${binDirectory}:${process.env.PATH}` };
 }
 
 async function createV1Evidence(root, overrides = {}) {
@@ -58,6 +71,11 @@ async function createV1Evidence(root, overrides = {}) {
     inputs: {
       planDigest: await digestFixture(root, "product/plans/oss-v1/plan.json"),
       lockfileDigest: await digestFixture(root, "pnpm-lock.yaml"),
+    },
+    gateBinding: {
+      gateId: "QG-PLAN-CHECK",
+      kind: "command",
+      command: "pnpm plan:check",
     },
     review: null,
     ...overrides,
@@ -77,6 +95,20 @@ async function passFirstPlanningCriterion(root, evidenceId, candidateCommit = "a
   };
   state.criteria[0].status = "pass";
   state.criteria[0].evidenceRefs = [evidenceId];
+  await writeFixtureJson(root, statePath, state);
+}
+
+async function passGate(root, gateId, evidenceId, candidateCommit = "a".repeat(40)) {
+  const statePath = "product/plans/oss-v1/state/V1-00.json";
+  const state = await readFixtureJson(root, statePath);
+  state.candidate = {
+    baseCommit: "eb970bf3708ceb7a0d93d93481812dac090428b9",
+    commit: candidateCommit,
+    executor: "implementation-agent",
+  };
+  const gate = state.gates.find((candidate) => candidate.gateId === gateId);
+  gate.status = "pass";
+  gate.evidenceRefs = [evidenceId];
   await writeFixtureJson(root, statePath, state);
 }
 
@@ -186,6 +218,7 @@ describe("implementation plan validator", () => {
     const root = await createFixture();
     const evidence = await createV1Evidence(root, {
       type: "review",
+      gateBinding: null,
       review: {
         role: "maintainer",
         subjectActor: "implementation-agent",
@@ -213,11 +246,12 @@ describe("implementation plan validator", () => {
     expect(result.stderr).toContain("self-approved by the executor");
   });
 
-  it("accepts role-bound review evidence from an independent actor", async () => {
+  it("accepts an independent approval authenticated by GitHub", async () => {
     const root = await createFixture();
     const evidence = await createV1Evidence(root, {
       type: "review",
       actor: "maintainer-reviewer",
+      gateBinding: null,
       review: {
         role: "maintainer",
         subjectActor: "implementation-agent",
@@ -240,8 +274,97 @@ describe("implementation plan validator", () => {
     state.reviews.find((review) => review.role === "maintainer").evidenceRefs = [evidence.id];
     await writeFixtureJson(root, statePath, state);
 
-    const result = runPlan(root);
+    const githubReview = {
+      id: 123456789,
+      state: "APPROVED",
+      user: { login: "maintainer-reviewer" },
+      author_association: "MEMBER",
+      commit_id: "a".repeat(40),
+      html_url: "https://github.com/Clyra-AI/vetryn/pull/1#pullrequestreview-123456789",
+      pull_request_url: "https://api.github.com/repos/Clyra-AI/vetryn/pulls/1",
+    };
+    const env = await fakeCurlEnvironment(root, githubReview);
+
+    const result = runPlan(root, "check", env);
     expect(result.status, result.stderr).toBe(0);
+  });
+
+  it("rejects a fabricated review that GitHub cannot authenticate", async () => {
+    const root = await createFixture();
+    const evidence = await createV1Evidence(root, {
+      type: "review",
+      actor: "fabricated-reviewer",
+      gateBinding: null,
+      review: {
+        role: "maintainer",
+        subjectActor: "implementation-agent",
+        source: "github-pull-request-review",
+        state: "APPROVED",
+        authorAssociation: "MEMBER",
+        reviewId: 123456789,
+        observedCommit: "a".repeat(40),
+        authorizationRef: "https://github.com/Clyra-AI/vetryn/pull/1#pullrequestreview-123456789",
+      },
+    });
+    const statePath = "product/plans/oss-v1/state/V1-00.json";
+    const state = await readFixtureJson(root, statePath);
+    state.candidate = {
+      baseCommit: "eb970bf3708ceb7a0d93d93481812dac090428b9",
+      commit: evidence.commit,
+      executor: "implementation-agent",
+    };
+    state.reviews.find((review) => review.role === "maintainer").status = "approved";
+    state.reviews.find((review) => review.role === "maintainer").evidenceRefs = [evidence.id];
+    await writeFixtureJson(root, statePath, state);
+    const env = await fakeCurlEnvironment(root, null);
+
+    const result = runPlan(root, "check", env);
+
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain("could not be authenticated by GitHub");
+  });
+
+  it("rejects reviewer identity that differs from authenticated GitHub data", async () => {
+    const root = await createFixture();
+    const evidence = await createV1Evidence(root, {
+      type: "review",
+      actor: "fabricated-reviewer",
+      gateBinding: null,
+      review: {
+        role: "maintainer",
+        subjectActor: "implementation-agent",
+        source: "github-pull-request-review",
+        state: "APPROVED",
+        authorAssociation: "MEMBER",
+        reviewId: 123456789,
+        observedCommit: "a".repeat(40),
+        authorizationRef: "https://github.com/Clyra-AI/vetryn/pull/1#pullrequestreview-123456789",
+      },
+    });
+    const statePath = "product/plans/oss-v1/state/V1-00.json";
+    const state = await readFixtureJson(root, statePath);
+    state.candidate = {
+      baseCommit: "eb970bf3708ceb7a0d93d93481812dac090428b9",
+      commit: evidence.commit,
+      executor: "implementation-agent",
+    };
+    state.reviews.find((review) => review.role === "maintainer").status = "approved";
+    state.reviews.find((review) => review.role === "maintainer").evidenceRefs = [evidence.id];
+    await writeFixtureJson(root, statePath, state);
+    const env = await fakeCurlEnvironment(root, {
+      id: 123456789,
+      state: "APPROVED",
+      user: { login: "actual-reviewer" },
+      author_association: "MEMBER",
+      commit_id: "a".repeat(40),
+      html_url: "https://github.com/Clyra-AI/vetryn/pull/1#pullrequestreview-123456789",
+      pull_request_url: "https://api.github.com/repos/Clyra-AI/vetryn/pulls/1",
+    });
+
+    const result = runPlan(root, "check", env);
+
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain("does not match the authenticated reviewer");
   });
 
   it("rejects a review attestation whose ID does not match its GitHub URL", async () => {
@@ -249,6 +372,7 @@ describe("implementation plan validator", () => {
     const evidence = await createV1Evidence(root, {
       type: "review",
       actor: "maintainer-reviewer",
+      gateBinding: null,
       review: {
         role: "maintainer",
         subjectActor: "implementation-agent",
@@ -274,6 +398,50 @@ describe("implementation plan validator", () => {
     const result = runPlan(root);
     expect(result.status).not.toBe(0);
     expect(result.stderr).toContain("mismatched GitHub review identity");
+  });
+
+  it("rejects command evidence bound to a different gate", async () => {
+    const root = await createFixture();
+    const evidence = await createV1Evidence(root);
+    await passGate(root, "QG-REPO-CHECK", evidence.id);
+
+    const result = runPlan(root);
+
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain("bound to QG-PLAN-CHECK, not QG-REPO-CHECK");
+  });
+
+  it("accepts command evidence bound to the exact gate and command", async () => {
+    const root = await createFixture();
+    const evidence = await createV1Evidence(root, {
+      gateBinding: {
+        gateId: "QG-REPO-CHECK",
+        kind: "command",
+        command: "pnpm check",
+      },
+    });
+    await passGate(root, "QG-REPO-CHECK", evidence.id);
+
+    const result = runPlan(root);
+
+    expect(result.status, result.stderr).toBe(0);
+  });
+
+  it("rejects command evidence with the right gate but a different command", async () => {
+    const root = await createFixture();
+    const evidence = await createV1Evidence(root, {
+      gateBinding: {
+        gateId: "QG-REPO-CHECK",
+        kind: "command",
+        command: "pnpm lint",
+      },
+    });
+    await passGate(root, "QG-REPO-CHECK", evidence.id);
+
+    const result = runPlan(root);
+
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain("command that differs from QG-REPO-CHECK");
   });
 
   it("rejects evidence belonging to a different task", async () => {

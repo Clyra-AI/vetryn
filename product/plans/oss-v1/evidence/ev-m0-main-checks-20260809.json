@@ -34,6 +34,7 @@
     "planDigest": null,
     "lockfileDigest": "sha256:46de4fe3b5397cf573a851440ef62e72e9ecddbb95aa6122c33673a307db0ead"
   },
+  "gateBinding": null,
   "review": null,
   "redaction": {
     "status": "not_applicable",

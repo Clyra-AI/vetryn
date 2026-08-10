@@ -8,7 +8,8 @@
 Vetryn's reviewed JSON plan is intentionally lean, while Factory's generic workers require one bounded task
 packet. The original validator bound successful evidence to a task and candidate commit but did not verify the
 reviewed plan and lockfile digests. It also allowed command evidence to be reused as a maintainer or trust
-approval, so the executor/verifier boundary was descriptive rather than enforced.
+approval, and repository-authored reviewer identity fields could be fabricated, so the executor/verifier
+boundary was descriptive rather than enforced.
 
 ## Decision
 
@@ -16,15 +17,19 @@ approval, so the executor/verifier boundary was descriptive rather than enforced
 - Reject packet compilation when the plan is stale or the task is not legal to execute.
 - Record the candidate executor in task state.
 - Require every non-baseline passing evidence record to match the current reviewed plan and lockfile digests.
+- Bind command evidence to one canonical gate ID and command, and compare both with the reviewed gate catalog.
 - Require approval evidence to be `review` evidence with a role, the candidate executor as its subject, a
-  distinct reviewing actor, and a repository GitHub pull-request review attestation. The attestation binds the
-  approved state, eligible author association, GitHub review ID and URL, and observed candidate commit.
+  distinct reviewing actor, and a repository GitHub pull-request review attestation. Validation re-fetches that
+  review from GitHub's public API and compares the approved state, actor, eligible author association, review ID,
+  pull request, URL, and observed candidate commit. Repository JSON alone is not an authentication source.
 - Preserve the already accepted imported baseline as explicit `baseline-verification` evidence. That narrow
   compatibility case cannot be used by later V1 tasks.
 
 ## Consequences
 
 - Executors cannot unlock dependent work by attaching their command output to review records.
+- One successful command cannot be replayed across unrelated quality gates.
+- Fabricated or unavailable GitHub approval claims fail closed, including during maintainer promotion.
 - Plan or dependency drift invalidates old passing evidence instead of silently carrying it forward.
 - External agents can consume a stable task packet without making Factory a runtime or git-submodule
   dependency.

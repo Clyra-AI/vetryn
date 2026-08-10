@@ -31,6 +31,10 @@ Factory is an external development tool, not a product dependency or git submodu
 Run the smallest relevant checks during implementation and `pnpm check` before handoff or shipping. Tests
 must cover deterministic success, failure, and stale-evidence behavior. Evidence is candidate-bound,
 compact, and redacted; raw prompts, model output, credentials, private traces, and full logs are not committed.
+Command evidence names the exact gate and canonical command it proves; evidence for one command cannot satisfy
+another gate. Approval evidence is re-fetched from GitHub's public API during validation and must match the
+repository, pull request, review ID, reviewer, eligible association, approved state, URL, and candidate commit.
+Editable evidence identity fields are never sufficient on their own, and failed API authentication fails closed.
 
 The repository preserves these test levels as the product grows: static, unit, property, contract,
 integration, end-to-end, acceptance, adversarial/hardening, chaos, performance/soak, scenario, and field.

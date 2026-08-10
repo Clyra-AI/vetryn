@@ -84,7 +84,16 @@
       "additionalProperties": false,
       "required": ["state", "attempt", "maxAttempts", "candidate"],
       "properties": {
-        "state": { "enum": ["planned", "ready", "in_progress", "changes_requested"] },
+        "state": {
+          "enum": [
+            "planned",
+            "ready",
+            "in_progress",
+            "verification_pending",
+            "review_pending",
+            "changes_requested"
+          ]
+        },
         "attempt": { "type": "integer", "minimum": 0, "maximum": 3 },
         "maxAttempts": { "type": "integer", "minimum": 1, "maximum": 3 },
         "candidate": {

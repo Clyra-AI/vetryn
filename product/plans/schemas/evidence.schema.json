@@ -15,6 +15,7 @@
     "createdAt",
     "result",
     "inputs",
+    "gateBinding",
     "review",
     "redaction"
   ],
@@ -60,6 +61,21 @@
         "planDigest": { "type": ["string", "null"], "pattern": "^sha256:[0-9a-f]{64}$" },
         "lockfileDigest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
       }
+    },
+    "gateBinding": {
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["gateId", "kind", "command"],
+          "properties": {
+            "gateId": { "type": "string", "pattern": "^QG-[A-Z0-9-]+$" },
+            "kind": { "const": "command" },
+            "command": { "type": "string", "minLength": 1 }
+          }
+        }
+      ]
     },
     "review": {
       "oneOf": [
@@ -110,6 +126,14 @@
       "if": { "properties": { "type": { "const": "review" } }, "required": ["type"] },
       "then": { "properties": { "review": { "type": "object" } } },
       "else": { "properties": { "review": { "type": "null" } } }
+    },
+    {
+      "if": {
+        "properties": { "type": { "enum": ["command-run", "github-checks"] } },
+        "required": ["type"]
+      },
+      "then": { "properties": { "gateBinding": { "type": "object" } } },
+      "else": { "properties": { "gateBinding": { "type": "null" } } }
     },
     {
       "if": {
