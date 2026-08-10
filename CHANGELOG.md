@@ -8,6 +8,7 @@
 - Added exact-gate command evidence, live GitHub approval and role authentication, product-contract packet
   binding, and post-execution packet compilation.
 - Rejects superseded approvals, stale pull-request heads, and passing evidence for planned gates.
+- Uses built-in HTTPS for GitHub evidence authentication so repository binaries cannot shadow the collector.
 
 The project uses [Changesets](https://github.com/changesets/changesets) to prepare package versions and
 release notes.

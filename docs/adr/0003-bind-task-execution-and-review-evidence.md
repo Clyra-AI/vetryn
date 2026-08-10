@@ -25,7 +25,8 @@ boundary was descriptive rather than enforced.
   pull request, current head, URL, and observed candidate commit. The cited approval must remain the reviewer's
   latest decisive review on that commit. Validation separately fetches CODEOWNERS from protected `main` and
   requires the actor to own the protected surface mapped to the expected role. Branch-authored evidence and role
-  text are not authority.
+  text are not authority. All reads use Node's built-in HTTPS fetch so package-script PATH cannot substitute a
+  repository-controlled collector.
 - Reject `pass` for any gate whose reviewed catalog availability is not `active`.
 - Preserve the already accepted imported baseline as explicit `baseline-verification` evidence. That narrow
   compatibility case cannot be used by later V1 tasks.
@@ -36,6 +37,7 @@ boundary was descriptive rather than enforced.
 - One successful command cannot be replayed across unrelated quality gates.
 - Fabricated or unavailable GitHub approval claims fail closed, including during maintainer promotion.
 - Superseded approvals and evidence for future planned gates cannot unlock acceptance.
+- Repository binaries cannot impersonate the GitHub evidence collector through package-script PATH.
 - Product-contract drift changes the packet even when the plan, state, ledger, and lockfile are unchanged.
 - Plan or dependency drift invalidates old passing evidence instead of silently carrying it forward.
 - External agents can consume a stable task packet without making Factory a runtime or git-submodule
