@@ -25,14 +25,16 @@ flowchart LR
 
 ### Domain core
 
-Versioned schemas define call sites, source bindings, eval suites, candidate runs, recommendations, and
-rollouts. The core has no provider, network, or GitHub dependency.
+Versioned schemas define call sites, source bindings, eval suites, catalog snapshots, candidate runs,
+recommendations, and patch plans. The core has no provider, network, filesystem, AST, or GitHub
+dependency. Rollout state is outside OSS V1.
 
 ### Scanner
 
 Language adapters use syntax trees rather than regular expressions. A scanner may propose a call site
 only when it can identify the SDK operation and an editable, static model literal. Each result includes
-a stable semantic identifier plus a source fingerprint used to prevent stale patches.
+syntactic evidence, confidence, a patchability reason, and a source fingerprint used to prevent stale
+patches. The scanner does not assign the human-owned stable call-site ID.
 
 ### Manifest
 
@@ -53,9 +55,9 @@ scores. Credentials come from the execution environment and outputs stay local b
 
 ### Scorers and gates
 
-Deterministic assertions, domain checks, optional judges, and statistical summaries produce evidence.
-Hard policy gates run before weighted ranking. A cheaper candidate cannot compensate for a failed
-quality, privacy, compatibility, context, or latency gate.
+Deterministic assertions, domain checks, and statistical summaries produce V1 evidence. Hard policy
+gates run before ranking. A cheaper candidate cannot compensate for a failed quality, privacy,
+compatibility, context, or latency gate. LLM-as-judge scoring is explicitly deferred.
 
 ### Recommendation engine
 
@@ -69,14 +71,17 @@ opens a draft PR from that patch, is idempotent per call site and candidate, and
 
 ## Package direction
 
-The initial monorepo keeps a small package graph:
+The initial monorepo keeps a small package graph and extracts adapters only when their implementation
+milestone starts:
 
 - `@vetryn/core`: provider-neutral schemas and decision primitives;
-- `vetryn`: end-user CLI and orchestration entry point; and
-- future internal packages only when a boundary is independently testable and useful.
+- `@vetryn/typescript`: AST discovery, source binding, fingerprints, and verified literal patching;
+- `@vetryn/openrouter`: catalog normalization, compatibility, execution, pricing, and usage; and
+- `vetryn`: end-user CLI, filesystem orchestration, reports, and the composite Action entry point.
 
-Adapters should depend inward on the core. The core must not depend on CLI, GitHub, SDK, or provider
-implementations.
+The TypeScript and OpenRouter packages depend inward on the core. The CLI may compose all three. V1
+uses a composite `action.yml` around the packaged CLI; an action package is created only if a substantial
+independent boundary emerges.
 
 ## Trust boundaries
 

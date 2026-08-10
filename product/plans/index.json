@@ -1,0 +1,16 @@
+{
+  "$schema": "./schemas/index.schema.json",
+  "schemaVersion": "1.0.0",
+  "plans": [
+    {
+      "id": "oss-v1",
+      "status": "active",
+      "planPath": "product/plans/oss-v1/plan.json",
+      "progressPath": "product/plans/oss-v1/progress.json",
+      "productContract": "docs/oss-v1.md",
+      "supersedes": [],
+      "supersededBy": null,
+      "nextLegalAction": "Review the planning-only V1-00 draft, verify its gates, and record maintainer and trust-review approval."
+    }
+  ]
+}

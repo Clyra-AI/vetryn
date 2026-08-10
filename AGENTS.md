@@ -12,4 +12,11 @@ These instructions apply to the entire repository.
 - Avoid broad framework abstractions before a second real implementation needs them.
 - Update the relevant docs and add an ADR for changes to public formats, recommendation semantics, or
   security boundaries.
+- Treat `docs/oss-v1.md` as product truth and `product/plans/oss-v1/plan.json` plus
+  `acceptance-ledger.json` as reviewed delivery truth. Implementers must not broaden their task scope,
+  rewrite acceptance criteria, or mark their own work accepted.
+- `product/plans/oss-v1/progress.json` is generated. Update task state and evidence through the plan
+  tooling rather than editing the roll-up directly.
+- Keep Factory-compatible planning artifacts separate from Vetryn product-domain schemas. Transient
+  claims, worktrees, prompts, raw logs, credentials, and grants belong in ignored `.factoryd/` state.
 - Run `pnpm check` before declaring work complete.

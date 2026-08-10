@@ -1,0 +1,42 @@
+{
+  "$schema": "../../schemas/evidence.schema.json",
+  "schemaVersion": "1.0.0",
+  "id": "ev-m0-main-checks-20260809",
+  "taskId": "M0-00",
+  "type": "github-checks",
+  "actor": "github-actions",
+  "commit": "eb970bf3708ceb7a0d93d93481812dac090428b9",
+  "createdAt": "2026-08-10T00:22:00Z",
+  "result": {
+    "status": "pass",
+    "checks": [
+      {
+        "name": "CI / verify",
+        "status": "pass",
+        "url": "https://github.com/Clyra-AI/vetryn/actions/runs/31343899637",
+        "summary": "The baseline installed the frozen lockfile and completed pnpm check, including pack smoke tests."
+      },
+      {
+        "name": "CodeQL",
+        "status": "pass",
+        "url": "https://github.com/Clyra-AI/vetryn/actions/runs/31343899628",
+        "summary": "Code scanning completed successfully for the baseline."
+      },
+      {
+        "name": "OpenSSF Scorecard",
+        "status": "pass",
+        "url": "https://github.com/Clyra-AI/vetryn/actions/runs/31343899636",
+        "summary": "The repository security scorecard workflow completed successfully."
+      }
+    ]
+  },
+  "inputs": {
+    "planDigest": null,
+    "lockfileDigest": "sha256:46de4fe3b5397cf573a851440ef62e72e9ecddbb95aa6122c33673a307db0ead"
+  },
+  "redaction": {
+    "status": "not_applicable",
+    "containsRawModelOutput": false,
+    "containsSecrets": false
+  }
+}

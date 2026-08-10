@@ -8,7 +8,7 @@ export default defineConfig({
       provider: "v8",
       reporter: ["text", "lcov"],
     },
-    include: ["packages/*/test/**/*.test.ts"],
+    include: ["packages/*/test/**/*.test.ts", "scripts/**/*.test.mjs"],
     passWithNoTests: false,
     restoreMocks: true,
   },

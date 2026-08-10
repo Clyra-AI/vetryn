@@ -1,6 +1,8 @@
 # Roadmap
 
 The roadmap is outcome-based. Dates will follow validated design-partner needs rather than precede them.
+Machine-tracked task and acceptance state lives in [`product/plans/oss-v1/`](product/plans/oss-v1/README.md);
+these checkboxes are a human summary, not execution truth.
 
 ## 0. Repository foundation
 
@@ -24,6 +26,7 @@ The roadmap is outcome-based. Dates will follow validated design-partner needs r
 - [ ] Stable human-reviewed call-site bindings
 - [ ] Discovery confidence and patchability explanations
 - [ ] Source and structural fingerprints
+- [ ] At least 95% high-confidence precision and 80% supported-pattern recall
 
 ## 3. Evidence and decision
 
@@ -40,6 +43,12 @@ The roadmap is outcome-based. Dates will follow validated design-partner needs r
 - [ ] Local reproduction workflow
 - [ ] GitHub Action with explicit assessment and mutation modes
 - [ ] One idempotent draft migration PR
+
+## V1 field gate
+
+- [ ] Ten qualified recommendation PRs across at least three companies
+- [ ] At least a 40% qualified-PR merge rate
+- [ ] Zero serious escaped regressions
 
 ## Post-V1 candidates
 

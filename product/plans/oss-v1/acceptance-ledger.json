@@ -1,0 +1,468 @@
+{
+  "$schema": "../schemas/acceptance-ledger.schema.json",
+  "schemaVersion": "1.0.0",
+  "planId": "oss-v1",
+  "items": [
+    {
+      "id": "M0-FOUNDATION-001",
+      "taskId": "M0-00",
+      "statement": "The imported baseline passes the repository quality gate from its committed lockfile.",
+      "verification": { "method": "command", "testLevel": "static", "gateId": "QG-REPO-CHECK" },
+      "waivable": false,
+      "status": "accepted",
+      "evidenceRefs": ["ev-m0-main-checks-20260809"]
+    },
+    {
+      "id": "M0-FOUNDATION-002",
+      "taskId": "M0-00",
+      "statement": "Core and CLI packages can be packed and installed by the baseline smoke checks.",
+      "verification": { "method": "test", "testLevel": "integration", "gateId": "QG-PACK-SMOKE" },
+      "waivable": false,
+      "status": "accepted",
+      "evidenceRefs": ["ev-m0-main-checks-20260809"]
+    },
+    {
+      "id": "M0-FOUNDATION-003",
+      "taskId": "M0-00",
+      "statement": "CI, CodeQL, and Scorecard succeed with read-only default workflow permissions.",
+      "verification": {
+        "method": "review",
+        "testLevel": "static",
+        "gateId": "QG-INDEPENDENT-VERIFY"
+      },
+      "waivable": false,
+      "status": "accepted",
+      "evidenceRefs": ["ev-m0-main-checks-20260809"]
+    },
+    {
+      "id": "PLAN-001",
+      "taskId": "V1-00",
+      "statement": "The human product contract, ADR, package boundaries, and machine plan make the same V1 scope decisions.",
+      "verification": {
+        "method": "review",
+        "testLevel": "contract",
+        "gateId": "QG-INDEPENDENT-VERIFY"
+      },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
+      "id": "PLAN-002",
+      "taskId": "V1-00",
+      "statement": "The plan, ledger, state, evidence, progress, and scenario files validate and cross-reference without drift.",
+      "verification": { "method": "command", "testLevel": "contract", "gateId": "QG-PLAN-CHECK" },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
+      "id": "PLAN-003",
+      "taskId": "V1-00",
+      "statement": "The golden contract covers success, ambiguity, incompatibility, regression, stale source, provider failure, privacy, and idempotency.",
+      "verification": {
+        "method": "inspection",
+        "testLevel": "adversarial",
+        "gateId": "QG-TRUST-REVIEW"
+      },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
+      "id": "PLAN-004",
+      "taskId": "V1-00",
+      "statement": "The full repository quality gate passes and the change contains planning infrastructure only.",
+      "verification": { "method": "command", "testLevel": "static", "gateId": "QG-REPO-CHECK" },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
+      "id": "CONTRACT-001",
+      "taskId": "V1-01",
+      "statement": "Every V1 artifact has a versioned strict schema and canonical serializer.",
+      "verification": { "method": "test", "testLevel": "contract", "gateId": "QG-CONTRACTS" },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
+      "id": "CONTRACT-002",
+      "taskId": "V1-01",
+      "statement": "Malformed, unknown-version, and logically impossible artifacts fail closed with actionable diagnostics.",
+      "verification": { "method": "test", "testLevel": "adversarial", "gateId": "QG-CONTRACTS" },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
+      "id": "CONTRACT-003",
+      "taskId": "V1-01",
+      "statement": "Core has no filesystem, network, provider, GitHub, or AST dependency.",
+      "verification": { "method": "inspection", "testLevel": "static", "gateId": "QG-REPO-CHECK" },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
+      "id": "CONTRACT-004",
+      "taskId": "V1-01",
+      "statement": "Durable artifacts exclude credentials and raw protected prompts or outputs by construction.",
+      "verification": {
+        "method": "review",
+        "testLevel": "adversarial",
+        "gateId": "QG-TRUST-REVIEW"
+      },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
+      "id": "GOLDEN-001",
+      "taskId": "V1-02",
+      "statement": "The fixture contains a supported application, human-owned manifest, and at least 30 reviewed eval cases.",
+      "verification": {
+        "method": "inspection",
+        "testLevel": "integration",
+        "gateId": "QG-SCENARIOS"
+      },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
+      "id": "GOLDEN-002",
+      "taskId": "V1-02",
+      "statement": "The pinned catalog, clock, and mock provider make every golden scenario reproducible without network access.",
+      "verification": { "method": "test", "testLevel": "e2e", "gateId": "QG-SCENARIOS" },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
+      "id": "GOLDEN-003",
+      "taskId": "V1-02",
+      "statement": "The mock provider exercises success, invalid output, timeout, rate limit, usage, retry, and budget behavior.",
+      "verification": { "method": "test", "testLevel": "adversarial", "gateId": "QG-SCENARIOS" },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
+      "id": "GOLDEN-004",
+      "taskId": "V1-02",
+      "statement": "Sentinel credentials and protected model output never appear in test logs or durable artifacts.",
+      "verification": {
+        "method": "review",
+        "testLevel": "adversarial",
+        "gateId": "QG-TRUST-REVIEW"
+      },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
+      "id": "SCAN-001",
+      "taskId": "V1-03",
+      "statement": "Supported direct OpenAI-compatible TypeScript call sites are discovered with normalized model pins and source fingerprints.",
+      "verification": {
+        "method": "test",
+        "testLevel": "integration",
+        "gateId": "QG-SCANNER-CORPUS"
+      },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
+      "id": "SCAN-002",
+      "taskId": "V1-03",
+      "statement": "High-confidence discovery precision is at least 95% over the reviewed corpus.",
+      "verification": {
+        "method": "test",
+        "testLevel": "integration",
+        "gateId": "QG-SCANNER-CORPUS"
+      },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
+      "id": "SCAN-003",
+      "taskId": "V1-03",
+      "statement": "Supported-pattern recall is at least 80% over the reviewed corpus.",
+      "verification": {
+        "method": "test",
+        "testLevel": "integration",
+        "gateId": "QG-SCANNER-CORPUS"
+      },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
+      "id": "SCAN-004",
+      "taskId": "V1-03",
+      "statement": "Dynamic and ambiguous wrappers are reported without a patchable target or invented semantic ID.",
+      "verification": { "method": "test", "testLevel": "adversarial", "gateId": "QG-TRUST-REVIEW" },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
+      "id": "MANIFEST-001",
+      "taskId": "V1-04",
+      "statement": "Manifest initialization requires explicit human-owned stable call-site IDs and ownership metadata.",
+      "verification": { "method": "test", "testLevel": "contract", "gateId": "QG-CONTRACTS" },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
+      "id": "MANIFEST-002",
+      "taskId": "V1-04",
+      "statement": "Re-scanning and re-initializing an unchanged call site is idempotent.",
+      "verification": { "method": "test", "testLevel": "integration", "gateId": "QG-REPO-CHECK" },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
+      "id": "MANIFEST-003",
+      "taskId": "V1-04",
+      "statement": "Invalid or colliding stable IDs are rejected without partially updating the manifest.",
+      "verification": { "method": "test", "testLevel": "adversarial", "gateId": "QG-CONTRACTS" },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
+      "id": "CATALOG-001",
+      "taskId": "V1-05",
+      "statement": "OpenRouter catalog data is normalized into a versioned immutable snapshot with provenance and digest.",
+      "verification": { "method": "test", "testLevel": "contract", "gateId": "QG-CONTRACTS" },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
+      "id": "CATALOG-002",
+      "taskId": "V1-05",
+      "statement": "Compatibility and price filters fail closed on unknown or incomplete provider metadata.",
+      "verification": { "method": "test", "testLevel": "adversarial", "gateId": "QG-SCENARIOS" },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
+      "id": "CATALOG-003",
+      "taskId": "V1-05",
+      "statement": "Replaying a snapshot after live catalog changes produces identical candidate ordering and price calculations.",
+      "verification": { "method": "test", "testLevel": "integration", "gateId": "QG-SCENARIOS" },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
+      "id": "EVAL-001",
+      "taskId": "V1-06",
+      "statement": "The canonical vetryn eval command emits reproducible run and candidate artifacts from pinned inputs.",
+      "verification": { "method": "test", "testLevel": "e2e", "gateId": "QG-SCENARIOS" },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
+      "id": "EVAL-002",
+      "taskId": "V1-06",
+      "statement": "Schema, required-fact, protected-segment, cost, latency, context, and privacy gates are deterministic and fail closed.",
+      "verification": { "method": "test", "testLevel": "adversarial", "gateId": "QG-CONTRACTS" },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
+      "id": "EVAL-003",
+      "taskId": "V1-06",
+      "statement": "Provider retries, concurrency, timeouts, and spend are bounded and reported.",
+      "verification": { "method": "test", "testLevel": "integration", "gateId": "QG-SCENARIOS" },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
+      "id": "EVAL-004",
+      "taskId": "V1-06",
+      "statement": "Partial, exhausted, or privacy-unsafe runs cannot be promoted to recommendation input.",
+      "verification": {
+        "method": "review",
+        "testLevel": "adversarial",
+        "gateId": "QG-TRUST-REVIEW"
+      },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
+      "id": "RECOMMEND-001",
+      "taskId": "V1-07",
+      "statement": "A recommendation requires all hard gates, the configured quality threshold, minimum evidence, and a material economic opportunity.",
+      "verification": { "method": "test", "testLevel": "unit", "gateId": "QG-CONTRACTS" },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
+      "id": "RECOMMEND-002",
+      "taskId": "V1-07",
+      "statement": "Invalid, incompatible, insufficient-evidence, and quality-regressing candidates produce explicit abstentions.",
+      "verification": { "method": "test", "testLevel": "adversarial", "gateId": "QG-SCENARIOS" },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
+      "id": "RECOMMEND-003",
+      "taskId": "V1-07",
+      "statement": "JSON and Markdown reports describe the same deltas, failures, confidence, provenance, and estimated savings.",
+      "verification": { "method": "test", "testLevel": "contract", "gateId": "QG-CONTRACTS" },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
+      "id": "RECOMMEND-004",
+      "taskId": "V1-07",
+      "statement": "No abstention or failed hard gate can produce an actionable patch plan.",
+      "verification": {
+        "method": "review",
+        "testLevel": "adversarial",
+        "gateId": "QG-TRUST-REVIEW"
+      },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
+      "id": "PATCH-001",
+      "taskId": "V1-08",
+      "statement": "A valid recommendation changes only the reviewed model literal and preserves formatting and unrelated syntax.",
+      "verification": { "method": "test", "testLevel": "e2e", "gateId": "QG-SCENARIOS" },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
+      "id": "PATCH-002",
+      "taskId": "V1-08",
+      "statement": "Stale fingerprints, ambiguous targets, or changed preconditions refuse the patch and request a rescan.",
+      "verification": {
+        "method": "test",
+        "testLevel": "adversarial",
+        "gateId": "QG-SCANNER-CORPUS"
+      },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
+      "id": "PATCH-003",
+      "taskId": "V1-08",
+      "statement": "Applying or generating the same patch twice is idempotent.",
+      "verification": { "method": "test", "testLevel": "integration", "gateId": "QG-SCENARIOS" },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
+      "id": "PATCH-004",
+      "taskId": "V1-08",
+      "statement": "Patch evidence links the source fingerprint, accepted recommendation, model change, and exact diff.",
+      "verification": { "method": "review", "testLevel": "contract", "gateId": "QG-TRUST-REVIEW" },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
+      "id": "ACTION-001",
+      "taskId": "V1-09",
+      "statement": "The composite Action runs the supported workflow from a clean external fixture using packed CLI artifacts.",
+      "verification": { "method": "test", "testLevel": "e2e", "gateId": "QG-PACK-SMOKE" },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
+      "id": "ACTION-002",
+      "taskId": "V1-09",
+      "statement": "Workflow permissions are least privilege and third-party Actions are pinned by full commit SHA.",
+      "verification": {
+        "method": "review",
+        "testLevel": "static",
+        "gateId": "QG-INDEPENDENT-VERIFY"
+      },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
+      "id": "ACTION-003",
+      "taskId": "V1-09",
+      "statement": "Failed and abstained runs publish evidence but cannot open a migration PR.",
+      "verification": { "method": "test", "testLevel": "adversarial", "gateId": "QG-SCENARIOS" },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
+      "id": "ACTION-004",
+      "taskId": "V1-09",
+      "statement": "An unchanged rerun reuses recommendation identity and does not duplicate PR output.",
+      "verification": { "method": "test", "testLevel": "integration", "gateId": "QG-SCENARIOS" },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
+      "id": "FIELD-001",
+      "taskId": "V1-10",
+      "statement": "At least ten qualified recommendation PRs are observed across at least three independent companies.",
+      "verification": { "method": "field", "testLevel": "field", "gateId": "QG-FIELD" },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
+      "id": "FIELD-002",
+      "taskId": "V1-10",
+      "statement": "At least 40% of qualified recommendation PRs merge within fourteen days.",
+      "verification": { "method": "field", "testLevel": "field", "gateId": "QG-FIELD" },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
+      "id": "FIELD-003",
+      "taskId": "V1-10",
+      "statement": "No observed rollout causes a serious quality, safety, privacy, or operational regression.",
+      "verification": { "method": "field", "testLevel": "field", "gateId": "QG-TRUST-REVIEW" },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
+      "id": "FIELD-004",
+      "taskId": "V1-10",
+      "statement": "Evidence demonstrates attributable savings or quality value and records onboarding effort without raw customer prompts or outputs.",
+      "verification": {
+        "method": "field",
+        "testLevel": "field",
+        "gateId": "QG-INDEPENDENT-VERIFY"
+      },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    }
+  ]
+}

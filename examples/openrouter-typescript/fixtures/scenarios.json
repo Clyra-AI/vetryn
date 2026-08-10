@@ -1,0 +1,111 @@
+{
+  "$schema": "../../../product/plans/schemas/scenario-contract.schema.json",
+  "schemaVersion": "1.0.0",
+  "suiteId": "openrouter-typescript-golden",
+  "offline": true,
+  "scenarios": [
+    {
+      "id": "cheaper-valid-candidate",
+      "category": "success",
+      "description": "A cheaper compatible candidate passes every deterministic assertion and hard limit.",
+      "expectedDisposition": "recommend",
+      "expectedReason": "Quality is non-inferior and estimated cost is lower.",
+      "assertions": [
+        "Recommendation cites the immutable catalog snapshot.",
+        "A minimal model-literal patch is produced."
+      ]
+    },
+    {
+      "id": "invalid-json-output",
+      "category": "quality",
+      "description": "The candidate returns invalid JSON for a call site with a JSON output contract.",
+      "expectedDisposition": "abstain",
+      "expectedReason": "A deterministic output-contract assertion failed.",
+      "assertions": ["No patch is produced.", "The failed eval case is reported."]
+    },
+    {
+      "id": "protected-segment-regression",
+      "category": "quality",
+      "description": "The candidate omits a human-reviewed protected segment.",
+      "expectedDisposition": "abstain",
+      "expectedReason": "A protected-segment assertion failed.",
+      "assertions": ["The protected value is not exposed in logs.", "No recommendation is emitted."]
+    },
+    {
+      "id": "insufficient-evidence",
+      "category": "quality",
+      "description": "The suite has too few passing representative cases to meet the confidence policy.",
+      "expectedDisposition": "abstain",
+      "expectedReason": "The minimum evidence threshold was not met.",
+      "assertions": ["The report identifies the missing evidence.", "No patch is produced."]
+    },
+    {
+      "id": "incompatible-tool-support",
+      "category": "catalog",
+      "description": "A cheaper model does not support the call site's required tool semantics.",
+      "expectedDisposition": "refuse",
+      "expectedReason": "Candidate capabilities do not satisfy hard compatibility constraints.",
+      "assertions": [
+        "The candidate is excluded before evaluation.",
+        "The exclusion reason is deterministic."
+      ]
+    },
+    {
+      "id": "ambiguous-wrapper",
+      "category": "scanner",
+      "description": "A dynamic application wrapper prevents high-confidence extraction of the semantic call site.",
+      "expectedDisposition": "abstain",
+      "expectedReason": "Discovery confidence is below the patch threshold.",
+      "assertions": [
+        "The finding is reported as ambiguous.",
+        "No manifest or source file is modified."
+      ]
+    },
+    {
+      "id": "stale-source-fingerprint",
+      "category": "patch",
+      "description": "The source changed after discovery, invalidating the scanner fingerprint.",
+      "expectedDisposition": "refuse",
+      "expectedReason": "The patch precondition no longer matches the source.",
+      "assertions": ["No stale patch is applied.", "A rescan is requested."]
+    },
+    {
+      "id": "catalog-snapshot-replay",
+      "category": "catalog",
+      "description": "An archived run is replayed after the live provider catalog changes.",
+      "expectedDisposition": "idempotent",
+      "expectedReason": "Replay uses the checked-in immutable catalog snapshot.",
+      "assertions": ["Candidate ordering is unchanged.", "Price calculations are unchanged."]
+    },
+    {
+      "id": "rate-limit-budget-exhaustion",
+      "category": "provider",
+      "description": "The mock provider returns rate limits until the deterministic retry and budget limits are exhausted.",
+      "expectedDisposition": "abstain",
+      "expectedReason": "Execution could not collect sufficient evidence within policy limits.",
+      "assertions": [
+        "Retry count is bounded.",
+        "No partial result is promoted to a recommendation."
+      ]
+    },
+    {
+      "id": "action-rerun-idempotency",
+      "category": "action",
+      "description": "The GitHub Action is rerun with unchanged source, manifests, cases, and catalog snapshot.",
+      "expectedDisposition": "idempotent",
+      "expectedReason": "Identical inputs produce identical artifacts and do not duplicate PR output.",
+      "assertions": ["Artifact digests match.", "The existing recommendation identity is reused."]
+    },
+    {
+      "id": "secret-and-output-redaction",
+      "category": "privacy",
+      "description": "Fixtures contain sentinel credentials and sensitive model-output markers.",
+      "expectedDisposition": "idempotent",
+      "expectedReason": "Reports and logs retain only approved summaries and hashes.",
+      "assertions": [
+        "Sentinel credentials never appear in output.",
+        "Raw protected model output never appears in output."
+      ]
+    }
+  ]
+}
