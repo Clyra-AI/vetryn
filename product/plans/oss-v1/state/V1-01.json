@@ -2,42 +2,46 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "V1-01",
-  "revision": 13,
-  "state": "in_progress",
+  "revision": 14,
+  "state": "accepted",
   "attempt": 2,
-  "candidate": null,
+  "candidate": {
+    "baseCommit": "e4e896e9e8341a9ac7b437ea3346a5a1bf4e510c",
+    "commit": "601123f020b49661aae0195534795b738f57af2f",
+    "executor": "davidahmann"
+  },
   "criteria": [
     {
       "criterionId": "CONTRACT-001",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-01-contracts-601123f"]
     },
     {
       "criterionId": "CONTRACT-002",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-01-contracts-601123f"]
     },
     {
       "criterionId": "CONTRACT-003",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-01-repo-check-601123f"]
     },
     {
       "criterionId": "CONTRACT-004",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-01-contracts-601123f"]
     }
   ],
   "gates": [
     {
       "gateId": "QG-REPO-CHECK",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-01-repo-check-601123f"]
     },
     {
       "gateId": "QG-CONTRACTS",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-01-contracts-601123f"]
     },
     {
       "gateId": "QG-INDEPENDENT-VERIFY",
@@ -175,6 +179,13 @@
       "at": "2026-08-10T17:49:19Z",
       "actor": "davidahmann",
       "reason": "Reopened after current-head review identified manifest-to-eval-suite and catalog-content-digest integrity invariants."
+    },
+    {
+      "from": "in_progress",
+      "to": "accepted",
+      "at": "2026-08-10T17:53:31Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer accepted the reviewed exact candidate after the active contract and repository command gates passed under ADR 0009 single-maintainer delivery."
     }
   ]
 }
