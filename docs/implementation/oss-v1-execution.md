@@ -94,6 +94,10 @@ already-passing evidence remain immutable historical provenance.
 The CI fan-in job must fail if a required lane is missing, skipped unexpectedly, or failed. Live model
 availability and provider responses are not reproducible enough to gate pull requests.
 
+`pnpm test:scanner-corpus` and `pnpm test:scenarios` each select only their named future suite. Until the
+corresponding task adds that suite, the command intentionally fails rather than allowing the generic unit suite to
+stand in for required evidence.
+
 ## Scenario policy
 
 The golden example covers the economic win and the trust failures. Unknown, ambiguous, stale,
