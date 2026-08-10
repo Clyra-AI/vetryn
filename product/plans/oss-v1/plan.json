@@ -34,7 +34,21 @@
       "id": "DEC-SCORING",
       "status": "locked",
       "decision": "V1 uses deterministic scorers and hard gates only; LLM judges are deferred.",
-      "rationale": "The first upgrade PR must be reproducible offline and explainable.",
+      "rationale": "The first upgrade PR must be reproducible offline and explainable. An optional calibrated semantic-rubric scorer is considered only after V1 field evidence shows deterministic evaluation blocks valuable open-ended call sites.",
+      "blocks": []
+    },
+    {
+      "id": "DEC-CANDIDATES",
+      "status": "locked",
+      "decision": "V1 resolves at most five candidates by default, configurable downward, after hard compatibility and policy filters; it ranks exact-decimal projected workload cost ascending using pinned representative prompt/completion token weights, context limit descending, then canonical model ID ascending.",
+      "rationale": "A bounded, workload-cost-first shortlist controls spend and runtime without assuming that prompt and completion usage are equal.",
+      "blocks": []
+    },
+    {
+      "id": "DEC-REFRESH",
+      "status": "locked",
+      "decision": "Catalog assessment is manual by default, scheduling is explicit opt-in, evaluation inputs bind the evaluator executable identity, unchanged normalized catalog and evaluation inputs skip paid candidate execution only when prior evidence is complete, integrity-valid, and policy-reusable, every successful refresh records immutable freshness evidence, and a failed live refresh cannot be represented as current.",
+      "rationale": "Installation must not create surprise recurring spend or silently make recommendations from stale provider state.",
       "blocks": []
     },
     {
@@ -347,6 +361,7 @@
       },
       "semanticInvariants": [
         "Re-scans do not silently rename human-owned call-site IDs.",
+        "Each manifest pins a human-reviewed representative prompt/completion token-weight profile with provenance for candidate cost ranking.",
         "Manifest initialization is reviewable and idempotent."
       ],
       "deliverables": ["packages/core/**", "packages/cli/**", "examples/openrouter-typescript/**"],
@@ -375,7 +390,13 @@
         { "taskId": "V1-01", "kind": "hard" },
         { "taskId": "V1-02", "kind": "hard" }
       ],
-      "acceptanceItemIds": ["CATALOG-001", "CATALOG-002", "CATALOG-003"],
+      "acceptanceItemIds": [
+        "CATALOG-001",
+        "CATALOG-002",
+        "CATALOG-003",
+        "CATALOG-004",
+        "CATALOG-005"
+      ],
       "scope": {
         "allowedPaths": [
           "packages/openrouter/**",
@@ -387,7 +408,12 @@
       },
       "semanticInvariants": [
         "Every evaluation cites an immutable catalog snapshot.",
-        "Missing or ambiguous pricing and capability data excludes the candidate."
+        "Missing or ambiguous pricing and capability data excludes the candidate.",
+        "Candidate selection is bounded by repository policy and reproducible from normalized catalog data.",
+        "Projected workload cost uses exact-decimal catalog prices weighted by the manifest's pinned representative prompt/completion token profile.",
+        "Candidate ranking uses projected workload cost ascending, context limit descending, and canonical model ID ascending.",
+        "Every successful live refresh records immutable freshness evidence even when its content-addressed snapshot is reused.",
+        "A failed live refresh cannot silently relabel an older snapshot as current."
       ],
       "deliverables": ["packages/openrouter/**", "packages/cli/**"],
       "requiredTestLevels": ["unit", "contract", "integration", "adversarial"],
@@ -402,7 +428,11 @@
       "maxAttempts": 2,
       "stopConditions": [
         "A run can silently use a mutable live catalog.",
-        "Unknown pricing is treated as zero."
+        "Unknown pricing is treated as zero.",
+        "A missing, invalid, unreviewed, or unprovenanced representative usage profile produces a shortlist.",
+        "Candidate selection exceeds its configured bound or changes under identical inputs.",
+        "Candidate ranking uses a different field, direction, or tie-break order than the locked ranking tuple.",
+        "An unchanged normalized catalog creates a distinct snapshot, omits its new refresh observation, or a failed refresh is reported as fresh."
       ]
     },
     {
@@ -561,7 +591,7 @@
       "objective": "Package scan, eval, recommend, report, and patch as a least-privilege composite Action with deterministic artifacts and idempotent PR behavior.",
       "risk": { "level": "high", "domains": ["github", "supply-chain", "automation"] },
       "dependsOn": [{ "taskId": "V1-08", "kind": "hard" }],
-      "acceptanceItemIds": ["ACTION-001", "ACTION-002", "ACTION-003", "ACTION-004"],
+      "acceptanceItemIds": ["ACTION-001", "ACTION-002", "ACTION-003", "ACTION-004", "ACTION-005"],
       "scope": {
         "allowedPaths": [
           "action.yml",
@@ -578,7 +608,10 @@
       },
       "semanticInvariants": [
         "The Action requests only the permissions needed for the selected mode.",
-        "Unchanged inputs do not create duplicate PRs or mutable evidence."
+        "Unchanged inputs do not create duplicate PRs or mutable evidence.",
+        "Provider-backed assessment is manual by default and scheduled execution requires explicit repository opt-in.",
+        "The evaluation-input digest binds the evaluator tool version and build or commit revision.",
+        "An unchanged catalog and evaluation-input digest skips paid candidate execution only when prior evidence is complete, integrity-valid, and reusable under current policy."
       ],
       "deliverables": ["action.yml", ".github/workflows/**", "examples/openrouter-typescript/**"],
       "requiredTestLevels": ["static", "contract", "integration", "e2e", "adversarial"],
@@ -601,23 +634,30 @@
       "stopConditions": [
         "Workflow permissions are broader than required.",
         "A failed or abstained run can open a migration PR.",
-        "Action reruns duplicate output."
+        "Action reruns duplicate output.",
+        "Installation alone enables recurring provider spend.",
+        "An evaluator tool version or build/commit revision change reuses evidence produced by older executable code.",
+        "Complete reusable evidence is ignored and unchanged inputs trigger provider execution.",
+        "Failed, partial, exhausted, privacy-unsafe, or otherwise non-reusable evidence suppresses a later bounded retry."
       ]
     },
     {
       "id": "V1-10",
       "milestone": "FIELD",
       "title": "Validate the beachhead in real repositories",
-      "objective": "Prove that qualified recommendation PRs are trusted, merged, safe, and economically meaningful before expanding scope.",
+      "objective": "Prove that qualified recommendation PRs are trusted, merged, safe, and economically meaningful, and assess whether deterministic evaluation blocks valuable open-ended call sites before expanding scope.",
       "risk": { "level": "high", "domains": ["field-validation", "customer-trust", "economics"] },
       "dependsOn": [{ "taskId": "V1-09", "kind": "field" }],
-      "acceptanceItemIds": ["FIELD-001", "FIELD-002", "FIELD-003", "FIELD-004"],
+      "acceptanceItemIds": ["FIELD-001", "FIELD-002", "FIELD-003", "FIELD-004", "FIELD-005"],
       "scope": {
         "allowedPaths": ["docs/**", "product/plans/**"],
         "forbiddenPaths": ["packages/**", "action.yml", ".github/workflows/**"]
       },
       "semanticInvariants": [
-        "Field metrics count only qualified, evidence-backed recommendations.",
+        "Recommendation and rollout metrics count only qualified, evidence-backed recommendations.",
+        "The field assessment separately records positive blocked-call-site evidence, representative no-findings, or insufficient coverage.",
+        "Representative no-findings requires a predeclared eligibility census and direct assessment of at least ten eligible open-ended call sites across at least three FIELD-001 companies, with coverage and exclusions independently reviewed.",
+        "Blocked open-ended call sites are never counted as qualified recommendations, and neither no-findings nor insufficient coverage can authorize semantic-scorer expansion.",
         "Customer data and outcomes are recorded without raw prompts or outputs."
       ],
       "deliverables": ["product/plans/oss-v1/evidence/**", "docs/**"],
@@ -634,7 +674,8 @@
       "stopConditions": [
         "A serious quality, safety, privacy, or operational regression occurs.",
         "Savings cannot be attributed to the recommendation.",
-        "Customer consent or data handling is unclear."
+        "Customer consent or data handling is unclear.",
+        "A semantic-scorer expansion claim lacks sanitized evidence of valuable open-ended call sites blocked specifically by deterministic evaluation."
       ]
     }
   ]

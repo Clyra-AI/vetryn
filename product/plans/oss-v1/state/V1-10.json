@@ -2,7 +2,7 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "V1-10",
-  "revision": 0,
+  "revision": 3,
   "state": "planned",
   "attempt": 0,
   "candidate": null,
@@ -24,6 +24,11 @@
     },
     {
       "criterionId": "FIELD-004",
+      "status": "pending",
+      "evidenceRefs": []
+    },
+    {
+      "criterionId": "FIELD-005",
       "status": "pending",
       "evidenceRefs": []
     }
@@ -65,6 +70,27 @@
       "at": "2026-08-10T00:30:00Z",
       "actor": "planning-agent",
       "reason": "Task created by the canonical OSS V1 plan."
+    },
+    {
+      "from": "planned",
+      "to": "planned",
+      "at": "2026-08-10T12:19:11Z",
+      "actor": "planning-agent",
+      "reason": "Added sanitized field evidence for valuable open-ended call sites blocked by deterministic evaluation."
+    },
+    {
+      "from": "planned",
+      "to": "planned",
+      "at": "2026-08-10T12:52:07Z",
+      "actor": "planning-agent",
+      "reason": "Allowed a verified no-findings field outcome without authorizing semantic-scorer expansion."
+    },
+    {
+      "from": "planned",
+      "to": "planned",
+      "at": "2026-08-10T13:04:43Z",
+      "actor": "planning-agent",
+      "reason": "Required representative no-findings coverage and an explicit insufficient-coverage outcome."
     }
   ]
 }

@@ -45,9 +45,11 @@ V1 supports:
 4. text generation, structured JSON, and simple tool-call workloads;
 5. checked-in JSONL eval cases reviewed by a human;
 6. deterministic assertions; LLM-as-judge scoring is deferred beyond V1;
-7. hard quality, latency, cost, context, and privacy gates;
-8. local runs and GitHub Actions using repository secrets; and
-9. one-model-literal draft PRs that never auto-merge.
+7. a deterministic, policy-filtered OpenRouter shortlist of at most five candidates by default,
+   configurable only to a lower bound;
+8. hard quality, latency, cost, context, and privacy gates;
+9. local runs and GitHub Actions using repository secrets; and
+10. one-model-literal draft PRs that never auto-merge.
 
 Unsupported or ambiguous calls are reported as such. Vetryn must not rewrite a call site it cannot bind
 confidently.
@@ -56,8 +58,8 @@ confidently.
 
 1. `vetryn scan` discovers supported calls, source fingerprints, and proposed manifest bindings.
 2. A developer confirms ownership, fixture location, and evaluation gates.
-3. `vetryn eval` resolves a reproducible candidate set and runs the suite (`evaluate` may remain an
-   alias, but artifacts and documentation use `eval`).
+3. `vetryn eval` resolves a reproducible, budget-bounded candidate set and runs the suite (`evaluate`
+   may remain an alias, but artifacts and documentation use `eval`).
 4. Vetryn abstains unless the candidate passes every hard gate and clears a confidence floor.
 5. `vetryn recommend` creates a machine-readable and Markdown evidence report.
 6. The GitHub workflow opens or updates a draft PR changing one verified model literal.
@@ -108,6 +110,15 @@ least ten qualified recommendation PRs across three companies, at least a 40% me
 serious escaped regressions. Twenty safe rollouts remain a later confidence milestone rather than a
 deterministic build gate.
 
+An optional calibrated semantic-rubric scorer may be designed only after that field work demonstrates
+through separate sanitized evidence that deterministic evaluation blocks valuable open-ended call sites.
+Those blocked call sites are not counted as qualified recommendations. The scorer remains supplementary
+to hard gates, requires human calibration and explicit spend policy, and is not implied by V1 completion.
+A representative no-findings outcome requires a predeclared eligibility census and direct assessment of
+at least ten eligible open-ended call sites across at least three FIELD-001 companies. Representative
+no-findings or explicit insufficient coverage satisfies the V1 field record but does not authorize scorer
+design.
+
 ## Locked implementation decisions
 
 - Stable semantic call-site identity belongs to the human-reviewed manifest. Scanner output owns a
@@ -117,5 +128,19 @@ deterministic build gate.
 - New packages are extracted only when their milestone begins; empty placeholder packages are not
   created.
 - `Rollout`, optional judges, Python, hosted execution, and production canaries are outside OSS V1.
+- OpenRouter supplies the V1 catalog universe, but hard compatibility and policy filters run before a
+  deterministic shortlist whose default and maximum size is five candidates. Each manifest pins a
+  human-reviewed representative prompt/completion token-weight profile with provenance. Ranking computes
+  exact-decimal projected workload cost from that profile and normalized catalog prices, then sorts cost
+  ascending, context limit descending, and canonical model ID ascending; missing or invalid profiles fail
+  closed.
+- Provider-backed assessment is manual by default. A repository may explicitly opt into a schedule;
+  unchanged normalized catalog and evaluation-input digests skip paid candidate execution only when
+  prior evidence is complete, integrity-valid, and reusable under current policy.
+- The evaluation-input digest binds the evaluator executable identity, including tool version and build
+  or commit revision, so evaluator upgrades cannot reuse evidence produced by older code.
+- Every successful catalog refresh records immutable freshness evidence even when its unchanged,
+  content-addressed snapshot is reused.
+- A failed live catalog refresh is reported as a failure and never relabels an older snapshot as current.
 - Unknown compatibility, insufficient evidence, ambiguous binding, stale source, or failed hard gates
   always produce a report without a patch.

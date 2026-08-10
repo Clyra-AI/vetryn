@@ -38,14 +38,25 @@ patches. The scanner does not assign the human-owned stable call-site ID.
 
 ### Manifest
 
-The repository owns the call-site manifest. It records source binding, owner, fixture, gates, and
-provider constraints without storing credentials. Generated changes remain reviewable in Git.
+The repository owns the call-site manifest. It records source binding, owner, fixture, gates, provider
+constraints, and a human-reviewed representative prompt/completion token-weight profile with provenance,
+without storing credentials or raw traces. Generated changes remain reviewable in Git.
 
 ### Candidate resolver and catalog
 
 Catalog adapters normalize model capabilities, context limits, retirement state, provider, region, and
 timestamped pricing. Every run pins its catalog snapshot so a result remains explainable after prices
-or aliases change.
+or aliases change. Hard compatibility and repository policy filters run before shortlisting. V1 selects
+at most five candidates by default and permits only a lower repository-configured bound. It ranks by
+exact-decimal projected workload cost, computed from normalized catalog prices and the manifest's pinned
+prompt/completion token weights, ascending; then context limit descending; then canonical model ID
+ascending. Missing, invalid, unreviewed, or unprovenanced weights fail closed. The current baseline is
+recorded separately from the candidate bound.
+
+Live refresh computes a normalized catalog content digest. Unchanged content reuses the existing
+immutable snapshot and records a separate immutable refresh observation containing source, time, and
+content digest. A failed refresh is explicit and cannot make an older snapshot appear current. Historical
+replay always uses its original snapshot.
 
 ### Evaluation runner
 
@@ -58,6 +69,12 @@ scores. Credentials come from the execution environment and outputs stay local b
 Deterministic assertions, domain checks, and statistical summaries produce V1 evidence. Hard policy
 gates run before ranking. A cheaper candidate cannot compensate for a failed quality, privacy,
 compatibility, context, or latency gate. LLM-as-judge scoring is explicitly deferred.
+After V1 field validation, an optional calibrated semantic-rubric scorer may be designed only if
+positive sanitized evidence shows deterministic evaluation blocks valuable open-ended call sites. A
+representative no-findings outcome requires a predeclared census and direct assessment of at least ten
+eligible open-ended call sites across at least three FIELD-001 companies. No-findings or explicit
+insufficient coverage satisfies the field-record criterion but cannot authorize expansion. A semantic
+scorer cannot replace hard gates.
 
 ### Recommendation engine
 
@@ -68,6 +85,11 @@ confidence, limitations, failed cases, and reproduction commands.
 
 The patcher verifies the source fingerprint and changes only the bound literal. The GitHub integration
 opens a draft PR from that patch, is idempotent per call site and candidate, and never merges or deploys.
+Provider-backed assessment is manual by default. A repository may opt into a schedule, but unchanged
+catalog and evaluation-input digests skip paid candidate execution only when prior evidence is complete,
+integrity-valid, and reusable under current policy. The evaluation-input digest includes the evaluator
+executable identity, so a tool version or build/commit revision change invalidates reuse. Failed, partial,
+exhausted, privacy-unsafe, or otherwise non-reusable evidence never suppresses a later bounded retry.
 
 ## Package direction
 
@@ -96,7 +118,8 @@ independent boundary emerges.
 
 ## Reproducibility and privacy
 
-An evaluation run records tool version, commit, call-site manifest digest, fixture digest, catalog digest,
-model identifiers, scorer configuration, sampling configuration, attempt count, and timestamps. Secrets
-and unredacted fixtures are never written to reports. Remote telemetry is opt-in; OSS execution has no
-mandatory control plane.
+An evaluation run records tool version, build or commit revision, call-site manifest digest, fixture
+digest, catalog digest, model identifiers, scorer configuration, sampling configuration, attempt count,
+and timestamps. The evaluation-input digest binds that evaluator executable identity with the remaining
+inputs. Secrets and unredacted fixtures are never written to reports. Remote telemetry is opt-in; OSS
+execution has no mandatory control plane.

@@ -2,7 +2,7 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "V1-09",
-  "revision": 0,
+  "revision": 6,
   "state": "planned",
   "attempt": 0,
   "candidate": null,
@@ -24,6 +24,11 @@
     },
     {
       "criterionId": "ACTION-004",
+      "status": "pending",
+      "evidenceRefs": []
+    },
+    {
+      "criterionId": "ACTION-005",
       "status": "pending",
       "evidenceRefs": []
     }
@@ -85,6 +90,48 @@
       "at": "2026-08-10T00:30:00Z",
       "actor": "planning-agent",
       "reason": "Task created by the canonical OSS V1 plan."
+    },
+    {
+      "from": "planned",
+      "to": "planned",
+      "at": "2026-08-10T11:56:03Z",
+      "actor": "planning-agent",
+      "reason": "Added opt-in scheduling and unchanged-input spend-prevention acceptance contracts."
+    },
+    {
+      "from": "planned",
+      "to": "planned",
+      "at": "2026-08-10T12:19:11Z",
+      "actor": "planning-agent",
+      "reason": "Restricted unchanged-input reuse to complete, integrity-valid, policy-reusable evidence."
+    },
+    {
+      "from": "planned",
+      "to": "planned",
+      "at": "2026-08-10T12:28:54Z",
+      "actor": "planning-agent",
+      "reason": "Bound reuse invalidation to the evaluator tool version and executable revision."
+    },
+    {
+      "from": "planned",
+      "to": "planned",
+      "at": "2026-08-10T12:36:37Z",
+      "actor": "planning-agent",
+      "reason": "Qualified idempotent reuse on evidence integrity and added corrupted-cache retry coverage."
+    },
+    {
+      "from": "planned",
+      "to": "planned",
+      "at": "2026-08-10T12:42:32Z",
+      "actor": "planning-agent",
+      "reason": "Aligned the locked refresh decision with the integrity-valid reuse precondition."
+    },
+    {
+      "from": "planned",
+      "to": "planned",
+      "at": "2026-08-10T13:32:52Z",
+      "actor": "planning-agent",
+      "reason": "Added policy-expired unchanged-input cache reevaluation coverage."
     }
   ]
 }

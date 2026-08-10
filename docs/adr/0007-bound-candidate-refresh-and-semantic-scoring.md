@@ -1,0 +1,54 @@
+# ADR 0007: Bound candidate refresh and gate semantic scoring
+
+- **Status:** Accepted
+- **Date:** 2026-08-10
+
+## Context
+
+OpenRouter exposes a mutable catalog whose models, aliases, capabilities, availability, and prices can
+change independently of a repository. Evaluating every compatible entry would create unbounded provider
+spend and runtime. Enabling a recurring workflow by default would also make installation itself a billing
+event. At the same time, V1's deterministic scorers cannot establish semantic non-inferiority for every
+open-ended workload.
+
+## Decision
+
+- Treat OpenRouter as the V1 catalog universe, not as the candidate set.
+- Apply hard compatibility and repository policy filters before selection.
+- Require each call-site manifest to pin a human-reviewed representative prompt/completion token-weight
+  profile with provenance. Select at most five candidates by default and permit repositories only to lower
+  that bound. Compute exact-decimal projected workload cost from normalized catalog prices and those
+  weights, then rank cost ascending, context limit descending, and canonical model ID ascending. The
+  current baseline is recorded separately and is never counted toward the bound. Missing, invalid,
+  unreviewed, or unprovenanced weights fail closed without candidate execution.
+- Normalize live catalog content and compute a content digest. Reuse the immutable snapshot when the
+  digest is unchanged; never mutate an existing snapshot. Record each successful refresh as separate
+  immutable freshness evidence containing its source, observation time, and normalized content digest.
+- Report a live refresh failure explicitly. An older snapshot may be used for explicit historical replay
+  but must not be represented as current.
+- Make provider-backed assessment manual by default. Scheduling requires explicit repository opt-in.
+- Bind an evaluation-input digest to the evaluator executable identity (tool version and build or commit
+  revision), catalog, source, manifest, fixtures, scorer policy, and relevant execution configuration.
+  When both catalog and evaluation inputs are unchanged, skip paid candidate execution and reuse the
+  existing recommendation identity and evidence only if that evidence is complete, integrity-valid, and
+  reusable under current policy. Failed, partial, exhausted, privacy-unsafe, or otherwise non-reusable
+  evidence must not suppress a later bounded retry.
+- Keep LLM judges outside OSS V1. The V1 field criterion records positive blocked-call-site evidence, a
+  representative no-findings outcome, or an explicit insufficient-coverage outcome. No-findings requires
+  a predeclared eligibility census, direct assessment of at least ten eligible open-ended call sites across
+  at least three FIELD-001 companies, and independently reviewed coverage and exclusions. Only positive
+  blocked-call-site evidence may justify designing an optional calibrated semantic-rubric scorer; those
+  cases are not qualified recommendations.
+
+## Consequences
+
+- Candidate discovery remains broad while execution cost and latency remain bounded.
+- Identical inputs produce stable shortlists and do not create duplicate snapshots, paid candidate-execution
+  calls, or pull requests; an explicitly requested live catalog refresh still contacts the catalog source.
+- Refresh and replay have distinct semantics, so stale provider state cannot silently support a current
+  recommendation.
+- Transient and incomplete failures remain retryable even when their input digests are unchanged.
+- Users opt into recurring spend rather than inheriting it from installation.
+- A later semantic scorer requires a separate reviewed decision covering human calibration, judge-model
+  provenance, bias controls, abstention, privacy, and spend. It supplements deterministic and hard gates;
+  it does not replace them.

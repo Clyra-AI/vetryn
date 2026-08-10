@@ -89,6 +89,92 @@
       "assertions": ["Candidate ordering is unchanged.", "Price calculations are unchanged."]
     },
     {
+      "id": "bounded-candidate-shortlist",
+      "category": "catalog",
+      "description": "More than five compatible models are available and the repository does not override the default candidate bound.",
+      "expectedDisposition": "idempotent",
+      "expectedReason": "The locked catalog ranking tuple produces the same default-five shortlist.",
+      "assertions": [
+        "The baseline is recorded separately from exactly five candidates.",
+        "The pinned representative usage profile has prompt weight 9 and completion weight 1 with reviewed fixture provenance.",
+        "The compatible fixture tuples (prompt price, completion price, context) are mock/alpha=(0.1,10.0,32768), mock/bravo=(1.0,2.0,65536), mock/charlie=(1.0,2.0,65536), mock/delta=(1.0,2.0,32768), mock/echo=(1.2,1.0,131072), mock/foxtrot=(0.2,10.2,131072), and mock/golf=(2.0,0.1,131072).",
+        "The exact-decimal projected workload costs are alpha=10.9, bravo=11.0, charlie=11.0, delta=11.0, echo=11.8, foxtrot=12.0, and golf=18.1.",
+        "The ordered candidate IDs are mock/alpha, mock/bravo, mock/charlie, mock/delta, and mock/echo.",
+        "The pinned catalog ranks projected workload cost ascending, context limit descending, then canonical model ID ascending.",
+        "Models outside the shortlist are not executed."
+      ]
+    },
+    {
+      "id": "filter-before-shortlist-truncation",
+      "category": "catalog",
+      "description": "The three lowest projected-cost catalog entries are respectively retired, missing required tool support, and blocked by repository privacy policy, while more than five compatible entries remain.",
+      "expectedDisposition": "idempotent",
+      "expectedReason": "Hard compatibility and policy filters run before the ranked shortlist is truncated.",
+      "assertions": [
+        "The retired, tool-incompatible, and privacy-blocked entries are excluded with deterministic reasons before ranking and truncation.",
+        "The ordered candidate IDs are mock/alpha, mock/bravo, mock/charlie, mock/delta, and mock/echo.",
+        "The filtered entries do not consume candidate slots and mock/foxtrot remains the first eligible model outside the bound.",
+        "Exactly five compatible candidates execute and no filtered model executes."
+      ]
+    },
+    {
+      "id": "candidate-limit-above-five",
+      "category": "catalog",
+      "description": "Repository policy requests a candidate limit greater than the V1 maximum of five.",
+      "expectedDisposition": "refuse",
+      "expectedReason": "The configured candidate limit exceeds the supported maximum.",
+      "assertions": ["Configuration fails validation.", "No candidate model is executed."]
+    },
+    {
+      "id": "invalid-representative-usage-profile",
+      "category": "catalog",
+      "description": "Candidate resolution is attempted with missing, numerically invalid, unreviewed, and unprovenanced representative prompt/completion usage profiles.",
+      "expectedDisposition": "refuse",
+      "expectedReason": "Projected workload cost requires a valid, human-reviewed, provenance-bound usage profile.",
+      "assertions": [
+        "A missing profile fails validation without substituting default weights.",
+        "Negative, non-finite, and all-zero token weights fail validation.",
+        "A profile without human-reviewed status fails validation.",
+        "A profile without provenance fails validation.",
+        "No shortlist artifact is produced and no candidate model is executed in any subcase."
+      ]
+    },
+    {
+      "id": "candidate-limit-lower-override",
+      "category": "catalog",
+      "description": "More than two compatible models are available and repository policy lowers the candidate limit to two.",
+      "expectedDisposition": "idempotent",
+      "expectedReason": "The valid lower repository bound truncates the locked ranked shortlist.",
+      "assertions": [
+        "The baseline is recorded separately from exactly two candidates.",
+        "The ordered candidate IDs are mock/alpha and mock/bravo.",
+        "Models outside the two-candidate shortlist are not executed."
+      ]
+    },
+    {
+      "id": "unchanged-catalog-refresh",
+      "category": "catalog",
+      "description": "A live refresh returns catalog content identical to the latest normalized snapshot.",
+      "expectedDisposition": "idempotent",
+      "expectedReason": "The normalized content digest is unchanged, so the immutable snapshot is reused.",
+      "assertions": [
+        "No duplicate snapshot is created.",
+        "A new immutable refresh observation records source, observation time, and normalized content digest and references the reused snapshot.",
+        "The refresh observation cannot change historical replay."
+      ]
+    },
+    {
+      "id": "catalog-refresh-failure",
+      "category": "catalog",
+      "description": "The live OpenRouter catalog refresh fails while an older snapshot exists locally.",
+      "expectedDisposition": "abstain",
+      "expectedReason": "Current catalog state could not be established.",
+      "assertions": [
+        "The older snapshot remains available only for explicit replay.",
+        "No prior snapshot is represented as current and no patch is produced."
+      ]
+    },
+    {
       "id": "rate-limit-budget-exhaustion",
       "category": "provider",
       "description": "The mock provider returns rate limits until the deterministic retry and budget limits are exhausted.",
@@ -102,10 +188,120 @@
     {
       "id": "action-rerun-idempotency",
       "category": "action",
-      "description": "The GitHub Action is rerun with unchanged source, manifests, cases, and catalog snapshot.",
+      "description": "The GitHub Action is rerun with unchanged inputs after a complete, integrity-valid recommendation whose policy permits reuse.",
       "expectedDisposition": "idempotent",
-      "expectedReason": "Identical inputs produce identical artifacts and do not duplicate PR output.",
-      "assertions": ["Artifact digests match.", "The existing recommendation identity is reused."]
+      "expectedReason": "Identical inputs and reusable prior evidence preserve artifacts without duplicate execution or PR output.",
+      "assertions": [
+        "Artifact digests match.",
+        "The existing recommendation identity is reused.",
+        "No paid candidate execution occurs."
+      ]
+    },
+    {
+      "id": "unchanged-input-rerun-after-incomplete-run",
+      "category": "action",
+      "description": "A prior rate-limited run exhausted its retry budget, then an unchanged-input rerun occurs after the mock provider recovers.",
+      "expectedDisposition": "recommend",
+      "expectedReason": "Incomplete exhausted evidence is not reusable and cannot suppress a later bounded retry.",
+      "assertions": [
+        "Candidates execute again within the configured retry, timeout, and spend limits.",
+        "The failed run remains immutable and is not reused as current evidence.",
+        "The successful rerun receives a new run and evidence identity."
+      ]
+    },
+    {
+      "id": "unchanged-input-rerun-after-integrity-failure",
+      "category": "action",
+      "description": "A completed recommendation has unchanged input digests, but its cached evidence no longer matches its recorded integrity digest.",
+      "expectedDisposition": "recommend",
+      "expectedReason": "Integrity-invalid evidence is not reusable and cannot suppress a bounded reevaluation.",
+      "assertions": [
+        "The corrupted evidence remains immutable, is flagged integrity-invalid, and is not reused as current.",
+        "Candidates execute again within the configured retry, timeout, and spend limits.",
+        "The successful reevaluation receives a new run and evidence identity."
+      ]
+    },
+    {
+      "id": "unchanged-input-rerun-after-reuse-expiry",
+      "category": "action",
+      "description": "Complete, integrity-valid evidence has unchanged input digests, but the pinned clock is later than its policy-defined reuse-valid-until timestamp.",
+      "expectedDisposition": "recommend",
+      "expectedReason": "Policy-expired evidence is not reusable even when its inputs and integrity remain unchanged.",
+      "assertions": [
+        "The expired evidence remains immutable and is not reused as current.",
+        "Candidates execute again within the configured retry, timeout, and spend limits.",
+        "The successful reevaluation receives a new run and evidence identity with the current reuse window."
+      ]
+    },
+    {
+      "id": "scorer-policy-change-invalidates-reuse",
+      "category": "action",
+      "description": "Source, manifest, fixtures, and catalog are unchanged but a deterministic scorer threshold changes.",
+      "expectedDisposition": "recommend",
+      "expectedReason": "The scorer-policy change produces a new evaluation-input digest.",
+      "assertions": [
+        "Candidate evaluation runs again within the configured budget.",
+        "A new run and evidence identity is produced.",
+        "Prior recommendation evidence is not reused as current."
+      ]
+    },
+    {
+      "id": "execution-config-change-invalidates-reuse",
+      "category": "action",
+      "description": "Source, manifest, fixtures, catalog, and scorer policy are unchanged but relevant execution configuration changes.",
+      "expectedDisposition": "recommend",
+      "expectedReason": "The execution-configuration change produces a new evaluation-input digest.",
+      "assertions": [
+        "Candidate evaluation runs again within the new limits.",
+        "A new run and evidence identity is produced.",
+        "Prior recommendation evidence is not reused as current."
+      ]
+    },
+    {
+      "id": "evaluator-version-change-invalidates-reuse",
+      "category": "action",
+      "description": "Repository inputs, catalog, scorer policy, and execution configuration are unchanged but the evaluator tool version or build revision changes.",
+      "expectedDisposition": "recommend",
+      "expectedReason": "The evaluator executable identity change produces a new evaluation-input digest.",
+      "assertions": [
+        "Candidate evaluation runs again within the configured limits.",
+        "The new evidence records the updated tool version and build or commit revision.",
+        "A new run and evidence identity is produced and prior evidence is not reused as current."
+      ]
+    },
+    {
+      "id": "repository-input-changes-invalidate-reuse",
+      "category": "action",
+      "description": "Source, manifest, fixtures, and catalog are changed one at a time while every other evaluation input remains fixed.",
+      "expectedDisposition": "recommend",
+      "expectedReason": "Each independently changed repository input produces a new evaluation-input digest.",
+      "assertions": [
+        "A source fingerprint change invalidates reuse and creates a new run and evidence identity.",
+        "A call-site manifest digest change invalidates reuse and creates a new run and evidence identity.",
+        "An eval-fixture digest change invalidates reuse and creates a new run and evidence identity.",
+        "A normalized catalog content digest change invalidates reuse and creates a new run and evidence identity.",
+        "Each subcase executes candidates again within the configured limits."
+      ]
+    },
+    {
+      "id": "scheduled-assessment-without-opt-in",
+      "category": "action",
+      "description": "A scheduled provider-backed assessment is attempted without explicit repository opt-in.",
+      "expectedDisposition": "refuse",
+      "expectedReason": "Provider-backed scheduling is disabled by default.",
+      "assertions": ["No provider call occurs.", "No GitHub write occurs."]
+    },
+    {
+      "id": "scheduled-assessment-with-opt-in",
+      "category": "action",
+      "description": "Repository policy explicitly enables a scheduled provider-backed assessment with candidate, spend, retry, and timeout limits.",
+      "expectedDisposition": "recommend",
+      "expectedReason": "Explicit schedule consent permits the bounded assessment to run.",
+      "assertions": [
+        "The mock provider receives only the bounded candidate calls.",
+        "Evidence records schedule consent and every execution limit.",
+        "No permission is granted beyond assessment and the configured draft-PR mode."
+      ]
     },
     {
       "id": "secret-and-output-redaction",

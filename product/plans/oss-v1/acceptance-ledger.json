@@ -213,7 +213,7 @@
     {
       "id": "MANIFEST-001",
       "taskId": "V1-04",
-      "statement": "Manifest initialization requires explicit human-owned stable call-site IDs and ownership metadata.",
+      "statement": "Manifest initialization requires explicit human-owned stable call-site IDs, ownership metadata, and a human-reviewed representative prompt/completion token-weight profile with provenance.",
       "verification": { "method": "test", "testLevel": "contract", "gateId": "QG-CONTRACTS" },
       "waivable": false,
       "status": "planned",
@@ -259,6 +259,24 @@
       "id": "CATALOG-003",
       "taskId": "V1-05",
       "statement": "Replaying a snapshot after live catalog changes produces identical candidate ordering and price calculations.",
+      "verification": { "method": "test", "testLevel": "integration", "gateId": "QG-SCENARIOS" },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
+      "id": "CATALOG-004",
+      "taskId": "V1-05",
+      "statement": "After hard compatibility and policy filters, candidate resolution applies a default maximum of five, permits only a lower repository-configured bound, computes exact-decimal projected workload cost from catalog prices and the manifest's pinned representative prompt/completion token weights, then ranks cost ascending, context limit descending, and canonical model ID ascending.",
+      "verification": { "method": "test", "testLevel": "adversarial", "gateId": "QG-SCENARIOS" },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
+      "id": "CATALOG-005",
+      "taskId": "V1-05",
+      "statement": "An unchanged normalized catalog content digest reuses its immutable snapshot while recording a new immutable refresh observation; a failed live refresh reports failure and never represents a prior snapshot as current.",
       "verification": { "method": "test", "testLevel": "integration", "gateId": "QG-SCENARIOS" },
       "waivable": false,
       "status": "planned",
@@ -418,8 +436,17 @@
     {
       "id": "ACTION-004",
       "taskId": "V1-09",
-      "statement": "An unchanged rerun reuses recommendation identity and does not duplicate PR output.",
+      "statement": "An unchanged rerun reuses recommendation identity and does not duplicate PR output only when the referenced evidence is complete, integrity-valid, and reusable under current policy.",
       "verification": { "method": "test", "testLevel": "integration", "gateId": "QG-SCENARIOS" },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
+      "id": "ACTION-005",
+      "taskId": "V1-09",
+      "statement": "Provider-backed assessment is manual by default, scheduling requires explicit repository opt-in, evaluator executable identity is bound into the evaluation-input digest, and unchanged digests skip paid candidate execution only when prior evidence is complete, integrity-valid, and reusable under current policy.",
+      "verification": { "method": "test", "testLevel": "adversarial", "gateId": "QG-SCENARIOS" },
       "waivable": false,
       "status": "planned",
       "evidenceRefs": []
@@ -460,6 +487,15 @@
         "testLevel": "field",
         "gateId": "QG-INDEPENDENT-VERIFY"
       },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
+      "id": "FIELD-005",
+      "taskId": "V1-10",
+      "statement": "Sanitized field evidence records exactly one outcome: positive valuable open-ended call sites blocked specifically because deterministic evaluation cannot establish semantic non-inferiority; representative no-findings after a predeclared eligibility census and direct assessment of at least ten eligible open-ended call sites across at least three FIELD-001 companies; or insufficient coverage with the denominator, exclusions, and missing coverage recorded. Coverage and exclusions require independent review, and only the positive outcome may justify semantic-scorer design.",
+      "verification": { "method": "field", "testLevel": "field", "gateId": "QG-FIELD" },
       "waivable": false,
       "status": "planned",
       "evidenceRefs": []

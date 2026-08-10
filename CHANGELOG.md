@@ -4,6 +4,12 @@
 
 ### Added
 
+- Added bounded representative-workload-cost OpenRouter candidate ranking, idempotent catalog-refresh,
+  opt-in scheduling, immutable freshness observations, evaluator-version-bound digests, and
+  complete-and-integrity-valid evidence reuse contracts to the executable V1 plan.
+- Recorded a conditional sanitized field-evidence criterion for any post-V1 optional calibrated
+  semantic-rubric scorer, including representative no-findings and explicit insufficient-coverage
+  outcomes that cannot authorize expansion.
 - Added deterministic repo-native task compilation and role-separated Vetryn implementation skills.
 - Added a committed agent operating map with repository ownership, skill routing, maturity rules, and
   phase-gated domain, field-evaluation, and Factory release guidance.
