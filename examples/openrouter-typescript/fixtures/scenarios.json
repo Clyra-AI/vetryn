@@ -178,6 +178,18 @@
       ]
     },
     {
+      "id": "unchanged-input-rerun-after-integrity-failure",
+      "category": "action",
+      "description": "A completed recommendation has unchanged input digests, but its cached evidence no longer matches its recorded integrity digest.",
+      "expectedDisposition": "recommend",
+      "expectedReason": "Integrity-invalid evidence is not reusable and cannot suppress a bounded reevaluation.",
+      "assertions": [
+        "The corrupted evidence remains immutable, is flagged integrity-invalid, and is not reused as current.",
+        "Candidates execute again within the configured retry, timeout, and spend limits.",
+        "The successful reevaluation receives a new run and evidence identity."
+      ]
+    },
+    {
       "id": "scorer-policy-change-invalidates-reuse",
       "category": "action",
       "description": "Source, manifest, fixtures, and catalog are unchanged but a deterministic scorer threshold changes.",

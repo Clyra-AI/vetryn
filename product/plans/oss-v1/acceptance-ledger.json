@@ -436,7 +436,7 @@
     {
       "id": "ACTION-004",
       "taskId": "V1-09",
-      "statement": "An unchanged rerun reuses recommendation identity and does not duplicate PR output.",
+      "statement": "An unchanged rerun reuses recommendation identity and does not duplicate PR output only when the referenced evidence is complete, integrity-valid, and reusable under current policy.",
       "verification": { "method": "test", "testLevel": "integration", "gateId": "QG-SCENARIOS" },
       "waivable": false,
       "status": "planned",

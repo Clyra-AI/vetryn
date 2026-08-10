@@ -2,7 +2,7 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "V1-09",
-  "revision": 3,
+  "revision": 4,
   "state": "planned",
   "attempt": 0,
   "candidate": null,
@@ -111,6 +111,13 @@
       "at": "2026-08-10T12:28:54Z",
       "actor": "planning-agent",
       "reason": "Bound reuse invalidation to the evaluator tool version and executable revision."
+    },
+    {
+      "from": "planned",
+      "to": "planned",
+      "at": "2026-08-10T12:36:37Z",
+      "actor": "planning-agent",
+      "reason": "Qualified idempotent reuse on evidence integrity and added corrupted-cache retry coverage."
     }
   ]
 }
