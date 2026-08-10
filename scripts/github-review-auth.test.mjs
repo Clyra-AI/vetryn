@@ -64,7 +64,6 @@ function responseFor(body, status = 200) {
 }
 
 function githubFetch({
-  exactReview = approval,
   reviewHistory = [approval],
   headSha = commit,
   merged = false,
@@ -77,9 +76,13 @@ function githubFetch({
     commits: [{ sha: "b".repeat(40) }],
     files: [
       { filename: "product/plans/oss-v1/state/V1-00.json" },
-      { filename: "product/plans/oss-v1/evidence/ev-review.json" },
+      {
+        status: "added",
+        filename: "product/plans/oss-v1/evidence/ev-review.json",
+      },
     ],
   },
+  addedEvidence = { id: "ev-review", taskId: "V1-00" },
   ledgerAtCandidate = candidateLedger,
   ledgerAtHead = candidateLedger,
   codeowners = "* @maintainer-reviewer\n/.github/ @maintainer-reviewer\n/SECURITY.md @maintainer-reviewer\n",
@@ -89,9 +92,9 @@ function githubFetch({
     if (url.includes("CODEOWNERS")) return responseFor(codeowners);
     if (url.includes("acceptance-ledger.json"))
       return responseFor(url.includes(`/${commit}/`) ? ledgerAtCandidate : ledgerAtHead);
+    if (url.includes("/evidence/")) return responseFor(addedEvidence);
     if (url.includes("/compare/")) return responseFor(comparison);
     if (url.includes("/reviews?")) return responseFor(reviewHistory);
-    if (url.includes("/reviews/")) return responseFor(exactReview);
     return responseFor({
       head: { sha: headSha },
       user: { login: pullRequestAuthor },
@@ -101,14 +104,10 @@ function githubFetch({
   });
 }
 
-function authenticator({
-  fetchImpl = githubFetch(),
-  checkoutCommit = commit,
-  containsCommit = () => false,
-} = {}) {
+function authenticator({ fetchImpl = githubFetch(), checkoutCommit = commit } = {}) {
   return createGitHubReviewAuthenticator({
     fetchImpl,
-    checkoutProvider: () => ({ commit: checkoutCommit, containsCommit }),
+    checkoutProvider: () => ({ commit: checkoutCommit }),
   });
 }
 
@@ -129,23 +128,58 @@ describe("GitHub review authentication", () => {
     const authenticate = authenticator({ fetchImpl });
 
     await expect(authenticate(evidence(), "maintainer", "fixture")).resolves.toBeUndefined();
-    expect(fetchImpl).toHaveBeenCalledTimes(4);
+    expect(fetchImpl).toHaveBeenCalledTimes(3);
+    expect(fetchImpl.mock.calls.map(([url]) => String(url))).not.toContain(
+      "https://api.github.com/repos/Clyra-AI/vetryn/pulls/1/reviews/123456789",
+    );
   });
 
-  it("fails closed when GitHub cannot authenticate the cited review", async () => {
+  it("authenticates multiple cited approvals from one bounded PR history request", async () => {
+    const secondApproval = {
+      ...approval,
+      id: 123456790,
+      user: { login: "second-reviewer" },
+      html_url: "https://github.com/Clyra-AI/vetryn/pull/1#pullrequestreview-123456790",
+    };
+    const fetchImpl = githubFetch({
+      reviewHistory: [approval, secondApproval],
+      codeowners:
+        "* @maintainer-reviewer @second-reviewer\n/.github/ @maintainer-reviewer @second-reviewer\n",
+    });
+    const authenticate = authenticator({ fetchImpl });
+    const secondEvidence = evidence({
+      id: "ev-review-two",
+      actor: "second-reviewer",
+      review: {
+        ...evidence().review,
+        reviewId: 123456790,
+        authorizationRef: "https://github.com/Clyra-AI/vetryn/pull/1#pullrequestreview-123456790",
+      },
+    });
+
+    await authenticate(evidence(), "maintainer", "fixture one");
+    await authenticate(secondEvidence, "maintainer", "fixture two");
+
+    expect(fetchImpl.mock.calls.filter(([url]) => String(url).includes("/reviews?"))).toHaveLength(
+      1,
+    );
+    expect(fetchImpl).toHaveBeenCalledTimes(3);
+  });
+
+  it("fails closed when GitHub history cannot authenticate the cited review", async () => {
     const authenticate = authenticator({
-      fetchImpl: vi.fn(async () => responseFor("", 404)),
+      fetchImpl: githubFetch({ reviewHistory: [] }),
     });
 
     await expect(authenticate(evidence(), "maintainer", "fixture")).rejects.toThrow(
-      "could not be authenticated by GitHub",
+      "could not be authenticated from GitHub review history",
     );
   });
 
   it("rejects reviewer identity that differs from GitHub", async () => {
     const authenticate = authenticator({
       fetchImpl: githubFetch({
-        exactReview: { ...approval, user: { login: "actual-reviewer" } },
+        reviewHistory: [{ ...approval, user: { login: "actual-reviewer" } }],
       }),
     });
 
@@ -199,6 +233,16 @@ describe("GitHub review authentication", () => {
     await expect(authenticate(evidence(), "maintainer", "fixture")).resolves.toBeUndefined();
   });
 
+  it("accepts GitHub's authenticated synthetic merge checkout for an open PR", async () => {
+    const syntheticMerge = "b".repeat(40);
+    const authenticate = authenticator({
+      fetchImpl: githubFetch({ mergeCommitSha: syntheticMerge }),
+      checkoutCommit: syntheticMerge,
+    });
+
+    await expect(authenticate(evidence(), "maintainer", "fixture")).resolves.toBeUndefined();
+  });
+
   it("rejects a promotion tail that changes product code", async () => {
     const authenticate = authenticator({
       fetchImpl: githubFetch({
@@ -216,6 +260,59 @@ describe("GitHub review authentication", () => {
 
     await expect(authenticate(evidence(), "maintainer", "fixture")).rejects.toThrow(
       "changes forbidden path packages/core/src/index.ts",
+    );
+  });
+
+  it("rejects mutation of evidence that existed at the reviewed candidate", async () => {
+    const advancedHead = "b".repeat(40);
+    const authenticate = authenticator({
+      fetchImpl: githubFetch({
+        headSha: advancedHead,
+        comparison: {
+          status: "ahead",
+          merge_base_commit: { sha: commit },
+          total_commits: 1,
+          commits: [{ sha: advancedHead }],
+          files: [
+            {
+              status: "modified",
+              filename: "product/plans/oss-v1/evidence/ev-existing.json",
+            },
+          ],
+        },
+      }),
+      checkoutCommit: advancedHead,
+    });
+
+    await expect(authenticate(evidence(), "maintainer", "fixture")).rejects.toThrow(
+      "mutates existing evidence product/plans/oss-v1/evidence/ev-existing.json",
+    );
+  });
+
+  it("rejects newly added evidence for another task", async () => {
+    const advancedHead = "b".repeat(40);
+    const authenticate = authenticator({
+      fetchImpl: githubFetch({
+        headSha: advancedHead,
+        addedEvidence: { id: "ev-other", taskId: "V1-01" },
+        comparison: {
+          status: "ahead",
+          merge_base_commit: { sha: commit },
+          total_commits: 1,
+          commits: [{ sha: advancedHead }],
+          files: [
+            {
+              status: "added",
+              filename: "product/plans/oss-v1/evidence/ev-other.json",
+            },
+          ],
+        },
+      }),
+      checkoutCommit: advancedHead,
+    });
+
+    await expect(authenticate(evidence(), "maintainer", "fixture")).rejects.toThrow(
+      "adds evidence outside task V1-00",
     );
   });
 
@@ -331,9 +428,18 @@ describe("GitHub review authentication", () => {
   it("accepts durable evidence after its authenticated pull request is merged", async () => {
     const mergeCommit = "c".repeat(40);
     const authenticate = authenticator({
-      fetchImpl: githubFetch({ merged: true, mergeCommitSha: mergeCommit }),
+      fetchImpl: githubFetch({
+        merged: true,
+        mergeCommitSha: mergeCommit,
+        comparison: {
+          status: "ahead",
+          merge_base_commit: { sha: mergeCommit },
+          total_commits: 1,
+          commits: [{ sha: "d".repeat(40) }],
+          files: [],
+        },
+      }),
       checkoutCommit: "d".repeat(40),
-      containsCommit: (candidate) => candidate === mergeCommit,
     });
 
     await expect(authenticate(evidence(), "maintainer", "fixture")).resolves.toBeUndefined();

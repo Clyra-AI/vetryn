@@ -12,8 +12,9 @@ Rules:
   represents approval—an authenticated GitHub approval, eligible author association, review identity, and role
   whose actor differs case-insensitively from the candidate PR author authenticated as executor and whose observed
   commit matches the candidate. A later promotion head must descend from that commit and may change only canonical
-  promotion files; the shared ledger permits only that task's status and evidence-reference updates.
-  Final validation binds a clean checkout to the authenticated open-PR head or a contained authenticated merge.
+  promotion files; the shared ledger permits only that task's status and evidence-reference updates, and existing
+  evidence is immutable. Final validation binds a clean checkout to the authenticated open-PR head, its GitHub
+  synthetic merge commit, or remotely authenticated ancestry from the merged PR.
 - Executors may add candidate evidence but cannot broaden scope, rewrite criteria, or accept their own
   task.
 - `progress.json` is generated with `pnpm plan:write` and verified with `pnpm plan:check`.

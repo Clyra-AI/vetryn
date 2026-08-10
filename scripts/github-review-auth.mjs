@@ -66,6 +66,10 @@ function isAllowedPromotionPath(filename, taskId) {
   );
 }
 
+function isEvidencePath(filename) {
+  return /^product\/plans\/oss-v1\/evidence\/[^/]+\.json$/.test(filename);
+}
+
 function assertLedgerPromotion(candidateLedger, promotedLedger, taskId, source, evidenceId) {
   const candidateHeader = { ...candidateLedger, items: undefined };
   const promotedHeader = { ...promotedLedger, items: undefined };
@@ -114,10 +118,11 @@ export function createGitHubReviewAuthenticator({
     typeof checkoutProvider === "function",
     "GitHub review authentication requires a trusted checkout provider",
   );
-  const authenticatedReviews = new Map();
   const authenticatedPullRequests = new Map();
   const authenticatedPromotionTails = new Map();
+  const authenticatedCheckoutComparisons = new Map();
   const authenticatedLedgers = new Map();
+  const authenticatedEvidenceFiles = new Map();
   const authenticatedReviewHistories = new Map();
   let authenticatedCodeowners;
 
@@ -135,44 +140,6 @@ export function createGitHubReviewAuthenticator({
     );
     const pullRequest = Number(authorizationMatch[1]);
     const reviewId = Number(authorizationMatch[2]);
-    const cacheKey = `${pullRequest}:${reviewId}`;
-    let authenticated = authenticatedReviews.get(cacheKey);
-    if (!authenticated) {
-      const apiUrl = `https://api.github.com/repos/${githubRepository}/pulls/${pullRequest}/reviews/${reviewId}`;
-      authenticated = await fetchPublicGitHubJson(
-        apiUrl,
-        `${source} review evidence ${evidence.id} could not be authenticated by GitHub`,
-        fetchImpl,
-      );
-      authenticatedReviews.set(cacheKey, authenticated);
-    }
-
-    assert(
-      authenticated.id === evidence.review.reviewId,
-      `${source} review evidence ${evidence.id} does not match the authenticated review ID`,
-    );
-    assert(
-      authenticated.user?.login === evidence.actor,
-      `${source} review evidence ${evidence.id} does not match the authenticated reviewer`,
-    );
-    assert(
-      authenticated.author_association === evidence.review.authorAssociation,
-      `${source} review evidence ${evidence.id} does not match the authenticated author association`,
-    );
-    assert(
-      authenticated.state === "APPROVED",
-      `${source} review evidence ${evidence.id} is not an authenticated approval`,
-    );
-    assert(
-      authenticated.commit_id === evidence.commit,
-      `${source} review evidence ${evidence.id} does not approve the candidate commit`,
-    );
-    assert(
-      authenticated.html_url === evidence.review.authorizationRef &&
-        authenticated.pull_request_url ===
-          `https://api.github.com/repos/${githubRepository}/pulls/${pullRequest}`,
-      `${source} review evidence ${evidence.id} is authenticated for a different pull request`,
-    );
 
     let pullRequestData = authenticatedPullRequests.get(pullRequest);
     if (!pullRequestData) {
@@ -193,11 +160,27 @@ export function createGitHubReviewAuthenticator({
       `${source} review evidence ${evidence.id} does not name the authenticated candidate PR author`,
     );
     const checkout = checkoutProvider();
-    assert(
+    const mergeCommit = pullRequestData.merge_commit_sha;
+    let checkoutBound =
       checkout?.commit === currentHead ||
-        (pullRequestData.merged === true &&
-          /^[0-9a-f]{40}$/.test(pullRequestData.merge_commit_sha ?? "") &&
-          checkout?.containsCommit(pullRequestData.merge_commit_sha)),
+      (/^[0-9a-f]{40}$/.test(mergeCommit ?? "") && checkout?.commit === mergeCommit);
+    if (!checkoutBound && pullRequestData.merged === true && /^[0-9a-f]{40}$/.test(mergeCommit)) {
+      const comparisonKey = `${mergeCommit}:${checkout?.commit}`;
+      let checkoutComparison = authenticatedCheckoutComparisons.get(comparisonKey);
+      if (!checkoutComparison) {
+        checkoutComparison = await fetchPublicGitHubJson(
+          `https://api.github.com/repos/${githubRepository}/compare/${mergeCommit}...${checkout?.commit}`,
+          `${source} could not authenticate checkout ancestry for pull request ${pullRequest}`,
+          fetchImpl,
+        );
+        authenticatedCheckoutComparisons.set(comparisonKey, checkoutComparison);
+      }
+      checkoutBound =
+        checkoutComparison.status === "ahead" &&
+        checkoutComparison.merge_base_commit?.sha === mergeCommit;
+    }
+    assert(
+      checkoutBound,
       `${source} authenticated review pull request is unrelated to checkout ${checkout?.commit ?? "unknown"}`,
     );
     if (currentHead !== evidence.commit) {
@@ -242,6 +225,30 @@ export function createGitHubReviewAuthenticator({
         !forbiddenFile,
         `${source} promotion tail for review evidence ${evidence.id} changes forbidden path ${forbiddenPath}`,
       );
+      for (const file of comparison.files.filter(
+        (candidate) =>
+          isEvidencePath(candidate.filename) || isEvidencePath(candidate.previous_filename),
+      )) {
+        assert(
+          file.status === "added" && !file.previous_filename && isEvidencePath(file.filename),
+          `${source} promotion tail for review evidence ${evidence.id} mutates existing evidence ${file.previous_filename ?? file.filename}`,
+        );
+        const evidenceKey = `${currentHead}:${file.filename}`;
+        let addedEvidence = authenticatedEvidenceFiles.get(evidenceKey);
+        if (!addedEvidence) {
+          addedEvidence = await fetchPublicGitHubJson(
+            `https://raw.githubusercontent.com/${githubRepository}/${currentHead}/${file.filename}`,
+            `${source} could not authenticate added evidence ${file.filename}`,
+            fetchImpl,
+          );
+          authenticatedEvidenceFiles.set(evidenceKey, addedEvidence);
+        }
+        assert(
+          addedEvidence.taskId === evidence.taskId &&
+            file.filename === `product/plans/oss-v1/evidence/${addedEvidence.id}.json`,
+          `${source} promotion tail adds evidence outside task ${evidence.taskId}`,
+        );
+      }
       const ledgerPath = "product/plans/oss-v1/acceptance-ledger.json";
       if (
         comparison.files.some(
@@ -278,6 +285,37 @@ export function createGitHubReviewAuthenticator({
       );
       authenticatedReviewHistories.set(pullRequest, reviewHistory);
     }
+    const authenticated = reviewHistory.find((review) => review.id === reviewId);
+    assert(
+      authenticated,
+      `${source} review evidence ${evidence.id} could not be authenticated from GitHub review history`,
+    );
+    assert(
+      authenticated.id === evidence.review.reviewId,
+      `${source} review evidence ${evidence.id} does not match the authenticated review ID`,
+    );
+    assert(
+      authenticated.user?.login === evidence.actor,
+      `${source} review evidence ${evidence.id} does not match the authenticated reviewer`,
+    );
+    assert(
+      authenticated.author_association === evidence.review.authorAssociation,
+      `${source} review evidence ${evidence.id} does not match the authenticated author association`,
+    );
+    assert(
+      authenticated.state === "APPROVED",
+      `${source} review evidence ${evidence.id} is not an authenticated approval`,
+    );
+    assert(
+      authenticated.commit_id === evidence.commit,
+      `${source} review evidence ${evidence.id} does not approve the candidate commit`,
+    );
+    assert(
+      authenticated.html_url === evidence.review.authorizationRef &&
+        authenticated.pull_request_url ===
+          `https://api.github.com/repos/${githubRepository}/pulls/${pullRequest}`,
+      `${source} review evidence ${evidence.id} is authenticated for a different pull request`,
+    );
     const decisiveReviews = reviewHistory
       .filter(
         (review) =>

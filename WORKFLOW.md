@@ -41,11 +41,19 @@ The approval must remain the reviewer's latest decisive review on the exact cand
 may advance past that commit only for promotion: GitHub's comparison must prove that the candidate is an ancestor
 and that the complete tail changes only the task's canonical state, acceptance ledger, compact evidence, or
 generated progress. Within the shared ledger, only status and evidence references for that task may change;
-reviewed fields and other tasks are immutable. Rename source and destination paths are both restricted. Validation must run from a clean,
-committed checkout equal to the authenticated open-PR head; durable evidence on a merged or later branch instead
-requires the checkout to contain the authenticated PR merge commit. Editable branch evidence and role fields are
-never sufficient on their own. Authentication uses Node's built-in HTTPS fetch and absolute system Git, not a
-PATH-resolved repository executable; network, Git, or response failures fail closed.
+reviewed fields and other tasks are immutable. Evidence files present at the candidate are immutable; promotion
+may only add evidence whose contents and filename bind to that task. Rename source and destination paths are both
+restricted. Validation must run from a clean committed checkout equal to the authenticated open-PR head or its
+GitHub synthetic merge commit; later checkouts require GitHub-authenticated ancestry from the merged PR. Review
+records are authenticated from one bounded history fetch per PR to stay within the public API budget. Editable
+branch evidence and role fields are never sufficient on their own. Authentication uses Node's built-in HTTPS
+fetch and absolute system Git, not a PATH-resolved repository executable; network, Git, or response failures fail
+closed.
+
+Promotion therefore uses two explicit maintainer-authorized checkpoints: first commit and push canonical state,
+ledger, and new evidence; then run `pnpm plan:write` from that clean authenticated head and push generated
+progress. Only the clean final pushed head may run and claim `pnpm plan:check` and `pnpm check`. The intermediate
+stale-progress check is never merge-ready.
 
 The repository preserves these test levels as the product grows: static, unit, property, contract,
 integration, end-to-end, acceptance, adversarial/hardening, chaos, performance/soak, scenario, and field.

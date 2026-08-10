@@ -23,8 +23,12 @@ identity also remained editable branch text, so it could not prove reviewer inde
 - Restrict acceptance-ledger promotion changes semantically: only `status` and `evidenceRefs` may change, and only
   for items owned by the promoted task. Reviewed fields, ledger metadata, membership, ordering, and other tasks'
   items remain immutable.
-- Require final validation from a clean committed checkout equal to the authenticated open-PR head. After merge,
-  durable evidence remains valid only in a checkout that contains the PR's authenticated merge commit.
+- Treat evidence present at the candidate as immutable. Promotion may add only new evidence whose JSON task and
+  ID agree with the promoted task and filename.
+- Require final validation from a clean committed checkout equal to the authenticated open-PR head or GitHub's
+  synthetic merge commit. After merge, authenticate later checkout ancestry remotely from the PR merge commit.
+- Authenticate cited reviews from one bounded review-history fetch per PR, preserving exact review and latest
+  decision checks without exhausting GitHub's unauthenticated per-request budget.
 - Use Node's built-in HTTPS implementation for GitHub data and absolute system Git with fixed arguments for local
   checkout identity. Network, history, comparison, checkout, and parsing failures fail closed.
 
@@ -34,7 +38,8 @@ identity also remained editable branch text, so it could not prove reviewer inde
 - Copying authentic evidence into an unrelated branch or inventing a different executor cannot satisfy review
   separation.
 - Promotion cannot rewrite reviewed acceptance semantics or affect another task through the shared ledger.
-- CI must check out the exact PR head with full history, and final promotion validation occurs only after that
-  canonical promotion head is committed and pushed.
+- Existing evidence cannot be rewritten or moved during promotion.
+- Promotion uses a maintainer-authorized state/evidence checkpoint followed by generated progress; final
+  validation occurs only after the canonical final head is committed and pushed.
 - Squash-merged evidence remains durable because later branches contain GitHub's authenticated merge commit even
   when they do not contain the original candidate commit.
