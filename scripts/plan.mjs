@@ -5,7 +5,9 @@ import process from "node:process";
 import Ajv2020 from "ajv/dist/2020.js";
 import addFormats from "ajv-formats";
 
-const root = path.resolve(import.meta.dirname, "..");
+const root = path.resolve(
+  process.env.VETRYN_PLAN_REPO_ROOT ?? path.resolve(import.meta.dirname, ".."),
+);
 const planRoot = path.join(root, "product/plans/oss-v1");
 
 async function readJson(relativePath) {
@@ -22,6 +24,24 @@ function assert(condition, message) {
 
 function assertUnique(values, label) {
   assert(new Set(values).size === values.length, `${label} must contain unique values`);
+}
+
+function assertCandidateEvidence(evidenceRef, state, evidenceById, source) {
+  assert(state.candidate !== null, `${source} records success without a candidate`);
+  const evidence = evidenceById.get(evidenceRef);
+  assert(
+    evidence.taskId === state.taskId,
+    `${source} cites evidence ${evidenceRef} for task ${evidence.taskId}`,
+  );
+  assert(
+    evidence.commit === state.candidate.commit,
+    `${source} cites evidence ${evidenceRef} that does not match candidate commit`,
+  );
+  assert(
+    evidence.result.status === "pass" &&
+      evidence.result.checks.every((check) => check.status === "pass"),
+    `${source} cites unsuccessful evidence ${evidenceRef}`,
+  );
 }
 
 function formatErrors(errors) {
@@ -130,7 +150,8 @@ async function main() {
   const index = await readJson("product/plans/index.json");
   const plan = await readJson("product/plans/oss-v1/plan.json");
   const ledger = await readJson("product/plans/oss-v1/acceptance-ledger.json");
-  const progress = await readJson("product/plans/oss-v1/progress.json");
+  const progress =
+    command === "check" ? await readJson("product/plans/oss-v1/progress.json") : null;
   const scenarios = await readJson("examples/openrouter-typescript/fixtures/scenarios.json");
   const stateFiles = await loadStateFiles();
   const evidenceFiles = await loadEvidenceFiles();
@@ -150,7 +171,8 @@ async function main() {
     "acceptance-ledger.json",
     ledger,
   );
-  await validateDocument(ajv, validators, "progress.schema.json", "progress.json", progress);
+  if (command === "check")
+    await validateDocument(ajv, validators, "progress.schema.json", "progress.json", progress);
   await validateDocument(
     ajv,
     validators,
@@ -169,6 +191,7 @@ async function main() {
   const gateSet = new Set(gateIds);
   const ledgerIds = ledger.items.map((item) => item.id);
   const evidenceIds = evidenceFiles.map(({ document }) => document.id);
+  const evidenceById = new Map(evidenceFiles.map(({ document }) => [document.id, document]));
   assertUnique(taskIds, "plan task IDs");
   assertUnique(gateIds, "gate IDs");
   assertUnique(
@@ -181,7 +204,10 @@ async function main() {
     scenarios.scenarios.map((scenario) => scenario.id),
     "scenario IDs",
   );
-  assert(plan.planId === ledger.planId && plan.planId === progress.planId, "plan IDs must agree");
+  assert(
+    plan.planId === ledger.planId && (progress === null || plan.planId === progress.planId),
+    "plan IDs must agree",
+  );
   assert(
     index.plans.some((entry) => entry.id === plan.planId && entry.status === "active"),
     "active plan is not indexed",
@@ -225,6 +251,7 @@ async function main() {
     "exactly one task-state file is required per task",
   );
   const stateTaskIds = stateFiles.map(({ document }) => document.taskId);
+  const stateByTask = new Map(stateFiles.map(({ document }) => [document.taskId, document]));
   const acceptedStateTasks = new Set(
     stateFiles
       .filter(({ document }) => document.state === "accepted")
@@ -235,6 +262,7 @@ async function main() {
     assert(file === `${state.taskId}.json`, `${file} does not match task ID ${state.taskId}`);
     const task = plan.tasks.find((candidate) => candidate.id === state.taskId);
     assert(task, `${file} references unknown task`);
+    assert(state.attempt <= task.maxAttempts, `${file} exceeds maxAttempts ${task.maxAttempts}`);
     assert(
       JSON.stringify(state.criteria.map((criterion) => criterion.criterionId).sort()) ===
         JSON.stringify([...task.acceptanceItemIds].sort()),
@@ -276,6 +304,10 @@ async function main() {
         );
       if (["pass", "approved"].includes(record.status))
         assert(record.evidenceRefs.length > 0, `${file} records ${record.status} without evidence`);
+      if (["pass", "approved"].includes(record.status)) {
+        for (const evidenceRef of record.evidenceRefs)
+          assertCandidateEvidence(evidenceRef, state, evidenceById, file);
+      }
     }
     for (const criterion of state.criteria) {
       const ledgerItem = ledger.items.find((item) => item.id === criterion.criterionId);
@@ -296,6 +328,15 @@ async function main() {
         assert(gateDefinition.waivable, `${file} waives non-waivable gate ${gate.gateId}`);
     }
     if (state.state === "accepted") {
+      for (const criterion of state.criteria) {
+        const ledgerItem = ledger.items.find((item) => item.id === criterion.criterionId);
+        const expectedLedgerStatuses =
+          criterion.status === "pass" ? ["accepted"] : ["deferred_with_approval", "not_applicable"];
+        assert(
+          expectedLedgerStatuses.includes(ledgerItem.status),
+          `${file} is accepted while ledger item ${ledgerItem.id} is ${ledgerItem.status}`,
+        );
+      }
       assert(
         state.criteria.every((criterion) => ["pass", "waived"].includes(criterion.status)),
         `${file} is accepted with incomplete criteria`,
@@ -311,10 +352,20 @@ async function main() {
     }
   }
 
+  for (const item of ledger.items.filter((candidate) => candidate.status === "accepted")) {
+    const state = stateByTask.get(item.taskId);
+    for (const evidenceRef of item.evidenceRefs)
+      assertCandidateEvidence(evidenceRef, state, evidenceById, `ledger item ${item.id}`);
+  }
+
   for (const { file, document: evidence } of evidenceFiles) {
     assert(taskSet.has(evidence.taskId), `${file} references unknown task ${evidence.taskId}`);
     assert(file === `${evidence.id}.json`, `${file} does not match evidence ID ${evidence.id}`);
     assert(!evidence.redaction.containsSecrets, `${file} declares that it contains secrets`);
+    assert(
+      !evidence.redaction.containsRawModelOutput,
+      `${file} declares that it contains raw model output`,
+    );
   }
 
   const generated = buildProgress(
@@ -322,6 +373,7 @@ async function main() {
     ledger,
     stateFiles.map(({ document }) => document),
   );
+  await validateDocument(ajv, validators, "progress.schema.json", "generated progress", generated);
   const serialized = `${JSON.stringify(generated, null, 2)}\n`;
   if (command === "write") {
     await writeFile(path.join(planRoot, "progress.json"), serialized);
