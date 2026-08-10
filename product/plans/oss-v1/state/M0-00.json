@@ -7,7 +7,8 @@
   "attempt": 1,
   "candidate": {
     "baseCommit": "eb970bf3708ceb7a0d93d93481812dac090428b9",
-    "commit": "eb970bf3708ceb7a0d93d93481812dac090428b9"
+    "commit": "eb970bf3708ceb7a0d93d93481812dac090428b9",
+    "executor": "repository-import"
   },
   "criteria": [
     {

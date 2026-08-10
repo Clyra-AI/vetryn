@@ -40,6 +40,17 @@
       "assertions": ["The report identifies the missing evidence.", "No patch is produced."]
     },
     {
+      "id": "contradictory-evidence",
+      "category": "quality",
+      "description": "A sufficiently large representative suite produces mutually contradictory deterministic outcomes.",
+      "expectedDisposition": "abstain",
+      "expectedReason": "The evidence is contradictory and cannot support a non-inferiority conclusion.",
+      "assertions": [
+        "The report identifies the conflicting outcomes.",
+        "No recommendation or patch is produced."
+      ]
+    },
+    {
       "id": "incompatible-tool-support",
       "category": "catalog",
       "description": "A cheaper model does not support the call site's required tool semantics.",

@@ -44,10 +44,15 @@
         {
           "type": "object",
           "additionalProperties": false,
-          "required": ["baseCommit", "commit"],
+          "required": ["baseCommit", "commit", "executor"],
           "properties": {
             "baseCommit": { "$ref": "#/$defs/sha" },
-            "commit": { "$ref": "#/$defs/sha" }
+            "commit": { "$ref": "#/$defs/sha" },
+            "executor": {
+              "type": "string",
+              "minLength": 1,
+              "description": "GitHub login of the candidate pull-request author"
+            }
           }
         }
       ]

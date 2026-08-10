@@ -26,6 +26,8 @@
     "pack:check": "pnpm --recursive --if-present pack:check",
     "plan:check": "node scripts/plan.mjs check",
     "plan:write": "node scripts/plan.mjs write",
+    "task:compile": "node scripts/task.mjs compile",
+    "task:next": "node scripts/task.mjs next",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",

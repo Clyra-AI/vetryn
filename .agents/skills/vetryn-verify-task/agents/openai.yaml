@@ -1,0 +1,4 @@
+interface:
+  display_name: "Verify Vetryn Task"
+  short_description: "Verify one exact Vetryn task candidate."
+  default_prompt: "Use $vetryn-verify-task to independently verify the exact candidate for the specified Vetryn task."

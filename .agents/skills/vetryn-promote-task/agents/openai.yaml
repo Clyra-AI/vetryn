@@ -1,0 +1,4 @@
+interface:
+  display_name: "Promote Vetryn Task"
+  short_description: "Promote one verified Vetryn task safely."
+  default_prompt: "Use $vetryn-promote-task to validate and promote the specified Vetryn task without changing product code."

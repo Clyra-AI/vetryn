@@ -1,14 +1,21 @@
 import { readFile, readdir, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
 import path from "node:path";
 import process from "node:process";
 
 import Ajv2020 from "ajv/dist/2020.js";
 import addFormats from "ajv-formats";
 
+import { createGitHubReviewAuthenticator } from "./github-review-auth.mjs";
+import { createGitCheckoutProvider } from "./git-checkout-auth.mjs";
+
 const root = path.resolve(
   process.env.VETRYN_PLAN_REPO_ROOT ?? path.resolve(import.meta.dirname, ".."),
 );
 const planRoot = path.join(root, "product/plans/oss-v1");
+const authenticateGitHubReview = createGitHubReviewAuthenticator({
+  checkoutProvider: createGitCheckoutProvider(root),
+});
 
 async function readJson(relativePath) {
   return JSON.parse(await readFile(path.join(root, relativePath), "utf8"));
@@ -26,7 +33,7 @@ function assertUnique(values, label) {
   assert(new Set(values).size === values.length, `${label} must contain unique values`);
 }
 
-function assertCandidateEvidence(evidenceRef, state, evidenceById, source) {
+function assertCandidateEvidence(evidenceRef, state, evidenceById, source, expectedInputDigests) {
   assert(state.candidate !== null, `${source} records success without a candidate`);
   const evidence = evidenceById.get(evidenceRef);
   assert(
@@ -37,11 +44,88 @@ function assertCandidateEvidence(evidenceRef, state, evidenceById, source) {
     evidence.commit === state.candidate.commit,
     `${source} cites evidence ${evidenceRef} that does not match candidate commit`,
   );
+  if (evidence.type === "baseline-verification") {
+    assert(
+      evidence.taskId === "M0-00" && evidence.inputs.planDigest === null,
+      `${source} uses baseline-verification evidence outside the imported baseline`,
+    );
+  } else {
+    assert(
+      evidence.inputs.planDigest === expectedInputDigests.plan,
+      `${source} cites evidence ${evidenceRef} with a stale plan digest`,
+    );
+    assert(
+      evidence.inputs.lockfileDigest === expectedInputDigests.lockfile,
+      `${source} cites evidence ${evidenceRef} with a stale lockfile digest`,
+    );
+  }
   assert(
     evidence.result.status === "pass" &&
       evidence.result.checks.every((check) => check.status === "pass"),
     `${source} cites unsuccessful evidence ${evidenceRef}`,
   );
+}
+
+async function assertReviewEvidence(evidenceRef, state, evidenceById, expectedRole, source) {
+  const evidence = evidenceById.get(evidenceRef);
+  if (state.taskId === "M0-00" && evidence.type === "baseline-verification") return;
+  assert(evidence.type === "review", `${source} requires review evidence for role ${expectedRole}`);
+  assert(
+    evidence.review?.role === expectedRole,
+    `${source} cites review evidence ${evidenceRef} for role ${evidence.review?.role ?? "none"}`,
+  );
+  assert(
+    evidence.review.subjectActor.toLowerCase() === state.candidate.executor.toLowerCase(),
+    `${source} review evidence ${evidenceRef} does not name the candidate executor`,
+  );
+  assert(
+    evidence.actor.toLowerCase() !== state.candidate.executor.toLowerCase(),
+    `${source} review evidence ${evidenceRef} is self-approved by the executor`,
+  );
+  assert(
+    evidence.review.observedCommit === state.candidate.commit,
+    `${source} review evidence ${evidenceRef} was observed on a different commit`,
+  );
+  const reviewIdMatch = evidence.review.authorizationRef.match(/#pullrequestreview-([0-9]+)$/);
+  assert(
+    reviewIdMatch && Number(reviewIdMatch[1]) === evidence.review.reviewId,
+    `${source} review evidence ${evidenceRef} has mismatched GitHub review identity`,
+  );
+  await authenticateGitHubReview(evidence, expectedRole, source);
+}
+
+function assertGateEvidence(evidenceRef, gateDefinition, evidenceById, source) {
+  const evidence = evidenceById.get(evidenceRef);
+  const allowedTypes = {
+    command: ["baseline-verification", "command-run", "github-checks"],
+    review: ["baseline-verification", "review"],
+    field: ["field"],
+  }[gateDefinition.kind];
+  assert(
+    allowedTypes.includes(evidence.type),
+    `${source} cites ${evidence.type} evidence for ${gateDefinition.kind} gate ${gateDefinition.id}`,
+  );
+  assert(
+    gateDefinition.availability === "active",
+    `${source} records pass for ${gateDefinition.availability} gate ${gateDefinition.id}`,
+  );
+  if (evidence.type === "baseline-verification") return;
+  if (gateDefinition.kind === "command") {
+    assert(
+      evidence.gateBinding?.gateId === gateDefinition.id,
+      `${source} cites evidence ${evidenceRef} bound to ${evidence.gateBinding?.gateId ?? "no gate"}, not ${gateDefinition.id}`,
+    );
+    assert(
+      evidence.gateBinding.kind === "command" &&
+        evidence.gateBinding.command === gateDefinition.command,
+      `${source} cites evidence ${evidenceRef} with a command that differs from ${gateDefinition.id}`,
+    );
+  }
+}
+
+async function sha256(relativePath) {
+  const contents = await readFile(path.join(root, relativePath));
+  return `sha256:${createHash("sha256").update(contents).digest("hex")}`;
 }
 
 function formatErrors(errors) {
@@ -155,6 +239,10 @@ async function main() {
   const scenarios = await readJson("examples/openrouter-typescript/fixtures/scenarios.json");
   const stateFiles = await loadStateFiles();
   const evidenceFiles = await loadEvidenceFiles();
+  const expectedInputDigests = {
+    plan: await sha256("product/plans/oss-v1/plan.json"),
+    lockfile: await sha256("pnpm-lock.yaml"),
+  };
 
   await validateDocument(ajv, validators, "index.schema.json", "product/plans/index.json", index);
   await validateDocument(
@@ -306,11 +394,31 @@ async function main() {
         assert(record.evidenceRefs.length > 0, `${file} records ${record.status} without evidence`);
       if (["pass", "approved"].includes(record.status)) {
         for (const evidenceRef of record.evidenceRefs)
-          assertCandidateEvidence(evidenceRef, state, evidenceById, file);
+          assertCandidateEvidence(evidenceRef, state, evidenceById, file, expectedInputDigests);
       }
     }
     for (const criterion of state.criteria) {
       const ledgerItem = ledger.items.find((item) => item.id === criterion.criterionId);
+      const criterionGate = plan.gateCatalog.find(
+        (item) => item.id === ledgerItem.verification.gateId,
+      );
+      if (criterion.status === "pass" && criterionGate)
+        for (const evidenceRef of criterion.evidenceRefs) {
+          assertGateEvidence(
+            evidenceRef,
+            criterionGate,
+            evidenceById,
+            `${file} criterion ${criterion.criterionId}`,
+          );
+          if (criterionGate.kind === "review")
+            await assertReviewEvidence(
+              evidenceRef,
+              state,
+              evidenceById,
+              criterionGate.reviewRole,
+              `${file} criterion ${criterion.criterionId}`,
+            );
+        }
       if (criterion.status === "waived")
         assert(
           ledgerItem.waivable,
@@ -324,9 +432,31 @@ async function main() {
     }
     for (const gate of state.gates) {
       const gateDefinition = plan.gateCatalog.find((item) => item.id === gate.gateId);
+      if (gate.status === "pass")
+        for (const evidenceRef of gate.evidenceRefs) {
+          assertGateEvidence(evidenceRef, gateDefinition, evidenceById, file);
+          if (gateDefinition.kind === "review")
+            await assertReviewEvidence(
+              evidenceRef,
+              state,
+              evidenceById,
+              gateDefinition.reviewRole,
+              `${file} gate ${gate.gateId}`,
+            );
+        }
       if (gate.status === "waived")
         assert(gateDefinition.waivable, `${file} waives non-waivable gate ${gate.gateId}`);
     }
+    for (const review of state.reviews)
+      if (review.status === "approved")
+        for (const evidenceRef of review.evidenceRefs)
+          await assertReviewEvidence(
+            evidenceRef,
+            state,
+            evidenceById,
+            review.role,
+            `${file} review ${review.role}`,
+          );
     if (state.state === "accepted") {
       for (const criterion of state.criteria) {
         const ledgerItem = ledger.items.find((item) => item.id === criterion.criterionId);
@@ -355,7 +485,13 @@ async function main() {
   for (const item of ledger.items.filter((candidate) => candidate.status === "accepted")) {
     const state = stateByTask.get(item.taskId);
     for (const evidenceRef of item.evidenceRefs)
-      assertCandidateEvidence(evidenceRef, state, evidenceById, `ledger item ${item.id}`);
+      assertCandidateEvidence(
+        evidenceRef,
+        state,
+        evidenceById,
+        `ledger item ${item.id}`,
+        expectedInputDigests,
+      );
   }
 
   for (const { file, document: evidence } of evidenceFiles) {

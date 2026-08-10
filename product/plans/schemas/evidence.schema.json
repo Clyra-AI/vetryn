@@ -15,6 +15,8 @@
     "createdAt",
     "result",
     "inputs",
+    "gateBinding",
+    "review",
     "redaction"
   ],
   "properties": {
@@ -60,6 +62,54 @@
         "lockfileDigest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
       }
     },
+    "gateBinding": {
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["gateId", "kind", "command"],
+          "properties": {
+            "gateId": { "type": "string", "pattern": "^QG-[A-Z0-9-]+$" },
+            "kind": { "const": "command" },
+            "command": { "type": "string", "minLength": 1 }
+          }
+        }
+      ]
+    },
+    "review": {
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "role",
+            "subjectActor",
+            "source",
+            "state",
+            "authorAssociation",
+            "reviewId",
+            "observedCommit",
+            "authorizationRef"
+          ],
+          "properties": {
+            "role": { "type": "string", "minLength": 1 },
+            "subjectActor": { "type": "string", "minLength": 1 },
+            "source": { "const": "github-pull-request-review" },
+            "state": { "const": "APPROVED" },
+            "authorAssociation": { "enum": ["OWNER", "MEMBER", "COLLABORATOR"] },
+            "reviewId": { "type": "integer", "minimum": 1 },
+            "observedCommit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+            "authorizationRef": {
+              "type": "string",
+              "format": "uri",
+              "pattern": "^https://github\\.com/Clyra-AI/vetryn/pull/[0-9]+#pullrequestreview-[0-9]+$"
+            }
+          }
+        }
+      ]
+    },
     "redaction": {
       "type": "object",
       "additionalProperties": false,
@@ -70,5 +120,42 @@
         "containsSecrets": { "type": "boolean" }
       }
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "type": { "const": "review" } }, "required": ["type"] },
+      "then": { "properties": { "review": { "type": "object" } } },
+      "else": { "properties": { "review": { "type": "null" } } }
+    },
+    {
+      "if": {
+        "properties": { "type": { "enum": ["command-run", "github-checks"] } },
+        "required": ["type"]
+      },
+      "then": { "properties": { "gateBinding": { "type": "object" } } },
+      "else": { "properties": { "gateBinding": { "type": "null" } } }
+    },
+    {
+      "if": {
+        "properties": { "type": { "const": "baseline-verification" } },
+        "required": ["type"]
+      },
+      "then": {
+        "properties": {
+          "inputs": {
+            "type": "object",
+            "properties": { "planDigest": { "type": "null" } }
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "inputs": {
+            "type": "object",
+            "properties": { "planDigest": { "type": "string" } }
+          }
+        }
+      }
+    }
+  ]
 }

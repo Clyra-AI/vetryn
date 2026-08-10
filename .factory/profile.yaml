@@ -1,8 +1,8 @@
 project: vetryn
 product_name: Vetryn
-profile_version: "0.1"
-adoption_profile: starter
-status: planning_only
+profile_version: "0.2"
+adoption_profile: standard
+status: repo_native_execution_ready
 source_contract: docs/oss-v1.md
 plan_root: product/plans/oss-v1
 repository_visibility: public
@@ -16,7 +16,17 @@ trust_posture:
   network: offline_by_default
   credentials: no_ambient_secrets
   provider_access: explicit_task_scoped_approval
+  github_review_read: builtin_https_plus_main_branch_codeowners_fail_closed_for_acceptance
   github_write: explicit_mutation_mode_only
 factoryd:
   status: deferred
   reason: TypeScript bootstrap and repo-pack compatibility are not yet proven.
+task_adapter:
+  next: pnpm --silent task:next
+  compile: pnpm --silent task:compile -- TASK-ID
+  packet_schema: product/plans/schemas/task-packet.schema.json
+skills:
+  implement: .agents/skills/vetryn-implement-task/SKILL.md
+  verify: .agents/skills/vetryn-verify-task/SKILL.md
+  promote: .agents/skills/vetryn-promote-task/SKILL.md
+canonical_factory_profile: profiles/vetryn.yaml
