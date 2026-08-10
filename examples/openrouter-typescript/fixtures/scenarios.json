@@ -113,6 +113,20 @@
       "assertions": ["Configuration fails validation.", "No candidate model is executed."]
     },
     {
+      "id": "invalid-representative-usage-profile",
+      "category": "catalog",
+      "description": "Candidate resolution is attempted with missing, numerically invalid, unreviewed, and unprovenanced representative prompt/completion usage profiles.",
+      "expectedDisposition": "refuse",
+      "expectedReason": "Projected workload cost requires a valid, human-reviewed, provenance-bound usage profile.",
+      "assertions": [
+        "A missing profile fails validation without substituting default weights.",
+        "Negative, non-finite, and all-zero token weights fail validation.",
+        "A profile without human-reviewed status fails validation.",
+        "A profile without provenance fails validation.",
+        "No shortlist artifact is produced and no candidate model is executed in any subcase."
+      ]
+    },
+    {
       "id": "candidate-limit-lower-override",
       "category": "catalog",
       "description": "More than two compatible models are available and repository policy lowers the candidate limit to two.",

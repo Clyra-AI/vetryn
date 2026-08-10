@@ -2,7 +2,7 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "V1-05",
-  "revision": 4,
+  "revision": 5,
   "state": "planned",
   "attempt": 0,
   "candidate": null,
@@ -98,6 +98,13 @@
       "at": "2026-08-10T13:14:22Z",
       "actor": "planning-agent",
       "reason": "Replaced unweighted price sums with representative workload-cost ranking."
+    },
+    {
+      "from": "planned",
+      "to": "planned",
+      "at": "2026-08-10T13:24:18Z",
+      "actor": "planning-agent",
+      "reason": "Added adversarial fail-closed coverage for invalid representative usage profiles."
     }
   ]
 }
