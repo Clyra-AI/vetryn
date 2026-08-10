@@ -170,7 +170,8 @@
       "semanticInvariants": [
         "This task does not implement scanner, evaluation, recommendation, or patch behavior.",
         "Progress is derived from canonical state and ledger files.",
-        "No task executor can accept its own candidate."
+        "No task executor can accept its own candidate.",
+        "Network, stored GitHub authentication, and GitHub writes are limited to the maintainer-authorized Factory commit-push lifecycle after exact-candidate independent verification; provider access and unrelated network use remain forbidden."
       ],
       "deliverables": [
         "docs/implementation/oss-v1-execution.md",
@@ -187,16 +188,17 @@
       ],
       "requiredReviews": ["maintainer", "trust-reviewer"],
       "capabilities": {
-        "network": false,
-        "credentials": false,
+        "network": true,
+        "credentials": true,
         "provider": false,
-        "githubWrite": false
+        "githubWrite": true
       },
       "maxAttempts": 2,
       "stopConditions": [
         "The product contract and task DAG disagree.",
         "Generated progress differs from canonical state.",
-        "Implementation code enters the planning-only change."
+        "Implementation code enters the planning-only change.",
+        "A GitHub lifecycle write occurs before independent verification or targets anything outside the authorized V1-00 branch, pull request, merge, or post-merge monitoring flow."
       ]
     },
     {
