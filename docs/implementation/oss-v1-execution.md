@@ -41,9 +41,9 @@ failed attempts with the same failure fingerprint stop automatic repair and requ
 ## Agent roles and handoff
 
 Run `pnpm --silent task:next` to inspect active and legal work, then
-`pnpm --silent task:compile -- TASK-ID` to produce the deterministic, digest-bound task packet. The compiler fails
-closed if the canonical plan is stale or the task is not executable. The full repository lifecycle is in
-`WORKFLOW.md`.
+`pnpm --silent task:compile -- TASK-ID` to produce the deterministic task packet bound to the product contract,
+plan, ledger, task state, and lockfile. The compiler fails closed if the canonical plan is stale or the task is
+not executable. The full repository lifecycle is in `WORKFLOW.md`.
 
 1. **Planner** selects a ready task, confirms locked decisions and scope, and creates a bounded task
    brief from the canonical JSON.

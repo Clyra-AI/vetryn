@@ -16,7 +16,7 @@ trust_posture:
   network: offline_by_default
   credentials: no_ambient_secrets
   provider_access: explicit_task_scoped_approval
-  github_review_read: public_api_fail_closed_for_acceptance
+  github_review_read: public_api_plus_main_branch_codeowners_fail_closed_for_acceptance
   github_write: explicit_mutation_mode_only
 factoryd:
   status: deferred

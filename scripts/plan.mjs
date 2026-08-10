@@ -13,6 +13,7 @@ const root = path.resolve(
 const planRoot = path.join(root, "product/plans/oss-v1");
 const githubRepository = "Clyra-AI/vetryn";
 const authenticatedReviews = new Map();
+let authenticatedCodeowners;
 
 async function readJson(relativePath) {
   return JSON.parse(await readFile(path.join(root, relativePath), "utf8"));
@@ -88,10 +89,39 @@ function assertReviewEvidence(evidenceRef, state, evidenceById, expectedRole, so
     reviewIdMatch && Number(reviewIdMatch[1]) === evidence.review.reviewId,
     `${source} review evidence ${evidenceRef} has mismatched GitHub review identity`,
   );
-  authenticateGitHubReview(evidence, source);
+  authenticateGitHubReview(evidence, expectedRole, source);
 }
 
-function authenticateGitHubReview(evidence, source) {
+function fetchPublicGitHub(url, failureMessage) {
+  const result = spawnSync(
+    "curl",
+    [
+      "--fail",
+      "--silent",
+      "--show-error",
+      "--max-time",
+      "10",
+      "-H",
+      "Accept: application/vnd.github+json",
+      "-H",
+      "X-GitHub-Api-Version: 2022-11-28",
+      url,
+    ],
+    { encoding: "utf8" },
+  );
+  assert(!result.error && result.status === 0, failureMessage);
+  return result.stdout;
+}
+
+function fetchPublicGitHubJson(url, failureMessage) {
+  try {
+    return JSON.parse(fetchPublicGitHub(url, failureMessage));
+  } catch {
+    fail(`${failureMessage}; GitHub returned invalid JSON`);
+  }
+}
+
+function authenticateGitHubReview(evidence, expectedRole, source) {
   const authorizationMatch = evidence.review.authorizationRef.match(
     /^https:\/\/github\.com\/Clyra-AI\/vetryn\/pull\/([0-9]+)#pullrequestreview-([0-9]+)$/,
   );
@@ -105,31 +135,10 @@ function authenticateGitHubReview(evidence, source) {
   let authenticated = authenticatedReviews.get(cacheKey);
   if (!authenticated) {
     const apiUrl = `https://api.github.com/repos/${githubRepository}/pulls/${pullRequest}/reviews/${reviewId}`;
-    const result = spawnSync(
-      "curl",
-      [
-        "--fail",
-        "--silent",
-        "--show-error",
-        "--max-time",
-        "10",
-        "-H",
-        "Accept: application/vnd.github+json",
-        "-H",
-        "X-GitHub-Api-Version: 2022-11-28",
-        apiUrl,
-      ],
-      { encoding: "utf8" },
-    );
-    assert(
-      !result.error && result.status === 0,
+    authenticated = fetchPublicGitHubJson(
+      apiUrl,
       `${source} review evidence ${evidence.id} could not be authenticated by GitHub`,
     );
-    try {
-      authenticated = JSON.parse(result.stdout);
-    } catch {
-      fail(`${source} review evidence ${evidence.id} received invalid GitHub review data`);
-    }
     authenticatedReviews.set(cacheKey, authenticated);
   }
 
@@ -159,6 +168,50 @@ function authenticateGitHubReview(evidence, source) {
         `https://api.github.com/repos/${githubRepository}/pulls/${pullRequest}`,
     `${source} review evidence ${evidence.id} is authenticated for a different pull request`,
   );
+  authenticateGitHubRole(evidence.actor, expectedRole, source);
+}
+
+function authenticateGitHubRole(actor, expectedRole, source) {
+  if (!authenticatedCodeowners) {
+    authenticatedCodeowners = fetchPublicGitHub(
+      "https://raw.githubusercontent.com/Clyra-AI/vetryn/main/.github/CODEOWNERS",
+      `${source} could not load trusted main-branch CODEOWNERS`,
+    );
+  }
+  const rolePaths = {
+    maintainer: ".github/CODEOWNERS",
+    "independent-verifier": "product/plans/oss-v1/plan.json",
+    "trust-reviewer": "AGENTS.md",
+    "security-reviewer": "SECURITY.md",
+  };
+  const protectedPath = rolePaths[expectedRole];
+  assert(protectedPath, `${source} has no trusted CODEOWNERS path for role ${expectedRole}`);
+  const principals = codeownersForPath(authenticatedCodeowners, protectedPath);
+  assert(
+    principals.some((principal) => principal.toLowerCase() === `@${actor}`.toLowerCase()),
+    `${source} reviewer ${actor} is not authorized for role ${expectedRole} by trusted main-branch CODEOWNERS`,
+  );
+}
+
+function codeownersForPath(codeowners, targetPath) {
+  let owners = [];
+  for (const rawLine of codeowners.split("\n")) {
+    const line = rawLine.replace(/\s+#.*$/, "").trim();
+    if (!line || line.startsWith("#")) continue;
+    const [pattern, ...principals] = line.split(/\s+/);
+    const supportedPattern =
+      pattern === "*" ||
+      (pattern.startsWith("/") &&
+        !["?", "*", "[", "]"].some((token) => pattern.slice(1).includes(token)));
+    assert(supportedPattern, `trusted main-branch CODEOWNERS uses unsupported pattern ${pattern}`);
+    const matches =
+      pattern === "*" ||
+      (pattern.startsWith("/") && pattern.endsWith("/")
+        ? targetPath.startsWith(pattern.slice(1))
+        : pattern.startsWith("/") && targetPath === pattern.slice(1));
+    if (matches) owners = principals;
+  }
+  return owners;
 }
 
 function stateCandidateCommit(evidence) {

@@ -103,7 +103,13 @@ async function compile(taskId) {
 
   const gateById = new Map(plan.gateCatalog.map((gate) => [gate.id, gate]));
   const acceptanceItems = ledger.items.filter((item) => item.taskId === taskId);
-  const sourceFiles = [sourcePaths.plan, sourcePaths.ledger, statePath, "pnpm-lock.yaml"];
+  const sourceFiles = [
+    plan.productContract,
+    sourcePaths.plan,
+    sourcePaths.ledger,
+    statePath,
+    "pnpm-lock.yaml",
+  ];
   const sourceDigests = Object.fromEntries(
     await Promise.all(sourceFiles.map(async (file) => [file, await digest(file)])),
   );
@@ -115,6 +121,7 @@ async function compile(taskId) {
       repository: plan.baseline.repository,
       baselineCommit: plan.baseline.commit,
       productContract: plan.productContract,
+      productContractDigest: sourceDigests[plan.productContract],
       planPath: sourcePaths.plan,
       ledgerPath: sourcePaths.ledger,
       statePath,

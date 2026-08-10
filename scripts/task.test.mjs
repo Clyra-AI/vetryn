@@ -1,4 +1,4 @@
-import { cp, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import process from "node:process";
@@ -14,6 +14,8 @@ const temporaryRoots = [];
 async function createFixture() {
   const root = await mkdtemp(path.join(tmpdir(), "vetryn-task-"));
   temporaryRoots.push(root);
+  await mkdir(path.join(root, "docs"));
+  await cp(path.join(repositoryRoot, "docs/oss-v1.md"), path.join(root, "docs/oss-v1.md"));
   await cp(path.join(repositoryRoot, "product"), path.join(root, "product"), { recursive: true });
   await cp(
     path.join(repositoryRoot, "examples/openrouter-typescript/fixtures"),
@@ -64,8 +66,10 @@ describe("task packet compiler", () => {
     expect(first.status, first.stderr).toBe(0);
     expect(second.status, second.stderr).toBe(0);
     expect(second.stdout).toBe(first.stdout);
-    expect(JSON.parse(first.stdout)).toMatchObject({
+    const packet = JSON.parse(first.stdout);
+    expect(packet).toMatchObject({
       packetId: "oss-v1:V1-00:r1",
+      source: { productContract: "docs/oss-v1.md" },
       task: { id: "V1-00" },
       currentState: { state: "in_progress", attempt: 1, maxAttempts: 2 },
       execution: {
@@ -75,6 +79,25 @@ describe("task packet compiler", () => {
         progressIsGenerated: true,
       },
     });
+    expect(packet.source.productContractDigest).toBe(
+      packet.source.digests[packet.source.productContract],
+    );
+    expect(Object.keys(packet.source.digests)).toHaveLength(5);
+  });
+
+  it("changes the packet digest when the product contract changes", async () => {
+    const root = await createFixture();
+    const before = runTask(root, "compile", "V1-00");
+    expect(before.status, before.stderr).toBe(0);
+    const contractPath = path.join(root, "docs/oss-v1.md");
+    await writeFile(contractPath, `${await readFile(contractPath, "utf8")}\ncontract drift\n`);
+
+    const after = runTask(root, "compile", "V1-00");
+
+    expect(after.status, after.stderr).toBe(0);
+    expect(JSON.parse(after.stdout).source.productContractDigest).not.toBe(
+      JSON.parse(before.stdout).source.productContractDigest,
+    );
   });
 
   it.each(["verification_pending", "review_pending"])(

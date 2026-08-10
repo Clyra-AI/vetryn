@@ -30,6 +30,7 @@
         "repository",
         "baselineCommit",
         "productContract",
+        "productContractDigest",
         "planPath",
         "ledgerPath",
         "statePath",
@@ -39,12 +40,13 @@
         "repository": { "type": "string", "format": "uri" },
         "baselineCommit": { "$ref": "#/$defs/sha" },
         "productContract": { "$ref": "#/$defs/repoPath" },
+        "productContractDigest": { "$ref": "#/$defs/digest" },
         "planPath": { "$ref": "#/$defs/repoPath" },
         "ledgerPath": { "$ref": "#/$defs/repoPath" },
         "statePath": { "$ref": "#/$defs/repoPath" },
         "digests": {
           "type": "object",
-          "minProperties": 3,
+          "minProperties": 5,
           "additionalProperties": { "$ref": "#/$defs/digest" }
         }
       }

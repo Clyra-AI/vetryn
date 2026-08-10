@@ -44,14 +44,22 @@ function runPlan(root, command = "check", env = {}) {
   });
 }
 
-async function fakeCurlEnvironment(root, response) {
+async function fakeCurlEnvironment(
+  root,
+  reviewResponse,
+  codeowners = "* @maintainer-reviewer\n/.github/ @maintainer-reviewer\n/SECURITY.md @maintainer-reviewer\n",
+) {
   const binDirectory = path.join(root, "test-bin");
   await mkdir(binDirectory);
   const executable = path.join(binDirectory, "curl");
   const source =
-    response === null
+    reviewResponse === null
       ? "#!/bin/sh\nexit 22\n"
-      : `#!/usr/bin/env node\nprocess.stdout.write(${JSON.stringify(JSON.stringify(response))});\n`;
+      : `#!/usr/bin/env node
+const url = process.argv.at(-1);
+if (url.includes("CODEOWNERS")) process.stdout.write(${JSON.stringify(codeowners)});
+else process.stdout.write(JSON.stringify(${JSON.stringify(reviewResponse)}));
+`;
   await writeFile(executable, source);
   await chmod(executable, 0o755);
   return { PATH: `${binDirectory}:${process.env.PATH}` };
@@ -365,6 +373,50 @@ describe("implementation plan validator", () => {
 
     expect(result.status).not.toBe(0);
     expect(result.stderr).toContain("does not match the authenticated reviewer");
+  });
+
+  it("rejects an authenticated reviewer without the required trusted role", async () => {
+    const root = await createFixture();
+    const evidence = await createV1Evidence(root, {
+      type: "review",
+      actor: "maintainer-reviewer",
+      gateBinding: null,
+      review: {
+        role: "maintainer",
+        subjectActor: "implementation-agent",
+        source: "github-pull-request-review",
+        state: "APPROVED",
+        authorAssociation: "MEMBER",
+        reviewId: 123456789,
+        observedCommit: "a".repeat(40),
+        authorizationRef: "https://github.com/Clyra-AI/vetryn/pull/1#pullrequestreview-123456789",
+      },
+    });
+    const statePath = "product/plans/oss-v1/state/V1-00.json";
+    const state = await readFixtureJson(root, statePath);
+    state.candidate = {
+      baseCommit: "eb970bf3708ceb7a0d93d93481812dac090428b9",
+      commit: evidence.commit,
+      executor: "implementation-agent",
+    };
+    state.reviews.find((review) => review.role === "maintainer").status = "approved";
+    state.reviews.find((review) => review.role === "maintainer").evidenceRefs = [evidence.id];
+    await writeFixtureJson(root, statePath, state);
+    const githubReview = {
+      id: 123456789,
+      state: "APPROVED",
+      user: { login: "maintainer-reviewer" },
+      author_association: "MEMBER",
+      commit_id: "a".repeat(40),
+      html_url: "https://github.com/Clyra-AI/vetryn/pull/1#pullrequestreview-123456789",
+      pull_request_url: "https://api.github.com/repos/Clyra-AI/vetryn/pulls/1",
+    };
+    const env = await fakeCurlEnvironment(root, githubReview, "* @different-reviewer\n");
+
+    const result = runPlan(root, "check", env);
+
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain("not authorized for role maintainer");
   });
 
   it("rejects a review attestation whose ID does not match its GitHub URL", async () => {

@@ -9,7 +9,8 @@ truth remains in `docs/oss-v1.md`; delivery truth remains in the reviewed JSON u
 1. Run `pnpm plan:check` and `pnpm --silent task:next`.
 2. Select one explicit task ID. Do not infer work from `ROADMAP.md` or chat history.
 3. Run `pnpm --silent task:compile -- TASK-ID`. The compiler validates the canonical plan first, rejects work that
-   is not legal to execute, and emits a deterministic packet bound to source digests.
+   is not legal to execute, and emits a deterministic packet bound to the product contract, plan, ledger, task
+   state, and lockfile digests.
 4. Use `$vetryn-implement-task` for implementation, `$vetryn-verify-task` for independent verification,
    and `$vetryn-promote-task` only for maintainer-controlled state promotion.
 
@@ -34,7 +35,8 @@ compact, and redacted; raw prompts, model output, credentials, private traces, a
 Command evidence names the exact gate and canonical command it proves; evidence for one command cannot satisfy
 another gate. Approval evidence is re-fetched from GitHub's public API during validation and must match the
 repository, pull request, review ID, reviewer, eligible association, approved state, URL, and candidate commit.
-Editable evidence identity fields are never sufficient on their own, and failed API authentication fails closed.
+The reviewer must also own the role's protected surface under CODEOWNERS fetched from protected `main`.
+Editable branch evidence and role fields are never sufficient on their own; failed authentication fails closed.
 
 The repository preserves these test levels as the product grows: static, unit, property, contract,
 integration, end-to-end, acceptance, adversarial/hardening, chaos, performance/soak, scenario, and field.
