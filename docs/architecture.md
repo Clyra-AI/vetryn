@@ -38,8 +38,9 @@ patches. The scanner does not assign the human-owned stable call-site ID.
 
 ### Manifest
 
-The repository owns the call-site manifest. It records source binding, owner, fixture, gates, and
-provider constraints without storing credentials. Generated changes remain reviewable in Git.
+The repository owns the call-site manifest. It records source binding, owner, fixture, gates, provider
+constraints, and a human-reviewed representative prompt/completion token-weight profile with provenance,
+without storing credentials or raw traces. Generated changes remain reviewable in Git.
 
 ### Candidate resolver and catalog
 
@@ -47,8 +48,10 @@ Catalog adapters normalize model capabilities, context limits, retirement state,
 timestamped pricing. Every run pins its catalog snapshot so a result remains explainable after prices
 or aliases change. Hard compatibility and repository policy filters run before shortlisting. V1 selects
 at most five candidates by default and permits only a lower repository-configured bound. It ranks by
-exact-decimal normalized prompt-plus-completion unit price ascending, context limit descending, then
-canonical model ID ascending; the current baseline is recorded separately from the candidate bound.
+exact-decimal projected workload cost, computed from normalized catalog prices and the manifest's pinned
+prompt/completion token weights, ascending; then context limit descending; then canonical model ID
+ascending. Missing, invalid, unreviewed, or unprovenanced weights fail closed. The current baseline is
+recorded separately from the candidate bound.
 
 Live refresh computes a normalized catalog content digest. Unchanged content reuses the existing
 immutable snapshot and records a separate immutable refresh observation containing source, time, and

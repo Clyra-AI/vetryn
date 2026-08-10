@@ -96,9 +96,11 @@
       "expectedReason": "The locked catalog ranking tuple produces the same default-five shortlist.",
       "assertions": [
         "The baseline is recorded separately from exactly five candidates.",
-        "The compatible fixture tuples (blended price, context) are mock/alpha=(0.80,32768), mock/bravo=(1.10,65536), mock/charlie=(1.10,65536), mock/delta=(1.10,32768), mock/echo=(1.50,131072), and mock/foxtrot=(2.00,131072).",
+        "The pinned representative usage profile has prompt weight 9 and completion weight 1 with reviewed fixture provenance.",
+        "The compatible fixture tuples (prompt price, completion price, context) are mock/alpha=(0.1,10.0,32768), mock/bravo=(1.0,2.0,65536), mock/charlie=(1.0,2.0,65536), mock/delta=(1.0,2.0,32768), mock/echo=(1.2,1.0,131072), mock/foxtrot=(0.2,10.2,131072), and mock/golf=(2.0,0.1,131072).",
+        "The exact-decimal projected workload costs are alpha=10.9, bravo=11.0, charlie=11.0, delta=11.0, echo=11.8, foxtrot=12.0, and golf=18.1.",
         "The ordered candidate IDs are mock/alpha, mock/bravo, mock/charlie, mock/delta, and mock/echo.",
-        "The pinned catalog ranks exact-decimal normalized prompt-plus-completion unit price ascending, context limit descending, then canonical model ID ascending.",
+        "The pinned catalog ranks projected workload cost ascending, context limit descending, then canonical model ID ascending.",
         "Models outside the shortlist are not executed."
       ]
     },

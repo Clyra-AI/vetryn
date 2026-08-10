@@ -40,8 +40,8 @@
     {
       "id": "DEC-CANDIDATES",
       "status": "locked",
-      "decision": "V1 resolves at most five candidates by default, configurable downward, after hard compatibility and policy filters; it ranks exact-decimal normalized prompt-plus-completion unit price ascending, context limit descending, then canonical model ID ascending.",
-      "rationale": "A bounded, cost-first shortlist controls spend and runtime while preserving reproducible candidate selection from catalog fields available before evaluation.",
+      "decision": "V1 resolves at most five candidates by default, configurable downward, after hard compatibility and policy filters; it ranks exact-decimal projected workload cost ascending using pinned representative prompt/completion token weights, context limit descending, then canonical model ID ascending.",
+      "rationale": "A bounded, workload-cost-first shortlist controls spend and runtime without assuming that prompt and completion usage are equal.",
       "blocks": []
     },
     {
@@ -361,6 +361,7 @@
       },
       "semanticInvariants": [
         "Re-scans do not silently rename human-owned call-site IDs.",
+        "Each manifest pins a human-reviewed representative prompt/completion token-weight profile with provenance for candidate cost ranking.",
         "Manifest initialization is reviewable and idempotent."
       ],
       "deliverables": ["packages/core/**", "packages/cli/**", "examples/openrouter-typescript/**"],
@@ -409,7 +410,8 @@
         "Every evaluation cites an immutable catalog snapshot.",
         "Missing or ambiguous pricing and capability data excludes the candidate.",
         "Candidate selection is bounded by repository policy and reproducible from normalized catalog data.",
-        "Candidate ranking uses exact-decimal normalized prompt-plus-completion unit price ascending, context limit descending, and canonical model ID ascending.",
+        "Projected workload cost uses exact-decimal catalog prices weighted by the manifest's pinned representative prompt/completion token profile.",
+        "Candidate ranking uses projected workload cost ascending, context limit descending, and canonical model ID ascending.",
         "Every successful live refresh records immutable freshness evidence even when its content-addressed snapshot is reused.",
         "A failed live refresh cannot silently relabel an older snapshot as current."
       ],
@@ -427,6 +429,7 @@
       "stopConditions": [
         "A run can silently use a mutable live catalog.",
         "Unknown pricing is treated as zero.",
+        "A missing, invalid, unreviewed, or unprovenanced representative usage profile produces a shortlist.",
         "Candidate selection exceeds its configured bound or changes under identical inputs.",
         "Candidate ranking uses a different field, direction, or tie-break order than the locked ranking tuple.",
         "An unchanged normalized catalog creates a distinct snapshot, omits its new refresh observation, or a failed refresh is reported as fresh."

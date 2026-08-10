@@ -15,10 +15,12 @@ open-ended workload.
 
 - Treat OpenRouter as the V1 catalog universe, not as the candidate set.
 - Apply hard compatibility and repository policy filters before selection.
-- Select at most five candidates by default and permit repositories only to lower that bound. Rank by
-  exact-decimal normalized prompt-plus-completion unit price ascending, context limit descending, then
-  canonical model ID ascending. The current baseline is recorded separately and is never counted toward
-  the bound.
+- Require each call-site manifest to pin a human-reviewed representative prompt/completion token-weight
+  profile with provenance. Select at most five candidates by default and permit repositories only to lower
+  that bound. Compute exact-decimal projected workload cost from normalized catalog prices and those
+  weights, then rank cost ascending, context limit descending, and canonical model ID ascending. The
+  current baseline is recorded separately and is never counted toward the bound. Missing, invalid,
+  unreviewed, or unprovenanced weights fail closed without candidate execution.
 - Normalize live catalog content and compute a content digest. Reuse the immutable snapshot when the
   digest is unchanged; never mutate an existing snapshot. Record each successful refresh as separate
   immutable freshness evidence containing its source, observation time, and normalized content digest.

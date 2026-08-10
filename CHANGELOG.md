@@ -4,8 +4,8 @@
 
 ### Added
 
-- Added bounded cost-first OpenRouter candidate ranking, idempotent catalog-refresh, opt-in scheduling,
-  immutable freshness observations, evaluator-version-bound digests, and
+- Added bounded representative-workload-cost OpenRouter candidate ranking, idempotent catalog-refresh,
+  opt-in scheduling, immutable freshness observations, evaluator-version-bound digests, and
   complete-and-integrity-valid evidence reuse contracts to the executable V1 plan.
 - Recorded a conditional sanitized field-evidence criterion for any post-V1 optional calibrated
   semantic-rubric scorer, including representative no-findings and explicit insufficient-coverage

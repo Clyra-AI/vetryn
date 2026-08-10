@@ -213,7 +213,7 @@
     {
       "id": "MANIFEST-001",
       "taskId": "V1-04",
-      "statement": "Manifest initialization requires explicit human-owned stable call-site IDs and ownership metadata.",
+      "statement": "Manifest initialization requires explicit human-owned stable call-site IDs, ownership metadata, and a human-reviewed representative prompt/completion token-weight profile with provenance.",
       "verification": { "method": "test", "testLevel": "contract", "gateId": "QG-CONTRACTS" },
       "waivable": false,
       "status": "planned",
@@ -267,7 +267,7 @@
     {
       "id": "CATALOG-004",
       "taskId": "V1-05",
-      "statement": "After hard compatibility and policy filters, candidate resolution applies a default maximum of five, permits only a lower repository-configured bound, and ranks exact-decimal normalized prompt-plus-completion unit price ascending, context limit descending, then canonical model ID ascending.",
+      "statement": "After hard compatibility and policy filters, candidate resolution applies a default maximum of five, permits only a lower repository-configured bound, computes exact-decimal projected workload cost from catalog prices and the manifest's pinned representative prompt/completion token weights, then ranks cost ascending, context limit descending, and canonical model ID ascending.",
       "verification": { "method": "test", "testLevel": "adversarial", "gateId": "QG-SCENARIOS" },
       "waivable": false,
       "status": "planned",

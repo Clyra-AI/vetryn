@@ -32,7 +32,7 @@ these checkboxes are a human summary, not execution truth.
 
 - [ ] OpenRouter catalog adapter
 - [ ] Compatibility and policy filtering
-- [ ] Deterministic cost-first candidate shortlist with a default and maximum size of five
+- [ ] Deterministic workload-cost-first candidate shortlist with a default and maximum size of five
 - [ ] Immutable, idempotent catalog refresh with explicit stale/failure semantics
 - [ ] Bounded candidate runner
 - [ ] Deterministic schema, classification, and tool-call scorers

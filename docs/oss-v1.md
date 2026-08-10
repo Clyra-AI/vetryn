@@ -129,9 +129,11 @@ design.
   created.
 - `Rollout`, optional judges, Python, hosted execution, and production canaries are outside OSS V1.
 - OpenRouter supplies the V1 catalog universe, but hard compatibility and policy filters run before a
-  deterministic shortlist whose default and maximum size is five candidates. Ranking is exact-decimal
-  normalized prompt-plus-completion unit price ascending, context limit descending, then canonical model
-  ID ascending.
+  deterministic shortlist whose default and maximum size is five candidates. Each manifest pins a
+  human-reviewed representative prompt/completion token-weight profile with provenance. Ranking computes
+  exact-decimal projected workload cost from that profile and normalized catalog prices, then sorts cost
+  ascending, context limit descending, and canonical model ID ascending; missing or invalid profiles fail
+  closed.
 - Provider-backed assessment is manual by default. A repository may explicitly opt into a schedule;
   unchanged normalized catalog and evaluation-input digests skip paid candidate execution only when
   prior evidence is complete, integrity-valid, and reusable under current policy.

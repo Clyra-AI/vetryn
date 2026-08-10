@@ -2,7 +2,7 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "V1-05",
-  "revision": 3,
+  "revision": 4,
   "state": "planned",
   "attempt": 0,
   "candidate": null,
@@ -91,6 +91,13 @@
       "at": "2026-08-10T12:52:07Z",
       "actor": "planning-agent",
       "reason": "Locked cost, context, and canonical-ID ranking keys and directions for candidate selection."
+    },
+    {
+      "from": "planned",
+      "to": "planned",
+      "at": "2026-08-10T13:14:22Z",
+      "actor": "planning-agent",
+      "reason": "Replaced unweighted price sums with representative workload-cost ranking."
     }
   ]
 }
