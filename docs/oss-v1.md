@@ -78,6 +78,14 @@ Every recommendation PR must show:
 - confidence and explicit limitations; and
 - exact commands required to reproduce the result.
 
+## Domain artifact contract
+
+V1 durable JSON uses strict, versioned artifacts with a deterministic ID and canonical serialization. The core
+stores references, digests, aggregate measurements, model identifiers, and bounded diagnostic codes—not raw
+prompts, model outputs, credentials, provider error bodies, or source diffs. Unknown versions and logically
+incompatible states fail closed. Artifact definitions and pure validation live in `@vetryn/core`; filesystem,
+provider, AST, and GitHub behavior stay outside that package.
+
 ## Non-goals
 
 OSS V1 is not a gateway, production proxy, dynamic router, prompt-management system, synthetic eval

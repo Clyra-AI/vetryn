@@ -29,6 +29,21 @@ Versioned schemas define call sites, source bindings, eval suites, catalog snaps
 recommendations, and patch plans. The core has no provider, network, filesystem, AST, or GitHub
 dependency. Rollout state is outside OSS V1.
 
+The durable artifacts are strict JSON with `artifactType`, `schemaVersion`, and a deterministic artifact ID.
+Canonical serialization sorts object keys and validates the artifact before writing it. The artifact boundary
+contains only source metadata, opaque digests, aggregate measurements, safe identifiers, and bounded reason or
+failure codes; raw prompts, raw outputs, credentials, provider error payloads, and source diffs are not fields
+in these contracts.
+
+| Artifact           | Durable responsibility                                                                         |
+| ------------------ | ---------------------------------------------------------------------------------------------- |
+| Call-site manifest | Human-owned identity, bound source, model pin, gates, and reviewed usage profile               |
+| Eval suite         | Reviewed fixture reference, digest, case count, and redaction posture                          |
+| Catalog snapshot   | Immutable normalized model capabilities, pricing, and source provenance                        |
+| Candidate run      | Input digest, aggregate outcome metrics, and bounded failure state                             |
+| Recommendation     | Abstention or proposed model with confidence, reason codes, and evidence references            |
+| Patch plan         | One source-bound expected-model to replacement-model change with a recommendation precondition |
+
 ### Scanner
 
 Language adapters use syntax trees rather than regular expressions. A scanner may propose a call site
