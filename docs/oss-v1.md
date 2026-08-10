@@ -10,6 +10,9 @@ Vetryn's first complete outcome is:
 The PR, not a dashboard or routing decision, is the product artifact. It must contain enough evidence
 for an engineer to understand, reproduce, and safely reject or accept the change.
 
+This document is the human-readable product contract for OSS V1. The reviewed execution plan and
+item-level acceptance criteria live under [`product/plans/oss-v1/`](../product/plans/oss-v1/README.md).
+
 ## Beachhead ICP
 
 The initial user is an AI-native software team that:
@@ -41,7 +44,7 @@ V1 supports:
 3. direct model string literals that can be unambiguously bound to a source location;
 4. text generation, structured JSON, and simple tool-call workloads;
 5. checked-in JSONL eval cases reviewed by a human;
-6. deterministic assertions plus optional LLM judges;
+6. deterministic assertions; LLM-as-judge scoring is deferred beyond V1;
 7. hard quality, latency, cost, context, and privacy gates;
 8. local runs and GitHub Actions using repository secrets; and
 9. one-model-literal draft PRs that never auto-merge.
@@ -51,9 +54,10 @@ confidently.
 
 ## Required product loop
 
-1. `vetryn scan` discovers supported call sites and proposes stable manifest entries.
+1. `vetryn scan` discovers supported calls, source fingerprints, and proposed manifest bindings.
 2. A developer confirms ownership, fixture location, and evaluation gates.
-3. `vetryn evaluate` resolves a reproducible candidate set and runs the suite.
+3. `vetryn eval` resolves a reproducible candidate set and runs the suite (`evaluate` may remain an
+   alias, but artifacts and documentation use `eval`).
 4. Vetryn abstains unless the candidate passes every hard gate and clears a confidence floor.
 5. `vetryn recommend` creates a machine-readable and Markdown evidence report.
 6. The GitHub workflow opens or updates a draft PR changing one verified model literal.
@@ -75,26 +79,43 @@ Every recommendation PR must show:
 ## Non-goals
 
 OSS V1 is not a gateway, production proxy, dynamic router, prompt-management system, synthetic eval
-generator, autonomous deployer, or multi-language fleet dashboard. It does not claim that an LLM judge
-alone establishes correctness.
+generator, autonomous deployer, rollout manager, LLM-judge framework, or multi-language fleet
+dashboard.
 
 ## Milestones
 
-| Milestone          | Deliverable                                          | Exit condition                               |
-| ------------------ | ---------------------------------------------------- | -------------------------------------------- |
-| M0: foundation     | Schemas, CLI shell, governance, CI, security posture | Reproducible green checks on `main`          |
-| M1: discovery      | TypeScript/OpenAI scanner and manifest writer        | High precision on a public fixture corpus    |
-| M2: evaluation     | OpenRouter catalog/provider adapter and eval runner  | Reproducible current-vs-candidate report     |
-| M3: recommendation | Gate engine, patcher, Markdown/SARIF reports         | Safe abstention and minimal verified diffs   |
-| M4: automation     | GitHub Action and draft-PR lifecycle                 | End-to-end golden-path demo in a sample repo |
+| Milestone            | Deliverable                                             | Exit condition                               |
+| -------------------- | ------------------------------------------------------- | -------------------------------------------- |
+| M0: foundation       | Schemas, CLI shell, governance, CI, security posture    | Reproducible green checks on `main`          |
+| M1: contracts        | Domain artifacts, golden fixture, offline mock provider | Deterministic scenario suite                 |
+| M2: inventory        | TypeScript/OpenAI scanner and manifest writer           | High precision on a public fixture corpus    |
+| M3: evidence         | OpenRouter adapter, eval runner, gates, reports         | Reproducible current-vs-candidate decision   |
+| M4: safe change loop | Verified patcher, GitHub Action, draft-PR lifecycle     | End-to-end golden-path demo in a sample repo |
 
 ## Validation targets
 
 Before calling V1 dependable, the project should demonstrate:
 
-- at least 90% precision on supported call-site discovery;
+- at least 95% precision for high-confidence supported call-site discovery;
+- at least 80% recall within the explicitly supported syntax corpus;
 - zero source rewrites outside the bound model literal in the fixture corpus;
-- deterministic replay for deterministic scorers and documented variance for model scorers;
+- deterministic replay for deterministic scorers and stable semantic artifact digests;
 - a clear `insufficient-evidence` outcome for undersized or contradictory suites;
-- less than 30 minutes from installation to the first local comparison on the golden path; and
-- at least 20 real recommendation rollouts with no material quality regression.
+- less than 30 minutes from installation to the first local comparison on the golden path.
+
+Engineering completion and field validation are separate gates. Before expanding beyond V1, require at
+least ten qualified recommendation PRs across three companies, at least a 40% merge rate, and zero
+serious escaped regressions. Twenty safe rollouts remain a later confidence milestone rather than a
+deterministic build gate.
+
+## Locked implementation decisions
+
+- Stable semantic call-site identity belongs to the human-reviewed manifest. Scanner output owns a
+  structural discovery fingerprint, confidence, and patchability reason.
+- JSON and Markdown are the required evidence formats. SARIF is deferred until a concrete code-scanning
+  use is specified.
+- New packages are extracted only when their milestone begins; empty placeholder packages are not
+  created.
+- `Rollout`, optional judges, Python, hosted execution, and production canaries are outside OSS V1.
+- Unknown compatibility, insufficient evidence, ambiguous binding, stale source, or failed hard gates
+  always produce a report without a patch.

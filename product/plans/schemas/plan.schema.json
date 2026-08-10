@@ -1,0 +1,213 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vetryn.dev/schemas/planning/plan-v1.json",
+  "title": "Vetryn implementation plan",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema",
+    "schemaVersion",
+    "planId",
+    "productContract",
+    "baseline",
+    "decisions",
+    "gateCatalog",
+    "tasks"
+  ],
+  "properties": {
+    "$schema": { "type": "string" },
+    "schemaVersion": { "const": "1.0.0" },
+    "planId": { "$ref": "#/$defs/planId" },
+    "productContract": { "$ref": "#/$defs/repoPath" },
+    "baseline": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["commit", "repository", "capturedAt"],
+      "properties": {
+        "commit": { "$ref": "#/$defs/sha" },
+        "repository": { "type": "string", "format": "uri" },
+        "capturedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "decisions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "status", "decision", "rationale", "blocks"],
+        "properties": {
+          "id": { "$ref": "#/$defs/upperId" },
+          "status": { "enum": ["open", "locked", "superseded"] },
+          "decision": { "type": "string", "minLength": 1 },
+          "rationale": { "type": "string", "minLength": 1 },
+          "blocks": { "type": "array", "items": { "$ref": "#/$defs/taskId" }, "uniqueItems": true }
+        }
+      }
+    },
+    "gateCatalog": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "kind", "availability", "waivable"],
+        "properties": {
+          "id": { "$ref": "#/$defs/upperId" },
+          "kind": { "enum": ["command", "review", "field"] },
+          "availability": { "enum": ["active", "planned"] },
+          "command": { "type": "string", "minLength": 1 },
+          "reviewRole": { "type": "string", "minLength": 1 },
+          "waivable": { "type": "boolean" }
+        },
+        "allOf": [
+          {
+            "if": { "properties": { "kind": { "const": "command" } }, "required": ["kind"] },
+            "then": { "properties": { "command": true }, "required": ["command"] }
+          },
+          {
+            "if": { "properties": { "kind": { "const": "review" } }, "required": ["kind"] },
+            "then": { "properties": { "reviewRole": true }, "required": ["reviewRole"] }
+          }
+        ]
+      }
+    },
+    "tasks": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "milestone",
+          "title",
+          "objective",
+          "risk",
+          "dependsOn",
+          "acceptanceItemIds",
+          "scope",
+          "semanticInvariants",
+          "deliverables",
+          "requiredTestLevels",
+          "requiredGates",
+          "requiredReviews",
+          "capabilities",
+          "maxAttempts",
+          "stopConditions"
+        ],
+        "properties": {
+          "id": { "$ref": "#/$defs/taskId" },
+          "milestone": { "type": "string", "pattern": "^(M0|M[1-4]|FIELD)$" },
+          "title": { "type": "string", "minLength": 1 },
+          "objective": { "type": "string", "minLength": 1 },
+          "risk": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["level", "domains"],
+            "properties": {
+              "level": { "enum": ["low", "medium", "high"] },
+              "domains": {
+                "type": "array",
+                "items": { "type": "string", "minLength": 1 },
+                "uniqueItems": true
+              }
+            }
+          },
+          "dependsOn": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["taskId", "kind"],
+              "properties": {
+                "taskId": { "$ref": "#/$defs/taskId" },
+                "kind": { "enum": ["hard", "contract", "soft", "field"] }
+              }
+            }
+          },
+          "acceptanceItemIds": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 8,
+            "items": { "$ref": "#/$defs/upperId" },
+            "uniqueItems": true
+          },
+          "scope": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["allowedPaths", "forbiddenPaths"],
+            "properties": {
+              "allowedPaths": {
+                "type": "array",
+                "minItems": 1,
+                "items": { "$ref": "#/$defs/repoGlob" },
+                "uniqueItems": true
+              },
+              "forbiddenPaths": {
+                "type": "array",
+                "minItems": 1,
+                "items": { "$ref": "#/$defs/repoGlob" },
+                "uniqueItems": true
+              }
+            }
+          },
+          "semanticInvariants": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "type": "string", "minLength": 1 }
+          },
+          "deliverables": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "$ref": "#/$defs/repoGlob" },
+            "uniqueItems": true
+          },
+          "requiredTestLevels": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "enum": ["static", "unit", "contract", "integration", "e2e", "adversarial", "field"]
+            },
+            "uniqueItems": true
+          },
+          "requiredGates": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "$ref": "#/$defs/upperId" },
+            "uniqueItems": true
+          },
+          "requiredReviews": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1 },
+            "uniqueItems": true
+          },
+          "capabilities": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["network", "credentials", "provider", "githubWrite"],
+            "properties": {
+              "network": { "type": "boolean" },
+              "credentials": { "type": "boolean" },
+              "provider": { "type": "boolean" },
+              "githubWrite": { "type": "boolean" }
+            }
+          },
+          "maxAttempts": { "type": "integer", "minimum": 1, "maximum": 3 },
+          "stopConditions": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "type": "string", "minLength": 1 },
+            "uniqueItems": true
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "planId": { "type": "string", "pattern": "^[a-z][a-z0-9-]+$" },
+    "taskId": { "type": "string", "pattern": "^(M0|V1)-[0-9]{2}$" },
+    "upperId": { "type": "string", "pattern": "^[A-Z][A-Z0-9-]+$" },
+    "sha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "repoPath": { "type": "string", "minLength": 1, "pattern": "^(?!/)(?!.*\\.\\.).+$" },
+    "repoGlob": { "type": "string", "minLength": 1, "pattern": "^(?!/)(?!.*\\.\\.).+$" }
+  }
+}

@@ -1,0 +1,57 @@
+{
+  "$schema": "../../schemas/task-state.schema.json",
+  "schemaVersion": "1.0.0",
+  "taskId": "M0-00",
+  "revision": 1,
+  "state": "accepted",
+  "attempt": 1,
+  "candidate": {
+    "baseCommit": "eb970bf3708ceb7a0d93d93481812dac090428b9",
+    "commit": "eb970bf3708ceb7a0d93d93481812dac090428b9"
+  },
+  "criteria": [
+    {
+      "criterionId": "M0-FOUNDATION-001",
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-main-checks-20260809"]
+    },
+    {
+      "criterionId": "M0-FOUNDATION-002",
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-main-checks-20260809"]
+    },
+    {
+      "criterionId": "M0-FOUNDATION-003",
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-main-checks-20260809"]
+    }
+  ],
+  "gates": [
+    {
+      "gateId": "QG-REPO-CHECK",
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-main-checks-20260809"]
+    },
+    {
+      "gateId": "QG-PACK-SMOKE",
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-main-checks-20260809"]
+    },
+    {
+      "gateId": "QG-INDEPENDENT-VERIFY",
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-main-checks-20260809"]
+    }
+  ],
+  "reviews": [],
+  "blockers": [],
+  "history": [
+    {
+      "from": null,
+      "to": "accepted",
+      "at": "2026-08-10T00:30:00Z",
+      "actor": "imported-main-state",
+      "reason": "Existing protected-main checks independently verified the imported repository foundation."
+    }
+  ]
+}

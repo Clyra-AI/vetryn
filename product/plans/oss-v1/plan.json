@@ -1,0 +1,634 @@
+{
+  "$schema": "../schemas/plan.schema.json",
+  "schemaVersion": "1.0.0",
+  "planId": "oss-v1",
+  "productContract": "docs/oss-v1.md",
+  "baseline": {
+    "commit": "eb970bf3708ceb7a0d93d93481812dac090428b9",
+    "repository": "https://github.com/Clyra-AI/vetryn",
+    "capturedAt": "2026-08-10T00:14:08Z"
+  },
+  "decisions": [
+    {
+      "id": "DEC-COMMAND",
+      "status": "locked",
+      "decision": "The canonical evaluation command is vetryn eval; evaluate may be an alias.",
+      "rationale": "One stable command keeps documentation, CI, and automation contracts aligned.",
+      "blocks": []
+    },
+    {
+      "id": "DEC-SCANNER",
+      "status": "locked",
+      "decision": "High-confidence scanner precision is at least 95% and supported-pattern recall is at least 80%.",
+      "rationale": "Patching the wrong call site is costlier than reporting an ambiguous finding.",
+      "blocks": []
+    },
+    {
+      "id": "DEC-REPORTS",
+      "status": "locked",
+      "decision": "V1 requires versioned JSON and human-readable Markdown; SARIF is deferred.",
+      "rationale": "The machine and review contracts are required; another report surface is not.",
+      "blocks": []
+    },
+    {
+      "id": "DEC-SCORING",
+      "status": "locked",
+      "decision": "V1 uses deterministic scorers and hard gates only; LLM judges are deferred.",
+      "rationale": "The first upgrade PR must be reproducible offline and explainable.",
+      "blocks": []
+    },
+    {
+      "id": "DEC-IDENTITY",
+      "status": "locked",
+      "decision": "Humans own stable call-site IDs in manifests; scanners emit source fingerprints.",
+      "rationale": "Semantic identity cannot be inferred reliably from a moving source location.",
+      "blocks": []
+    },
+    {
+      "id": "DEC-FACTORY",
+      "status": "locked",
+      "decision": "Use repo-native Factory-compatible artifacts without a Factory git submodule.",
+      "rationale": "The plan contract should be portable without coupling OSS consumers to orchestration internals.",
+      "blocks": []
+    }
+  ],
+  "gateCatalog": [
+    {
+      "id": "QG-PLAN-CHECK",
+      "kind": "command",
+      "availability": "active",
+      "command": "pnpm plan:check",
+      "waivable": false
+    },
+    {
+      "id": "QG-REPO-CHECK",
+      "kind": "command",
+      "availability": "active",
+      "command": "pnpm check",
+      "waivable": false
+    },
+    {
+      "id": "QG-PACK-SMOKE",
+      "kind": "command",
+      "availability": "active",
+      "command": "pnpm pack:check",
+      "waivable": false
+    },
+    {
+      "id": "QG-CONTRACTS",
+      "kind": "command",
+      "availability": "planned",
+      "command": "pnpm test:contracts",
+      "waivable": false
+    },
+    {
+      "id": "QG-SCANNER-CORPUS",
+      "kind": "command",
+      "availability": "planned",
+      "command": "pnpm test:scanner-corpus",
+      "waivable": false
+    },
+    {
+      "id": "QG-SCENARIOS",
+      "kind": "command",
+      "availability": "planned",
+      "command": "pnpm test:scenarios",
+      "waivable": false
+    },
+    {
+      "id": "QG-INDEPENDENT-VERIFY",
+      "kind": "review",
+      "availability": "active",
+      "reviewRole": "independent-verifier",
+      "waivable": false
+    },
+    {
+      "id": "QG-TRUST-REVIEW",
+      "kind": "review",
+      "availability": "active",
+      "reviewRole": "trust-reviewer",
+      "waivable": false
+    },
+    { "id": "QG-FIELD", "kind": "field", "availability": "planned", "waivable": false }
+  ],
+  "tasks": [
+    {
+      "id": "M0-00",
+      "milestone": "M0",
+      "title": "Accept the imported OSS foundation",
+      "objective": "Verify the existing public repository, package skeleton, security workflows, and baseline contracts before V1 work builds on them.",
+      "risk": { "level": "low", "domains": ["foundation", "supply-chain"] },
+      "dependsOn": [],
+      "acceptanceItemIds": ["M0-FOUNDATION-001", "M0-FOUNDATION-002", "M0-FOUNDATION-003"],
+      "scope": { "allowedPaths": ["**"], "forbiddenPaths": [".git/**"] },
+      "semanticInvariants": [
+        "The imported baseline remains reproducible from its lockfile.",
+        "Security workflows retain least-privilege permissions."
+      ],
+      "deliverables": ["package.json", "pnpm-lock.yaml", ".github/workflows/**", "packages/**"],
+      "requiredTestLevels": ["static", "integration"],
+      "requiredGates": ["QG-REPO-CHECK", "QG-PACK-SMOKE", "QG-INDEPENDENT-VERIFY"],
+      "requiredReviews": [],
+      "capabilities": {
+        "network": false,
+        "credentials": false,
+        "provider": false,
+        "githubWrite": false
+      },
+      "maxAttempts": 2,
+      "stopConditions": [
+        "A baseline gate cannot be reproduced.",
+        "A required security control would be weakened."
+      ]
+    },
+    {
+      "id": "V1-00",
+      "milestone": "M0",
+      "title": "Lock the executable V1 plan",
+      "objective": "Commit the reconciled product boundary, task DAG, acceptance ledger, golden scenarios, and agent execution contract.",
+      "risk": { "level": "medium", "domains": ["scope", "execution"] },
+      "dependsOn": [{ "taskId": "M0-00", "kind": "contract" }],
+      "acceptanceItemIds": ["PLAN-001", "PLAN-002", "PLAN-003", "PLAN-004"],
+      "scope": {
+        "allowedPaths": [
+          "docs/**",
+          "product/plans/**",
+          "examples/openrouter-typescript/**",
+          ".factory/**",
+          "AGENTS.md",
+          "ROADMAP.md",
+          ".gitignore",
+          "package.json",
+          "pnpm-lock.yaml",
+          "scripts/**"
+        ],
+        "forbiddenPaths": ["packages/**", ".github/workflows/**"]
+      },
+      "semanticInvariants": [
+        "This task does not implement scanner, evaluation, recommendation, or patch behavior.",
+        "Progress is derived from canonical state and ledger files.",
+        "No task executor can accept its own candidate."
+      ],
+      "deliverables": [
+        "docs/implementation/oss-v1-execution.md",
+        "product/plans/**",
+        "examples/openrouter-typescript/**",
+        "scripts/plan.mjs"
+      ],
+      "requiredTestLevels": ["static", "contract"],
+      "requiredGates": [
+        "QG-PLAN-CHECK",
+        "QG-REPO-CHECK",
+        "QG-INDEPENDENT-VERIFY",
+        "QG-TRUST-REVIEW"
+      ],
+      "requiredReviews": ["maintainer", "trust-reviewer"],
+      "capabilities": {
+        "network": false,
+        "credentials": false,
+        "provider": false,
+        "githubWrite": false
+      },
+      "maxAttempts": 2,
+      "stopConditions": [
+        "The product contract and task DAG disagree.",
+        "Generated progress differs from canonical state.",
+        "Implementation code enters the planning-only change."
+      ]
+    },
+    {
+      "id": "V1-01",
+      "milestone": "M1",
+      "title": "Define V1 domain and artifact contracts",
+      "objective": "Implement versioned core schemas, deterministic IDs, canonical serialization, and fail-closed validation for every V1 artifact.",
+      "risk": { "level": "high", "domains": ["contracts", "compatibility", "privacy"] },
+      "dependsOn": [{ "taskId": "V1-00", "kind": "hard" }],
+      "acceptanceItemIds": ["CONTRACT-001", "CONTRACT-002", "CONTRACT-003", "CONTRACT-004"],
+      "scope": {
+        "allowedPaths": ["packages/core/**", "packages/cli/**", "docs/**", "product/plans/**"],
+        "forbiddenPaths": ["packages/typescript/**", "packages/openrouter/**", "action.yml"]
+      },
+      "semanticInvariants": [
+        "Core remains pure and has no filesystem, network, provider, GitHub, or AST dependency.",
+        "Unknown schema versions and invalid states fail closed."
+      ],
+      "deliverables": ["packages/core/**", "packages/cli/**"],
+      "requiredTestLevels": ["static", "unit", "contract", "adversarial"],
+      "requiredGates": [
+        "QG-REPO-CHECK",
+        "QG-CONTRACTS",
+        "QG-INDEPENDENT-VERIFY",
+        "QG-TRUST-REVIEW"
+      ],
+      "requiredReviews": ["maintainer", "trust-reviewer"],
+      "capabilities": {
+        "network": false,
+        "credentials": false,
+        "provider": false,
+        "githubWrite": false
+      },
+      "maxAttempts": 2,
+      "stopConditions": [
+        "A schema permits fail-open migration behavior.",
+        "Sensitive raw inputs are required in durable reports."
+      ]
+    },
+    {
+      "id": "V1-02",
+      "milestone": "M1",
+      "title": "Build the deterministic golden repository",
+      "objective": "Create the TypeScript/OpenRouter fixture, reviewed cases, pinned catalog, mock provider, expected artifacts, and offline scenario harness.",
+      "risk": { "level": "medium", "domains": ["fixtures", "reproducibility"] },
+      "dependsOn": [{ "taskId": "V1-00", "kind": "hard" }],
+      "acceptanceItemIds": ["GOLDEN-001", "GOLDEN-002", "GOLDEN-003", "GOLDEN-004"],
+      "scope": {
+        "allowedPaths": [
+          "examples/openrouter-typescript/**",
+          "scripts/**",
+          "package.json",
+          "pnpm-lock.yaml"
+        ],
+        "forbiddenPaths": ["packages/**", "action.yml"]
+      },
+      "semanticInvariants": [
+        "The golden suite runs without network access.",
+        "Fixture secrets and protected output markers never appear in logs or reports."
+      ],
+      "deliverables": ["examples/openrouter-typescript/**"],
+      "requiredTestLevels": ["contract", "integration", "e2e", "adversarial"],
+      "requiredGates": [
+        "QG-REPO-CHECK",
+        "QG-SCENARIOS",
+        "QG-INDEPENDENT-VERIFY",
+        "QG-TRUST-REVIEW"
+      ],
+      "requiredReviews": ["maintainer", "trust-reviewer"],
+      "capabilities": {
+        "network": false,
+        "credentials": false,
+        "provider": false,
+        "githubWrite": false
+      },
+      "maxAttempts": 2,
+      "stopConditions": [
+        "A scenario depends on live provider state.",
+        "Expected snapshots replace semantic assertions."
+      ]
+    },
+    {
+      "id": "V1-03",
+      "milestone": "M2",
+      "title": "Implement high-confidence TypeScript discovery",
+      "objective": "Add the staged TypeScript package, scan supported OpenAI-compatible calls, emit fingerprints and ambiguity, and meet the corpus thresholds.",
+      "risk": { "level": "high", "domains": ["static-analysis", "patch-safety"] },
+      "dependsOn": [
+        { "taskId": "V1-01", "kind": "hard" },
+        { "taskId": "V1-02", "kind": "hard" }
+      ],
+      "acceptanceItemIds": ["SCAN-001", "SCAN-002", "SCAN-003", "SCAN-004"],
+      "scope": {
+        "allowedPaths": [
+          "packages/typescript/**",
+          "packages/cli/**",
+          "packages/core/**",
+          "examples/openrouter-typescript/**"
+        ],
+        "forbiddenPaths": ["packages/openrouter/**", "action.yml"]
+      },
+      "semanticInvariants": [
+        "Scanner output never invents the stable semantic call-site ID.",
+        "Ambiguous or dynamic calls are findings, never patch targets."
+      ],
+      "deliverables": ["packages/typescript/**", "packages/cli/**"],
+      "requiredTestLevels": ["unit", "contract", "integration", "adversarial"],
+      "requiredGates": [
+        "QG-REPO-CHECK",
+        "QG-CONTRACTS",
+        "QG-SCANNER-CORPUS",
+        "QG-INDEPENDENT-VERIFY",
+        "QG-TRUST-REVIEW"
+      ],
+      "requiredReviews": ["maintainer", "trust-reviewer"],
+      "capabilities": {
+        "network": false,
+        "credentials": false,
+        "provider": false,
+        "githubWrite": false
+      },
+      "maxAttempts": 2,
+      "stopConditions": [
+        "High-confidence precision falls below 95%.",
+        "Supported-pattern recall falls below 80%.",
+        "An ambiguous source can be patched."
+      ]
+    },
+    {
+      "id": "V1-04",
+      "milestone": "M2",
+      "title": "Implement manifest initialization and validation",
+      "objective": "Turn reviewed discoveries into human-owned call-site manifests while preserving stable identity and explicit ownership.",
+      "risk": { "level": "medium", "domains": ["configuration", "identity"] },
+      "dependsOn": [{ "taskId": "V1-01", "kind": "hard" }],
+      "acceptanceItemIds": ["MANIFEST-001", "MANIFEST-002", "MANIFEST-003"],
+      "scope": {
+        "allowedPaths": [
+          "packages/core/**",
+          "packages/cli/**",
+          "examples/openrouter-typescript/**"
+        ],
+        "forbiddenPaths": ["packages/openrouter/**", "action.yml"]
+      },
+      "semanticInvariants": [
+        "Re-scans do not silently rename human-owned call-site IDs.",
+        "Manifest initialization is reviewable and idempotent."
+      ],
+      "deliverables": ["packages/core/**", "packages/cli/**", "examples/openrouter-typescript/**"],
+      "requiredTestLevels": ["unit", "contract", "integration"],
+      "requiredGates": ["QG-REPO-CHECK", "QG-CONTRACTS", "QG-INDEPENDENT-VERIFY"],
+      "requiredReviews": ["maintainer"],
+      "capabilities": {
+        "network": false,
+        "credentials": false,
+        "provider": false,
+        "githubWrite": false
+      },
+      "maxAttempts": 2,
+      "stopConditions": [
+        "An existing stable ID can be overwritten without review.",
+        "Invalid manifests are partially accepted."
+      ]
+    },
+    {
+      "id": "V1-05",
+      "milestone": "M3",
+      "title": "Implement reproducible OpenRouter catalog snapshots",
+      "objective": "Add the staged OpenRouter package, normalize candidate capabilities and pricing, cache immutable snapshots, and replay them offline.",
+      "risk": { "level": "high", "domains": ["provider", "pricing", "reproducibility"] },
+      "dependsOn": [
+        { "taskId": "V1-01", "kind": "hard" },
+        { "taskId": "V1-02", "kind": "hard" }
+      ],
+      "acceptanceItemIds": ["CATALOG-001", "CATALOG-002", "CATALOG-003"],
+      "scope": {
+        "allowedPaths": [
+          "packages/openrouter/**",
+          "packages/core/**",
+          "packages/cli/**",
+          "examples/openrouter-typescript/**"
+        ],
+        "forbiddenPaths": ["packages/typescript/**", "action.yml"]
+      },
+      "semanticInvariants": [
+        "Every evaluation cites an immutable catalog snapshot.",
+        "Missing or ambiguous pricing and capability data excludes the candidate."
+      ],
+      "deliverables": ["packages/openrouter/**", "packages/cli/**"],
+      "requiredTestLevels": ["unit", "contract", "integration", "adversarial"],
+      "requiredGates": ["QG-REPO-CHECK", "QG-CONTRACTS", "QG-SCENARIOS", "QG-INDEPENDENT-VERIFY"],
+      "requiredReviews": ["maintainer"],
+      "capabilities": {
+        "network": true,
+        "credentials": false,
+        "provider": true,
+        "githubWrite": false
+      },
+      "maxAttempts": 2,
+      "stopConditions": [
+        "A run can silently use a mutable live catalog.",
+        "Unknown pricing is treated as zero."
+      ]
+    },
+    {
+      "id": "V1-06",
+      "milestone": "M3",
+      "title": "Implement bounded deterministic evaluation",
+      "objective": "Run representative cases against compatible candidates with deterministic scorers, retries, budgets, hard limits, and reproducible artifacts.",
+      "risk": { "level": "high", "domains": ["evaluation", "cost", "privacy", "reliability"] },
+      "dependsOn": [
+        { "taskId": "V1-01", "kind": "hard" },
+        { "taskId": "V1-02", "kind": "hard" }
+      ],
+      "acceptanceItemIds": ["EVAL-001", "EVAL-002", "EVAL-003", "EVAL-004"],
+      "scope": {
+        "allowedPaths": [
+          "packages/core/**",
+          "packages/openrouter/**",
+          "packages/cli/**",
+          "examples/openrouter-typescript/**"
+        ],
+        "forbiddenPaths": ["packages/typescript/**", "action.yml"]
+      },
+      "semanticInvariants": [
+        "Hard limits cannot be outweighed by aggregate quality or savings.",
+        "Partial, exhausted, or privacy-unsafe runs cannot recommend."
+      ],
+      "deliverables": ["packages/core/**", "packages/openrouter/**", "packages/cli/**"],
+      "requiredTestLevels": ["unit", "contract", "integration", "e2e", "adversarial"],
+      "requiredGates": [
+        "QG-REPO-CHECK",
+        "QG-CONTRACTS",
+        "QG-SCENARIOS",
+        "QG-INDEPENDENT-VERIFY",
+        "QG-TRUST-REVIEW"
+      ],
+      "requiredReviews": ["maintainer", "trust-reviewer"],
+      "capabilities": {
+        "network": true,
+        "credentials": true,
+        "provider": true,
+        "githubWrite": false
+      },
+      "maxAttempts": 2,
+      "stopConditions": [
+        "Retries or spend are unbounded.",
+        "Raw sensitive input or output enters durable artifacts.",
+        "Incomplete evidence can pass."
+      ]
+    },
+    {
+      "id": "V1-07",
+      "milestone": "M3",
+      "title": "Implement recommendation policy and reports",
+      "objective": "Compare current and candidate runs, enforce non-inferiority and confidence, and emit evidence-backed JSON and Markdown recommendations or abstentions.",
+      "risk": { "level": "high", "domains": ["decision-policy", "trust"] },
+      "dependsOn": [
+        { "taskId": "V1-05", "kind": "hard" },
+        { "taskId": "V1-06", "kind": "hard" }
+      ],
+      "acceptanceItemIds": ["RECOMMEND-001", "RECOMMEND-002", "RECOMMEND-003", "RECOMMEND-004"],
+      "scope": {
+        "allowedPaths": [
+          "packages/core/**",
+          "packages/cli/**",
+          "examples/openrouter-typescript/**"
+        ],
+        "forbiddenPaths": ["packages/typescript/**", "packages/openrouter/**", "action.yml"]
+      },
+      "semanticInvariants": [
+        "Savings never compensate for failed quality or hard gates.",
+        "JSON and Markdown are derived from the same canonical recommendation."
+      ],
+      "deliverables": [
+        "packages/core/**",
+        "packages/cli/**",
+        "examples/openrouter-typescript/expected/**"
+      ],
+      "requiredTestLevels": ["unit", "contract", "integration", "e2e", "adversarial"],
+      "requiredGates": [
+        "QG-REPO-CHECK",
+        "QG-CONTRACTS",
+        "QG-SCENARIOS",
+        "QG-INDEPENDENT-VERIFY",
+        "QG-TRUST-REVIEW"
+      ],
+      "requiredReviews": ["maintainer", "trust-reviewer"],
+      "capabilities": {
+        "network": false,
+        "credentials": false,
+        "provider": false,
+        "githubWrite": false
+      },
+      "maxAttempts": 2,
+      "stopConditions": [
+        "A recommendation lacks reproducible evidence.",
+        "An abstention path produces a patch."
+      ]
+    },
+    {
+      "id": "V1-08",
+      "milestone": "M4",
+      "title": "Implement safe source patching",
+      "objective": "Generate the smallest reviewable model-pin change only when discovery, identity, source fingerprint, and recommendation preconditions still hold.",
+      "risk": { "level": "high", "domains": ["source-mutation", "trust"] },
+      "dependsOn": [
+        { "taskId": "V1-03", "kind": "hard" },
+        { "taskId": "V1-04", "kind": "hard" },
+        { "taskId": "V1-07", "kind": "hard" }
+      ],
+      "acceptanceItemIds": ["PATCH-001", "PATCH-002", "PATCH-003", "PATCH-004"],
+      "scope": {
+        "allowedPaths": [
+          "packages/typescript/**",
+          "packages/core/**",
+          "packages/cli/**",
+          "examples/openrouter-typescript/**"
+        ],
+        "forbiddenPaths": ["packages/openrouter/**", "action.yml"]
+      },
+      "semanticInvariants": [
+        "Stale or ambiguous source never changes.",
+        "Only the reviewed model pin changes unless a broader migration is explicitly unsupported."
+      ],
+      "deliverables": [
+        "packages/typescript/**",
+        "packages/cli/**",
+        "examples/openrouter-typescript/expected/**"
+      ],
+      "requiredTestLevels": ["unit", "contract", "integration", "e2e", "adversarial"],
+      "requiredGates": [
+        "QG-REPO-CHECK",
+        "QG-CONTRACTS",
+        "QG-SCANNER-CORPUS",
+        "QG-SCENARIOS",
+        "QG-INDEPENDENT-VERIFY",
+        "QG-TRUST-REVIEW"
+      ],
+      "requiredReviews": ["maintainer", "trust-reviewer"],
+      "capabilities": {
+        "network": false,
+        "credentials": false,
+        "provider": false,
+        "githubWrite": false
+      },
+      "maxAttempts": 2,
+      "stopConditions": [
+        "The source fingerprint is stale.",
+        "The patch touches unrelated syntax.",
+        "No accepted recommendation exists."
+      ]
+    },
+    {
+      "id": "V1-09",
+      "milestone": "M4",
+      "title": "Ship the composite GitHub Action and PR contract",
+      "objective": "Package scan, eval, recommend, report, and patch as a least-privilege composite Action with deterministic artifacts and idempotent PR behavior.",
+      "risk": { "level": "high", "domains": ["github", "supply-chain", "automation"] },
+      "dependsOn": [{ "taskId": "V1-08", "kind": "hard" }],
+      "acceptanceItemIds": ["ACTION-001", "ACTION-002", "ACTION-003", "ACTION-004"],
+      "scope": {
+        "allowedPaths": [
+          "action.yml",
+          ".github/**",
+          "packages/cli/**",
+          "examples/openrouter-typescript/**",
+          "docs/**"
+        ],
+        "forbiddenPaths": [
+          "packages/core/src/**",
+          "packages/typescript/src/**",
+          "packages/openrouter/src/**"
+        ]
+      },
+      "semanticInvariants": [
+        "The Action requests only the permissions needed for the selected mode.",
+        "Unchanged inputs do not create duplicate PRs or mutable evidence."
+      ],
+      "deliverables": ["action.yml", ".github/workflows/**", "examples/openrouter-typescript/**"],
+      "requiredTestLevels": ["static", "contract", "integration", "e2e", "adversarial"],
+      "requiredGates": [
+        "QG-REPO-CHECK",
+        "QG-PACK-SMOKE",
+        "QG-CONTRACTS",
+        "QG-SCENARIOS",
+        "QG-INDEPENDENT-VERIFY",
+        "QG-TRUST-REVIEW"
+      ],
+      "requiredReviews": ["maintainer", "security-reviewer", "trust-reviewer"],
+      "capabilities": {
+        "network": true,
+        "credentials": true,
+        "provider": true,
+        "githubWrite": true
+      },
+      "maxAttempts": 2,
+      "stopConditions": [
+        "Workflow permissions are broader than required.",
+        "A failed or abstained run can open a migration PR.",
+        "Action reruns duplicate output."
+      ]
+    },
+    {
+      "id": "V1-10",
+      "milestone": "FIELD",
+      "title": "Validate the beachhead in real repositories",
+      "objective": "Prove that qualified recommendation PRs are trusted, merged, safe, and economically meaningful before expanding scope.",
+      "risk": { "level": "high", "domains": ["field-validation", "customer-trust", "economics"] },
+      "dependsOn": [{ "taskId": "V1-09", "kind": "field" }],
+      "acceptanceItemIds": ["FIELD-001", "FIELD-002", "FIELD-003", "FIELD-004"],
+      "scope": {
+        "allowedPaths": ["docs/**", "product/plans/**"],
+        "forbiddenPaths": ["packages/**", "action.yml", ".github/workflows/**"]
+      },
+      "semanticInvariants": [
+        "Field metrics count only qualified, evidence-backed recommendations.",
+        "Customer data and outcomes are recorded without raw prompts or outputs."
+      ],
+      "deliverables": ["product/plans/oss-v1/evidence/**", "docs/**"],
+      "requiredTestLevels": ["field"],
+      "requiredGates": ["QG-FIELD", "QG-INDEPENDENT-VERIFY", "QG-TRUST-REVIEW"],
+      "requiredReviews": ["maintainer", "trust-reviewer"],
+      "capabilities": {
+        "network": true,
+        "credentials": true,
+        "provider": true,
+        "githubWrite": true
+      },
+      "maxAttempts": 2,
+      "stopConditions": [
+        "A serious quality, safety, privacy, or operational regression occurs.",
+        "Savings cannot be attributed to the recommendation.",
+        "Customer consent or data handling is unclear."
+      ]
+    }
+  ]
+}

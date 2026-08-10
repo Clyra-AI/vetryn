@@ -1,0 +1,130 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vetryn.dev/schemas/planning/task-state-v1.json",
+  "title": "Vetryn task state",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema",
+    "schemaVersion",
+    "taskId",
+    "revision",
+    "state",
+    "attempt",
+    "candidate",
+    "criteria",
+    "gates",
+    "reviews",
+    "blockers",
+    "history"
+  ],
+  "properties": {
+    "$schema": { "type": "string" },
+    "schemaVersion": { "const": "1.0.0" },
+    "taskId": { "type": "string", "pattern": "^(M0|V1)-[0-9]{2}$" },
+    "revision": { "type": "integer", "minimum": 0 },
+    "state": {
+      "enum": [
+        "planned",
+        "ready",
+        "in_progress",
+        "verification_pending",
+        "review_pending",
+        "changes_requested",
+        "blocked",
+        "accepted",
+        "failed",
+        "superseded"
+      ]
+    },
+    "attempt": { "type": "integer", "minimum": 0, "maximum": 3 },
+    "candidate": {
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["baseCommit", "commit"],
+          "properties": {
+            "baseCommit": { "$ref": "#/$defs/sha" },
+            "commit": { "$ref": "#/$defs/sha" }
+          }
+        }
+      ]
+    },
+    "criteria": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["criterionId", "status", "evidenceRefs"],
+        "properties": {
+          "criterionId": { "type": "string", "pattern": "^[A-Z][A-Z0-9-]+$" },
+          "status": { "enum": ["pending", "pass", "fail", "blocked", "waived"] },
+          "evidenceRefs": { "$ref": "#/$defs/evidenceRefs" }
+        }
+      }
+    },
+    "gates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["gateId", "status", "evidenceRefs"],
+        "properties": {
+          "gateId": { "type": "string", "pattern": "^[A-Z][A-Z0-9-]+$" },
+          "status": { "enum": ["pending", "pass", "fail", "blocked", "waived"] },
+          "evidenceRefs": { "$ref": "#/$defs/evidenceRefs" }
+        }
+      }
+    },
+    "reviews": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["role", "status", "evidenceRefs"],
+        "properties": {
+          "role": { "type": "string", "minLength": 1 },
+          "status": { "enum": ["pending", "approved", "changes_requested"] },
+          "evidenceRefs": { "$ref": "#/$defs/evidenceRefs" }
+        }
+      }
+    },
+    "blockers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "summary"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[A-Z][A-Z0-9-]+$" },
+          "summary": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "history": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["from", "to", "at", "actor", "reason"],
+        "properties": {
+          "from": { "type": ["string", "null"] },
+          "to": { "type": "string", "minLength": 1 },
+          "at": { "type": "string", "format": "date-time" },
+          "actor": { "type": "string", "minLength": 1 },
+          "reason": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "sha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "evidenceRefs": {
+      "type": "array",
+      "items": { "type": "string", "pattern": "^[a-z][a-z0-9-]+$" },
+      "uniqueItems": true
+    }
+  }
+}

@@ -11,6 +11,11 @@ coverage/
 .vetryn/out/
 .vetryn/cache/
 
+# Factory transient execution state
+.factoryd/
+.factory/tmp/
+.factory/factoryd.json
+
 # Environment and secrets
 .env
 .env.*

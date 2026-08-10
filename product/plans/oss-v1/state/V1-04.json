@@ -1,0 +1,60 @@
+{
+  "$schema": "../../schemas/task-state.schema.json",
+  "schemaVersion": "1.0.0",
+  "taskId": "V1-04",
+  "revision": 0,
+  "state": "planned",
+  "attempt": 0,
+  "candidate": null,
+  "criteria": [
+    {
+      "criterionId": "MANIFEST-001",
+      "status": "pending",
+      "evidenceRefs": []
+    },
+    {
+      "criterionId": "MANIFEST-002",
+      "status": "pending",
+      "evidenceRefs": []
+    },
+    {
+      "criterionId": "MANIFEST-003",
+      "status": "pending",
+      "evidenceRefs": []
+    }
+  ],
+  "gates": [
+    {
+      "gateId": "QG-REPO-CHECK",
+      "status": "pending",
+      "evidenceRefs": []
+    },
+    {
+      "gateId": "QG-CONTRACTS",
+      "status": "pending",
+      "evidenceRefs": []
+    },
+    {
+      "gateId": "QG-INDEPENDENT-VERIFY",
+      "status": "pending",
+      "evidenceRefs": []
+    }
+  ],
+  "reviews": [
+    {
+      "role": "maintainer",
+      "status": "pending",
+      "evidenceRefs": []
+    }
+  ],
+  "blockers": [],
+  "history": [
+    {
+      "from": null,
+      "to": "planned",
+      "at": "2026-08-10T00:30:00Z",
+      "actor": "planning-agent",
+      "reason": "Task created by the canonical OSS V1 plan."
+    }
+  ]
+}

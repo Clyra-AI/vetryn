@@ -1,0 +1,22 @@
+project: vetryn
+product_name: Vetryn
+profile_version: "0.1"
+adoption_profile: starter
+status: planning_only
+source_contract: docs/oss-v1.md
+plan_root: product/plans/oss-v1
+repository_visibility: public
+runtime_pins:
+  language: typescript
+  node: "22"
+  package_manager: pnpm@10.23.0
+  package_path: github.com/Clyra-AI/vetryn
+  distribution: npm_cli_and_composite_github_action
+trust_posture:
+  network: offline_by_default
+  credentials: no_ambient_secrets
+  provider_access: explicit_task_scoped_approval
+  github_write: explicit_mutation_mode_only
+factoryd:
+  status: deferred
+  reason: TypeScript bootstrap and repo-pack compatibility are not yet proven.

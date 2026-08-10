@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vetryn.dev/schemas/planning/scenario-contract-v1.json",
+  "title": "Vetryn golden scenario contract",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "schemaVersion", "suiteId", "offline", "scenarios"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "schemaVersion": { "const": "1.0.0" },
+    "suiteId": { "type": "string", "pattern": "^[a-z][a-z0-9-]+$" },
+    "offline": { "const": true },
+    "scenarios": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "category", "description", "expectedDisposition", "assertions"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]+$" },
+          "category": {
+            "enum": [
+              "success",
+              "scanner",
+              "quality",
+              "catalog",
+              "provider",
+              "patch",
+              "action",
+              "privacy"
+            ]
+          },
+          "description": { "type": "string", "minLength": 1 },
+          "expectedDisposition": { "enum": ["recommend", "abstain", "refuse", "idempotent"] },
+          "expectedReason": { "type": "string", "minLength": 1 },
+          "assertions": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "type": "string", "minLength": 1 },
+            "uniqueItems": true
+          }
+        }
+      }
+    }
+  }
+}

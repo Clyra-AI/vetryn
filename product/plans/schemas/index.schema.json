@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vetryn.dev/schemas/planning/index-v1.json",
+  "title": "Vetryn plan registry",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "schemaVersion", "plans"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "schemaVersion": { "const": "1.0.0" },
+    "plans": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "status", "planPath", "progressPath", "productContract"],
+        "properties": {
+          "id": { "$ref": "#/$defs/id" },
+          "status": { "enum": ["draft", "active", "superseded", "closed"] },
+          "planPath": { "$ref": "#/$defs/repoPath" },
+          "progressPath": { "$ref": "#/$defs/repoPath" },
+          "productContract": { "$ref": "#/$defs/repoPath" },
+          "supersedes": { "type": "array", "items": { "$ref": "#/$defs/id" }, "uniqueItems": true },
+          "supersededBy": { "type": ["string", "null"] },
+          "nextLegalAction": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]+$" },
+    "repoPath": { "type": "string", "minLength": 1, "pattern": "^(?!/)(?!.*\\.\\.).+$" }
+  }
+}
