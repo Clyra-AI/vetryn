@@ -494,7 +494,7 @@
     {
       "id": "FIELD-005",
       "taskId": "V1-10",
-      "statement": "Sanitized field evidence records either valuable open-ended call sites blocked specifically because deterministic evaluation cannot establish semantic non-inferiority, or an independently verified no-findings outcome with the assessed sample, method, and coverage; only positive blocked-call-site evidence may justify semantic-scorer design.",
+      "statement": "Sanitized field evidence records exactly one outcome: positive valuable open-ended call sites blocked specifically because deterministic evaluation cannot establish semantic non-inferiority; representative no-findings after a predeclared eligibility census and direct assessment of at least ten eligible open-ended call sites across at least three FIELD-001 companies; or insufficient coverage with the denominator, exclusions, and missing coverage recorded. Coverage and exclusions require independent review, and only the positive outcome may justify semantic-scorer design.",
       "verification": { "method": "field", "testLevel": "field", "gateId": "QG-FIELD" },
       "waivable": false,
       "status": "planned",

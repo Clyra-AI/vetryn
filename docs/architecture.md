@@ -68,8 +68,10 @@ gates run before ranking. A cheaper candidate cannot compensate for a failed qua
 compatibility, context, or latency gate. LLM-as-judge scoring is explicitly deferred.
 After V1 field validation, an optional calibrated semantic-rubric scorer may be designed only if
 positive sanitized evidence shows deterministic evaluation blocks valuable open-ended call sites. A
-verified no-findings outcome satisfies the field-assessment criterion but does not authorize that
-expansion. A semantic scorer cannot replace hard gates.
+representative no-findings outcome requires a predeclared census and direct assessment of at least ten
+eligible open-ended call sites across at least three FIELD-001 companies. No-findings or explicit
+insufficient coverage satisfies the field-record criterion but cannot authorize expansion. A semantic
+scorer cannot replace hard gates.
 
 ### Recommendation engine
 

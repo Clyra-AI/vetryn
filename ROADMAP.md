@@ -52,7 +52,7 @@ these checkboxes are a human summary, not execution truth.
 - [ ] Ten qualified recommendation PRs across at least three companies
 - [ ] At least a 40% qualified-PR merge rate
 - [ ] Zero serious escaped regressions
-- [ ] Sanitized field determination: blocked open-ended call sites or a verified no-findings outcome
+- [ ] Sanitized field determination: blocked sites, representative no-findings, or insufficient coverage
 
 ## Post-V1 candidates
 

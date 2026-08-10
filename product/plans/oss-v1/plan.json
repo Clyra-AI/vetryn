@@ -642,7 +642,7 @@
       "id": "V1-10",
       "milestone": "FIELD",
       "title": "Validate the beachhead in real repositories",
-      "objective": "Prove that qualified recommendation PRs are trusted, merged, safe, and economically meaningful, and determine whether deterministic evaluation blocks valuable open-ended call sites before expanding scope.",
+      "objective": "Prove that qualified recommendation PRs are trusted, merged, safe, and economically meaningful, and assess whether deterministic evaluation blocks valuable open-ended call sites before expanding scope.",
       "risk": { "level": "high", "domains": ["field-validation", "customer-trust", "economics"] },
       "dependsOn": [{ "taskId": "V1-09", "kind": "field" }],
       "acceptanceItemIds": ["FIELD-001", "FIELD-002", "FIELD-003", "FIELD-004", "FIELD-005"],
@@ -652,8 +652,9 @@
       },
       "semanticInvariants": [
         "Recommendation and rollout metrics count only qualified, evidence-backed recommendations.",
-        "The field assessment separately records either sanitized blocked-call-site evidence or a verified no-findings outcome with its sample, method, and coverage.",
-        "Blocked open-ended call sites are never counted as qualified recommendations, and a no-findings outcome cannot authorize semantic-scorer expansion.",
+        "The field assessment separately records positive blocked-call-site evidence, representative no-findings, or insufficient coverage.",
+        "Representative no-findings requires a predeclared eligibility census and direct assessment of at least ten eligible open-ended call sites across at least three FIELD-001 companies, with coverage and exclusions independently reviewed.",
+        "Blocked open-ended call sites are never counted as qualified recommendations, and neither no-findings nor insufficient coverage can authorize semantic-scorer expansion.",
         "Customer data and outcomes are recorded without raw prompts or outputs."
       ],
       "deliverables": ["product/plans/oss-v1/evidence/**", "docs/**"],

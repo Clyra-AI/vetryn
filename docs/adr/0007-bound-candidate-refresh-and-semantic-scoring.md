@@ -31,16 +31,18 @@ open-ended workload.
   existing recommendation identity and evidence only if that evidence is complete, integrity-valid, and
   reusable under current policy. Failed, partial, exhausted, privacy-unsafe, or otherwise non-reusable
   evidence must not suppress a later bounded retry.
-- Keep LLM judges outside OSS V1. The V1 field criterion accepts either sanitized positive evidence that
-  deterministic evaluation blocks valuable open-ended call sites or an independently verified no-findings
-  outcome with sample, method, and coverage. Only positive blocked-call-site evidence may justify designing
-  an optional calibrated semantic-rubric scorer; those cases are not qualified recommendations.
+- Keep LLM judges outside OSS V1. The V1 field criterion records positive blocked-call-site evidence, a
+  representative no-findings outcome, or an explicit insufficient-coverage outcome. No-findings requires
+  a predeclared eligibility census, direct assessment of at least ten eligible open-ended call sites across
+  at least three FIELD-001 companies, and independently reviewed coverage and exclusions. Only positive
+  blocked-call-site evidence may justify designing an optional calibrated semantic-rubric scorer; those
+  cases are not qualified recommendations.
 
 ## Consequences
 
 - Candidate discovery remains broad while execution cost and latency remain bounded.
-- Identical inputs produce stable shortlists and do not create duplicate snapshots, provider calls, or
-  pull requests.
+- Identical inputs produce stable shortlists and do not create duplicate snapshots, paid candidate-execution
+  calls, or pull requests; an explicitly requested live catalog refresh still contacts the catalog source.
 - Refresh and replay have distinct semantics, so stale provider state cannot silently support a current
   recommendation.
 - Transient and incomplete failures remain retryable even when their input digests are unchanged.

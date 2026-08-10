@@ -114,7 +114,10 @@ An optional calibrated semantic-rubric scorer may be designed only after that fi
 through separate sanitized evidence that deterministic evaluation blocks valuable open-ended call sites.
 Those blocked call sites are not counted as qualified recommendations. The scorer remains supplementary
 to hard gates, requires human calibration and explicit spend policy, and is not implied by V1 completion.
-A verified no-findings field outcome satisfies V1 validation but does not authorize scorer design.
+A representative no-findings outcome requires a predeclared eligibility census and direct assessment of
+at least ten eligible open-ended call sites across at least three FIELD-001 companies. Representative
+no-findings or explicit insufficient coverage satisfies the V1 field record but does not authorize scorer
+design.
 
 ## Locked implementation decisions
 
