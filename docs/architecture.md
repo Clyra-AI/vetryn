@@ -45,7 +45,13 @@ provider constraints without storing credentials. Generated changes remain revie
 
 Catalog adapters normalize model capabilities, context limits, retirement state, provider, region, and
 timestamped pricing. Every run pins its catalog snapshot so a result remains explainable after prices
-or aliases change.
+or aliases change. Hard compatibility and repository policy filters run before shortlisting. V1 selects
+at most five candidates by default, permits only a lower repository-configured bound, and uses stable
+ordering with canonical model IDs as the final tie-breaker.
+
+Live refresh computes a normalized catalog content digest. Unchanged content reuses the existing
+immutable snapshot; a failed refresh is explicit and cannot make an older snapshot appear current.
+Historical replay always uses its original snapshot.
 
 ### Evaluation runner
 
@@ -58,6 +64,8 @@ scores. Credentials come from the execution environment and outputs stay local b
 Deterministic assertions, domain checks, and statistical summaries produce V1 evidence. Hard policy
 gates run before ranking. A cheaper candidate cannot compensate for a failed quality, privacy,
 compatibility, context, or latency gate. LLM-as-judge scoring is explicitly deferred.
+After V1 field validation, an optional calibrated semantic-rubric scorer may be designed only if
+deterministic evaluation is shown to block valuable open-ended call sites; it cannot replace hard gates.
 
 ### Recommendation engine
 
@@ -68,6 +76,8 @@ confidence, limitations, failed cases, and reproduction commands.
 
 The patcher verifies the source fingerprint and changes only the bound literal. The GitHub integration
 opens a draft PR from that patch, is idempotent per call site and candidate, and never merges or deploys.
+Provider-backed assessment is manual by default. A repository may opt into a schedule, but unchanged
+catalog and evaluation-input digests skip paid candidate execution.
 
 ## Package direction
 

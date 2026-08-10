@@ -89,6 +89,40 @@
       "assertions": ["Candidate ordering is unchanged.", "Price calculations are unchanged."]
     },
     {
+      "id": "bounded-candidate-shortlist",
+      "category": "catalog",
+      "description": "More compatible models are available than the repository's configured candidate bound.",
+      "expectedDisposition": "idempotent",
+      "expectedReason": "Hard filters and deterministic ordering produce the same bounded shortlist.",
+      "assertions": [
+        "The baseline is recorded separately from no more than the configured candidate count.",
+        "Canonical model IDs provide the final deterministic tie-breaker.",
+        "Models outside the shortlist are not executed."
+      ]
+    },
+    {
+      "id": "unchanged-catalog-refresh",
+      "category": "catalog",
+      "description": "A live refresh returns catalog content identical to the latest normalized snapshot.",
+      "expectedDisposition": "idempotent",
+      "expectedReason": "The normalized content digest is unchanged, so the immutable snapshot is reused.",
+      "assertions": [
+        "No duplicate snapshot is created.",
+        "The refresh observation cannot change historical replay."
+      ]
+    },
+    {
+      "id": "catalog-refresh-failure",
+      "category": "catalog",
+      "description": "The live OpenRouter catalog refresh fails while an older snapshot exists locally.",
+      "expectedDisposition": "abstain",
+      "expectedReason": "Current catalog state could not be established.",
+      "assertions": [
+        "The older snapshot remains available only for explicit replay.",
+        "No prior snapshot is represented as current and no patch is produced."
+      ]
+    },
+    {
       "id": "rate-limit-budget-exhaustion",
       "category": "provider",
       "description": "The mock provider returns rate limits until the deterministic retry and budget limits are exhausted.",
@@ -105,7 +139,19 @@
       "description": "The GitHub Action is rerun with unchanged source, manifests, cases, and catalog snapshot.",
       "expectedDisposition": "idempotent",
       "expectedReason": "Identical inputs produce identical artifacts and do not duplicate PR output.",
-      "assertions": ["Artifact digests match.", "The existing recommendation identity is reused."]
+      "assertions": [
+        "Artifact digests match.",
+        "The existing recommendation identity is reused.",
+        "No paid candidate execution occurs."
+      ]
+    },
+    {
+      "id": "scheduled-assessment-without-opt-in",
+      "category": "action",
+      "description": "A scheduled provider-backed assessment is attempted without explicit repository opt-in.",
+      "expectedDisposition": "refuse",
+      "expectedReason": "Provider-backed scheduling is disabled by default.",
+      "assertions": ["No provider call occurs.", "No GitHub write occurs."]
     },
     {
       "id": "secret-and-output-redaction",

@@ -9,7 +9,7 @@
   },
   "acceptanceCounts": {
     "accepted": 3,
-    "planned": 42
+    "planned": 45
   },
   "nextLegalTasks": [],
   "blockedTasks": [],
@@ -54,7 +54,7 @@
       "taskId": "V1-05",
       "state": "planned",
       "acceptedCriteria": 0,
-      "totalCriteria": 3
+      "totalCriteria": 5
     },
     {
       "taskId": "V1-06",
@@ -78,7 +78,7 @@
       "taskId": "V1-09",
       "state": "planned",
       "acceptedCriteria": 0,
-      "totalCriteria": 4
+      "totalCriteria": 5
     },
     {
       "taskId": "V1-10",

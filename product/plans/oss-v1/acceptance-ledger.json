@@ -265,6 +265,24 @@
       "evidenceRefs": []
     },
     {
+      "id": "CATALOG-004",
+      "taskId": "V1-05",
+      "statement": "After hard compatibility and policy filters, candidate resolution applies a default maximum of five, permits only a lower repository-configured bound, and uses stable ordering and canonical-model-ID tie-breaking.",
+      "verification": { "method": "test", "testLevel": "adversarial", "gateId": "QG-SCENARIOS" },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
+      "id": "CATALOG-005",
+      "taskId": "V1-05",
+      "statement": "An unchanged normalized catalog content digest reuses its immutable snapshot, while a failed live refresh reports failure and never represents a prior snapshot as current.",
+      "verification": { "method": "test", "testLevel": "integration", "gateId": "QG-SCENARIOS" },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
       "id": "EVAL-001",
       "taskId": "V1-06",
       "statement": "The canonical vetryn eval command emits reproducible run and candidate artifacts from pinned inputs.",
@@ -420,6 +438,15 @@
       "taskId": "V1-09",
       "statement": "An unchanged rerun reuses recommendation identity and does not duplicate PR output.",
       "verification": { "method": "test", "testLevel": "integration", "gateId": "QG-SCENARIOS" },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
+      "id": "ACTION-005",
+      "taskId": "V1-09",
+      "statement": "Provider-backed assessment is manual by default, scheduling requires explicit repository opt-in, and unchanged catalog plus evaluation-input digests skip paid candidate execution.",
+      "verification": { "method": "test", "testLevel": "adversarial", "gateId": "QG-SCENARIOS" },
       "waivable": false,
       "status": "planned",
       "evidenceRefs": []

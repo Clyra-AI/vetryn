@@ -34,7 +34,21 @@
       "id": "DEC-SCORING",
       "status": "locked",
       "decision": "V1 uses deterministic scorers and hard gates only; LLM judges are deferred.",
-      "rationale": "The first upgrade PR must be reproducible offline and explainable.",
+      "rationale": "The first upgrade PR must be reproducible offline and explainable. An optional calibrated semantic-rubric scorer is considered only after V1 field evidence shows deterministic evaluation blocks valuable open-ended call sites.",
+      "blocks": []
+    },
+    {
+      "id": "DEC-CANDIDATES",
+      "status": "locked",
+      "decision": "V1 resolves at most five candidates by default, configurable downward, after hard compatibility and policy filters; ordering and tie-breaking are deterministic.",
+      "rationale": "A bounded shortlist controls spend and runtime while preserving reproducible candidate selection.",
+      "blocks": []
+    },
+    {
+      "id": "DEC-REFRESH",
+      "status": "locked",
+      "decision": "Catalog assessment is manual by default, scheduling is explicit opt-in, unchanged normalized catalog and evaluation inputs do not trigger paid candidate execution, and a failed live refresh cannot be represented as current.",
+      "rationale": "Installation must not create surprise recurring spend or silently make recommendations from stale provider state.",
       "blocks": []
     },
     {
@@ -375,7 +389,13 @@
         { "taskId": "V1-01", "kind": "hard" },
         { "taskId": "V1-02", "kind": "hard" }
       ],
-      "acceptanceItemIds": ["CATALOG-001", "CATALOG-002", "CATALOG-003"],
+      "acceptanceItemIds": [
+        "CATALOG-001",
+        "CATALOG-002",
+        "CATALOG-003",
+        "CATALOG-004",
+        "CATALOG-005"
+      ],
       "scope": {
         "allowedPaths": [
           "packages/openrouter/**",
@@ -387,7 +407,9 @@
       },
       "semanticInvariants": [
         "Every evaluation cites an immutable catalog snapshot.",
-        "Missing or ambiguous pricing and capability data excludes the candidate."
+        "Missing or ambiguous pricing and capability data excludes the candidate.",
+        "Candidate selection is bounded by repository policy and reproducible from normalized catalog data.",
+        "A failed live refresh cannot silently relabel an older snapshot as current."
       ],
       "deliverables": ["packages/openrouter/**", "packages/cli/**"],
       "requiredTestLevels": ["unit", "contract", "integration", "adversarial"],
@@ -402,7 +424,9 @@
       "maxAttempts": 2,
       "stopConditions": [
         "A run can silently use a mutable live catalog.",
-        "Unknown pricing is treated as zero."
+        "Unknown pricing is treated as zero.",
+        "Candidate selection exceeds its configured bound or changes under identical inputs.",
+        "An unchanged normalized catalog creates a distinct snapshot or a failed refresh is reported as fresh."
       ]
     },
     {
@@ -561,7 +585,7 @@
       "objective": "Package scan, eval, recommend, report, and patch as a least-privilege composite Action with deterministic artifacts and idempotent PR behavior.",
       "risk": { "level": "high", "domains": ["github", "supply-chain", "automation"] },
       "dependsOn": [{ "taskId": "V1-08", "kind": "hard" }],
-      "acceptanceItemIds": ["ACTION-001", "ACTION-002", "ACTION-003", "ACTION-004"],
+      "acceptanceItemIds": ["ACTION-001", "ACTION-002", "ACTION-003", "ACTION-004", "ACTION-005"],
       "scope": {
         "allowedPaths": [
           "action.yml",
@@ -578,7 +602,9 @@
       },
       "semanticInvariants": [
         "The Action requests only the permissions needed for the selected mode.",
-        "Unchanged inputs do not create duplicate PRs or mutable evidence."
+        "Unchanged inputs do not create duplicate PRs or mutable evidence.",
+        "Provider-backed assessment is manual by default and scheduled execution requires explicit repository opt-in.",
+        "An unchanged catalog and evaluation-input digest cannot trigger paid candidate execution."
       ],
       "deliverables": ["action.yml", ".github/workflows/**", "examples/openrouter-typescript/**"],
       "requiredTestLevels": ["static", "contract", "integration", "e2e", "adversarial"],
@@ -601,7 +627,9 @@
       "stopConditions": [
         "Workflow permissions are broader than required.",
         "A failed or abstained run can open a migration PR.",
-        "Action reruns duplicate output."
+        "Action reruns duplicate output.",
+        "Installation alone enables recurring provider spend.",
+        "Unchanged catalog and evaluation inputs trigger provider execution."
       ]
     },
     {

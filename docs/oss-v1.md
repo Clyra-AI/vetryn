@@ -45,9 +45,11 @@ V1 supports:
 4. text generation, structured JSON, and simple tool-call workloads;
 5. checked-in JSONL eval cases reviewed by a human;
 6. deterministic assertions; LLM-as-judge scoring is deferred beyond V1;
-7. hard quality, latency, cost, context, and privacy gates;
-8. local runs and GitHub Actions using repository secrets; and
-9. one-model-literal draft PRs that never auto-merge.
+7. a deterministic, policy-filtered OpenRouter shortlist of at most five candidates by default,
+   configurable only to a lower bound;
+8. hard quality, latency, cost, context, and privacy gates;
+9. local runs and GitHub Actions using repository secrets; and
+10. one-model-literal draft PRs that never auto-merge.
 
 Unsupported or ambiguous calls are reported as such. Vetryn must not rewrite a call site it cannot bind
 confidently.
@@ -56,8 +58,8 @@ confidently.
 
 1. `vetryn scan` discovers supported calls, source fingerprints, and proposed manifest bindings.
 2. A developer confirms ownership, fixture location, and evaluation gates.
-3. `vetryn eval` resolves a reproducible candidate set and runs the suite (`evaluate` may remain an
-   alias, but artifacts and documentation use `eval`).
+3. `vetryn eval` resolves a reproducible, budget-bounded candidate set and runs the suite (`evaluate`
+   may remain an alias, but artifacts and documentation use `eval`).
 4. Vetryn abstains unless the candidate passes every hard gate and clears a confidence floor.
 5. `vetryn recommend` creates a machine-readable and Markdown evidence report.
 6. The GitHub workflow opens or updates a draft PR changing one verified model literal.
@@ -108,6 +110,10 @@ least ten qualified recommendation PRs across three companies, at least a 40% me
 serious escaped regressions. Twenty safe rollouts remain a later confidence milestone rather than a
 deterministic build gate.
 
+An optional calibrated semantic-rubric scorer may be designed only after that field work demonstrates
+that deterministic evaluation blocks valuable open-ended call sites. It remains supplementary to hard
+gates, requires human calibration and explicit spend policy, and is not implied by V1 completion.
+
 ## Locked implementation decisions
 
 - Stable semantic call-site identity belongs to the human-reviewed manifest. Scanner output owns a
@@ -117,5 +123,10 @@ deterministic build gate.
 - New packages are extracted only when their milestone begins; empty placeholder packages are not
   created.
 - `Rollout`, optional judges, Python, hosted execution, and production canaries are outside OSS V1.
+- OpenRouter supplies the V1 catalog universe, but hard compatibility and policy filters run before a
+  deterministic shortlist whose default and maximum size is five candidates.
+- Provider-backed assessment is manual by default. A repository may explicitly opt into a schedule;
+  unchanged normalized catalog and evaluation-input digests do not trigger paid candidate execution.
+- A failed live catalog refresh is reported as a failure and never relabels an older snapshot as current.
 - Unknown compatibility, insufficient evidence, ambiguous binding, stale source, or failed hard gates
   always produce a report without a patch.

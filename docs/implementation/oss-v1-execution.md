@@ -60,15 +60,15 @@ and paths do not overlap. A task brief is disposable; canonical state and eviden
 
 ## Quality lanes
 
-| Lane               | Purpose                                                      | Merge policy                         |
-| ------------------ | ------------------------------------------------------------ | ------------------------------------ |
-| Static             | format, lint, dead code, types, build                        | required                             |
-| Unit/property      | schema logic, scoring, limits, normalization                 | required when applicable             |
-| Contract           | CLI JSON, manifests, catalog, run and recommendation schemas | required when introduced             |
-| Scanner corpus     | precision/recall over supported and ambiguous syntax         | required for scanner changes         |
-| Golden offline E2E | scan → eval → recommend → patch → rerun                      | required once implemented            |
-| Pack smoke         | install packed CLI packages in a clean fixture               | required                             |
-| Field              | trusted-main OpenRouter run with explicit budget             | scheduled/manual, never a merge gate |
+| Lane               | Purpose                                                      | Merge policy                                       |
+| ------------------ | ------------------------------------------------------------ | -------------------------------------------------- |
+| Static             | format, lint, dead code, types, build                        | required                                           |
+| Unit/property      | schema logic, scoring, limits, normalization                 | required when applicable                           |
+| Contract           | CLI JSON, manifests, catalog, run and recommendation schemas | required when introduced                           |
+| Scanner corpus     | precision/recall over supported and ambiguous syntax         | required for scanner changes                       |
+| Golden offline E2E | scan → eval → recommend → patch → rerun                      | required once implemented                          |
+| Pack smoke         | install packed CLI packages in a clean fixture               | required                                           |
+| Field              | trusted-main OpenRouter run with explicit budget             | manual or explicitly scheduled, never a merge gate |
 
 The CI fan-in job must fail if a required lane is missing, skipped unexpectedly, or failed. Live model
 availability and provider responses are not reproducible enough to gate pull requests.
