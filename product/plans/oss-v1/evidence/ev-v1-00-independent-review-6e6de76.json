@@ -1,0 +1,38 @@
+{
+  "$schema": "../../schemas/evidence.schema.json",
+  "schemaVersion": "1.0.0",
+  "id": "ev-v1-00-independent-review-6e6de76",
+  "taskId": "V1-00",
+  "type": "review",
+  "actor": "davidahmann",
+  "commit": "6e6de76ebdf4b7d25bcdb6d5dc929ee11d8a85f0",
+  "createdAt": "2026-08-10T15:32:00Z",
+  "result": {
+    "status": "pass",
+    "checks": [
+      {
+        "name": "independent-verifier authorization",
+        "status": "pass",
+        "url": "https://github.com/Clyra-AI/vetryn/pull/5#issuecomment-5242393112",
+        "summary": "The exact-format protected-main CODEOWNER comment authorizes the independent-verifier role for the exact candidate."
+      }
+    ]
+  },
+  "inputs": {
+    "planDigest": "sha256:f7fbd1c991659434682d5ae9599cb8efda0151344dba44ad75999321999cdd13",
+    "lockfileDigest": "sha256:4a89ac1f2863dc3591fae73e1ee0474cbab8cb0725ff80dfc57b1590f42d1a88"
+  },
+  "gateBinding": null,
+  "review": {
+    "role": "independent-verifier",
+    "subjectActor": "davidahmann",
+    "source": "github-bootstrap-owner-comment",
+    "state": "APPROVED",
+    "authorAssociation": "CONTRIBUTOR",
+    "commentId": 5242393112,
+    "observedCommit": "6e6de76ebdf4b7d25bcdb6d5dc929ee11d8a85f0",
+    "authorizationBody": "<!-- vetryn-bootstrap-review:v1 -->\nrepository=Clyra-AI/vetryn\npull_request=5\ntask_id=V1-00\ncandidate_sha=6e6de76ebdf4b7d25bcdb6d5dc929ee11d8a85f0\ndecision=APPROVED\nroles=independent-verifier,trust-reviewer,maintainer",
+    "authorizationRef": "https://github.com/Clyra-AI/vetryn/pull/5#issuecomment-5242393112"
+  },
+  "redaction": { "status": "verified", "containsRawModelOutput": false, "containsSecrets": false }
+}

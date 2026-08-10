@@ -2,64 +2,68 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "V1-00",
-  "revision": 5,
-  "state": "in_progress",
+  "revision": 6,
+  "state": "accepted",
   "attempt": 1,
-  "candidate": null,
+  "candidate": {
+    "baseCommit": "8c5bd603c0271061cce21372abc353ab52bef882",
+    "commit": "6e6de76ebdf4b7d25bcdb6d5dc929ee11d8a85f0",
+    "executor": "davidahmann"
+  },
   "criteria": [
     {
       "criterionId": "PLAN-001",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-00-independent-review-6e6de76"]
     },
     {
       "criterionId": "PLAN-002",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-00-plan-check-6e6de76"]
     },
     {
       "criterionId": "PLAN-003",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-00-trust-review-6e6de76"]
     },
     {
       "criterionId": "PLAN-004",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-00-repo-check-6e6de76"]
     }
   ],
   "gates": [
     {
       "gateId": "QG-PLAN-CHECK",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-00-plan-check-6e6de76"]
     },
     {
       "gateId": "QG-REPO-CHECK",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-00-repo-check-6e6de76"]
     },
     {
       "gateId": "QG-INDEPENDENT-VERIFY",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-00-independent-review-6e6de76"]
     },
     {
       "gateId": "QG-TRUST-REVIEW",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-00-trust-review-6e6de76"]
     }
   ],
   "reviews": [
     {
       "role": "maintainer",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "approved",
+      "evidenceRefs": ["ev-v1-00-maintainer-review-6e6de76"]
     },
     {
       "role": "trust-reviewer",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "approved",
+      "evidenceRefs": ["ev-v1-00-trust-review-6e6de76"]
     }
   ],
   "blockers": [],
@@ -98,6 +102,13 @@
       "at": "2026-08-10T15:13:00Z",
       "actor": "planning-contract-repair-agent",
       "reason": "Made protected-main CODEOWNERS authoritative for bootstrap roles while retaining the anonymous public association as exact provenance; candidate, acceptance, gates, and reviews remain pending."
+    },
+    {
+      "from": "in_progress",
+      "to": "accepted",
+      "at": "2026-08-10T15:32:00Z",
+      "actor": "davidahmann",
+      "reason": "Promoted the independently verified exact candidate after both command gates passed and the authenticated protected-main CODEOWNER comment authorized every required review role."
     }
   ]
 }
