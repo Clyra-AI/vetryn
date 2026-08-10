@@ -35,11 +35,13 @@ compact, and redacted; raw prompts, model output, credentials, private traces, a
 Command evidence names the exact gate and canonical command it proves; evidence for one command cannot satisfy
 another gate. Approval evidence is re-fetched from GitHub's public API during validation and must match the
 repository, pull request, review ID, reviewer, eligible association, approved state, URL, and candidate commit.
-The reviewer must also own the role's protected surface under CODEOWNERS fetched from protected `main`.
+The candidate executor is the candidate PR author authenticated by GitHub, not editable branch text. The reviewer
+must differ from that actor and own the role's protected surface under CODEOWNERS fetched from protected `main`.
 The approval must remain the reviewer's latest decisive review on the exact candidate commit. The same task PR
 may advance past that commit only for promotion: GitHub's comparison must prove that the candidate is an ancestor
 and that the complete tail changes only the task's canonical state, acceptance ledger, compact evidence, or
-generated progress. Rename source and destination paths are both restricted. Validation must run from a clean,
+generated progress. Within the shared ledger, only status and evidence references for that task may change;
+reviewed fields and other tasks are immutable. Rename source and destination paths are both restricted. Validation must run from a clean,
 committed checkout equal to the authenticated open-PR head; durable evidence on a merged or later branch instead
 requires the checkout to contain the authenticated PR merge commit. Editable branch evidence and role fields are
 never sufficient on their own. Authentication uses Node's built-in HTTPS fetch and absolute system Git, not a

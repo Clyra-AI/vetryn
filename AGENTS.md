@@ -18,11 +18,12 @@ These instructions apply to the entire repository.
 - Treat `WORKFLOW.md` as the repository operating contract. Compile one explicit task with
   `pnpm --silent task:compile -- TASK-ID` before implementation or verification.
 - Passing review records require role-bound GitHub review evidence authenticated against the public GitHub API
-  and CODEOWNERS fetched from protected `main`, the exact candidate executor, and a reviewer distinct from that
-  executor. The approval must target the exact candidate commit and remain the reviewer's latest decisive
+  and CODEOWNERS fetched from protected `main`, the candidate PR author as authenticated executor, and a reviewer
+  distinct from that executor. The approval must target the exact candidate commit and remain the reviewer's latest decisive
   review on that commit. A later pull-request head is valid only when GitHub proves that it descends from the
-  candidate and its complete promotion tail changes canonical state, ledger, evidence, or generated progress
-  only. Validation requires a clean local commit bound to that authenticated PR head, or—after merge—a checkout
+  candidate and its complete promotion tail changes canonical state, task-scoped ledger status/evidence, evidence,
+  or generated progress only. Reviewed ledger fields and every other task's items remain immutable. Validation
+  requires a clean local commit bound to that authenticated PR head, or—after merge—a checkout
   containing its authenticated merge commit. These fail-closed control-plane reads use built-in HTTPS and
   absolute system Git with no repository credential or PATH-resolved executable. Non-baseline evidence must
   match the reviewed plan and lockfile digests.

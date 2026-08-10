@@ -48,7 +48,11 @@
           "properties": {
             "baseCommit": { "$ref": "#/$defs/sha" },
             "commit": { "$ref": "#/$defs/sha" },
-            "executor": { "type": "string", "minLength": 1 }
+            "executor": {
+              "type": "string",
+              "minLength": 1,
+              "description": "GitHub login of the candidate pull-request author"
+            }
           }
         }
       ]

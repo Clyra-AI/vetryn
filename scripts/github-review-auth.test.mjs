@@ -15,6 +15,30 @@ const approval = {
   html_url: "https://github.com/Clyra-AI/vetryn/pull/1#pullrequestreview-123456789",
   pull_request_url: "https://api.github.com/repos/Clyra-AI/vetryn/pulls/1",
 };
+const candidateLedger = {
+  schemaVersion: "1.0.0",
+  planId: "oss-v1",
+  items: [
+    {
+      id: "PLAN-001",
+      taskId: "V1-00",
+      statement: "Reviewed criterion",
+      verification: { method: "review", gateId: "QG-INDEPENDENT-VERIFY" },
+      waivable: false,
+      status: "verification_pending",
+      evidenceRefs: [],
+    },
+    {
+      id: "CONTRACT-001",
+      taskId: "V1-01",
+      statement: "Another task criterion",
+      verification: { method: "test", gateId: "QG-CONTRACTS" },
+      waivable: false,
+      status: "planned",
+      evidenceRefs: [],
+    },
+  ],
+};
 
 function evidence(overrides = {}) {
   return {
@@ -24,6 +48,7 @@ function evidence(overrides = {}) {
     commit,
     review: {
       reviewId: 123456789,
+      subjectActor: "implementation-agent",
       observedCommit: commit,
       authorAssociation: "MEMBER",
       authorizationRef: "https://github.com/Clyra-AI/vetryn/pull/1#pullrequestreview-123456789",
@@ -44,6 +69,7 @@ function githubFetch({
   headSha = commit,
   merged = false,
   mergeCommitSha = null,
+  pullRequestAuthor = "implementation-agent",
   comparison = {
     status: "ahead",
     merge_base_commit: { sha: commit },
@@ -54,16 +80,21 @@ function githubFetch({
       { filename: "product/plans/oss-v1/evidence/ev-review.json" },
     ],
   },
+  ledgerAtCandidate = candidateLedger,
+  ledgerAtHead = candidateLedger,
   codeowners = "* @maintainer-reviewer\n/.github/ @maintainer-reviewer\n/SECURITY.md @maintainer-reviewer\n",
 } = {}) {
   return vi.fn(async (input) => {
     const url = String(input);
     if (url.includes("CODEOWNERS")) return responseFor(codeowners);
+    if (url.includes("acceptance-ledger.json"))
+      return responseFor(url.includes(`/${commit}/`) ? ledgerAtCandidate : ledgerAtHead);
     if (url.includes("/compare/")) return responseFor(comparison);
     if (url.includes("/reviews?")) return responseFor(reviewHistory);
     if (url.includes("/reviews/")) return responseFor(exactReview);
     return responseFor({
       head: { sha: headSha },
+      user: { login: pullRequestAuthor },
       merged,
       merge_commit_sha: mergeCommitSha,
     });
@@ -123,6 +154,16 @@ describe("GitHub review authentication", () => {
     );
   });
 
+  it("rejects an executor identity that differs from the authenticated PR author", async () => {
+    const authenticate = authenticator({
+      fetchImpl: githubFetch({ pullRequestAuthor: "actual-executor" }),
+    });
+
+    await expect(authenticate(evidence(), "maintainer", "fixture")).rejects.toThrow(
+      "does not name the authenticated candidate PR author",
+    );
+  });
+
   it("rejects a reviewer who does not own the required protected surface", async () => {
     const authenticate = authenticator({
       fetchImpl: githubFetch({ codeowners: "* @different-reviewer\n" }),
@@ -175,6 +216,77 @@ describe("GitHub review authentication", () => {
 
     await expect(authenticate(evidence(), "maintainer", "fixture")).rejects.toThrow(
       "changes forbidden path packages/core/src/index.ts",
+    );
+  });
+
+  it("accepts task-scoped status and evidence changes in the promotion ledger", async () => {
+    const advancedHead = "b".repeat(40);
+    const promotedLedger = globalThis.structuredClone(candidateLedger);
+    promotedLedger.items[0].status = "accepted";
+    promotedLedger.items[0].evidenceRefs = ["ev-review"];
+    const authenticate = authenticator({
+      fetchImpl: githubFetch({
+        headSha: advancedHead,
+        comparison: {
+          status: "ahead",
+          merge_base_commit: { sha: commit },
+          total_commits: 1,
+          commits: [{ sha: advancedHead }],
+          files: [{ filename: "product/plans/oss-v1/acceptance-ledger.json" }],
+        },
+        ledgerAtHead: promotedLedger,
+      }),
+      checkoutCommit: advancedHead,
+    });
+
+    await expect(authenticate(evidence(), "maintainer", "fixture")).resolves.toBeUndefined();
+  });
+
+  it("rejects promotion ledger changes for another task", async () => {
+    const advancedHead = "b".repeat(40);
+    const promotedLedger = globalThis.structuredClone(candidateLedger);
+    promotedLedger.items[1].status = "accepted";
+    const authenticate = authenticator({
+      fetchImpl: githubFetch({
+        headSha: advancedHead,
+        comparison: {
+          status: "ahead",
+          merge_base_commit: { sha: commit },
+          total_commits: 1,
+          commits: [{ sha: advancedHead }],
+          files: [{ filename: "product/plans/oss-v1/acceptance-ledger.json" }],
+        },
+        ledgerAtHead: promotedLedger,
+      }),
+      checkoutCommit: advancedHead,
+    });
+
+    await expect(authenticate(evidence(), "maintainer", "fixture")).rejects.toThrow(
+      "changes ledger item CONTRACT-001 for another task",
+    );
+  });
+
+  it("rejects promotion changes to a reviewed ledger field", async () => {
+    const advancedHead = "b".repeat(40);
+    const promotedLedger = globalThis.structuredClone(candidateLedger);
+    promotedLedger.items[0].verification.gateId = "QG-REPO-CHECK";
+    const authenticate = authenticator({
+      fetchImpl: githubFetch({
+        headSha: advancedHead,
+        comparison: {
+          status: "ahead",
+          merge_base_commit: { sha: commit },
+          total_commits: 1,
+          commits: [{ sha: advancedHead }],
+          files: [{ filename: "product/plans/oss-v1/acceptance-ledger.json" }],
+        },
+        ledgerAtHead: promotedLedger,
+      }),
+      checkoutCommit: advancedHead,
+    });
+
+    await expect(authenticate(evidence(), "maintainer", "fixture")).rejects.toThrow(
+      "changes reviewed ledger item PLAN-001",
     );
   });
 

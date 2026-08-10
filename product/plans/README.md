@@ -10,8 +10,9 @@ Rules:
 - One task owns one state file to reduce concurrent-agent conflicts.
 - Evidence is immutable and bound to an exact commit, the reviewed plan and lockfile digests, and—when it
   represents approval—an authenticated GitHub approval, eligible author association, review identity, and role
-  whose actor differs case-insensitively from the candidate executor and whose observed commit matches the
-  candidate. A later promotion head must descend from that commit and may change only canonical promotion files.
+  whose actor differs case-insensitively from the candidate PR author authenticated as executor and whose observed
+  commit matches the candidate. A later promotion head must descend from that commit and may change only canonical
+  promotion files; the shared ledger permits only that task's status and evidence-reference updates.
   Final validation binds a clean checkout to the authenticated open-PR head or a contained authenticated merge.
 - Executors may add candidate evidence but cannot broaden scope, rewrite criteria, or accept their own
   task.

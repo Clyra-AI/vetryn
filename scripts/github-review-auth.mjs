@@ -66,6 +66,45 @@ function isAllowedPromotionPath(filename, taskId) {
   );
 }
 
+function assertLedgerPromotion(candidateLedger, promotedLedger, taskId, source, evidenceId) {
+  const candidateHeader = { ...candidateLedger, items: undefined };
+  const promotedHeader = { ...promotedLedger, items: undefined };
+  assert(
+    JSON.stringify(candidateHeader) === JSON.stringify(promotedHeader),
+    `${source} promotion tail for review evidence ${evidenceId} changes ledger metadata`,
+  );
+  assert(
+    Array.isArray(candidateLedger.items) &&
+      Array.isArray(promotedLedger.items) &&
+      candidateLedger.items.length === promotedLedger.items.length,
+    `${source} promotion tail for review evidence ${evidenceId} changes ledger membership`,
+  );
+  for (const [index, candidateItem] of candidateLedger.items.entries()) {
+    const promotedItem = promotedLedger.items[index];
+    assert(
+      candidateItem.id === promotedItem?.id,
+      `${source} promotion tail for review evidence ${evidenceId} reorders or replaces ledger items`,
+    );
+    if (candidateItem.taskId !== taskId) {
+      assert(
+        JSON.stringify(candidateItem) === JSON.stringify(promotedItem),
+        `${source} promotion tail for review evidence ${evidenceId} changes ledger item ${candidateItem.id} for another task`,
+      );
+      continue;
+    }
+    const candidateReviewed = { ...candidateItem };
+    const promotedReviewed = { ...promotedItem };
+    delete candidateReviewed.status;
+    delete candidateReviewed.evidenceRefs;
+    delete promotedReviewed.status;
+    delete promotedReviewed.evidenceRefs;
+    assert(
+      JSON.stringify(candidateReviewed) === JSON.stringify(promotedReviewed),
+      `${source} promotion tail for review evidence ${evidenceId} changes reviewed ledger item ${candidateItem.id}`,
+    );
+  }
+}
+
 export function createGitHubReviewAuthenticator({
   fetchImpl = globalThis.fetch,
   checkoutProvider,
@@ -78,6 +117,7 @@ export function createGitHubReviewAuthenticator({
   const authenticatedReviews = new Map();
   const authenticatedPullRequests = new Map();
   const authenticatedPromotionTails = new Map();
+  const authenticatedLedgers = new Map();
   const authenticatedReviewHistories = new Map();
   let authenticatedCodeowners;
 
@@ -148,6 +188,10 @@ export function createGitHubReviewAuthenticator({
       typeof currentHead === "string" && /^[0-9a-f]{40}$/.test(currentHead),
       `${source} could not authenticate the current pull request head`,
     );
+    assert(
+      pullRequestData.user?.login?.toLowerCase() === evidence.review.subjectActor.toLowerCase(),
+      `${source} review evidence ${evidence.id} does not name the authenticated candidate PR author`,
+    );
     const checkout = checkoutProvider();
     assert(
       checkout?.commit === currentHead ||
@@ -198,6 +242,27 @@ export function createGitHubReviewAuthenticator({
         !forbiddenFile,
         `${source} promotion tail for review evidence ${evidence.id} changes forbidden path ${forbiddenPath}`,
       );
+      const ledgerPath = "product/plans/oss-v1/acceptance-ledger.json";
+      if (
+        comparison.files.some(
+          (file) => file.filename === ledgerPath || file.previous_filename === ledgerPath,
+        )
+      ) {
+        const ledgers = [];
+        for (const ref of [evidence.commit, currentHead]) {
+          let ledger = authenticatedLedgers.get(ref);
+          if (!ledger) {
+            ledger = await fetchPublicGitHubJson(
+              `https://raw.githubusercontent.com/${githubRepository}/${ref}/${ledgerPath}`,
+              `${source} could not authenticate ledger at ${ref}`,
+              fetchImpl,
+            );
+            authenticatedLedgers.set(ref, ledger);
+          }
+          ledgers.push(ledger);
+        }
+        assertLedgerPromotion(ledgers[0], ledgers[1], evidence.taskId, source, evidence.id);
+      }
     }
 
     let reviewHistory = authenticatedReviewHistories.get(pullRequest);
