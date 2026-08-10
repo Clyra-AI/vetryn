@@ -33,7 +33,7 @@
     {
       "id": "DEC-SCORING",
       "status": "locked",
-      "decision": "V1 uses deterministic scorers and hard gates only; LLM judges are deferred.",
+      "decision": "V1 uses deterministic scorers, hard gates, and an explicit per-call-site minimum recommendation confidence (0.8 by default); LLM judges are deferred.",
       "rationale": "The first upgrade PR must be reproducible offline and explainable. An optional calibrated semantic-rubric scorer is considered only after V1 field evidence shows deterministic evaluation blocks valuable open-ended call sites.",
       "blocks": []
     },

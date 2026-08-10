@@ -4,11 +4,13 @@ import { describe, expect, it } from "vitest";
 
 import {
   VETRYN_ARTIFACT_SCHEMA_VERSION,
+  assertCandidateRunPolicy,
   assertEvaluationInputDigest,
   assertPatchPlanEvidence,
   assertRecommendationEvidence,
   canonicalizeArtifact,
   candidateRunSchema,
+  callSiteSchema,
   createArtifactId,
   parsePatchPlan,
   parseRecommendation,
@@ -29,6 +31,7 @@ const callSite = {
   evalSuiteId: "support-classification-eval",
   gates: {
     maxP95LatencyMs: 750,
+    minRecommendationConfidence: 0.8,
     maxQualityRegression: 0.01,
     minCases: 30,
     minPassRate: 0.98,
@@ -103,6 +106,7 @@ const candidateRun = {
   callSiteId: callSite.id,
   candidateModel: "openai/gpt-4o",
   catalogSnapshotId: catalogSnapshot.id,
+  confidenceFloor: 0.8,
   evaluationInputDigest: digest("d"),
   id: "candidate-run:support-classification-openai-gpt-4o",
   gateOutcomes: {
@@ -120,6 +124,30 @@ const candidateRun = {
     p95LatencyMs: 420,
     passedCases: 30,
   },
+  provenance: {
+    attemptCount: 1,
+    completedAt: "2026-08-10T00:01:00.000Z",
+    evaluator: {
+      build: "git:348aa41",
+      version: "0.1.0",
+    },
+    sampling: {
+      maxOutputTokens: 128,
+      seed: 42,
+      temperature: 0,
+    },
+    scorer: {
+      configurationDigest: digest("e"),
+      id: "deterministic-assertions",
+      version: "1.0.0",
+    },
+    startedAt: "2026-08-10T00:00:00.000Z",
+    variance: {
+      costUsdStdDev: "0",
+      p95LatencyMsStdDev: 0,
+      passRateStdDev: 0,
+    },
+  },
   schemaVersion: VETRYN_ARTIFACT_SCHEMA_VERSION,
   status: "complete",
 };
@@ -131,6 +159,7 @@ const recommendation = {
   candidateRunIds: [candidateRun.id],
   catalogSnapshotId: catalogSnapshot.id,
   confidence: 0.99,
+  confidenceFloor: candidateRun.confidenceFloor,
   evaluationInputDigest: candidateRun.evaluationInputDigest,
   id: "recommendation:support-classification-openai-gpt-4o",
   reasonCodes: ["quality-gates-passed", "cost-savings"],
@@ -220,12 +249,38 @@ describe("V1 artifact contracts", () => {
     expect(() => parseVetrynArtifact({ ...candidateRun, gateOutcomes: undefined })).toThrow(
       /hard-gate outcomes/i,
     );
+    expect(() => parseVetrynArtifact({ ...candidateRun, provenance: undefined })).toThrow(
+      /provenance/i,
+    );
     expect(() =>
       parseVetrynArtifact({
         ...candidateRun,
         baselineMetrics: { ...candidateRun.baselineMetrics, caseCount: 29 },
       }),
     ).toThrow(/same evaluated case count/i);
+    expect(() => parseVetrynArtifact({ ...recommendation, confidence: 0.79 })).toThrow(
+      /confidence floor/i,
+    );
+    expect(() =>
+      parseVetrynArtifact({ ...recommendation, reasonCodes: ["privacy-failed"] }),
+    ).toThrow(/reasonCodes/i);
+    expect(() =>
+      parseVetrynArtifact({
+        ...recommendation,
+        recommendedModel: undefined,
+        reasonCodes: ["cost-savings"],
+        status: "regression",
+      }),
+    ).toThrow(/not valid for regression/i);
+    expect(() =>
+      parseVetrynArtifact({
+        ...candidateRun,
+        provenance: {
+          ...candidateRun.provenance,
+          completedAt: "2026-08-09T23:59:59.000Z",
+        },
+      }),
+    ).toThrow(/complete before it starts/i);
   });
 
   it("excludes credentials and raw protected inputs or outputs by construction", () => {
@@ -242,6 +297,21 @@ describe("V1 artifact contracts", () => {
 
   it("rejects stale evaluation evidence before it can support a recommendation", () => {
     const parsedRun = candidateRunSchema.parse(candidateRun);
+    const parsedCallSite = callSiteSchema.parse(callSite);
+
+    const defaultGates = { ...callSite.gates };
+    Reflect.deleteProperty(defaultGates, "minRecommendationConfidence");
+    expect(callSiteSchema.parse({ ...callSite, gates: defaultGates }).gates).toMatchObject({
+      minRecommendationConfidence: 0.8,
+    });
+
+    expect(assertCandidateRunPolicy(parsedRun, parsedCallSite)).toEqual(parsedRun);
+    expect(() =>
+      assertCandidateRunPolicy(
+        candidateRunSchema.parse({ ...candidateRun, confidenceFloor: 0.7 }),
+        parsedCallSite,
+      ),
+    ).toThrow(/confidence floor/i);
 
     expect(assertEvaluationInputDigest(parsedRun, candidateRun.evaluationInputDigest)).toEqual(
       parsedRun,
@@ -300,6 +370,13 @@ describe("V1 artifact contracts", () => {
         candidateRun.evaluationInputDigest,
       ),
     ).toThrow(/recommended model/i);
+    expect(() =>
+      assertRecommendationEvidence(
+        parsedRecommendation,
+        [candidateRunWith({ confidenceFloor: 0.7 })],
+        candidateRun.evaluationInputDigest,
+      ),
+    ).toThrow(/confidence floor/i);
     expect(() =>
       assertRecommendationEvidence(
         parsedRecommendation,

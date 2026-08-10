@@ -35,14 +35,14 @@ contains only source metadata, opaque digests, aggregate measurements, safe iden
 failure codes; raw prompts, raw outputs, credentials, provider error payloads, and source diffs are not fields
 in these contracts.
 
-| Artifact           | Durable responsibility                                                                           |
-| ------------------ | ------------------------------------------------------------------------------------------------ |
-| Call-site manifest | Human-owned identity, bound source, model pin, gates, and reviewed usage profile                 |
-| Eval suite         | Reviewed fixture reference, digest, case count, and redaction posture                            |
-| Catalog snapshot   | Immutable normalized model capabilities, pricing, and source provenance                          |
-| Candidate run      | Input digest, paired baseline/candidate metrics, hard-gate outcomes, and bounded failure state   |
-| Recommendation     | Abstention or proposed source-bound model with confidence, reason codes, and evidence references |
-| Patch plan         | One source-bound expected-model to replacement-model change bound to its recommendation          |
+| Artifact           | Durable responsibility                                                                                  |
+| ------------------ | ------------------------------------------------------------------------------------------------------- |
+| Call-site manifest | Human-owned identity, bound source, model pin, gates, and reviewed usage profile                        |
+| Eval suite         | Reviewed fixture reference, digest, case count, and redaction posture                                   |
+| Catalog snapshot   | Immutable normalized model capabilities, pricing, and source provenance                                 |
+| Candidate run      | Input digest, paired metrics, hard-gate outcomes, reproducibility provenance, and bounded failure state |
+| Recommendation     | Abstention or proposed source-bound model with a bound confidence floor and finite reason codes         |
+| Patch plan         | One source-bound expected-model to replacement-model change bound to its recommendation                 |
 
 ### Scanner
 
@@ -94,9 +94,10 @@ scorer cannot replace hard gates.
 ### Recommendation engine
 
 The engine ranks only eligible candidates and may abstain. A recommend outcome requires every cited candidate
-run to match the call site, baseline, catalog, candidate model, and evaluation-input digest, with every hard gate
-passing. An abstention retains the same provenance bindings for any cited runs but may cite incomplete or failed
-runs to explain why no patch was produced. Recommendation artifacts include provenance, confidence, limitations,
+run to match the call site, baseline, catalog, candidate model, confidence floor, and evaluation-input digest,
+with every hard gate passing and the recommendation confidence meeting that floor. An abstention retains the same
+provenance bindings for any cited runs but may cite incomplete or failed runs to explain why no patch was produced.
+Recommendation artifacts include provenance, finite status-compatible reason codes, confidence, limitations,
 failed cases, and reproduction commands.
 
 ### Patcher and GitHub integration
@@ -138,7 +139,7 @@ independent boundary emerges.
 ## Reproducibility and privacy
 
 An evaluation run records tool version, build or commit revision, call-site manifest digest, fixture
-digest, catalog digest, model identifiers, scorer configuration, sampling configuration, attempt count,
-and timestamps. The evaluation-input digest binds that evaluator executable identity with the remaining
-inputs. Secrets and unredacted fixtures are never written to reports. Remote telemetry is opt-in; OSS
+digest, catalog digest, model identifiers, scorer configuration, sampling configuration and seed, attempt count,
+timestamps, and aggregate variance. The evaluation-input digest binds that evaluator executable identity with the
+remaining inputs. Secrets and unredacted fixtures are never written to reports. Remote telemetry is opt-in; OSS
 execution has no mandatory control plane.

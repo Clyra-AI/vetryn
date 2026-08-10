@@ -27,6 +27,7 @@ const digestSchema = z.string().regex(/^sha256:[0-9a-f]{64}$/, "Use a sha256 dig
 const decimalSchema = z
   .string()
   .regex(/^(?:0|[1-9][0-9]*)(?:\.[0-9]+)?$/, "Use a canonical non-negative decimal string.");
+const confidenceSchema = z.number().finite().min(0).max(1);
 const modelIdSchema = z
   .string()
   .regex(
@@ -48,9 +49,27 @@ const repositoryPathSchema = z
 const opaqueReferenceSchema = z
   .string()
   .regex(/^[a-z][a-z0-9-]*:[a-zA-Z0-9._:-]+$/, "Use a compact opaque reference.");
-const reasonCodeSchema = z
-  .string()
-  .regex(/^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/, "Use a lowercase kebab-case reason code.");
+const recommendationReasonCodes = [
+  "budget-exhausted",
+  "candidate-regressed",
+  "candidate-timeout",
+  "capability-incompatible",
+  "confidence-below-floor",
+  "context-incompatible",
+  "contradictory-evidence",
+  "cost-regression",
+  "cost-savings",
+  "error-regression",
+  "insufficient-cases",
+  "latency-regression",
+  "no-better-candidate",
+  "privacy-incompatible",
+  "provider-failure",
+  "quality-gates-passed",
+  "quality-regression",
+] as const;
+const recommendationReasonCodeSchema = z.enum(recommendationReasonCodes);
+type RecommendationReasonCode = z.infer<typeof recommendationReasonCodeSchema>;
 
 const artifactEnvelope = {
   id: artifactIdSchema,
@@ -81,6 +100,7 @@ export const evaluationGatesSchema = z
     maxQualityRegression: z.number().min(0).max(1).default(0),
     minCases: z.number().int().positive().default(30),
     minPassRate: z.number().min(0).max(1),
+    minRecommendationConfidence: confidenceSchema.default(0.8),
     minSavingsPercent: z.number().min(0).max(100).default(0),
   })
   .strict();
@@ -246,6 +266,52 @@ const hardGateOutcomesSchema = z
 
 export type HardGateOutcomes = z.infer<typeof hardGateOutcomesSchema>;
 
+const candidateRunProvenanceSchema = z
+  .object({
+    attemptCount: z.number().int().positive(),
+    completedAt: z.string().datetime({ offset: true }),
+    evaluator: z
+      .object({
+        build: opaqueReferenceSchema,
+        version: z.string().min(1),
+      })
+      .strict(),
+    sampling: z
+      .object({
+        maxOutputTokens: z.number().int().positive(),
+        seed: z.number().int().nonnegative().nullable(),
+        temperature: z.number().finite().min(0).max(2),
+      })
+      .strict(),
+    scorer: z
+      .object({
+        configurationDigest: digestSchema,
+        id: stableIdSchema,
+        version: z.string().min(1),
+      })
+      .strict(),
+    startedAt: z.string().datetime({ offset: true }),
+    variance: z
+      .object({
+        costUsdStdDev: decimalSchema,
+        p95LatencyMsStdDev: z.number().finite().nonnegative(),
+        passRateStdDev: z.number().finite().min(0).max(1),
+      })
+      .strict(),
+  })
+  .strict()
+  .superRefine((provenance, context) => {
+    if (Date.parse(provenance.startedAt) > Date.parse(provenance.completedAt)) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Evaluation provenance cannot complete before it starts.",
+        path: ["completedAt"],
+      });
+    }
+  });
+
+export type CandidateRunProvenance = z.infer<typeof candidateRunProvenanceSchema>;
+
 const candidateRunFailureCodeSchema = z.enum([
   "budget-exhausted",
   "invalid-output",
@@ -262,11 +328,13 @@ export const candidateRunSchema = z
     callSiteId: stableIdSchema,
     candidateModel: modelIdSchema,
     catalogSnapshotId: artifactIdSchema,
+    confidenceFloor: confidenceSchema,
     evaluationInputDigest: digestSchema,
     failureCode: candidateRunFailureCodeSchema.optional(),
     gateOutcomes: hardGateOutcomesSchema.optional(),
     ...artifactEnvelope,
     metrics: candidateMetricsSchema.optional(),
+    provenance: candidateRunProvenanceSchema,
     status: z.enum(["complete", "failed", "incomplete"]),
   })
   .strict()
@@ -375,6 +443,21 @@ export const recommendationStatusSchema = z.enum([
 
 export type RecommendationStatus = z.infer<typeof recommendationStatusSchema>;
 
+const reasonCodesByStatus: Record<RecommendationStatus, readonly RecommendationReasonCode[]> = {
+  recommend: ["cost-savings", "quality-gates-passed"],
+  "no-change": ["candidate-regressed", "no-better-candidate"],
+  incompatible: ["capability-incompatible", "context-incompatible", "privacy-incompatible"],
+  regression: ["cost-regression", "error-regression", "latency-regression", "quality-regression"],
+  "insufficient-evidence": [
+    "budget-exhausted",
+    "candidate-timeout",
+    "confidence-below-floor",
+    "contradictory-evidence",
+    "insufficient-cases",
+    "provider-failure",
+  ],
+};
+
 export const recommendationSchema = z
   .object({
     artifactType: z.literal("recommendation"),
@@ -382,10 +465,11 @@ export const recommendationSchema = z
     callSiteId: stableIdSchema,
     candidateRunIds: z.array(artifactIdSchema),
     catalogSnapshotId: artifactIdSchema,
-    confidence: z.number().min(0).max(1),
+    confidence: confidenceSchema,
+    confidenceFloor: confidenceSchema,
     evaluationInputDigest: digestSchema,
     ...artifactEnvelope,
-    reasonCodes: z.array(reasonCodeSchema).min(1),
+    reasonCodes: z.array(recommendationReasonCodeSchema).min(1),
     recommendedModel: modelIdSchema.optional(),
     status: recommendationStatusSchema,
     sourceBinding: boundSourceBindingSchema,
@@ -394,6 +478,9 @@ export const recommendationSchema = z
   .superRefine((artifact, context) => {
     assertArtifactIdPrefix(artifact, context, "recommendation");
     assertUniqueValues(artifact.candidateRunIds, context, "candidate run ID", ["candidateRunIds"]);
+    assertUniqueValues(artifact.reasonCodes, context, "recommendation reason code", [
+      "reasonCodes",
+    ]);
     assertArtifactReferencePrefix(artifact.catalogSnapshotId, context, "catalog-snapshot", [
       "catalogSnapshotId",
     ]);
@@ -406,6 +493,14 @@ export const recommendationSchema = z
     }
 
     if (artifact.status === "recommend") {
+      if (artifact.confidence < artifact.confidenceFloor) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "A recommend outcome must meet its confidence floor.",
+          path: ["confidence"],
+        });
+      }
+
       if (artifact.recommendedModel === undefined) {
         context.addIssue({
           code: z.ZodIssueCode.custom,
@@ -435,6 +530,17 @@ export const recommendationSchema = z
         message: "Only a recommend outcome may include a recommended model.",
         path: ["recommendedModel"],
       });
+    }
+
+    const allowedReasonCodes = reasonCodesByStatus[artifact.status];
+    for (const [index, reasonCode] of artifact.reasonCodes.entries()) {
+      if (!allowedReasonCodes.includes(reasonCode)) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Reason code ${reasonCode} is not valid for ${artifact.status}.`,
+          path: ["reasonCodes", index],
+        });
+      }
     }
   });
 
@@ -554,12 +660,44 @@ export function assertEvaluationInputDigest<T extends { evaluationInputDigest: s
   return artifact;
 }
 
+export function assertCandidateRunPolicy(
+  candidateRun: CandidateRun,
+  callSite: CallSite,
+): CandidateRun {
+  if (candidateRun.callSiteId !== callSite.id) {
+    throw new VetrynContractError(
+      "Candidate run has a different call site than its evaluation policy.",
+    );
+  }
+
+  if (candidateRun.baselineModel !== callSite.currentModel) {
+    throw new VetrynContractError(
+      "Candidate run has a different baseline model than its evaluation policy.",
+    );
+  }
+
+  if (candidateRun.confidenceFloor !== callSite.gates.minRecommendationConfidence) {
+    throw new VetrynContractError(
+      "Candidate run has a different confidence floor than its evaluation policy.",
+    );
+  }
+
+  return candidateRun;
+}
+
 export function assertRecommendationEvidence(
   recommendation: Recommendation,
   candidateRuns: readonly CandidateRun[],
   expectedEvaluationInputDigest: string,
 ): Recommendation {
   assertEvaluationInputDigest(recommendation, expectedEvaluationInputDigest);
+
+  if (
+    recommendation.status === "recommend" &&
+    recommendation.confidence < recommendation.confidenceFloor
+  ) {
+    throw new VetrynContractError("Recommendation confidence does not meet its confidence floor.");
+  }
 
   const candidateRunsById = new Map(
     candidateRuns.map((candidateRun) => [candidateRun.id, candidateRun]),
@@ -589,6 +727,12 @@ export function assertRecommendationEvidence(
     if (candidateRun.catalogSnapshotId !== recommendation.catalogSnapshotId) {
       throw new VetrynContractError(
         `Recommendation evidence candidate run ${candidateRunId} has a different catalog snapshot.`,
+      );
+    }
+
+    if (candidateRun.confidenceFloor !== recommendation.confidenceFloor) {
+      throw new VetrynContractError(
+        `Recommendation evidence candidate run ${candidateRunId} has a different confidence floor.`,
       );
     }
 
