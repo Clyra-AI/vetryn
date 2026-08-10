@@ -19,6 +19,11 @@ const validSpec = {
   id: "support-classification",
   name: "Support classification",
   owner: "support-platform",
+  requiredCapabilities: {
+    structuredOutput: true,
+    textGeneration: true,
+    toolCalls: false,
+  },
 };
 
 const letters = [..."abcdefghijklmnopqrstuvwxyz"];

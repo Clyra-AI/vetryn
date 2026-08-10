@@ -43,6 +43,11 @@ const callSite = {
   id: "support-classification",
   name: "Support classification",
   owner: "support-platform",
+  requiredCapabilities: {
+    structuredOutput: true,
+    textGeneration: true,
+    toolCalls: false,
+  },
   representativeUsage: {
     completionTokens: 1,
     promptTokens: 9,
@@ -246,6 +251,9 @@ describe("V1 artifact contracts", () => {
     expect(() =>
       callSiteSchema.parse({ ...callSite, evalSuiteId: "candidate-run:not-an-eval-suite" }),
     ).toThrow(/eval-suite/i);
+    expect(() => callSiteSchema.parse({ ...callSite, requiredCapabilities: undefined })).toThrow(
+      /required.?capabilities/i,
+    );
     expect(() =>
       parseVetrynArtifact({ ...recommendation, recommendedModel: callSite.currentModel }),
     ).toThrow(/different/);
@@ -553,7 +561,39 @@ describe("V1 artifact contracts", () => {
           ),
         }),
       ),
-    ).toThrow(/not compatible/i);
+    ).toThrow(/retired/i);
+    const candidateWithoutStructuredOutput = catalogSnapshot.models.map((model) =>
+      model.id === candidateRun.candidateModel
+        ? { ...model, capabilities: { ...model.capabilities, structuredOutput: false } }
+        : model,
+    );
+    expect(() =>
+      assertRecommendationEvidence(
+        parsedRecommendation,
+        [parsedRun],
+        candidateRun.evaluationInputDigest,
+        parsedCallSite,
+        parsedEvalSuite,
+        catalogSnapshotSchema.parse({
+          ...catalogSnapshot,
+          contentDigest: createCatalogContentDigest(candidateWithoutStructuredOutput),
+          models: candidateWithoutStructuredOutput,
+        }),
+      ),
+    ).toThrow(/structuredOutput/i);
+    expect(() =>
+      assertRecommendationEvidence(
+        parsedRecommendation,
+        [parsedRun],
+        candidateRun.evaluationInputDigest,
+        {
+          ...parsedCallSite,
+          requiredCapabilities: { ...parsedCallSite.requiredCapabilities, toolCalls: true },
+        },
+        parsedEvalSuite,
+        parsedCatalogSnapshot,
+      ),
+    ).toThrow(/toolCalls/i);
     expect(() =>
       assertRecommendationEvidence(
         parsedRecommendation,

@@ -37,7 +37,7 @@ in these contracts.
 
 | Artifact           | Durable responsibility                                                                                  |
 | ------------------ | ------------------------------------------------------------------------------------------------------- |
-| Call-site manifest | Human-owned identity, bound source, model pin, gates, and reviewed usage profile                        |
+| Call-site manifest | Human-owned identity, bound source, model pin, gates, required capabilities, and reviewed usage profile |
 | Eval suite         | Reviewed fixture reference, digest, case count, and redaction posture                                   |
 | Catalog snapshot   | Immutable normalized model capabilities, pricing, and source provenance                                 |
 | Candidate run      | Input digest, paired metrics, hard-gate outcomes, reproducibility provenance, and bounded failure state |
@@ -99,9 +99,9 @@ run to match the call site, baseline, catalog, candidate model, confidence floor
 with every hard gate passing and the recommendation confidence meeting that floor. An abstention retains the same
 provenance bindings for any cited runs but may cite incomplete or failed runs to explain why no patch was produced.
 The core derives measurable quality, cost, and latency gate outcomes from paired metrics and the call-site policy,
-verifies that the proposed model is active, text-capable, and has enough context in the bound snapshot, and binds
-every cited run to the call site's declared reviewed eval-suite artifact, that suite's call site, fixture digest,
-and case count.
+verifies that the proposed model is active, satisfies the call site's declared text-generation, structured-output,
+and tool-call requirements, and has enough context in the bound snapshot. It binds every cited run to the call
+site's declared reviewed eval-suite artifact, that suite's call site, fixture digest, and case count.
 Recommendation artifacts include provenance, finite status-compatible reason codes, confidence, limitations,
 failed cases, and reproduction commands.
 

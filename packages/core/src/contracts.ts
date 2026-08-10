@@ -77,6 +77,7 @@ const recommendationReasonCodes = [
 ] as const;
 const recommendationReasonCodeSchema = z.enum(recommendationReasonCodes);
 type RecommendationReasonCode = z.infer<typeof recommendationReasonCodeSchema>;
+const capabilityNames = ["textGeneration", "structuredOutput", "toolCalls"] as const;
 
 const artifactEnvelope = {
   id: artifactIdSchema,
@@ -129,6 +130,16 @@ export const representativeUsageSchema = z
 
 export type RepresentativeUsage = z.infer<typeof representativeUsageSchema>;
 
+export const callSiteCapabilityRequirementsSchema = z
+  .object({
+    structuredOutput: z.boolean(),
+    textGeneration: z.literal(true),
+    toolCalls: z.boolean(),
+  })
+  .strict();
+
+export type CallSiteCapabilityRequirements = z.infer<typeof callSiteCapabilityRequirementsSchema>;
+
 export const callSiteSpecSchema = z
   .object({
     binding: sourceBindingSchema,
@@ -137,6 +148,7 @@ export const callSiteSpecSchema = z
     id: stableIdSchema,
     name: z.string().min(1),
     owner: z.string().min(1),
+    requiredCapabilities: callSiteCapabilityRequirementsSchema,
   })
   .strict();
 
@@ -154,6 +166,7 @@ export const callSiteSchema = z
     id: stableIdSchema,
     name: z.string().min(1),
     owner: z.string().min(1),
+    requiredCapabilities: callSiteCapabilityRequirementsSchema,
     representativeUsage: representativeUsageSchema,
     sourceBinding: boundSourceBindingSchema,
   })
@@ -983,9 +996,19 @@ function assertCandidateRunCatalog(
     );
   }
 
-  if (candidateModel.retired || !candidateModel.capabilities.textGeneration) {
+  if (candidateModel.retired) {
     throw new VetrynContractError(
-      `Recommendation evidence candidate model ${candidateRun.candidateModel} is not compatible with V1 text generation.`,
+      `Recommendation evidence candidate model ${candidateRun.candidateModel} is retired.`,
+    );
+  }
+
+  const missingCapabilities = capabilityNames.filter(
+    (capability) =>
+      callSite.requiredCapabilities[capability] && !candidateModel.capabilities[capability],
+  );
+  if (missingCapabilities.length > 0) {
+    throw new VetrynContractError(
+      `Recommendation evidence candidate model ${candidateRun.candidateModel} is missing required capability/capabilities: ${missingCapabilities.join(", ")}.`,
     );
   }
 
