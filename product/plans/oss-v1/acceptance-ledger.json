@@ -44,8 +44,8 @@
         "gateId": "QG-INDEPENDENT-VERIFY"
       },
       "waivable": false,
-      "status": "planned",
-      "evidenceRefs": []
+      "status": "accepted",
+      "evidenceRefs": ["ev-v1-00-independent-review-4dba91a"]
     },
     {
       "id": "PLAN-002",
@@ -53,8 +53,8 @@
       "statement": "The plan, ledger, state, evidence, progress, and scenario files validate and cross-reference without drift.",
       "verification": { "method": "command", "testLevel": "contract", "gateId": "QG-PLAN-CHECK" },
       "waivable": false,
-      "status": "planned",
-      "evidenceRefs": []
+      "status": "accepted",
+      "evidenceRefs": ["ev-v1-00-plan-check-4dba91a"]
     },
     {
       "id": "PLAN-003",
@@ -66,8 +66,8 @@
         "gateId": "QG-TRUST-REVIEW"
       },
       "waivable": false,
-      "status": "planned",
-      "evidenceRefs": []
+      "status": "accepted",
+      "evidenceRefs": ["ev-v1-00-trust-review-4dba91a"]
     },
     {
       "id": "PLAN-004",
@@ -75,8 +75,8 @@
       "statement": "The full repository quality gate passes and the change contains planning infrastructure only.",
       "verification": { "method": "command", "testLevel": "static", "gateId": "QG-REPO-CHECK" },
       "waivable": false,
-      "status": "planned",
-      "evidenceRefs": []
+      "status": "accepted",
+      "evidenceRefs": ["ev-v1-00-repo-check-4dba91a"]
     },
     {
       "id": "CONTRACT-001",
