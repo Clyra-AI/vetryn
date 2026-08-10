@@ -5,10 +5,12 @@ import { describe, expect, it } from "vitest";
 import {
   VETRYN_ARTIFACT_SCHEMA_VERSION,
   assertEvaluationInputDigest,
+  assertPatchPlanEvidence,
   assertRecommendationEvidence,
   canonicalizeArtifact,
   candidateRunSchema,
   createArtifactId,
+  parsePatchPlan,
   parseRecommendation,
   parseVetrynArtifact,
 } from "../src/index.js";
@@ -90,11 +92,26 @@ const catalogSnapshot = {
 const candidateRun = {
   artifactType: "candidate-run",
   baselineModel: callSite.currentModel,
+  baselineMetrics: {
+    caseCount: 30,
+    costUsd: "0.0600",
+    errorCount: 0,
+    failedCaseIds: [],
+    p95LatencyMs: 600,
+    passedCases: 30,
+  },
   callSiteId: callSite.id,
   candidateModel: "openai/gpt-4o",
   catalogSnapshotId: catalogSnapshot.id,
   evaluationInputDigest: digest("d"),
   id: "candidate-run:support-classification-openai-gpt-4o",
+  gateOutcomes: {
+    context: "pass",
+    cost: "pass",
+    latency: "pass",
+    privacy: "pass",
+    quality: "pass",
+  },
   metrics: {
     caseCount: 30,
     costUsd: "0.0300",
@@ -119,6 +136,7 @@ const recommendation = {
   reasonCodes: ["quality-gates-passed", "cost-savings"],
   recommendedModel: candidateRun.candidateModel,
   schemaVersion: VETRYN_ARTIFACT_SCHEMA_VERSION,
+  sourceBinding,
   status: "recommend",
 };
 
@@ -196,6 +214,18 @@ describe("V1 artifact contracts", () => {
         },
       }),
     ).toThrow(/duplicate failed case ID/i);
+    expect(() => parseVetrynArtifact({ ...candidateRun, baselineMetrics: undefined })).toThrow(
+      /baseline metrics/i,
+    );
+    expect(() => parseVetrynArtifact({ ...candidateRun, gateOutcomes: undefined })).toThrow(
+      /hard-gate outcomes/i,
+    );
+    expect(() =>
+      parseVetrynArtifact({
+        ...candidateRun,
+        baselineMetrics: { ...candidateRun.baselineMetrics, caseCount: 29 },
+      }),
+    ).toThrow(/same evaluated case count/i);
   });
 
   it("excludes credentials and raw protected inputs or outputs by construction", () => {
@@ -220,7 +250,9 @@ describe("V1 artifact contracts", () => {
 
     const incompleteRun = candidateRunSchema.parse({
       ...candidateRun,
+      baselineMetrics: undefined,
       failureCode: "timeout",
+      gateOutcomes: undefined,
       metrics: undefined,
       status: "incomplete",
     });
@@ -268,6 +300,68 @@ describe("V1 artifact contracts", () => {
         candidateRun.evaluationInputDigest,
       ),
     ).toThrow(/recommended model/i);
+    expect(() =>
+      assertRecommendationEvidence(
+        parsedRecommendation,
+        [
+          candidateRunWith({
+            gateOutcomes: { ...candidateRun.gateOutcomes, quality: "fail" },
+          }),
+        ],
+        candidateRun.evaluationInputDigest,
+      ),
+    ).toThrow(/hard gate/i);
+
+    const abstention = parseRecommendation({
+      ...recommendation,
+      id: "recommendation:support-classification-no-change",
+      reasonCodes: ["candidate-regressed"],
+      recommendedModel: undefined,
+      status: "no-change",
+    });
+    expect(() =>
+      assertRecommendationEvidence(
+        abstention,
+        [candidateRunWith({ callSiteId: "other-call-site" })],
+        candidateRun.evaluationInputDigest,
+      ),
+    ).toThrow(/call site/i);
+
+    const parsedPatchPlan = parsePatchPlan(patchPlan);
+    expect(assertPatchPlanEvidence(parsedPatchPlan, parsedRecommendation)).toEqual(parsedPatchPlan);
+    expect(() =>
+      assertPatchPlanEvidence(
+        parsePatchPlan({ ...patchPlan, recommendationId: "recommendation:another-run" }),
+        parsedRecommendation,
+      ),
+    ).toThrow(/different recommendation/i);
+    expect(() =>
+      assertPatchPlanEvidence(
+        parsePatchPlan({ ...patchPlan, callSiteId: "other-call-site" }),
+        parsedRecommendation,
+      ),
+    ).toThrow(/call site/i);
+    expect(() =>
+      assertPatchPlanEvidence(
+        parsePatchPlan({ ...patchPlan, expectedModel: "openai/gpt-4.1" }),
+        parsedRecommendation,
+      ),
+    ).toThrow(/expected model/i);
+    expect(() =>
+      assertPatchPlanEvidence(
+        parsePatchPlan({ ...patchPlan, replacementModel: "openai/gpt-4.1" }),
+        parsedRecommendation,
+      ),
+    ).toThrow(/replacement model/i);
+    expect(() =>
+      assertPatchPlanEvidence(
+        parsePatchPlan({
+          ...patchPlan,
+          sourceBinding: { ...sourceBinding, symbol: "anotherCallSite" },
+        }),
+        parsedRecommendation,
+      ),
+    ).toThrow(/source binding/i);
   });
 
   it("keeps every core source file free of runtime side-effect imports", async () => {

@@ -234,6 +234,18 @@ const candidateMetricsSchema = z
     }
   });
 
+const hardGateOutcomesSchema = z
+  .object({
+    context: z.enum(["pass", "fail"]),
+    cost: z.enum(["pass", "fail"]),
+    latency: z.enum(["pass", "fail"]),
+    privacy: z.enum(["pass", "fail"]),
+    quality: z.enum(["pass", "fail"]),
+  })
+  .strict();
+
+export type HardGateOutcomes = z.infer<typeof hardGateOutcomesSchema>;
+
 const candidateRunFailureCodeSchema = z.enum([
   "budget-exhausted",
   "invalid-output",
@@ -246,11 +258,13 @@ export const candidateRunSchema = z
   .object({
     artifactType: z.literal("candidate-run"),
     baselineModel: modelIdSchema,
+    baselineMetrics: candidateMetricsSchema.optional(),
     callSiteId: stableIdSchema,
     candidateModel: modelIdSchema,
     catalogSnapshotId: artifactIdSchema,
     evaluationInputDigest: digestSchema,
     failureCode: candidateRunFailureCodeSchema.optional(),
+    gateOutcomes: hardGateOutcomesSchema.optional(),
     ...artifactEnvelope,
     metrics: candidateMetricsSchema.optional(),
     status: z.enum(["complete", "failed", "incomplete"]),
@@ -275,6 +289,22 @@ export const candidateRunSchema = z
       });
     }
 
+    if (artifact.status === "complete" && artifact.baselineMetrics === undefined) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Complete candidate runs require baseline metrics.",
+        path: ["baselineMetrics"],
+      });
+    }
+
+    if (artifact.status === "complete" && artifact.gateOutcomes === undefined) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Complete candidate runs require hard-gate outcomes.",
+        path: ["gateOutcomes"],
+      });
+    }
+
     if (artifact.status === "complete" && artifact.failureCode !== undefined) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
@@ -296,6 +326,35 @@ export const candidateRunSchema = z
         code: z.ZodIssueCode.custom,
         message: "Incomplete or failed candidate runs cannot include promotable aggregate metrics.",
         path: ["metrics"],
+      });
+    }
+
+    if (artifact.status !== "complete" && artifact.baselineMetrics !== undefined) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Incomplete or failed candidate runs cannot include baseline metrics.",
+        path: ["baselineMetrics"],
+      });
+    }
+
+    if (artifact.status !== "complete" && artifact.gateOutcomes !== undefined) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Incomplete or failed candidate runs cannot include hard-gate outcomes.",
+        path: ["gateOutcomes"],
+      });
+    }
+
+    if (
+      artifact.status === "complete" &&
+      artifact.metrics !== undefined &&
+      artifact.baselineMetrics !== undefined &&
+      artifact.metrics.caseCount !== artifact.baselineMetrics.caseCount
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Candidate and baseline metrics must use the same evaluated case count.",
+        path: ["baselineMetrics", "caseCount"],
       });
     }
 
@@ -329,6 +388,7 @@ export const recommendationSchema = z
     reasonCodes: z.array(reasonCodeSchema).min(1),
     recommendedModel: modelIdSchema.optional(),
     status: recommendationStatusSchema,
+    sourceBinding: boundSourceBindingSchema,
   })
   .strict()
   .superRefine((artifact, context) => {
@@ -501,8 +561,6 @@ export function assertRecommendationEvidence(
 ): Recommendation {
   assertEvaluationInputDigest(recommendation, expectedEvaluationInputDigest);
 
-  if (recommendation.status !== "recommend") return recommendation;
-
   const candidateRunsById = new Map(
     candidateRuns.map((candidateRun) => [candidateRun.id, candidateRun]),
   );
@@ -513,12 +571,6 @@ export function assertRecommendationEvidence(
     if (candidateRun === undefined) {
       throw new VetrynContractError(
         `Recommendation evidence is missing candidate run ${candidateRunId}.`,
-      );
-    }
-
-    if (candidateRun.status !== "complete") {
-      throw new VetrynContractError(
-        `Recommendation evidence cannot use ${candidateRun.status} candidate run ${candidateRunId}.`,
       );
     }
 
@@ -540,16 +592,63 @@ export function assertRecommendationEvidence(
       );
     }
 
+    assertEvaluationInputDigest(candidateRun, expectedEvaluationInputDigest);
+
+    if (recommendation.status !== "recommend") continue;
+
+    if (candidateRun.status !== "complete") {
+      throw new VetrynContractError(
+        `Recommendation evidence cannot use ${candidateRun.status} candidate run ${candidateRunId}.`,
+      );
+    }
+
     if (candidateRun.candidateModel !== recommendation.recommendedModel) {
       throw new VetrynContractError(
         `Recommendation evidence candidate run ${candidateRunId} has a different recommended model.`,
       );
     }
 
-    assertEvaluationInputDigest(candidateRun, expectedEvaluationInputDigest);
+    assertPassedHardGates(candidateRun);
   }
 
   return recommendation;
+}
+
+export function assertPatchPlanEvidence(
+  patchPlan: PatchPlan,
+  recommendation: Recommendation,
+): PatchPlan {
+  if (recommendation.status !== "recommend" || recommendation.recommendedModel === undefined) {
+    throw new VetrynContractError("Patch plan evidence must reference a recommend outcome.");
+  }
+
+  if (patchPlan.recommendationId !== recommendation.id) {
+    throw new VetrynContractError("Patch plan references a different recommendation.");
+  }
+
+  if (patchPlan.callSiteId !== recommendation.callSiteId) {
+    throw new VetrynContractError("Patch plan has a different call site than its recommendation.");
+  }
+
+  if (patchPlan.expectedModel !== recommendation.baselineModel) {
+    throw new VetrynContractError(
+      "Patch plan has a different expected model than its recommendation.",
+    );
+  }
+
+  if (patchPlan.replacementModel !== recommendation.recommendedModel) {
+    throw new VetrynContractError(
+      "Patch plan has a different replacement model than its recommendation.",
+    );
+  }
+
+  if (!sameSourceBinding(patchPlan.sourceBinding, recommendation.sourceBinding)) {
+    throw new VetrynContractError(
+      "Patch plan has a different source binding than its recommendation.",
+    );
+  }
+
+  return patchPlan;
 }
 
 class VetrynContractError extends Error {
@@ -627,6 +726,32 @@ function assertUniqueValues(
       path: [...path],
     });
   }
+}
+
+function assertPassedHardGates(candidateRun: CandidateRun): void {
+  if (candidateRun.gateOutcomes === undefined) {
+    throw new VetrynContractError(
+      `Recommendation evidence candidate run ${candidateRun.id} is missing hard-gate outcomes.`,
+    );
+  }
+
+  const failedGates = Object.entries(candidateRun.gateOutcomes)
+    .filter(([, outcome]) => outcome !== "pass")
+    .map(([gate]) => gate);
+  if (failedGates.length > 0) {
+    throw new VetrynContractError(
+      `Recommendation evidence candidate run ${candidateRun.id} failed hard gate(s): ${failedGates.join(", ")}.`,
+    );
+  }
+}
+
+function sameSourceBinding(left: BoundSourceBinding, right: BoundSourceBinding): boolean {
+  return (
+    left.adapter === right.adapter &&
+    left.file === right.file &&
+    left.sourceFingerprint === right.sourceFingerprint &&
+    left.symbol === right.symbol
+  );
 }
 
 function canonicalizeJson(value: unknown): string {

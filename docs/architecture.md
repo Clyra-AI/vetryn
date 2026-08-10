@@ -35,14 +35,14 @@ contains only source metadata, opaque digests, aggregate measurements, safe iden
 failure codes; raw prompts, raw outputs, credentials, provider error payloads, and source diffs are not fields
 in these contracts.
 
-| Artifact           | Durable responsibility                                                                         |
-| ------------------ | ---------------------------------------------------------------------------------------------- |
-| Call-site manifest | Human-owned identity, bound source, model pin, gates, and reviewed usage profile               |
-| Eval suite         | Reviewed fixture reference, digest, case count, and redaction posture                          |
-| Catalog snapshot   | Immutable normalized model capabilities, pricing, and source provenance                        |
-| Candidate run      | Input digest, aggregate outcome metrics, and bounded failure state                             |
-| Recommendation     | Abstention or proposed model with confidence, reason codes, and evidence references            |
-| Patch plan         | One source-bound expected-model to replacement-model change with a recommendation precondition |
+| Artifact           | Durable responsibility                                                                           |
+| ------------------ | ------------------------------------------------------------------------------------------------ |
+| Call-site manifest | Human-owned identity, bound source, model pin, gates, and reviewed usage profile                 |
+| Eval suite         | Reviewed fixture reference, digest, case count, and redaction posture                            |
+| Catalog snapshot   | Immutable normalized model capabilities, pricing, and source provenance                          |
+| Candidate run      | Input digest, paired baseline/candidate metrics, hard-gate outcomes, and bounded failure state   |
+| Recommendation     | Abstention or proposed source-bound model with confidence, reason codes, and evidence references |
+| Patch plan         | One source-bound expected-model to replacement-model change bound to its recommendation          |
 
 ### Scanner
 
@@ -93,12 +93,16 @@ scorer cannot replace hard gates.
 
 ### Recommendation engine
 
-The engine ranks only eligible candidates and may abstain. Recommendation artifacts include provenance,
-confidence, limitations, failed cases, and reproduction commands.
+The engine ranks only eligible candidates and may abstain. A recommend outcome requires every cited candidate
+run to match the call site, baseline, catalog, candidate model, and evaluation-input digest, with every hard gate
+passing. An abstention retains the same provenance bindings for any cited runs but may cite incomplete or failed
+runs to explain why no patch was produced. Recommendation artifacts include provenance, confidence, limitations,
+failed cases, and reproduction commands.
 
 ### Patcher and GitHub integration
 
-The patcher verifies the source fingerprint and changes only the bound literal. The GitHub integration
+The patcher verifies that the patch plan exactly matches its recommendation and source fingerprint, then changes
+only the bound literal. The GitHub integration
 opens a draft PR from that patch, is idempotent per call site and candidate, and never merges or deploys.
 Provider-backed assessment is manual by default. A repository may opt into a schedule, but unchanged
 catalog and evaluation-input digests skip paid candidate execution only when prior evidence is complete,

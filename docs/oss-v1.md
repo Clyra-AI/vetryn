@@ -83,8 +83,12 @@ Every recommendation PR must show:
 V1 durable JSON uses strict, versioned artifacts with a deterministic ID and canonical serialization. The core
 stores references, digests, aggregate measurements, model identifiers, and bounded diagnostic codes—not raw
 prompts, model outputs, credentials, provider error bodies, or source diffs. Unknown versions and logically
-incompatible states fail closed. Artifact definitions and pure validation live in `@vetryn/core`; filesystem,
-provider, AST, and GitHub behavior stay outside that package.
+incompatible states fail closed. A complete candidate run records both baseline and candidate aggregate metrics
+for the same cases plus explicit outcomes for the quality, cost, latency, context, and privacy hard gates. A
+recommendation can cite only matching, complete runs whose hard gates all pass; abstentions still validate the
+provenance of every cited run. A patch plan must exactly bind its call site, models, and source fingerprint to its
+recommendation. Artifact definitions and pure validation live in `@vetryn/core`; filesystem, provider, AST, and
+GitHub behavior stay outside that package.
 
 ## Non-goals
 
