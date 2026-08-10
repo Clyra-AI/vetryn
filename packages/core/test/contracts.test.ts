@@ -187,8 +187,13 @@ const recommendation = {
   confidenceFloor: candidateRun.confidenceFloor,
   evaluationInputDigest: candidateRun.evaluationInputDigest,
   id: "recommendation:support-classification-openai-gpt-4o",
+  limitations: ["aggregate-metrics-only", "no-production-canary"],
   reasonCodes: ["quality-gates-passed", "cost-savings"],
   recommendedModel: candidateRun.candidateModel,
+  reproductionCommands: [
+    "vetryn eval --call-site support-classification",
+    "vetryn recommend --call-site support-classification",
+  ],
   schemaVersion: VETRYN_ARTIFACT_SCHEMA_VERSION,
   sourceBinding,
   status: "recommend",
@@ -251,6 +256,14 @@ describe("V1 artifact contracts", () => {
     expect(() =>
       callSiteSchema.parse({ ...callSite, evalSuiteId: "candidate-run:not-an-eval-suite" }),
     ).toThrow(/eval-suite/i);
+    expect(() =>
+      parseVetrynArtifact({
+        ...manifest,
+        callSites: [
+          { ...callSite, sourceBinding: { ...sourceBinding, file: "C:/Windows/System32" } },
+        ],
+      }),
+    ).toThrow(/drive-qualified/i);
     expect(() => callSiteSchema.parse({ ...callSite, requiredCapabilities: undefined })).toThrow(
       /required.?capabilities/i,
     );
@@ -315,6 +328,15 @@ describe("V1 artifact contracts", () => {
     expect(() =>
       parseVetrynArtifact({ ...recommendation, reasonCodes: ["privacy-failed"] }),
     ).toThrow(/reasonCodes/i);
+    expect(() => parseVetrynArtifact({ ...recommendation, limitations: undefined })).toThrow(
+      /limitations/i,
+    );
+    expect(() =>
+      parseVetrynArtifact({
+        ...recommendation,
+        reproductionCommands: ["vetryn eval --api-key super-secret"],
+      }),
+    ).toThrow(/credential material/i);
     expect(() =>
       parseVetrynArtifact({
         ...recommendation,
@@ -380,6 +402,17 @@ describe("V1 artifact contracts", () => {
       status: "incomplete",
     });
     const parsedRecommendation = parseRecommendation(recommendation);
+
+    expect(() =>
+      assertRecommendationEvidence(
+        parsedRecommendation,
+        [parsedRun, parsedRun],
+        candidateRun.evaluationInputDigest,
+        parsedCallSite,
+        parsedEvalSuite,
+        parsedCatalogSnapshot,
+      ),
+    ).toThrow(/duplicate candidate run ID/i);
 
     expect(() =>
       assertRecommendationEvidence(

@@ -48,10 +48,11 @@ const repositoryPathSchema = z
   .refine(
     (value) =>
       !value.startsWith("/") &&
+      !/^[a-zA-Z]:/.test(value) &&
       !value.includes("\\") &&
       !value.split("/").includes("..") &&
       !value.includes("\u0000"),
-    "Use a relative repository path without traversal.",
+    "Use a relative repository path without traversal or a drive-qualified prefix.",
   );
 const opaqueReferenceSchema = z
   .string()
@@ -77,6 +78,24 @@ const recommendationReasonCodes = [
 ] as const;
 const recommendationReasonCodeSchema = z.enum(recommendationReasonCodes);
 type RecommendationReasonCode = z.infer<typeof recommendationReasonCodeSchema>;
+const recommendationLimitationCodes = [
+  "aggregate-metrics-only",
+  "no-production-canary",
+  "representative-eval-suite-only",
+] as const;
+const recommendationLimitationCodeSchema = z.enum(recommendationLimitationCodes);
+const reproductionCommandSchema = z
+  .string()
+  .min(1)
+  .max(500)
+  .refine(
+    (value) =>
+      !value.includes("\r") &&
+      !value.includes("\n") &&
+      !value.includes("\u0000") &&
+      !/(?:api[_-]?key|credential|password|secret)/i.test(value),
+    "Use a single-line reproduction command without credential material.",
+  );
 const capabilityNames = ["textGeneration", "structuredOutput", "toolCalls"] as const;
 
 const artifactEnvelope = {
@@ -509,8 +528,10 @@ export const recommendationSchema = z
     confidenceFloor: confidenceSchema,
     evaluationInputDigest: digestSchema,
     ...artifactEnvelope,
+    limitations: z.array(recommendationLimitationCodeSchema).min(1),
     reasonCodes: z.array(recommendationReasonCodeSchema).min(1),
     recommendedModel: modelIdSchema.optional(),
+    reproductionCommands: z.array(reproductionCommandSchema).min(1),
     status: recommendationStatusSchema,
     sourceBinding: boundSourceBindingSchema,
   })
@@ -520,6 +541,10 @@ export const recommendationSchema = z
     assertUniqueValues(artifact.candidateRunIds, context, "candidate run ID", ["candidateRunIds"]);
     assertUniqueValues(artifact.reasonCodes, context, "recommendation reason code", [
       "reasonCodes",
+    ]);
+    assertUniqueValues(artifact.limitations, context, "recommendation limitation", ["limitations"]);
+    assertUniqueValues(artifact.reproductionCommands, context, "reproduction command", [
+      "reproductionCommands",
     ]);
     assertArtifactReferencePrefix(artifact.catalogSnapshotId, context, "catalog-snapshot", [
       "catalogSnapshotId",
@@ -745,6 +770,10 @@ export function assertRecommendationEvidence(
     recommendation.confidence < recommendation.confidenceFloor
   ) {
     throw new VetrynContractError("Recommendation confidence does not meet its confidence floor.");
+  }
+
+  if (new Set(candidateRuns.map((candidateRun) => candidateRun.id)).size !== candidateRuns.length) {
+    throw new VetrynContractError("Recommendation evidence contains duplicate candidate run IDs.");
   }
 
   const candidateRunsById = new Map(

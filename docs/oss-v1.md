@@ -98,6 +98,10 @@ validate the provenance of every cited run. A patch plan must exactly bind its c
 fingerprint to its recommendation. Artifact definitions and pure validation live in `@vetryn/core`; filesystem,
 provider, AST, and GitHub behavior stay outside that package.
 
+Every recommendation also carries finite explicit limitation codes and one or more single-line, redacted
+reproduction commands. Candidate-run input lists reject duplicate artifact IDs; every durable repository path
+rejects absolute, traversal, backslash, and Windows drive-qualified forms.
+
 ## Non-goals
 
 OSS V1 is not a gateway, production proxy, dynamic router, prompt-management system, synthetic eval
