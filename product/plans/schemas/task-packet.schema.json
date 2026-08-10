@@ -359,7 +359,8 @@
         "executorMayAccept",
         "verifierMustDifferFromExecutor",
         "maintainerApprovalRequired",
-        "progressIsGenerated"
+        "progressIsGenerated",
+        "deliveryPermissions"
       ],
       "properties": {
         "implementSkill": { "const": "vetryn-implement-task" },
@@ -370,9 +371,19 @@
           "const": ["task-executor", "validation-gate", "commit-push"]
         },
         "executorMayAccept": { "const": false },
-        "verifierMustDifferFromExecutor": { "const": true },
+        "verifierMustDifferFromExecutor": { "type": "boolean" },
         "maintainerApprovalRequired": { "const": true },
-        "progressIsGenerated": { "const": true }
+        "progressIsGenerated": { "const": true },
+        "deliveryPermissions": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["allowsProviderAccess", "mode", "requiresExplicitMaintainerAuthorization"],
+          "properties": {
+            "allowsProviderAccess": { "const": false },
+            "mode": { "const": "factory-lifecycle-only" },
+            "requiresExplicitMaintainerAuthorization": { "const": true }
+          }
+        }
       }
     }
   },

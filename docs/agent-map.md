@@ -54,9 +54,9 @@ process change for maintainer review.
 | Situation                                                                          | Skill                                    | Authority boundary                                                                   |
 | ---------------------------------------------------------------------------------- | ---------------------------------------- | ------------------------------------------------------------------------------------ |
 | Implement one ready or in-progress compiled task                                   | `vetryn-implement-task`                  | May change only packet-authorized implementation paths; cannot accept its work       |
-| Independently verify an exact candidate commit                                     | `vetryn-verify-task`                     | Must be independent of the executor; cannot repair or promote the candidate          |
-| Promote independently verified work                                                | `vetryn-promote-task`                    | Maintainer-controlled canonical state, ledger, evidence, and generated progress only |
-| Execute, validate, review, commit, push, or release through generic infrastructure | The corresponding external Factory skill | Factory policy remains additive and cannot weaken Vetryn's packet or review gates    |
+| Verify an exact candidate commit                                                   | `vetryn-verify-task`                     | Recommended independent check; cannot repair or promote the candidate                |
+| Promote locally validated work                                                     | `vetryn-promote-task`                    | Maintainer-controlled canonical state, ledger, evidence, and generated progress only |
+| Execute, validate, review, commit, push, or release through generic infrastructure | The corresponding external Factory skill | Factory supplies delivery automation; active command gates remain required           |
 
 An agent must not use a skill name as authority for an action the compiled packet, repository policy, or human
 authorization does not permit.
@@ -74,9 +74,8 @@ and prerequisites are satisfied.
 | Factory `cut-release`               | After offline evidence is dependable and npm publication has an approved release task and package preflight                    | Reuse Factory's release automation; Vetryn supplies repository-specific version, changelog, pack, provenance, and post-publish checks rather than cloning the skill                                    |
 | Design-partner field-gate reporting | When an authorized `V1-10` engagement begins                                                                                   | Start with a versioned, compact, redacted report schema and template; count only qualified evidence-backed recommendations                                                                             |
 
-The trust-review **role and gate** already apply where declared by the canonical plan. The future
-`vetryn-trust-review` **skill** standardizes that work once evaluation semantics exist; its absence never waives
-the review gate.
+The future `vetryn-trust-review` **skill** standardizes a semantic review once evaluation behavior exists. During
+the OSS V1 single-maintainer mode, it is advisory; the absence of the skill never blocks a command-validated task.
 
 The current `V1-02`, `V1-06`, and `V1-10` product packets do not authorize `.agents/**`. When one of these skill
 triggers is reached, create or approve a narrow process task that permits the skill path before starting the
@@ -102,7 +101,8 @@ When the conditions are met, the agent should:
 2. use Codex's `skill-creator` workflow when it is available;
 3. keep the skill focused and link to existing repository contracts instead of copying them;
 4. test positive, negative, stale-input, and authority-boundary behavior where applicable; and
-5. send the exact candidate through independent verification and normal merge policy.
+5. send the exact candidate through an independent check when available and the active command gates before
+   maintainer-controlled delivery.
 
 Do not create a skill merely because a workflow may be useful later, a single prompt is lengthy, or a task is
 difficult. Repeated but low-risk prose belongs in documentation; deterministic enforcement belongs in scripts,

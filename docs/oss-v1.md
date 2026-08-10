@@ -78,6 +78,32 @@ Every recommendation PR must show:
 - confidence and explicit limitations; and
 - exact commands required to reproduce the result.
 
+## Domain artifact contract
+
+V1 durable JSON uses strict, versioned artifacts with a deterministic ID and canonical serialization. The core
+stores references, digests, aggregate measurements, model identifiers, and bounded diagnostic codes—not raw
+prompts, model outputs, credentials, provider error bodies, or source diffs. Unknown versions and logically
+incompatible states fail closed. A complete candidate run records both baseline and candidate aggregate metrics
+for the same cases, explicit outcomes for the quality, cost, latency, context, and privacy hard gates, and compact
+reproducibility provenance: evaluator version and build, deterministic scorer configuration digest, sampling and
+seed, attempts, timestamps, and aggregate variance. Each call site has an explicit minimum recommendation
+confidence (0.8 by default); the run and recommendation preserve that policy and a recommendation must meet it.
+Each call site also declares its approved provider allowlist; recommendation validation derives the privacy gate
+from the candidate's catalog provider rather than trusting a producer label.
+Reason codes are finite and status-compatible. A recommendation can cite only matching, complete runs whose hard
+gates all pass. The core derives quality, cost, and latency outcomes from the bound call-site policy and paired
+metrics rather than trusting producer labels, and proves that a recommended model is present, active, satisfies the
+call site's declared text-generation, structured-output, and tool-call requirements, and is sufficiently
+context-capable in the bound catalog snapshot. Recommendation evidence also binds every cited
+run to the call site's declared reviewed eval-suite artifact, that suite's call site, immutable fixture digest, and exact case count. Catalog snapshots validate their content digest against the canonical, model-ID-sorted model list, so a retained snapshot ID or digest cannot authorize altered capabilities or pricing. Abstentions still
+validate the provenance of every cited run. A patch plan must exactly bind its call site, models, and source
+fingerprint to its recommendation. Artifact definitions and pure validation live in `@vetryn/core`; filesystem,
+provider, AST, and GitHub behavior stay outside that package.
+
+Every recommendation also carries finite explicit limitation codes and one or more structured, allowlisted Vetryn
+reproduction operations that the report renderer converts into exact commands. Candidate-run input lists reject duplicate artifact IDs; every durable repository path
+rejects absolute, traversal, backslash, and Windows drive-qualified forms.
+
 ## Non-goals
 
 OSS V1 is not a gateway, production proxy, dynamic router, prompt-management system, synthetic eval

@@ -79,13 +79,31 @@
       "evidenceRefs": ["ev-v1-00-repo-check-4dba91a"]
     },
     {
+      "id": "PROCESS-001",
+      "taskId": "M0-01",
+      "statement": "Compiled task packets preserve each task's reviewed product capabilities and declare delivery authority separately.",
+      "verification": { "method": "test", "testLevel": "contract", "gateId": "QG-CONTRACTS" },
+      "waivable": false,
+      "status": "accepted",
+      "evidenceRefs": ["ev-m0-01-contracts-86d1097"]
+    },
+    {
+      "id": "PROCESS-002",
+      "taskId": "M0-01",
+      "statement": "Single-maintainer delivery keeps exact candidate and gate evidence, redaction, and CI enforcement without CODEOWNERS or reviewer-evidence blocking promotion.",
+      "verification": { "method": "test", "testLevel": "adversarial", "gateId": "QG-REPO-CHECK" },
+      "waivable": false,
+      "status": "accepted",
+      "evidenceRefs": ["ev-m0-01-repo-check-86d1097"]
+    },
+    {
       "id": "CONTRACT-001",
       "taskId": "V1-01",
       "statement": "Every V1 artifact has a versioned strict schema and canonical serializer.",
       "verification": { "method": "test", "testLevel": "contract", "gateId": "QG-CONTRACTS" },
       "waivable": false,
-      "status": "planned",
-      "evidenceRefs": []
+      "status": "accepted",
+      "evidenceRefs": ["ev-v1-01-contracts-23e6cd6"]
     },
     {
       "id": "CONTRACT-002",
@@ -93,8 +111,8 @@
       "statement": "Malformed, unknown-version, and logically impossible artifacts fail closed with actionable diagnostics.",
       "verification": { "method": "test", "testLevel": "adversarial", "gateId": "QG-CONTRACTS" },
       "waivable": false,
-      "status": "planned",
-      "evidenceRefs": []
+      "status": "accepted",
+      "evidenceRefs": ["ev-v1-01-contracts-23e6cd6"]
     },
     {
       "id": "CONTRACT-003",
@@ -102,8 +120,8 @@
       "statement": "Core has no filesystem, network, provider, GitHub, or AST dependency.",
       "verification": { "method": "inspection", "testLevel": "static", "gateId": "QG-REPO-CHECK" },
       "waivable": false,
-      "status": "planned",
-      "evidenceRefs": []
+      "status": "accepted",
+      "evidenceRefs": ["ev-v1-01-repo-check-23e6cd6"]
     },
     {
       "id": "CONTRACT-004",
@@ -115,8 +133,8 @@
         "gateId": "QG-TRUST-REVIEW"
       },
       "waivable": false,
-      "status": "planned",
-      "evidenceRefs": []
+      "status": "accepted",
+      "evidenceRefs": ["ev-v1-01-contracts-23e6cd6"]
     },
     {
       "id": "GOLDEN-001",

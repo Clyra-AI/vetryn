@@ -25,31 +25,15 @@ These instructions apply to the entire repository.
 - Create a repository skill only when the activation and maturity rules in `docs/agent-map.md` are met and
   an explicit task permits `.agents/**`. If a trigger is reached without legal scope, stop and request a
   narrow process task rather than adding the skill inside unrelated implementation work.
-- During the single-maintainer bootstrap mode in `docs/adr/0006-bootstrap-merge-governance.md`, a maintainer may
-  explicitly authorize merge without a GitHub human or CODEOWNER approval only after required latest-head CI,
-  CodeQL, dependency review, passive Codex settlement, and review-thread resolution. That merge authorization
-  remains lifecycle-only. Separately, a protected-main CODEOWNER may satisfy named task review roles, including
-  when they authored the PR, only through the structured exact-candidate issue-comment evidence defined by ADR 0006. The anonymous public API association must be recorded exactly and be `OWNER`, `MEMBER`, or `CONTRIBUTOR`,
-  but it is provenance rather than authority; protected-main CODEOWNERS authorizes every named role. The comment
-  never supplies CI, Codex settlement, agent verification, merge authority, or canonical promotion.
-- Passing review records require role-bound GitHub review evidence authenticated against the public GitHub API
-  and CODEOWNERS fetched from protected `main`, with the candidate PR author as authenticated executor. The normal
-  path requires an `APPROVED` pull-request review from a reviewer distinct from that executor, targeting the exact
-  candidate and remaining that reviewer's latest decisive review. During ADR-0006 bootstrap only, the alternative
-  path requires a current durable PR issue comment whose public association provenance is exactly `OWNER`,
-  `MEMBER`, or `CONTRIBUTOR`, in the documented marker format and bound to this repository, PR, task, exact
-  candidate, `APPROVED` decision, and requested role; only this path permits actor overlap. Protected-main
-  CODEOWNERS, not the public association, authorizes the actor for the role. A later pull-request head is valid
-  only when GitHub proves that it descends from the candidate and its complete promotion tail changes canonical
-  state, task-scoped ledger status/evidence, newly
-  added task-bound evidence, or generated progress only. Existing evidence, reviewed ledger fields, and every
-  other task's items remain immutable. Validation requires a clean local commit bound to the authenticated PR
-  head or GitHub synthetic merge commit; later ancestry is authenticated remotely from the merged PR. Review
-  identity for normal reviews is resolved from one bounded history fetch per PR, not one request per record;
-  bootstrap comments are fetched once by globally unique issue-comment ID and cached. These fail-closed reads use
-  built-in HTTPS and
-  absolute system Git with no repository credential or PATH-resolved executable. Non-baseline evidence must
-  match the reviewed plan and lockfile digests.
+- OSS V1 uses the single-maintainer policy in `docs/adr/0009-single-maintainer-v1-delivery.md`. Required command
+  gates and repository CI are release blockers; named reviewer records and `CODEOWNERS` are advisory until the
+  team deliberately restores multi-maintainer review. The maintainer may accept and merge an exact candidate after
+  the active command gates pass. This does not permit direct pushes to `main`, automatic product merges, or a
+  waiver of privacy, fail-closed, or provider-safety requirements.
+- Evidence is immutable historical provenance: it must bind to its exact candidate and declared gate, be compact
+  and redacted, and pass its recorded command. Recorded plan and lockfile digests identify the inputs observed at
+  the time; later unrelated planning changes do not invalidate that evidence. Re-run the active commands whenever
+  the candidate changes.
 - `product/plans/oss-v1/progress.json` is generated. Update task state and evidence through the plan
   tooling rather than editing the roll-up directly.
 - Keep Factory-compatible planning artifacts separate from Vetryn product-domain schemas. Transient

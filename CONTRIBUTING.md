@@ -83,6 +83,7 @@ Architecture decisions use the template in [`docs/adr/README.md`](docs/adr/READM
 
 ## Review and merge
 
-At least one approving review, resolved conversations, passing required checks, and CODEOWNERS approval are
-required. Maintainers normally squash-merge pull requests. Vetryn does not accept changes that weaken
-privacy, evidence provenance, or calibrated abstention for convenience.
+During OSS V1 single-maintainer delivery, passing required checks and explicit maintainer approval are required;
+`CODEOWNERS` and named review roles are advisory. Maintainers normally squash-merge pull requests. Vetryn does not
+accept changes that weaken privacy, evidence provenance, or calibrated abstention for convenience. See
+[`ADR 0009`](docs/adr/0009-single-maintainer-v1-delivery.md).

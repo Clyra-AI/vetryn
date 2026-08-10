@@ -1,6 +1,6 @@
 # ADR 0003: Bind task execution and review evidence
 
-- **Status:** Accepted
+- **Status:** Partially superseded by ADR 0009 (review-evidence and current-digest requirements)
 - **Date:** 2026-08-09
 
 ## Context

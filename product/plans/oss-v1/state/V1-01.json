@@ -2,42 +2,46 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "V1-01",
-  "revision": 0,
-  "state": "planned",
-  "attempt": 0,
-  "candidate": null,
+  "revision": 22,
+  "state": "accepted",
+  "attempt": 2,
+  "candidate": {
+    "baseCommit": "e4e896e9e8341a9ac7b437ea3346a5a1bf4e510c",
+    "commit": "23e6cd6e83ef269e5860ea0ef47ddd30a1282f69",
+    "executor": "davidahmann"
+  },
   "criteria": [
     {
       "criterionId": "CONTRACT-001",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-01-contracts-23e6cd6"]
     },
     {
       "criterionId": "CONTRACT-002",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-01-contracts-23e6cd6"]
     },
     {
       "criterionId": "CONTRACT-003",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-01-repo-check-23e6cd6"]
     },
     {
       "criterionId": "CONTRACT-004",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-01-contracts-23e6cd6"]
     }
   ],
   "gates": [
     {
       "gateId": "QG-REPO-CHECK",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-01-repo-check-23e6cd6"]
     },
     {
       "gateId": "QG-CONTRACTS",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-01-contracts-23e6cd6"]
     },
     {
       "gateId": "QG-INDEPENDENT-VERIFY",
@@ -70,6 +74,174 @@
       "at": "2026-08-10T00:30:00Z",
       "actor": "planning-agent",
       "reason": "Task created by the canonical OSS V1 plan."
+    },
+    {
+      "from": "planned",
+      "to": "in_progress",
+      "at": "2026-08-10T16:29:56Z",
+      "actor": "davidahmann",
+      "reason": "Started the exact candidate after V1-00 acceptance made the task legal."
+    },
+    {
+      "from": "in_progress",
+      "to": "accepted",
+      "at": "2026-08-10T16:29:56Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer accepted the exact candidate after active contract and repository command gates passed under ADR 0009 single-maintainer delivery."
+    },
+    {
+      "from": "accepted",
+      "to": "in_progress",
+      "at": "2026-08-10T16:32:59Z",
+      "actor": "davidahmann",
+      "reason": "Reopened the task to repair dependent-fixture isolation found by final exact-head validation."
+    },
+    {
+      "from": "in_progress",
+      "to": "accepted",
+      "at": "2026-08-10T16:32:59Z",
+      "actor": "davidahmann",
+      "reason": "Rebound acceptance to the repaired exact candidate after active contract and repository command gates passed."
+    },
+    {
+      "from": "accepted",
+      "to": "planned",
+      "at": "2026-08-10T16:45:45Z",
+      "actor": "davidahmann",
+      "reason": "Reopened V1-01 so delivery-policy changes are owned by M0-01 and the final reviewed candidate can be rebound."
+    },
+    {
+      "from": "planned",
+      "to": "accepted",
+      "at": "2026-08-10T16:49:23Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer rebound V1-01 to the exact candidate after M0-01 accepted the delivery-policy boundary and active command gates passed."
+    },
+    {
+      "from": "accepted",
+      "to": "in_progress",
+      "at": "2026-08-10T16:56:21Z",
+      "actor": "davidahmann",
+      "reason": "Reopened after current-head review identified missing hard-gate, baseline-measurement, abstention-evidence, and patch-recommendation integrity invariants."
+    },
+    {
+      "from": "in_progress",
+      "to": "accepted",
+      "at": "2026-08-10T17:02:19Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer accepted the reviewed exact candidate after the active contract and repository command gates passed under ADR 0009 single-maintainer delivery."
+    },
+    {
+      "from": "accepted",
+      "to": "in_progress",
+      "at": "2026-08-10T17:09:53Z",
+      "actor": "davidahmann",
+      "reason": "Reopened after current-head review identified missing confidence-policy, reproducibility-provenance, and bounded-reason-code invariants."
+    },
+    {
+      "from": "in_progress",
+      "to": "accepted",
+      "at": "2026-08-10T17:16:49Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer accepted the reviewed exact candidate after the active contract and repository command gates passed under ADR 0009 single-maintainer delivery."
+    },
+    {
+      "from": "accepted",
+      "to": "in_progress",
+      "at": "2026-08-10T17:22:38Z",
+      "actor": "davidahmann",
+      "reason": "Reopened after current-head review identified missing policy-derived gate and catalog-content validation invariants."
+    },
+    {
+      "from": "in_progress",
+      "to": "accepted",
+      "at": "2026-08-10T17:28:28Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer accepted the reviewed exact candidate after the active contract and repository command gates passed under ADR 0009 single-maintainer delivery."
+    },
+    {
+      "from": "accepted",
+      "to": "in_progress",
+      "at": "2026-08-10T17:35:15Z",
+      "actor": "davidahmann",
+      "reason": "Reopened after current-head review identified missing reviewed-eval-suite binding for recommendation evidence."
+    },
+    {
+      "from": "in_progress",
+      "to": "accepted",
+      "at": "2026-08-10T17:38:42Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer accepted the reviewed exact candidate after the active contract and repository command gates passed under ADR 0009 single-maintainer delivery."
+    },
+    {
+      "from": "accepted",
+      "to": "in_progress",
+      "at": "2026-08-10T17:49:19Z",
+      "actor": "davidahmann",
+      "reason": "Reopened after current-head review identified manifest-to-eval-suite and catalog-content-digest integrity invariants."
+    },
+    {
+      "from": "in_progress",
+      "to": "accepted",
+      "at": "2026-08-10T17:53:31Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer accepted the reviewed exact candidate after the active contract and repository command gates passed under ADR 0009 single-maintainer delivery."
+    },
+    {
+      "from": "accepted",
+      "to": "in_progress",
+      "at": "2026-08-10T18:00:48Z",
+      "actor": "davidahmann",
+      "reason": "Reopened after current-head review identified missing structured-output and tool-call capability requirements."
+    },
+    {
+      "from": "in_progress",
+      "to": "accepted",
+      "at": "2026-08-10T18:04:01Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer accepted the reviewed exact candidate after the active contract and repository command gates passed under ADR 0009 single-maintainer delivery."
+    },
+    {
+      "from": "accepted",
+      "to": "in_progress",
+      "at": "2026-08-10T18:13:21Z",
+      "actor": "davidahmann",
+      "reason": "Reopened after current-head review identified report-evidence and fail-closed input integrity invariants."
+    },
+    {
+      "from": "in_progress",
+      "to": "accepted",
+      "at": "2026-08-10T18:16:14Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer accepted the reviewed exact candidate after the active contract and repository command gates passed under ADR 0009 single-maintainer delivery."
+    },
+    {
+      "from": "accepted",
+      "to": "in_progress",
+      "at": "2026-08-10T18:25:33Z",
+      "actor": "davidahmann",
+      "reason": "Reopened after current-head review identified missing provider-policy privacy binding."
+    },
+    {
+      "from": "in_progress",
+      "to": "accepted",
+      "at": "2026-08-10T18:27:46Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer accepted the reviewed exact candidate after the active contract and repository command gates passed under ADR 0009 single-maintainer delivery."
+    },
+    {
+      "from": "accepted",
+      "to": "in_progress",
+      "at": "2026-08-10T18:42:29Z",
+      "actor": "davidahmann",
+      "reason": "Reopened to replace free-form reproduction commands with a structured allowlist after current-head review."
+    },
+    {
+      "from": "in_progress",
+      "to": "accepted",
+      "at": "2026-08-10T18:44:59Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer accepted the reviewed exact candidate after the active contract and repository command gates passed under ADR 0009 single-maintainer delivery."
     }
   ]
 }

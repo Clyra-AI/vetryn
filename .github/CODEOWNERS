@@ -1,4 +1,2 @@
-* @davidahmann
-
-/.github/ @davidahmann
-/SECURITY.md @davidahmann
+# Informational ownership routing only during OSS V1 single-maintainer delivery.
+# See docs/adr/0009-single-maintainer-v1-delivery.md.

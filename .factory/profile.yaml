@@ -16,9 +16,9 @@ trust_posture:
   network: offline_by_default
   credentials: no_ambient_secrets
   provider_access: explicit_task_scoped_approval
-  github_review_read: builtin_https_plus_main_branch_codeowners_fail_closed_for_acceptance
-  bootstrap_owner_review: exact_candidate_main_codeowner_comment_with_public_association_provenance
-  github_write: explicit_mutation_mode_only
+  github_review_read: advisory_for_oss_v1_single_maintainer_delivery
+  bootstrap_owner_review: disabled_by_adr_0009
+  github_write: explicit_maintainer_authorization_and_factory_lifecycle_only
 factoryd:
   status: deferred
   reason: TypeScript bootstrap and repo-pack compatibility are not yet proven.
