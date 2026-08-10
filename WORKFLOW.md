@@ -55,6 +55,11 @@ ledger, and new evidence; then run `pnpm plan:write` from that clean authenticat
 progress. Only the clean final pushed head may run and claim `pnpm plan:check` and `pnpm check`. The intermediate
 stale-progress check is never merge-ready.
 
+ADR 0005 permits an exact-candidate independent **local preflight** plus explicit maintainer authorization to
+enable the initial branch push and pull-request creation. That preflight is publication safety evidence only; it
+must not be recorded as a passing `QG-INDEPENDENT-VERIFY` or `QG-TRUST-REVIEW` gate. Once the pull request exists,
+canonical review gates require their GitHub-authenticated evidence before acceptance or promotion.
+
 The repository preserves these test levels as the product grows: static, unit, property, contract,
 integration, end-to-end, acceptance, adversarial/hardening, chaos, performance/soak, scenario, and field.
 Only gates marked active in the canonical plan may be claimed as run or pass; planned gates remain explicit gaps
@@ -68,11 +73,11 @@ implemented review threads must be resolved.
 
 ADR 0006 defines a temporary single-maintainer bootstrap mode in which GitHub branch protection may require zero
 approvals and no CODEOWNER review. A merge in that mode still requires explicit maintainer authorization for the
-exact task or pull request, green latest-head CI and CodeQL, a terminal latest-head Codex approval or thumbs-up,
-and no unresolved actionable findings. Bootstrap merge authorization is lifecycle authority only: it cannot be
-recorded as task review evidence, cannot accept or promote a task, and does not weaken any task's declared review
-roles or reviewer-separation requirements. Restore at least one independent approval and CODEOWNER review when
-the ADR's exit condition is met.
+exact task or pull request, green latest-head CI, CodeQL, and dependency review, a terminal latest-head Codex
+approval or thumbs-up, and no unresolved actionable findings. Bootstrap merge authorization is lifecycle
+authority only: it cannot be recorded as task review evidence, cannot accept or promote a task, and does not
+weaken any task's declared review roles or reviewer-separation requirements. Restore at least one independent
+approval and CODEOWNER review when the ADR's exit condition is met.
 
 A profile may allow a **standalone P2 exception** only when all of the following are true: a human explicitly
 authorizes that exact task or pull request; the finding is on the current head; exactly one classified P2 and

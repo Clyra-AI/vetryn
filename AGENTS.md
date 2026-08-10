@@ -27,8 +27,9 @@ These instructions apply to the entire repository.
   narrow process task rather than adding the skill inside unrelated implementation work.
 - During the single-maintainer bootstrap mode in `docs/adr/0006-bootstrap-merge-governance.md`, a maintainer may
   explicitly authorize merge without a GitHub human or CODEOWNER approval only after required latest-head CI,
-  CodeQL, passive Codex settlement, and review-thread resolution. This affects branch merge protection only; it
-  never satisfies task-required review evidence, acceptance, promotion, or reviewer separation.
+  CodeQL, dependency review, passive Codex settlement, and review-thread resolution. This affects branch merge
+  protection only; it never satisfies task-required review evidence, acceptance, promotion, or reviewer
+  separation.
 - Passing review records require role-bound GitHub review evidence authenticated against the public GitHub API
   and CODEOWNERS fetched from protected `main`, the candidate PR author as authenticated executor, and a reviewer
   distinct from that executor. The approval must target the exact candidate commit and remain the reviewer's latest decisive

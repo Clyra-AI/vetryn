@@ -8,7 +8,8 @@
 The protected `main` branch requires one approving CODEOWNER review. During the repository's single-maintainer
 bootstrap phase, the sole CODEOWNER is also the authenticated author of agent-created pull requests. GitHub
 prohibits authors from approving their own pull requests, so the protection rule creates a governance deadlock
-even after independent agent verification, required CI, CodeQL, and passive Codex review succeed.
+even after independent agent verification, required CI, CodeQL, dependency review, and passive Codex review
+succeed.
 
 Using the repository administrator bypass without documenting the operating mode would make the effective merge
 policy differ from `AGENTS.md`, `WORKFLOW.md`, and branch protection. Treating maintainer chat authorization or an
