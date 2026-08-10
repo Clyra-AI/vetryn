@@ -109,6 +109,17 @@
       "assertions": ["Configuration fails validation.", "No candidate model is executed."]
     },
     {
+      "id": "candidate-limit-lower-override",
+      "category": "catalog",
+      "description": "More than two compatible models are available and repository policy lowers the candidate limit to two.",
+      "expectedDisposition": "idempotent",
+      "expectedReason": "The valid lower repository bound deterministically limits the shortlist.",
+      "assertions": [
+        "The baseline is recorded separately from exactly two candidates.",
+        "Models outside the two-candidate shortlist are not executed."
+      ]
+    },
+    {
       "id": "unchanged-catalog-refresh",
       "category": "catalog",
       "description": "A live refresh returns catalog content identical to the latest normalized snapshot.",
@@ -175,6 +186,20 @@
         "Candidate evaluation runs again within the new limits.",
         "A new run and evidence identity is produced.",
         "Prior recommendation evidence is not reused as current."
+      ]
+    },
+    {
+      "id": "repository-input-changes-invalidate-reuse",
+      "category": "action",
+      "description": "Source, manifest, fixtures, and catalog are changed one at a time while every other evaluation input remains fixed.",
+      "expectedDisposition": "recommend",
+      "expectedReason": "Each independently changed repository input produces a new evaluation-input digest.",
+      "assertions": [
+        "A source fingerprint change invalidates reuse and creates a new run and evidence identity.",
+        "A call-site manifest digest change invalidates reuse and creates a new run and evidence identity.",
+        "An eval-fixture digest change invalidates reuse and creates a new run and evidence identity.",
+        "A normalized catalog content digest change invalidates reuse and creates a new run and evidence identity.",
+        "Each subcase executes candidates again within the configured limits."
       ]
     },
     {
