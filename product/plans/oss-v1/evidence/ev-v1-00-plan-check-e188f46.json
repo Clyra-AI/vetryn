@@ -1,0 +1,35 @@
+{
+  "$schema": "../../schemas/evidence.schema.json",
+  "schemaVersion": "1.0.0",
+  "id": "ev-v1-00-plan-check-e188f46",
+  "taskId": "V1-00",
+  "type": "command-run",
+  "actor": "codex-root",
+  "commit": "e188f4691d06a88738bd39affd0e6a296a755261",
+  "createdAt": "2026-08-10T15:10:00Z",
+  "result": {
+    "status": "pass",
+    "checks": [
+      {
+        "name": "pnpm plan:check",
+        "status": "pass",
+        "summary": "The exact candidate's plan, ledger, state, evidence baseline, scenarios, and generated progress validated without drift before promotion."
+      }
+    ]
+  },
+  "inputs": {
+    "planDigest": "sha256:87aff8ebd0ca9480b099933262cec350188e73fcf8f09b9fd2ca66dd94ac37f0",
+    "lockfileDigest": "sha256:4a89ac1f2863dc3591fae73e1ee0474cbab8cb0725ff80dfc57b1590f42d1a88"
+  },
+  "gateBinding": {
+    "gateId": "QG-PLAN-CHECK",
+    "kind": "command",
+    "command": "pnpm plan:check"
+  },
+  "review": null,
+  "redaction": {
+    "status": "verified",
+    "containsRawModelOutput": false,
+    "containsSecrets": false
+  }
+}
