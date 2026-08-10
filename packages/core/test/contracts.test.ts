@@ -10,6 +10,7 @@ import {
   assertRecommendationEvidence,
   canonicalizeArtifact,
   candidateRunSchema,
+  catalogSnapshotSchema,
   callSiteSchema,
   createArtifactId,
   parsePatchPlan,
@@ -83,6 +84,19 @@ const catalogSnapshot = {
       id: "openai/gpt-4o-mini",
       inputPricePerMillionUsd: "0.15",
       outputPricePerMillionUsd: "0.60",
+      provider: "openai",
+      retired: false,
+    },
+    {
+      capabilities: {
+        structuredOutput: true,
+        textGeneration: true,
+        toolCalls: false,
+      },
+      contextWindowTokens: 128000,
+      id: "openai/gpt-4o",
+      inputPricePerMillionUsd: "2.50",
+      outputPricePerMillionUsd: "10.00",
       provider: "openai",
       retired: false,
     },
@@ -258,6 +272,12 @@ describe("V1 artifact contracts", () => {
         baselineMetrics: { ...candidateRun.baselineMetrics, caseCount: 29 },
       }),
     ).toThrow(/same evaluated case count/i);
+    expect(() =>
+      parseVetrynArtifact({
+        ...candidateRun,
+        metrics: { ...candidateRun.metrics, costUsd: "1".repeat(101) },
+      }),
+    ).toThrow(/100 characters/i);
     expect(() => parseVetrynArtifact({ ...recommendation, confidence: 0.79 })).toThrow(
       /confidence floor/i,
     );
@@ -298,6 +318,7 @@ describe("V1 artifact contracts", () => {
   it("rejects stale evaluation evidence before it can support a recommendation", () => {
     const parsedRun = candidateRunSchema.parse(candidateRun);
     const parsedCallSite = callSiteSchema.parse(callSite);
+    const parsedCatalogSnapshot = catalogSnapshotSchema.parse(catalogSnapshot);
 
     const defaultGates = { ...callSite.gates };
     Reflect.deleteProperty(defaultGates, "minRecommendationConfidence");
@@ -333,6 +354,8 @@ describe("V1 artifact contracts", () => {
         parsedRecommendation,
         [incompleteRun],
         candidateRun.evaluationInputDigest,
+        parsedCallSite,
+        parsedCatalogSnapshot,
       ),
     ).toThrow(/cannot use incomplete candidate run/);
 
@@ -347,6 +370,8 @@ describe("V1 artifact contracts", () => {
         parsedRecommendation,
         [candidateRunWith({ callSiteId: "other-call-site" })],
         candidateRun.evaluationInputDigest,
+        parsedCallSite,
+        parsedCatalogSnapshot,
       ),
     ).toThrow(/call site/i);
     expect(() =>
@@ -354,6 +379,8 @@ describe("V1 artifact contracts", () => {
         parsedRecommendation,
         [candidateRunWith({ baselineModel: "openai/gpt-4.1-mini" })],
         candidateRun.evaluationInputDigest,
+        parsedCallSite,
+        parsedCatalogSnapshot,
       ),
     ).toThrow(/baseline model/i);
     expect(() =>
@@ -361,6 +388,8 @@ describe("V1 artifact contracts", () => {
         parsedRecommendation,
         [candidateRunWith({ catalogSnapshotId: "catalog-snapshot:other-catalog" })],
         candidateRun.evaluationInputDigest,
+        parsedCallSite,
+        parsedCatalogSnapshot,
       ),
     ).toThrow(/catalog snapshot/i);
     expect(() =>
@@ -368,6 +397,8 @@ describe("V1 artifact contracts", () => {
         parsedRecommendation,
         [candidateRunWith({ candidateModel: "openai/gpt-4.1" })],
         candidateRun.evaluationInputDigest,
+        parsedCallSite,
+        parsedCatalogSnapshot,
       ),
     ).toThrow(/recommended model/i);
     expect(() =>
@@ -375,6 +406,8 @@ describe("V1 artifact contracts", () => {
         parsedRecommendation,
         [candidateRunWith({ confidenceFloor: 0.7 })],
         candidateRun.evaluationInputDigest,
+        parsedCallSite,
+        parsedCatalogSnapshot,
       ),
     ).toThrow(/confidence floor/i);
     expect(() =>
@@ -383,9 +416,16 @@ describe("V1 artifact contracts", () => {
         [
           candidateRunWith({
             gateOutcomes: { ...candidateRun.gateOutcomes, quality: "fail" },
+            metrics: {
+              ...candidateRun.metrics,
+              failedCaseIds: ["case-1"],
+              passedCases: 29,
+            },
           }),
         ],
         candidateRun.evaluationInputDigest,
+        parsedCallSite,
+        parsedCatalogSnapshot,
       ),
     ).toThrow(/hard gate/i);
 
@@ -401,8 +441,83 @@ describe("V1 artifact contracts", () => {
         abstention,
         [candidateRunWith({ callSiteId: "other-call-site" })],
         candidateRun.evaluationInputDigest,
+        parsedCallSite,
+        parsedCatalogSnapshot,
       ),
     ).toThrow(/call site/i);
+
+    expect(() =>
+      assertRecommendationEvidence(
+        parsedRecommendation,
+        [
+          candidateRunWith({
+            metrics: {
+              ...candidateRun.metrics,
+              failedCaseIds: Array.from({ length: 30 }, (_, index) => `case-${index + 1}`),
+              passedCases: 0,
+            },
+          }),
+        ],
+        candidateRun.evaluationInputDigest,
+        parsedCallSite,
+        parsedCatalogSnapshot,
+      ),
+    ).toThrow(/quality gate outcome/i);
+    expect(() =>
+      assertRecommendationEvidence(
+        parsedRecommendation,
+        [candidateRunWith({ metrics: { ...candidateRun.metrics, costUsd: "0.0600" } })],
+        candidateRun.evaluationInputDigest,
+        parsedCallSite,
+        parsedCatalogSnapshot,
+      ),
+    ).toThrow(/cost gate outcome/i);
+    expect(() =>
+      assertRecommendationEvidence(
+        parsedRecommendation,
+        [candidateRunWith({ metrics: { ...candidateRun.metrics, p95LatencyMs: 800 } })],
+        candidateRun.evaluationInputDigest,
+        parsedCallSite,
+        parsedCatalogSnapshot,
+      ),
+    ).toThrow(/latency gate outcome/i);
+    expect(() =>
+      assertRecommendationEvidence(
+        parsedRecommendation,
+        [parsedRun],
+        candidateRun.evaluationInputDigest,
+        parsedCallSite,
+        catalogSnapshotSchema.parse({
+          ...catalogSnapshot,
+          models: catalogSnapshot.models.filter(
+            (model) => model.id !== candidateRun.candidateModel,
+          ),
+        }),
+      ),
+    ).toThrow(/missing candidate model/i);
+    expect(() =>
+      assertRecommendationEvidence(
+        parsedRecommendation,
+        [parsedRun],
+        candidateRun.evaluationInputDigest,
+        parsedCallSite,
+        catalogSnapshotSchema.parse({
+          ...catalogSnapshot,
+          models: catalogSnapshot.models.map((model) =>
+            model.id === candidateRun.candidateModel ? { ...model, retired: true } : model,
+          ),
+        }),
+      ),
+    ).toThrow(/not compatible/i);
+    expect(() =>
+      assertRecommendationEvidence(
+        parsedRecommendation,
+        [parsedRun],
+        candidateRun.evaluationInputDigest,
+        { ...parsedCallSite, sourceBinding: { ...sourceBinding, symbol: "otherCallSite" } },
+        parsedCatalogSnapshot,
+      ),
+    ).toThrow(/source binding/i);
 
     const parsedPatchPlan = parsePatchPlan(patchPlan);
     expect(assertPatchPlanEvidence(parsedPatchPlan, parsedRecommendation)).toEqual(parsedPatchPlan);

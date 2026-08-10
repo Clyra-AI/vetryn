@@ -26,6 +26,7 @@ const artifactIdSchema = z
 const digestSchema = z.string().regex(/^sha256:[0-9a-f]{64}$/, "Use a sha256 digest.");
 const decimalSchema = z
   .string()
+  .max(100, "Decimal values are limited to 100 characters.")
   .regex(/^(?:0|[1-9][0-9]*)(?:\.[0-9]+)?$/, "Use a canonical non-negative decimal string.");
 const confidenceSchema = z.number().finite().min(0).max(1);
 const modelIdSchema = z
@@ -682,6 +683,10 @@ export function assertCandidateRunPolicy(
     );
   }
 
+  if (candidateRun.status === "complete") {
+    assertMeasuredHardGateOutcomes(candidateRun, callSite);
+  }
+
   return candidateRun;
 }
 
@@ -689,8 +694,11 @@ export function assertRecommendationEvidence(
   recommendation: Recommendation,
   candidateRuns: readonly CandidateRun[],
   expectedEvaluationInputDigest: string,
+  callSite: CallSite,
+  catalogSnapshot: CatalogSnapshot,
 ): Recommendation {
   assertEvaluationInputDigest(recommendation, expectedEvaluationInputDigest);
+  assertRecommendationPolicy(recommendation, callSite, catalogSnapshot);
 
   if (
     recommendation.status === "recommend" &&
@@ -737,6 +745,7 @@ export function assertRecommendationEvidence(
     }
 
     assertEvaluationInputDigest(candidateRun, expectedEvaluationInputDigest);
+    assertCandidateRunPolicy(candidateRun, callSite);
 
     if (recommendation.status !== "recommend") continue;
 
@@ -752,6 +761,7 @@ export function assertRecommendationEvidence(
       );
     }
 
+    assertCandidateRunCatalog(candidateRun, catalogSnapshot, callSite);
     assertPassedHardGates(candidateRun);
   }
 
@@ -887,6 +897,179 @@ function assertPassedHardGates(candidateRun: CandidateRun): void {
       `Recommendation evidence candidate run ${candidateRun.id} failed hard gate(s): ${failedGates.join(", ")}.`,
     );
   }
+}
+
+function assertRecommendationPolicy(
+  recommendation: Recommendation,
+  callSite: CallSite,
+  catalogSnapshot: CatalogSnapshot,
+): void {
+  if (recommendation.callSiteId !== callSite.id) {
+    throw new VetrynContractError(
+      "Recommendation has a different call site than its evaluation policy.",
+    );
+  }
+
+  if (recommendation.baselineModel !== callSite.currentModel) {
+    throw new VetrynContractError(
+      "Recommendation has a different baseline model than its evaluation policy.",
+    );
+  }
+
+  if (recommendation.catalogSnapshotId !== catalogSnapshot.id) {
+    throw new VetrynContractError(
+      "Recommendation has a different catalog snapshot than its evidence.",
+    );
+  }
+
+  if (recommendation.confidenceFloor !== callSite.gates.minRecommendationConfidence) {
+    throw new VetrynContractError(
+      "Recommendation has a different confidence floor than its evaluation policy.",
+    );
+  }
+
+  if (!sameSourceBinding(recommendation.sourceBinding, callSite.sourceBinding)) {
+    throw new VetrynContractError(
+      "Recommendation has a different source binding than its evaluation policy.",
+    );
+  }
+}
+
+function assertCandidateRunCatalog(
+  candidateRun: CandidateRun,
+  catalogSnapshot: CatalogSnapshot,
+  callSite: CallSite,
+): void {
+  if (candidateRun.catalogSnapshotId !== catalogSnapshot.id) {
+    throw new VetrynContractError(
+      "Candidate run has a different catalog snapshot than its evidence.",
+    );
+  }
+
+  const candidateModel = catalogSnapshot.models.find(
+    (model) => model.id === candidateRun.candidateModel,
+  );
+  if (candidateModel === undefined) {
+    throw new VetrynContractError(
+      `Recommendation evidence catalog is missing candidate model ${candidateRun.candidateModel}.`,
+    );
+  }
+
+  if (candidateModel.retired || !candidateModel.capabilities.textGeneration) {
+    throw new VetrynContractError(
+      `Recommendation evidence candidate model ${candidateRun.candidateModel} is not compatible with V1 text generation.`,
+    );
+  }
+
+  const requiredTokens =
+    callSite.representativeUsage.promptTokens + callSite.representativeUsage.completionTokens;
+  if (candidateModel.contextWindowTokens < requiredTokens) {
+    throw new VetrynContractError(
+      `Recommendation evidence candidate model ${candidateRun.candidateModel} lacks the required context window.`,
+    );
+  }
+}
+
+function assertMeasuredHardGateOutcomes(candidateRun: CandidateRun, callSite: CallSite): void {
+  if (
+    candidateRun.baselineMetrics === undefined ||
+    candidateRun.gateOutcomes === undefined ||
+    candidateRun.metrics === undefined
+  ) {
+    throw new VetrynContractError(
+      `Complete candidate run ${candidateRun.id} is missing metrics or hard-gate outcomes.`,
+    );
+  }
+
+  const { baselineMetrics, metrics } = candidateRun;
+  const qualityPasses =
+    metrics.caseCount >= callSite.gates.minCases &&
+    ratioAtLeast(metrics.passedCases, metrics.caseCount, callSite.gates.minPassRate) &&
+    qualityRegressionWithinLimit(
+      baselineMetrics.passedCases,
+      metrics.passedCases,
+      metrics.caseCount,
+      callSite.gates.maxQualityRegression,
+    );
+  const expectedOutcomes = {
+    cost: costSavingsAtLeast(
+      baselineMetrics.costUsd,
+      metrics.costUsd,
+      callSite.gates.minSavingsPercent,
+    ),
+    latency:
+      callSite.gates.maxP95LatencyMs === undefined ||
+      metrics.p95LatencyMs <= callSite.gates.maxP95LatencyMs,
+    quality: qualityPasses,
+  } as const;
+
+  for (const [gate, passed] of Object.entries(expectedOutcomes)) {
+    const expectedOutcome = passed ? "pass" : "fail";
+    if (candidateRun.gateOutcomes[gate as keyof typeof expectedOutcomes] !== expectedOutcome) {
+      throw new VetrynContractError(
+        `Candidate run ${candidateRun.id} has an invalid ${gate} gate outcome for its policy and metrics.`,
+      );
+    }
+  }
+}
+
+function ratioAtLeast(numerator: number, denominator: number, minimum: number): boolean {
+  const threshold = decimalFraction(minimum);
+  return BigInt(numerator) * threshold.denominator >= BigInt(denominator) * threshold.numerator;
+}
+
+function qualityRegressionWithinLimit(
+  baselinePassedCases: number,
+  candidatePassedCases: number,
+  caseCount: number,
+  maximumRegression: number,
+): boolean {
+  const regression = baselinePassedCases - candidatePassedCases;
+  if (regression <= 0) return true;
+
+  const limit = decimalFraction(maximumRegression);
+  return BigInt(regression) * limit.denominator <= BigInt(caseCount) * limit.numerator;
+}
+
+function costSavingsAtLeast(
+  baselineCost: string,
+  candidateCost: string,
+  minimumSavingsPercent: number,
+): boolean {
+  const baseline = decimalFraction(baselineCost);
+  const candidate = decimalFraction(candidateCost);
+  const minimum = decimalFraction(minimumSavingsPercent);
+  const baselineScaled = baseline.numerator * candidate.denominator;
+  const candidateScaled = candidate.numerator * baseline.denominator;
+
+  if (baselineScaled === 0n) {
+    return candidateScaled === 0n && minimum.numerator === 0n;
+  }
+
+  return (
+    (baselineScaled - candidateScaled) * 100n * minimum.denominator >=
+    baselineScaled * minimum.numerator
+  );
+}
+
+function decimalFraction(value: number | string): { numerator: bigint; denominator: bigint } {
+  const match = String(value)
+    .toLowerCase()
+    .match(/^(\d+)(?:\.(\d+))?(?:e([+-]?\d+))?$/);
+  if (match === null) {
+    throw new VetrynContractError("Policy comparison requires a non-negative decimal value.");
+  }
+
+  const [, whole, fractional = "", exponentText = "0"] = match;
+  const exponent = Number(exponentText);
+  const scale = fractional.length - exponent;
+  const numerator = BigInt(`${whole}${fractional}`);
+
+  if (scale <= 0) {
+    return { numerator: numerator * 10n ** BigInt(-scale), denominator: 1n };
+  }
+
+  return { numerator, denominator: 10n ** BigInt(scale) };
 }
 
 function sameSourceBinding(left: BoundSourceBinding, right: BoundSourceBinding): boolean {
