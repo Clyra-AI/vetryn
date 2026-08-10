@@ -8,11 +8,13 @@ Rules:
 
 - `plan.json` and `acceptance-ledger.json` change only through reviewed planning work.
 - One task owns one state file to reduce concurrent-agent conflicts.
-- Evidence is immutable and bound to an exact commit and input digests.
+- Evidence is immutable and bound to an exact commit, the reviewed plan and lockfile digests, and—when it
+  represents approval—an authenticated GitHub approval, eligible author association, review identity, and role
+  whose actor differs from the candidate executor and whose observed commit matches the candidate.
 - Executors may add candidate evidence but cannot broaden scope, rewrite criteria, or accept their own
   task.
 - `progress.json` is generated with `pnpm plan:write` and verified with `pnpm plan:check`.
 - Transient claims, prompts, raw command output, worktrees, credentials, and grants are never committed.
 
-Factory-compatible runtime packets may be generated from these lean artifacts at dispatch time. They
-are not the product-domain schemas used by Vetryn itself.
+Factory-compatible runtime packets are generated with `pnpm --silent task:compile -- TASK-ID`. They are
+deterministic, source-digest-bound dispatch inputs, not the product-domain schemas used by Vetryn itself.

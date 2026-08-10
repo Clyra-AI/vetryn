@@ -40,6 +40,11 @@ failed attempts with the same failure fingerprint stop automatic repair and requ
 
 ## Agent roles and handoff
 
+Run `pnpm --silent task:next` to inspect active and legal work, then
+`pnpm --silent task:compile -- TASK-ID` to produce the deterministic, digest-bound task packet. The compiler fails
+closed if the canonical plan is stale or the task is not executable. The full repository lifecycle is in
+`WORKFLOW.md`.
+
 1. **Planner** selects a ready task, confirms locked decisions and scope, and creates a bounded task
    brief from the canonical JSON.
 2. **Executor** implements only allowed paths, runs the smallest relevant tests, and records the
@@ -86,3 +91,7 @@ ledger, evidence, and progress schemas. `.factory/profile.yaml` is a thin local 
 `.factoryd/` is ignored transient runtime state. Factory can later consume these artifacts externally;
 Factoryd is deferred until it supports the TypeScript package graph without inheriting a Go-specific
 bootstrap contract.
+
+The repository-local `$vetryn-implement-task`, `$vetryn-verify-task`, and `$vetryn-promote-task` skills
+specialize the task lifecycle. They deliberately reuse Factory's universal execution, validation, review,
+and shipping skills instead of copying them into this repository.

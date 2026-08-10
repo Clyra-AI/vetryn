@@ -15,6 +15,11 @@ These instructions apply to the entire repository.
 - Treat `docs/oss-v1.md` as product truth and `product/plans/oss-v1/plan.json` plus
   `acceptance-ledger.json` as reviewed delivery truth. Implementers must not broaden their task scope,
   rewrite acceptance criteria, or mark their own work accepted.
+- Treat `WORKFLOW.md` as the repository operating contract. Compile one explicit task with
+  `pnpm --silent task:compile -- TASK-ID` before implementation or verification.
+- Passing review records require role-bound GitHub review evidence, the exact candidate executor, and
+  a reviewer distinct from that executor. Non-baseline evidence must match the reviewed plan and lockfile
+  digests.
 - `product/plans/oss-v1/progress.json` is generated. Update task state and evidence through the plan
   tooling rather than editing the roll-up directly.
 - Keep Factory-compatible planning artifacts separate from Vetryn product-domain schemas. Transient

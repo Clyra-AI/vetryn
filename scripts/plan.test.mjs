@@ -1,4 +1,5 @@
 import { cp, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import process from "node:process";
@@ -19,6 +20,7 @@ async function createFixture() {
     path.join(root, "examples/openrouter-typescript/fixtures"),
     { recursive: true },
   );
+  await cp(path.join(repositoryRoot, "pnpm-lock.yaml"), path.join(root, "pnpm-lock.yaml"));
   return root;
 }
 
@@ -28,6 +30,11 @@ async function readFixtureJson(root, relativePath) {
 
 async function writeFixtureJson(root, relativePath, document) {
   await writeFile(path.join(root, relativePath), `${JSON.stringify(document, null, 2)}\n`);
+}
+
+async function digestFixture(root, relativePath) {
+  const contents = await readFile(path.join(root, relativePath));
+  return `sha256:${createHash("sha256").update(contents).digest("hex")}`;
 }
 
 function runPlan(root, command = "check") {
@@ -45,7 +52,14 @@ async function createV1Evidence(root, overrides = {}) {
   Object.assign(evidence, {
     id: "ev-v1-candidate-check",
     taskId: "V1-00",
+    type: "command-run",
+    actor: "implementation-agent",
     commit: "a".repeat(40),
+    inputs: {
+      planDigest: await digestFixture(root, "product/plans/oss-v1/plan.json"),
+      lockfileDigest: await digestFixture(root, "pnpm-lock.yaml"),
+    },
+    review: null,
     ...overrides,
   });
   const relativePath = `product/plans/oss-v1/evidence/${evidence.id}.json`;
@@ -59,6 +73,7 @@ async function passFirstPlanningCriterion(root, evidenceId, candidateCommit = "a
   state.candidate = {
     baseCommit: "eb970bf3708ceb7a0d93d93481812dac090428b9",
     commit: candidateCommit,
+    executor: "implementation-agent",
   };
   state.criteria[0].status = "pass";
   state.criteria[0].evidenceRefs = [evidenceId];
@@ -116,6 +131,149 @@ describe("implementation plan validator", () => {
     const result = runPlan(root);
     expect(result.status).not.toBe(0);
     expect(result.stderr).toContain("cites unsuccessful evidence");
+  });
+
+  it("rejects evidence bound to a stale plan digest", async () => {
+    const root = await createFixture();
+    const evidence = await createV1Evidence(root, {
+      inputs: {
+        planDigest: `sha256:${"0".repeat(64)}`,
+        lockfileDigest: await digestFixture(root, "pnpm-lock.yaml"),
+      },
+    });
+    await passFirstPlanningCriterion(root, evidence.id);
+
+    const result = runPlan(root);
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain("stale plan digest");
+  });
+
+  it("rejects evidence bound to a stale lockfile digest", async () => {
+    const root = await createFixture();
+    const evidence = await createV1Evidence(root, {
+      inputs: {
+        planDigest: await digestFixture(root, "product/plans/oss-v1/plan.json"),
+        lockfileDigest: `sha256:${"0".repeat(64)}`,
+      },
+    });
+    await passFirstPlanningCriterion(root, evidence.id);
+
+    const result = runPlan(root);
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain("stale lockfile digest");
+  });
+
+  it("rejects command evidence used as a maintainer approval", async () => {
+    const root = await createFixture();
+    const evidence = await createV1Evidence(root);
+    const statePath = "product/plans/oss-v1/state/V1-00.json";
+    const state = await readFixtureJson(root, statePath);
+    state.candidate = {
+      baseCommit: "eb970bf3708ceb7a0d93d93481812dac090428b9",
+      commit: evidence.commit,
+      executor: "implementation-agent",
+    };
+    state.reviews.find((review) => review.role === "maintainer").status = "approved";
+    state.reviews.find((review) => review.role === "maintainer").evidenceRefs = [evidence.id];
+    await writeFixtureJson(root, statePath, state);
+
+    const result = runPlan(root);
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain("requires review evidence for role maintainer");
+  });
+
+  it("rejects review evidence issued by the candidate executor", async () => {
+    const root = await createFixture();
+    const evidence = await createV1Evidence(root, {
+      type: "review",
+      review: {
+        role: "maintainer",
+        subjectActor: "implementation-agent",
+        source: "github-pull-request-review",
+        state: "APPROVED",
+        authorAssociation: "MEMBER",
+        reviewId: 123456789,
+        observedCommit: "a".repeat(40),
+        authorizationRef: "https://github.com/Clyra-AI/vetryn/pull/1#pullrequestreview-123456789",
+      },
+    });
+    const statePath = "product/plans/oss-v1/state/V1-00.json";
+    const state = await readFixtureJson(root, statePath);
+    state.candidate = {
+      baseCommit: "eb970bf3708ceb7a0d93d93481812dac090428b9",
+      commit: evidence.commit,
+      executor: "implementation-agent",
+    };
+    state.reviews.find((review) => review.role === "maintainer").status = "approved";
+    state.reviews.find((review) => review.role === "maintainer").evidenceRefs = [evidence.id];
+    await writeFixtureJson(root, statePath, state);
+
+    const result = runPlan(root);
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain("self-approved by the executor");
+  });
+
+  it("accepts role-bound review evidence from an independent actor", async () => {
+    const root = await createFixture();
+    const evidence = await createV1Evidence(root, {
+      type: "review",
+      actor: "maintainer-reviewer",
+      review: {
+        role: "maintainer",
+        subjectActor: "implementation-agent",
+        source: "github-pull-request-review",
+        state: "APPROVED",
+        authorAssociation: "MEMBER",
+        reviewId: 123456789,
+        observedCommit: "a".repeat(40),
+        authorizationRef: "https://github.com/Clyra-AI/vetryn/pull/1#pullrequestreview-123456789",
+      },
+    });
+    const statePath = "product/plans/oss-v1/state/V1-00.json";
+    const state = await readFixtureJson(root, statePath);
+    state.candidate = {
+      baseCommit: "eb970bf3708ceb7a0d93d93481812dac090428b9",
+      commit: evidence.commit,
+      executor: "implementation-agent",
+    };
+    state.reviews.find((review) => review.role === "maintainer").status = "approved";
+    state.reviews.find((review) => review.role === "maintainer").evidenceRefs = [evidence.id];
+    await writeFixtureJson(root, statePath, state);
+
+    const result = runPlan(root);
+    expect(result.status, result.stderr).toBe(0);
+  });
+
+  it("rejects a review attestation whose ID does not match its GitHub URL", async () => {
+    const root = await createFixture();
+    const evidence = await createV1Evidence(root, {
+      type: "review",
+      actor: "maintainer-reviewer",
+      review: {
+        role: "maintainer",
+        subjectActor: "implementation-agent",
+        source: "github-pull-request-review",
+        state: "APPROVED",
+        authorAssociation: "MEMBER",
+        reviewId: 987654321,
+        observedCommit: "a".repeat(40),
+        authorizationRef: "https://github.com/Clyra-AI/vetryn/pull/1#pullrequestreview-123456789",
+      },
+    });
+    const statePath = "product/plans/oss-v1/state/V1-00.json";
+    const state = await readFixtureJson(root, statePath);
+    state.candidate = {
+      baseCommit: "eb970bf3708ceb7a0d93d93481812dac090428b9",
+      commit: evidence.commit,
+      executor: "implementation-agent",
+    };
+    state.reviews.find((review) => review.role === "maintainer").status = "approved";
+    state.reviews.find((review) => review.role === "maintainer").evidenceRefs = [evidence.id];
+    await writeFixtureJson(root, statePath, state);
+
+    const result = runPlan(root);
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain("mismatched GitHub review identity");
   });
 
   it("rejects evidence belonging to a different task", async () => {

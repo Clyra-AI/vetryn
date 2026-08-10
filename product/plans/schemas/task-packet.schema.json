@@ -1,0 +1,145 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vetryn.dev/schemas/planning/task-packet-v1.json",
+  "title": "Vetryn executable task packet",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema",
+    "schemaVersion",
+    "packetId",
+    "source",
+    "task",
+    "currentState",
+    "acceptanceItems",
+    "gates",
+    "requiredReviews",
+    "execution"
+  ],
+  "properties": {
+    "$schema": { "const": "https://vetryn.dev/schemas/planning/task-packet-v1.json" },
+    "schemaVersion": { "const": "1.0.0" },
+    "packetId": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]+:(M0|V1)-[0-9]{2}:r[0-9]+$"
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repository",
+        "baselineCommit",
+        "productContract",
+        "planPath",
+        "ledgerPath",
+        "statePath",
+        "digests"
+      ],
+      "properties": {
+        "repository": { "type": "string", "format": "uri" },
+        "baselineCommit": { "$ref": "#/$defs/sha" },
+        "productContract": { "$ref": "#/$defs/repoPath" },
+        "planPath": { "$ref": "#/$defs/repoPath" },
+        "ledgerPath": { "$ref": "#/$defs/repoPath" },
+        "statePath": { "$ref": "#/$defs/repoPath" },
+        "digests": {
+          "type": "object",
+          "minProperties": 3,
+          "additionalProperties": { "$ref": "#/$defs/digest" }
+        }
+      }
+    },
+    "task": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "title",
+        "objective",
+        "risk",
+        "dependsOn",
+        "scope",
+        "semanticInvariants",
+        "deliverables",
+        "requiredTestLevels",
+        "capabilities",
+        "stopConditions"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/taskId" },
+        "title": { "$ref": "#/$defs/nonempty" },
+        "objective": { "$ref": "#/$defs/nonempty" },
+        "risk": { "type": "object" },
+        "dependsOn": { "type": "array", "items": { "type": "object" } },
+        "scope": { "type": "object" },
+        "semanticInvariants": { "type": "array", "items": { "$ref": "#/$defs/nonempty" } },
+        "deliverables": { "type": "array", "items": { "$ref": "#/$defs/nonempty" } },
+        "requiredTestLevels": { "type": "array", "items": { "$ref": "#/$defs/nonempty" } },
+        "capabilities": { "type": "object" },
+        "stopConditions": { "type": "array", "items": { "$ref": "#/$defs/nonempty" } }
+      }
+    },
+    "currentState": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "attempt", "maxAttempts", "candidate"],
+      "properties": {
+        "state": { "enum": ["planned", "ready", "in_progress", "changes_requested"] },
+        "attempt": { "type": "integer", "minimum": 0, "maximum": 3 },
+        "maxAttempts": { "type": "integer", "minimum": 1, "maximum": 3 },
+        "candidate": {
+          "oneOf": [
+            { "type": "null" },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["baseCommit", "commit", "executor"],
+              "properties": {
+                "baseCommit": { "$ref": "#/$defs/sha" },
+                "commit": { "$ref": "#/$defs/sha" },
+                "executor": { "$ref": "#/$defs/nonempty" }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "acceptanceItems": { "type": "array", "minItems": 1, "items": { "type": "object" } },
+    "gates": { "type": "array", "minItems": 1, "items": { "type": "object" } },
+    "requiredReviews": { "type": "array", "items": { "$ref": "#/$defs/nonempty" } },
+    "execution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "implementSkill",
+        "verifySkill",
+        "promoteSkill",
+        "factorySkills",
+        "executorMayAccept",
+        "verifierMustDifferFromExecutor",
+        "maintainerApprovalRequired",
+        "progressIsGenerated"
+      ],
+      "properties": {
+        "implementSkill": { "const": "vetryn-implement-task" },
+        "verifySkill": { "const": "vetryn-verify-task" },
+        "promoteSkill": { "const": "vetryn-promote-task" },
+        "factorySkills": {
+          "type": "array",
+          "const": ["task-executor", "validation-gate", "commit-push"]
+        },
+        "executorMayAccept": { "const": false },
+        "verifierMustDifferFromExecutor": { "const": true },
+        "maintainerApprovalRequired": { "const": true },
+        "progressIsGenerated": { "const": true }
+      }
+    }
+  },
+  "$defs": {
+    "sha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "digest": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "taskId": { "type": "string", "pattern": "^(M0|V1)-[0-9]{2}$" },
+    "repoPath": { "type": "string", "minLength": 1, "pattern": "^(?!/)(?!.*\\.\\.).+$" },
+    "nonempty": { "type": "string", "minLength": 1 }
+  }
+}

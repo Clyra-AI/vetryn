@@ -1,0 +1,4 @@
+interface:
+  display_name: "Implement Vetryn Task"
+  short_description: "Implement one scoped Vetryn OSS task."
+  default_prompt: "Use $vetryn-implement-task to compile and implement the specified Vetryn task within its declared scope."
