@@ -79,8 +79,9 @@ The patcher verifies the source fingerprint and changes only the bound literal. 
 opens a draft PR from that patch, is idempotent per call site and candidate, and never merges or deploys.
 Provider-backed assessment is manual by default. A repository may opt into a schedule, but unchanged
 catalog and evaluation-input digests skip paid candidate execution only when prior evidence is complete,
-integrity-valid, and reusable under current policy. Failed, partial, exhausted, privacy-unsafe, or
-otherwise non-reusable evidence never suppresses a later bounded retry.
+integrity-valid, and reusable under current policy. The evaluation-input digest includes the evaluator
+executable identity, so a tool version or build/commit revision change invalidates reuse. Failed, partial,
+exhausted, privacy-unsafe, or otherwise non-reusable evidence never suppresses a later bounded retry.
 
 ## Package direction
 
@@ -109,7 +110,8 @@ independent boundary emerges.
 
 ## Reproducibility and privacy
 
-An evaluation run records tool version, commit, call-site manifest digest, fixture digest, catalog digest,
-model identifiers, scorer configuration, sampling configuration, attempt count, and timestamps. Secrets
-and unredacted fixtures are never written to reports. Remote telemetry is opt-in; OSS execution has no
-mandatory control plane.
+An evaluation run records tool version, build or commit revision, call-site manifest digest, fixture
+digest, catalog digest, model identifiers, scorer configuration, sampling configuration, attempt count,
+and timestamps. The evaluation-input digest binds that evaluator executable identity with the remaining
+inputs. Secrets and unredacted fixtures are never written to reports. Remote telemetry is opt-in; OSS
+execution has no mandatory control plane.

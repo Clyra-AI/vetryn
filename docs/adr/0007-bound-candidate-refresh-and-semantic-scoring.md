@@ -23,11 +23,12 @@ open-ended workload.
 - Report a live refresh failure explicitly. An older snapshot may be used for explicit historical replay
   but must not be represented as current.
 - Make provider-backed assessment manual by default. Scheduling requires explicit repository opt-in.
-- Bind an evaluation-input digest to the catalog, source, manifest, fixtures, scorer policy, and relevant
-  execution configuration. When both catalog and evaluation inputs are unchanged, skip paid candidate
-  execution and reuse the existing recommendation identity and evidence only if that evidence is complete,
-  integrity-valid, and reusable under current policy. Failed, partial, exhausted, privacy-unsafe, or
-  otherwise non-reusable evidence must not suppress a later bounded retry.
+- Bind an evaluation-input digest to the evaluator executable identity (tool version and build or commit
+  revision), catalog, source, manifest, fixtures, scorer policy, and relevant execution configuration.
+  When both catalog and evaluation inputs are unchanged, skip paid candidate execution and reuse the
+  existing recommendation identity and evidence only if that evidence is complete, integrity-valid, and
+  reusable under current policy. Failed, partial, exhausted, privacy-unsafe, or otherwise non-reusable
+  evidence must not suppress a later bounded retry.
 - Keep LLM judges outside OSS V1. Design an optional calibrated semantic-rubric scorer only after V1 field
   validation separately records sanitized evidence that deterministic evaluation blocks valuable
   open-ended call sites; those cases are not qualified recommendations.

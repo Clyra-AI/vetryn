@@ -129,6 +129,8 @@ to hard gates, requires human calibration and explicit spend policy, and is not 
 - Provider-backed assessment is manual by default. A repository may explicitly opt into a schedule;
   unchanged normalized catalog and evaluation-input digests skip paid candidate execution only when
   prior evidence is complete, integrity-valid, and reusable under current policy.
+- The evaluation-input digest binds the evaluator executable identity, including tool version and build
+  or commit revision, so evaluator upgrades cannot reuse evidence produced by older code.
 - Every successful catalog refresh records immutable freshness evidence even when its unchanged,
   content-addressed snapshot is reused.
 - A failed live catalog refresh is reported as a failure and never relabels an older snapshot as current.

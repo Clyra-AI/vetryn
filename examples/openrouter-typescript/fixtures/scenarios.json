@@ -202,6 +202,18 @@
       ]
     },
     {
+      "id": "evaluator-version-change-invalidates-reuse",
+      "category": "action",
+      "description": "Repository inputs, catalog, scorer policy, and execution configuration are unchanged but the evaluator tool version or build revision changes.",
+      "expectedDisposition": "recommend",
+      "expectedReason": "The evaluator executable identity change produces a new evaluation-input digest.",
+      "assertions": [
+        "Candidate evaluation runs again within the configured limits.",
+        "The new evidence records the updated tool version and build or commit revision.",
+        "A new run and evidence identity is produced and prior evidence is not reused as current."
+      ]
+    },
+    {
       "id": "repository-input-changes-invalidate-reuse",
       "category": "action",
       "description": "Source, manifest, fixtures, and catalog are changed one at a time while every other evaluation input remains fixed.",

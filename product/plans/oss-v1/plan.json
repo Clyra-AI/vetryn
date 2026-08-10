@@ -47,7 +47,7 @@
     {
       "id": "DEC-REFRESH",
       "status": "locked",
-      "decision": "Catalog assessment is manual by default, scheduling is explicit opt-in, unchanged normalized catalog and evaluation inputs skip paid candidate execution only when prior evidence is complete and policy-reusable, every successful refresh records immutable freshness evidence, and a failed live refresh cannot be represented as current.",
+      "decision": "Catalog assessment is manual by default, scheduling is explicit opt-in, evaluation inputs bind the evaluator executable identity, unchanged normalized catalog and evaluation inputs skip paid candidate execution only when prior evidence is complete and policy-reusable, every successful refresh records immutable freshness evidence, and a failed live refresh cannot be represented as current.",
       "rationale": "Installation must not create surprise recurring spend or silently make recommendations from stale provider state.",
       "blocks": []
     },
@@ -605,6 +605,7 @@
         "The Action requests only the permissions needed for the selected mode.",
         "Unchanged inputs do not create duplicate PRs or mutable evidence.",
         "Provider-backed assessment is manual by default and scheduled execution requires explicit repository opt-in.",
+        "The evaluation-input digest binds the evaluator tool version and build or commit revision.",
         "An unchanged catalog and evaluation-input digest skips paid candidate execution only when prior evidence is complete, integrity-valid, and reusable under current policy."
       ],
       "deliverables": ["action.yml", ".github/workflows/**", "examples/openrouter-typescript/**"],
@@ -630,6 +631,7 @@
         "A failed or abstained run can open a migration PR.",
         "Action reruns duplicate output.",
         "Installation alone enables recurring provider spend.",
+        "An evaluator tool version or build/commit revision change reuses evidence produced by older executable code.",
         "Complete reusable evidence is ignored and unchanged inputs trigger provider execution.",
         "Failed, partial, exhausted, privacy-unsafe, or otherwise non-reusable evidence suppresses a later bounded retry."
       ]

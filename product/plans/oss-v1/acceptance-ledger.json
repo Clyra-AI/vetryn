@@ -445,7 +445,7 @@
     {
       "id": "ACTION-005",
       "taskId": "V1-09",
-      "statement": "Provider-backed assessment is manual by default, scheduling requires explicit repository opt-in, and unchanged catalog plus evaluation-input digests skip paid candidate execution only when prior evidence is complete, integrity-valid, and reusable under current policy.",
+      "statement": "Provider-backed assessment is manual by default, scheduling requires explicit repository opt-in, evaluator executable identity is bound into the evaluation-input digest, and unchanged digests skip paid candidate execution only when prior evidence is complete, integrity-valid, and reusable under current policy.",
       "verification": { "method": "test", "testLevel": "adversarial", "gateId": "QG-SCENARIOS" },
       "waivable": false,
       "status": "planned",

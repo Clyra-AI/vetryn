@@ -5,8 +5,8 @@
 ### Added
 
 - Added bounded deterministic OpenRouter candidate selection, idempotent catalog-refresh, opt-in
-  scheduling, immutable freshness observations, and complete-evidence-only reuse contracts to the
-  executable V1 plan.
+  scheduling, immutable freshness observations, evaluator-version-bound digests, and
+  complete-evidence-only reuse contracts to the executable V1 plan.
 - Recorded a sanitized field-evidence criterion for any post-V1 optional calibrated semantic-rubric scorer.
 - Added deterministic repo-native task compilation and role-separated Vetryn implementation skills.
 - Added a committed agent operating map with repository ownership, skill routing, maturity rules, and
