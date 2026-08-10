@@ -3,14 +3,16 @@
   "schemaVersion": "1.0.0",
   "planId": "oss-v1",
   "taskCounts": {
-    "accepted": 4,
+    "accepted": 3,
+    "in_progress": 1,
     "planned": 9
   },
   "acceptanceCounts": {
-    "accepted": 13,
-    "planned": 38
+    "accepted": 9,
+    "planned": 38,
+    "verification_pending": 4
   },
-  "nextLegalTasks": ["V1-02", "V1-04"],
+  "nextLegalTasks": ["V1-02"],
   "blockedTasks": [],
   "tasks": [
     {
@@ -33,8 +35,8 @@
     },
     {
       "taskId": "V1-01",
-      "state": "accepted",
-      "acceptedCriteria": 4,
+      "state": "in_progress",
+      "acceptedCriteria": 0,
       "totalCriteria": 4
     },
     {

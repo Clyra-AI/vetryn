@@ -104,8 +104,9 @@ verifies that the proposed model is active, satisfies the call site's declared t
 and tool-call requirements, and has enough context in the bound snapshot. It binds every cited run to the call
 site's declared reviewed eval-suite artifact, that suite's call site, fixture digest, and case count.
 Recommendation artifacts include provenance, finite status-compatible reason codes, confidence, limitations,
-failed cases, and single-line redacted reproduction commands. The durable limitation codes make report caveats
-machine-readable, while the report renderer can map them to clear prose.
+failed cases, and structured allowlisted Vetryn reproduction operations. The durable limitation codes make report
+caveats machine-readable, while the report renderer maps both limitation and reproduction fields to clear prose
+and exact commands.
 
 ### Patcher and GitHub integration
 

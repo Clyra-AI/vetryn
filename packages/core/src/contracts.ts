@@ -85,17 +85,11 @@ const recommendationLimitationCodes = [
 ] as const;
 const recommendationLimitationCodeSchema = z.enum(recommendationLimitationCodes);
 const reproductionCommandSchema = z
-  .string()
-  .min(1)
-  .max(500)
-  .refine(
-    (value) =>
-      !value.includes("\r") &&
-      !value.includes("\n") &&
-      !value.includes("\u0000") &&
-      !/(?:api[_-]?key|credential|password|secret)/i.test(value),
-    "Use a single-line reproduction command without credential material.",
-  );
+  .object({
+    callSiteId: stableIdSchema,
+    operation: z.enum(["eval", "recommend"]),
+  })
+  .strict();
 const capabilityNames = ["textGeneration", "structuredOutput", "toolCalls"] as const;
 
 const artifactEnvelope = {
@@ -556,9 +550,14 @@ export const recommendationSchema = z
       "reasonCodes",
     ]);
     assertUniqueValues(artifact.limitations, context, "recommendation limitation", ["limitations"]);
-    assertUniqueValues(artifact.reproductionCommands, context, "reproduction command", [
-      "reproductionCommands",
-    ]);
+    assertUniqueValues(
+      artifact.reproductionCommands.map(
+        ({ callSiteId, operation }) => `${operation}:${callSiteId}`,
+      ),
+      context,
+      "reproduction command",
+      ["reproductionCommands"],
+    );
     assertArtifactReferencePrefix(artifact.catalogSnapshotId, context, "catalog-snapshot", [
       "catalogSnapshotId",
     ]);
@@ -568,6 +567,16 @@ export const recommendationSchema = z
         "candidateRunIds",
         index,
       ]);
+    }
+
+    for (const [index, command] of artifact.reproductionCommands.entries()) {
+      if (command.callSiteId !== artifact.callSiteId) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "A reproduction command must name the recommendation call site.",
+          path: ["reproductionCommands", index, "callSiteId"],
+        });
+      }
     }
 
     if (artifact.status === "recommend") {

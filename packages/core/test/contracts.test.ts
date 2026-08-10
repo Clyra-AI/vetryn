@@ -192,8 +192,8 @@ const recommendation = {
   reasonCodes: ["quality-gates-passed", "cost-savings"],
   recommendedModel: candidateRun.candidateModel,
   reproductionCommands: [
-    "vetryn eval --call-site support-classification",
-    "vetryn recommend --call-site support-classification",
+    { callSiteId: callSite.id, operation: "eval" },
+    { callSiteId: callSite.id, operation: "recommend" },
   ],
   schemaVersion: VETRYN_ARTIFACT_SCHEMA_VERSION,
   sourceBinding,
@@ -338,9 +338,17 @@ describe("V1 artifact contracts", () => {
     expect(() =>
       parseVetrynArtifact({
         ...recommendation,
-        reproductionCommands: ["vetryn eval --api-key super-secret"],
+        reproductionCommands: [
+          { callSiteId: callSite.id, operation: "eval", token: "super-secret" },
+        ],
       }),
-    ).toThrow(/credential material/i);
+    ).toThrow(/unrecognized key/i);
+    expect(() =>
+      parseVetrynArtifact({
+        ...recommendation,
+        reproductionCommands: [{ callSiteId: "another-call-site", operation: "eval" }],
+      }),
+    ).toThrow(/recommendation call site/i);
     expect(() =>
       parseVetrynArtifact({
         ...recommendation,

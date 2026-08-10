@@ -9,7 +9,8 @@ Windows drive-qualified values.
 
 ## Decision
 
-- Recommendations require finite limitation codes and one or more single-line redacted reproduction commands.
+- Recommendations require finite limitation codes and one or more structured allowlisted Vetryn reproduction
+  operations bound to the recommendation call site.
 - Candidate-run evidence inputs reject duplicate artifact IDs before any recommendation lookup.
 - Repository paths reject Windows drive prefixes in addition to POSIX roots, backslashes, nulls, and traversal.
 
