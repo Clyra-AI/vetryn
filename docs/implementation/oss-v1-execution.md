@@ -34,9 +34,10 @@ flowchart LR
 ```
 
 A task is ready only when every hard, contract, or field dependency is accepted. An executor may submit a
-candidate and evidence but cannot accept its own task. An independent verifier runs the declared
-gates; the trust reviewer checks abstention, patch safety, privacy, and evidence sufficiency. Two
-failed attempts with the same failure fingerprint stop automatic repair and require maintainer triage.
+candidate and evidence but cannot accept its own task. During the ADR-0009 single-maintainer V1 mode, the
+maintainer promotes an exact candidate after its active command gates pass. Independent verification and trust
+review remain useful checks, but are advisory rather than a prerequisite. Two failed attempts with the same
+failure fingerprint stop automatic repair and require maintainer triage.
 
 ## Agent roles and handoff
 
@@ -49,22 +50,18 @@ not executable. The full repository lifecycle is in `WORKFLOW.md`.
    brief from the canonical JSON.
 2. **Executor** implements only allowed paths, runs the smallest relevant tests, and records the
    candidate commit and command evidence.
-3. **Independent verifier** reruns every required gate from the candidate commit and checks evidence
-   digests. The verifier must not be the executor.
-4. **Trust reviewer** reviews high-risk semantics: no patch on ambiguity, stale source, insufficient
-   evidence, compatibility failure, privacy risk, or hard-limit failure.
+3. **Verifier** independently reruns active gates when available and checks candidate binding, redaction, and
+   scope. It does not repair or promote the candidate.
+4. **Trust reviewer** reviews high-risk semantics when the product has enough behavior to review: no patch on
+   ambiguity, stale source, insufficient evidence, compatibility failure, privacy risk, or hard-limit failure.
 5. **Maintainer** accepts, requests changes, or records an explicit waiver where the ledger allows it.
 
 Agents should work on one task per branch/PR. Parallel work is permitted only when the DAG allows it
 and paths do not overlap. A task brief is disposable; canonical state and evidence are committed.
 
-Ordinary role approval requires a distinct CODEOWNER's current exact-candidate GitHub review. During the
-single-owner ADR-0006 bootstrap only, the repository owner may instead use the exact structured PR issue-comment
-marker documented in `WORKFLOW.md`, including when that owner authored the PR. The validator authenticates the
-comment's current body, ID, URL, repository, PR, task, candidate, decision, named roles, and exact public
-association provenance (`OWNER`, `MEMBER`, or `CONTRIBUTOR`). Protected-main CODEOWNERS, not that association,
-authorizes the actor for each role. This does not replace independent agent verification, CI, Codex settlement,
-merge authorization, or canonical promotion.
+ADR 0009 makes named review roles and `CODEOWNERS` advisory for the OSS V1 build. The maintainer's explicit
+approval plus exact-candidate command evidence controls promotion. Review feedback still informs the PR loop, but
+it is not represented as a substitute for CI or deterministic command evidence.
 
 ## Runner-ready task packet
 
@@ -75,12 +72,12 @@ chain, lifecycle gates, retry budget, runtime pins, Factory compatibility, polic
 release intent, and item-level acceptance-result requirements.
 
 `evidence_required` and `worker_evidence_required` contain only evidence the executor can produce before
-shipping. `lifecycle_evidence_required` names the real outputs produced later by `validation-gate`, `commit-push`,
-and Vetryn's specialized verify/promote roles: validation, authenticated GitHub review, ship packet, pull-request
-lifecycle, post-merge, and canonical-promotion evidence. Factoryd-only scope-closure artifacts are not required
-while Factoryd remains deferred. An executor may report an acceptance item as implemented, partial, missing, or
-blocked, but that result does not change the ledger, accept the task, or satisfy a pending review. Any source
-digest or plan drift requires recompilation before handoff.
+shipping. `lifecycle_evidence_required` names the outputs produced later by `validation-gate`, `commit-push`, and
+Vetryn's specialized promote role: validation, shipping, pull-request lifecycle, post-merge, and canonical
+promotion evidence. Factoryd-only scope-closure artifacts are not required while Factoryd remains deferred. An
+executor may report an acceptance item as implemented, partial, missing, or blocked, but that result does not
+change the ledger or accept the task. Any source drift requires recompilation; plan and lockfile digests in
+already-passing evidence remain immutable historical provenance.
 
 ## Quality lanes
 

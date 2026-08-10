@@ -402,7 +402,7 @@ describe("implementation plan validator", () => {
     expect(result.stderr).toContain("cites unsuccessful evidence");
   });
 
-  it("rejects evidence bound to a stale plan digest", async () => {
+  it("accepts immutable evidence bound to an earlier plan digest", async () => {
     const root = await createFixture();
     const evidence = await createV1Evidence(root, {
       inputs: {
@@ -413,11 +413,10 @@ describe("implementation plan validator", () => {
     await passFirstPlanningCriterion(root, evidence.id);
 
     const result = runPlan(root);
-    expect(result.status).not.toBe(0);
-    expect(result.stderr).toContain("stale plan digest");
+    expect(result.status, result.stderr).toBe(0);
   });
 
-  it("rejects evidence bound to a stale lockfile digest", async () => {
+  it("accepts immutable evidence bound to an earlier lockfile digest", async () => {
     const root = await createFixture();
     const evidence = await createV1Evidence(root, {
       inputs: {
@@ -428,8 +427,22 @@ describe("implementation plan validator", () => {
     await passFirstPlanningCriterion(root, evidence.id);
 
     const result = runPlan(root);
-    expect(result.status).not.toBe(0);
-    expect(result.stderr).toContain("stale lockfile digest");
+    expect(result.status, result.stderr).toBe(0);
+  });
+
+  it("preserves candidate-bound evidence when later plan or lockfile revisions evolve", async () => {
+    const root = await createFixture();
+    const evidence = await createV1Evidence(root, {
+      inputs: {
+        planDigest: `sha256:${"0".repeat(64)}`,
+        lockfileDigest: `sha256:${"1".repeat(64)}`,
+      },
+    });
+    await passFirstPlanningCriterion(root, evidence.id);
+
+    const result = runPlan(root);
+
+    expect(result.status, result.stderr).toBe(0);
   });
 
   it("rejects command evidence used as a maintainer approval", async () => {

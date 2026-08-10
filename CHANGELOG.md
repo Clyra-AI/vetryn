@@ -27,5 +27,11 @@
 - Rejects superseded approvals, stale pull-request heads, and passing evidence for planned gates.
 - Uses built-in HTTPS for GitHub evidence authentication so repository binaries cannot shadow the collector.
 
+### Changed
+
+- Simplified OSS V1 delivery to a proportional single-maintainer policy: exact-candidate command evidence and CI
+  remain required, while CODEOWNERS and reviewer-evidence records are advisory. Historical evidence inputs no
+  longer become invalid solely because a later plan or lockfile revision changes.
+
 The project uses [Changesets](https://github.com/changesets/changesets) to prepare package versions and
 release notes.

@@ -60,6 +60,12 @@ const factoryCompatibility = {
   ],
 };
 
+const singleMaintainerDeliveryCapabilities = {
+  credentials: true,
+  githubWrite: true,
+  network: true,
+};
+
 function fail(message) {
   throw new Error(message);
 }
@@ -130,6 +136,7 @@ async function compile(taskId) {
   assert(task, `unknown task ${taskId}`);
   const statePath = `product/plans/oss-v1/state/${taskId}.json`;
   const state = await readJson(statePath);
+  const executionCapabilities = { ...task.capabilities, ...singleMaintainerDeliveryCapabilities };
   const runnableStates = new Set([
     "ready",
     "in_progress",
@@ -202,7 +209,7 @@ async function compile(taskId) {
       local_validation_required: true,
       ci_required: true,
       code_review_required: false,
-      codex_review_required: true,
+      codex_review_required: false,
       commit_push_required: true,
       post_merge_monitor_required: true,
       pr_lifecycle_report_required: true,
@@ -336,7 +343,7 @@ async function compile(taskId) {
       semanticInvariants: task.semanticInvariants,
       deliverables: task.deliverables,
       requiredTestLevels: task.requiredTestLevels,
-      capabilities: task.capabilities,
+      capabilities: executionCapabilities,
       stopConditions: task.stopConditions,
     },
     currentState: {
@@ -354,7 +361,7 @@ async function compile(taskId) {
       promoteSkill: "vetryn-promote-task",
       factorySkills,
       executorMayAccept: false,
-      verifierMustDifferFromExecutor: true,
+      verifierMustDifferFromExecutor: false,
       maintainerApprovalRequired: true,
       progressIsGenerated: true,
     },

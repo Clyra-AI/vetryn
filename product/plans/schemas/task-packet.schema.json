@@ -370,7 +370,7 @@
           "const": ["task-executor", "validation-gate", "commit-push"]
         },
         "executorMayAccept": { "const": false },
-        "verifierMustDifferFromExecutor": { "const": true },
+        "verifierMustDifferFromExecutor": { "type": "boolean" },
         "maintainerApprovalRequired": { "const": true },
         "progressIsGenerated": { "const": true }
       }

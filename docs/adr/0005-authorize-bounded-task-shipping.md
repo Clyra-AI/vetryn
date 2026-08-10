@@ -1,6 +1,6 @@
 # ADR 0005: Authorize bounded task shipping
 
-- **Status:** Accepted
+- **Status:** Superseded for OSS V1 delivery by ADR 0009
 - **Date:** 2026-08-10
 
 ## Context

@@ -91,21 +91,21 @@
     {
       "id": "QG-CONTRACTS",
       "kind": "command",
-      "availability": "planned",
+      "availability": "active",
       "command": "pnpm test:contracts",
       "waivable": false
     },
     {
       "id": "QG-SCANNER-CORPUS",
       "kind": "command",
-      "availability": "planned",
+      "availability": "active",
       "command": "pnpm test:scanner-corpus",
       "waivable": false
     },
     {
       "id": "QG-SCENARIOS",
       "kind": "command",
-      "availability": "planned",
+      "availability": "active",
       "command": "pnpm test:scenarios",
       "waivable": false
     },
@@ -227,7 +227,21 @@
       "dependsOn": [{ "taskId": "V1-00", "kind": "hard" }],
       "acceptanceItemIds": ["CONTRACT-001", "CONTRACT-002", "CONTRACT-003", "CONTRACT-004"],
       "scope": {
-        "allowedPaths": ["packages/core/**", "packages/cli/**", "docs/**", "product/plans/**"],
+        "allowedPaths": [
+          "packages/core/**",
+          "packages/cli/**",
+          "docs/**",
+          "product/plans/**",
+          "scripts/**",
+          ".agents/skills/**",
+          ".factory/**",
+          ".github/CODEOWNERS",
+          "AGENTS.md",
+          "CHANGELOG.md",
+          "CONTRIBUTING.md",
+          "WORKFLOW.md",
+          "package.json"
+        ],
         "forbiddenPaths": ["packages/typescript/**", "packages/openrouter/**", "action.yml"]
       },
       "semanticInvariants": [
@@ -244,10 +258,10 @@
       ],
       "requiredReviews": ["maintainer", "trust-reviewer"],
       "capabilities": {
-        "network": false,
-        "credentials": false,
+        "network": true,
+        "credentials": true,
         "provider": false,
-        "githubWrite": false
+        "githubWrite": true
       },
       "maxAttempts": 2,
       "stopConditions": [

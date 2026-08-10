@@ -195,7 +195,7 @@ describe("task packet compiler", () => {
     });
   });
 
-  it("compiles a deterministic, role-separated packet for an active task", async () => {
+  it("compiles a deterministic single-maintainer packet for an active task", async () => {
     const root = await createFixture();
     const first = runTask(root, "compile", "V1-00");
     const second = runTask(root, "compile", "V1-00");
@@ -215,7 +215,7 @@ describe("task packet compiler", () => {
       retry_budget: { max_attempts: 2, current_attempt: 1, remaining_attempts: 1 },
       execution: {
         executorMayAccept: false,
-        verifierMustDifferFromExecutor: true,
+        verifierMustDifferFromExecutor: false,
         maintainerApprovalRequired: true,
         progressIsGenerated: true,
       },
@@ -244,7 +244,7 @@ describe("task packet compiler", () => {
     expect(packet.lifecycle_evidence_required).not.toContain("scope_closure_report");
     expect(packet.lifecycle_gates).toMatchObject({
       code_review_required: false,
-      codex_review_required: true,
+      codex_review_required: false,
       post_merge_monitor_required: true,
       pr_lifecycle_report_required: true,
     });
