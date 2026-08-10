@@ -171,7 +171,7 @@
         "This task does not implement scanner, evaluation, recommendation, or patch behavior.",
         "Progress is derived from canonical state and ledger files.",
         "No task executor can accept its own candidate.",
-        "Network, stored GitHub authentication, and GitHub writes are limited to the maintainer-authorized Factory commit-push lifecycle after exact-candidate independent verification; provider access and unrelated network use remain forbidden."
+        "As constrained by docs/adr/0005-authorize-bounded-task-shipping.md, network, stored GitHub authentication, and GitHub writes are limited to the maintainer-authorized Factory commit-push lifecycle after exact-candidate independent verification; provider access and unrelated network use remain forbidden."
       ],
       "deliverables": [
         "docs/implementation/oss-v1-execution.md",
