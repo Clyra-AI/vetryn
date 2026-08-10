@@ -185,6 +185,17 @@ describe("V1 artifact contracts", () => {
     expect(() =>
       parseVetrynArtifact({ ...candidateRun, failureCode: "timeout", status: "incomplete" }),
     ).toThrow(/cannot include promotable aggregate metrics/);
+    expect(() =>
+      parseVetrynArtifact({
+        ...candidateRun,
+        metrics: {
+          ...candidateRun.metrics,
+          caseCount: 2,
+          failedCaseIds: ["case-a", "case-a"],
+          passedCases: 0,
+        },
+      }),
+    ).toThrow(/duplicate failed case ID/i);
   });
 
   it("excludes credentials and raw protected inputs or outputs by construction", () => {
@@ -222,6 +233,41 @@ describe("V1 artifact contracts", () => {
         candidateRun.evaluationInputDigest,
       ),
     ).toThrow(/cannot use incomplete candidate run/);
+
+    const candidateRunWith = (overrides: Record<string, unknown>) =>
+      candidateRunSchema.parse({
+        ...candidateRun,
+        ...overrides,
+      });
+
+    expect(() =>
+      assertRecommendationEvidence(
+        parsedRecommendation,
+        [candidateRunWith({ callSiteId: "other-call-site" })],
+        candidateRun.evaluationInputDigest,
+      ),
+    ).toThrow(/call site/i);
+    expect(() =>
+      assertRecommendationEvidence(
+        parsedRecommendation,
+        [candidateRunWith({ baselineModel: "openai/gpt-4.1-mini" })],
+        candidateRun.evaluationInputDigest,
+      ),
+    ).toThrow(/baseline model/i);
+    expect(() =>
+      assertRecommendationEvidence(
+        parsedRecommendation,
+        [candidateRunWith({ catalogSnapshotId: "catalog-snapshot:other-catalog" })],
+        candidateRun.evaluationInputDigest,
+      ),
+    ).toThrow(/catalog snapshot/i);
+    expect(() =>
+      assertRecommendationEvidence(
+        parsedRecommendation,
+        [candidateRunWith({ candidateModel: "openai/gpt-4.1" })],
+        candidateRun.evaluationInputDigest,
+      ),
+    ).toThrow(/recommended model/i);
   });
 
   it("keeps every core source file free of runtime side-effect imports", async () => {

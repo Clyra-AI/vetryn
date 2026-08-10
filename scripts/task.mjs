@@ -60,10 +60,10 @@ const factoryCompatibility = {
   ],
 };
 
-const singleMaintainerDeliveryCapabilities = {
-  credentials: true,
-  githubWrite: true,
-  network: true,
+const maintainerDeliveryPermissions = {
+  allowsProviderAccess: false,
+  mode: "factory-lifecycle-only",
+  requiresExplicitMaintainerAuthorization: true,
 };
 
 function fail(message) {
@@ -136,7 +136,6 @@ async function compile(taskId) {
   assert(task, `unknown task ${taskId}`);
   const statePath = `product/plans/oss-v1/state/${taskId}.json`;
   const state = await readJson(statePath);
-  const executionCapabilities = { ...task.capabilities, ...singleMaintainerDeliveryCapabilities };
   const runnableStates = new Set([
     "ready",
     "in_progress",
@@ -343,7 +342,7 @@ async function compile(taskId) {
       semanticInvariants: task.semanticInvariants,
       deliverables: task.deliverables,
       requiredTestLevels: task.requiredTestLevels,
-      capabilities: executionCapabilities,
+      capabilities: task.capabilities,
       stopConditions: task.stopConditions,
     },
     currentState: {
@@ -364,6 +363,7 @@ async function compile(taskId) {
       verifierMustDifferFromExecutor: false,
       maintainerApprovalRequired: true,
       progressIsGenerated: true,
+      deliveryPermissions: maintainerDeliveryPermissions,
     },
   };
 

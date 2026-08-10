@@ -220,6 +220,8 @@ const candidateMetricsSchema = z
   })
   .strict()
   .superRefine((metrics, context) => {
+    assertUniqueValues(metrics.failedCaseIds, context, "failed case ID", ["failedCaseIds"]);
+
     if (
       metrics.passedCases + metrics.failedCaseIds.length + metrics.errorCount !==
       metrics.caseCount
@@ -517,6 +519,30 @@ export function assertRecommendationEvidence(
     if (candidateRun.status !== "complete") {
       throw new VetrynContractError(
         `Recommendation evidence cannot use ${candidateRun.status} candidate run ${candidateRunId}.`,
+      );
+    }
+
+    if (candidateRun.callSiteId !== recommendation.callSiteId) {
+      throw new VetrynContractError(
+        `Recommendation evidence candidate run ${candidateRunId} has a different call site.`,
+      );
+    }
+
+    if (candidateRun.baselineModel !== recommendation.baselineModel) {
+      throw new VetrynContractError(
+        `Recommendation evidence candidate run ${candidateRunId} has a different baseline model.`,
+      );
+    }
+
+    if (candidateRun.catalogSnapshotId !== recommendation.catalogSnapshotId) {
+      throw new VetrynContractError(
+        `Recommendation evidence candidate run ${candidateRunId} has a different catalog snapshot.`,
+      );
+    }
+
+    if (candidateRun.candidateModel !== recommendation.recommendedModel) {
+      throw new VetrynContractError(
+        `Recommendation evidence candidate run ${candidateRunId} has a different recommended model.`,
       );
     }
 

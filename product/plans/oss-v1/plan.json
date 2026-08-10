@@ -219,20 +219,15 @@
       ]
     },
     {
-      "id": "V1-01",
-      "milestone": "M1",
-      "title": "Define V1 domain and artifact contracts",
-      "objective": "Implement versioned core schemas, deterministic IDs, canonical serialization, and fail-closed validation for every V1 artifact.",
-      "risk": { "level": "high", "domains": ["contracts", "compatibility", "privacy"] },
+      "id": "M0-01",
+      "milestone": "M0",
+      "title": "Adopt proportional single-maintainer V1 delivery",
+      "objective": "Replace bootstrap-only review mechanics with explicit maintainer-owned delivery permissions while preserving exact command evidence and task-scoped product capabilities.",
+      "risk": { "level": "medium", "domains": ["delivery", "governance", "capabilities"] },
       "dependsOn": [{ "taskId": "V1-00", "kind": "hard" }],
-      "acceptanceItemIds": ["CONTRACT-001", "CONTRACT-002", "CONTRACT-003", "CONTRACT-004"],
+      "acceptanceItemIds": ["PROCESS-001", "PROCESS-002"],
       "scope": {
         "allowedPaths": [
-          "packages/core/**",
-          "packages/cli/**",
-          "docs/**",
-          "product/plans/**",
-          "scripts/**",
           ".agents/skills/**",
           ".factory/**",
           ".github/CODEOWNERS",
@@ -240,8 +235,52 @@
           "CHANGELOG.md",
           "CONTRIBUTING.md",
           "WORKFLOW.md",
-          "package.json"
+          "docs/adr/0003-bind-task-execution-and-review-evidence.md",
+          "docs/adr/0005-authorize-bounded-task-shipping.md",
+          "docs/adr/0006-bootstrap-merge-governance.md",
+          "docs/adr/0009-single-maintainer-v1-delivery.md",
+          "docs/agent-map.md",
+          "docs/implementation/oss-v1-execution.md",
+          "package.json",
+          "product/plans/**",
+          "scripts/**"
         ],
+        "forbiddenPaths": ["packages/**", ".github/workflows/**", "action.yml"]
+      },
+      "semanticInvariants": [
+        "Compiled task capabilities remain exactly the task's reviewed product capability boundary.",
+        "Maintainer delivery authority is explicit, Factory-lifecycle-only, and never grants provider access.",
+        "Exact candidate and gate bindings, redaction, dependency ordering, and generated progress remain enforced."
+      ],
+      "deliverables": ["scripts/task.mjs", "scripts/plan.mjs", "product/plans/**", "WORKFLOW.md"],
+      "requiredTestLevels": ["static", "contract", "adversarial"],
+      "requiredGates": ["QG-REPO-CHECK", "QG-CONTRACTS"],
+      "requiredReviews": [],
+      "capabilities": {
+        "network": true,
+        "credentials": true,
+        "provider": false,
+        "githubWrite": true
+      },
+      "maxAttempts": 2,
+      "stopConditions": [
+        "A product task capability denial is widened by the compiler or delivery policy.",
+        "Provider access, ambient secrets, direct main writes, or automatic product merge are authorized."
+      ]
+    },
+    {
+      "id": "V1-01",
+      "milestone": "M1",
+      "title": "Define V1 domain and artifact contracts",
+      "objective": "Implement versioned core schemas, deterministic IDs, canonical serialization, and fail-closed validation for every V1 artifact.",
+      "risk": { "level": "high", "domains": ["contracts", "compatibility", "privacy"] },
+      "dependsOn": [
+        { "taskId": "V1-00", "kind": "hard" },
+        { "taskId": "M0-01", "kind": "hard" }
+      ],
+      "acceptanceItemIds": ["CONTRACT-001", "CONTRACT-002", "CONTRACT-003", "CONTRACT-004"],
+      "scope": {
+        "allowedPaths": ["packages/core/**", "packages/cli/**", "docs/**", "product/plans/**"],
         "forbiddenPaths": ["packages/typescript/**", "packages/openrouter/**", "action.yml"]
       },
       "semanticInvariants": [
@@ -258,10 +297,10 @@
       ],
       "requiredReviews": ["maintainer", "trust-reviewer"],
       "capabilities": {
-        "network": true,
-        "credentials": true,
+        "network": false,
+        "credentials": false,
         "provider": false,
-        "githubWrite": true
+        "githubWrite": false
       },
       "maxAttempts": 2,
       "stopConditions": [

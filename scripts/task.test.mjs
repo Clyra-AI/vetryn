@@ -13,7 +13,7 @@ const taskScript = path.join(repositoryRoot, "scripts/task.mjs");
 const planScript = path.join(repositoryRoot, "scripts/plan.mjs");
 const temporaryRoots = [];
 const v1TaskId = "V1-00";
-const v1FixtureTaskIds = [v1TaskId, "V1-01"];
+const fixtureTaskIds = [v1TaskId, "M0-01", "V1-01"];
 const v1FixtureRevision = 5;
 
 async function createFixture() {
@@ -86,6 +86,37 @@ async function normalizeV1Fixture(root) {
   });
   await writeFixtureJson(root, statePath, state);
 
+  const processStatePath = "product/plans/oss-v1/state/M0-01.json";
+  const processState = await readFixtureJson(root, processStatePath);
+  Object.assign(processState, {
+    revision: 0,
+    state: "planned",
+    attempt: 0,
+    candidate: null,
+    criteria: processState.criteria.map((criterion) => ({
+      ...criterion,
+      status: "pending",
+      evidenceRefs: [],
+    })),
+    gates: processState.gates.map((gate) => ({ ...gate, status: "pending", evidenceRefs: [] })),
+    reviews: processState.reviews.map((review) => ({
+      ...review,
+      status: "pending",
+      evidenceRefs: [],
+    })),
+    blockers: [],
+    history: [
+      {
+        from: null,
+        to: "planned",
+        at: "2026-08-10T00:00:00Z",
+        actor: "task-test-fixture",
+        reason: "Reset the dependent M0-01 process task with the V1-00 fixture baseline.",
+      },
+    ],
+  });
+  await writeFixtureJson(root, processStatePath, processState);
+
   const dependentStatePath = "product/plans/oss-v1/state/V1-01.json";
   const dependentState = await readFixtureJson(root, dependentStatePath);
   Object.assign(dependentState, {
@@ -120,9 +151,7 @@ async function normalizeV1Fixture(root) {
   const ledgerPath = "product/plans/oss-v1/acceptance-ledger.json";
   const ledger = await readFixtureJson(root, ledgerPath);
   ledger.items = ledger.items.map((item) =>
-    v1FixtureTaskIds.includes(item.taskId)
-      ? { ...item, status: "planned", evidenceRefs: [] }
-      : item,
+    fixtureTaskIds.includes(item.taskId) ? { ...item, status: "planned", evidenceRefs: [] } : item,
   );
   await writeFixtureJson(root, ledgerPath, ledger);
 
@@ -131,7 +160,7 @@ async function normalizeV1Fixture(root) {
     if (!filename.endsWith(".json")) continue;
     const evidencePath = path.join(evidenceDirectory, filename);
     const evidence = JSON.parse(await readFile(evidencePath, "utf8"));
-    if (v1FixtureTaskIds.includes(evidence.taskId)) await rm(evidencePath);
+    if (fixtureTaskIds.includes(evidence.taskId)) await rm(evidencePath);
   }
 
   const writeResult = runPlan(root, "write");
@@ -302,6 +331,41 @@ describe("task packet compiler", () => {
       "PLAN-003",
       "PLAN-004",
     ]);
+  });
+
+  it("preserves reviewed capability denials while declaring separate maintainer delivery authority", async () => {
+    const root = await createFixture();
+    const planPath = "product/plans/oss-v1/plan.json";
+    const plan = await readFixtureJson(root, planPath);
+    const task = plan.tasks.find((candidate) => candidate.id === v1TaskId);
+    task.capabilities = {
+      network: false,
+      credentials: false,
+      provider: false,
+      githubWrite: false,
+    };
+    await writeFixtureJson(root, planPath, plan);
+
+    const result = runTask(root, "compile", v1TaskId);
+
+    expect(result.status, result.stderr).toBe(0);
+    expect(JSON.parse(result.stdout)).toMatchObject({
+      task: {
+        capabilities: {
+          network: false,
+          credentials: false,
+          provider: false,
+          githubWrite: false,
+        },
+      },
+      execution: {
+        deliveryPermissions: {
+          mode: "factory-lifecycle-only",
+          requiresExplicitMaintainerAuthorization: true,
+          allowsProviderAccess: false,
+        },
+      },
+    });
   });
 
   it("fails schema validation when a runner-required field is missing", async () => {

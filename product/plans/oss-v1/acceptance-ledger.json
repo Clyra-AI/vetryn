@@ -79,6 +79,24 @@
       "evidenceRefs": ["ev-v1-00-repo-check-4dba91a"]
     },
     {
+      "id": "PROCESS-001",
+      "taskId": "M0-01",
+      "statement": "Compiled task packets preserve each task's reviewed product capabilities and declare delivery authority separately.",
+      "verification": { "method": "test", "testLevel": "contract", "gateId": "QG-CONTRACTS" },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
+      "id": "PROCESS-002",
+      "taskId": "M0-01",
+      "statement": "Single-maintainer delivery keeps exact candidate and gate evidence, redaction, and CI enforcement without CODEOWNERS or reviewer-evidence blocking promotion.",
+      "verification": { "method": "test", "testLevel": "adversarial", "gateId": "QG-REPO-CHECK" },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
       "id": "CONTRACT-001",
       "taskId": "V1-01",
       "statement": "Every V1 artifact has a versioned strict schema and canonical serializer.",

@@ -1,0 +1,51 @@
+{
+  "$schema": "../../schemas/task-state.schema.json",
+  "schemaVersion": "1.0.0",
+  "taskId": "M0-01",
+  "revision": 1,
+  "state": "in_progress",
+  "attempt": 1,
+  "candidate": null,
+  "criteria": [
+    {
+      "criterionId": "PROCESS-001",
+      "status": "pending",
+      "evidenceRefs": []
+    },
+    {
+      "criterionId": "PROCESS-002",
+      "status": "pending",
+      "evidenceRefs": []
+    }
+  ],
+  "gates": [
+    {
+      "gateId": "QG-REPO-CHECK",
+      "status": "pending",
+      "evidenceRefs": []
+    },
+    {
+      "gateId": "QG-CONTRACTS",
+      "status": "pending",
+      "evidenceRefs": []
+    }
+  ],
+  "reviews": [],
+  "blockers": [],
+  "history": [
+    {
+      "from": null,
+      "to": "planned",
+      "at": "2026-08-10T16:44:30Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer-created process task to keep V1-01's product scope authoritative."
+    },
+    {
+      "from": "planned",
+      "to": "in_progress",
+      "at": "2026-08-10T16:45:45Z",
+      "actor": "davidahmann",
+      "reason": "Started the explicit delivery-policy task before rebinding V1-01 to the reviewed candidate."
+    }
+  ]
+}

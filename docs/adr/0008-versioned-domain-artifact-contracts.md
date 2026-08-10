@@ -17,6 +17,9 @@ privacy, and abstention semantics required by a reviewable upgrade recommendatio
 - Keep source bindings, model IDs, opaque digests, aggregate measurements, safe case identifiers, and enumerated
   diagnostics. Exclude credentials, raw prompts, raw model outputs, unbounded provider errors, and source diffs
   from durable core artifacts.
+- Require failed-case identifiers to be unique. A recommendation may use a completed candidate run only when its
+  call site, baseline model, catalog snapshot, candidate model, and evaluation-input digest all match the proposed
+  model change.
 - Keep call-site identity human-owned in the manifest. Artifact identifiers are deterministic from a declared
   artifact type and stable identifier parts; the core does not infer semantic identity from source locations.
 - Keep `@vetryn/core` pure. It exposes validation, deterministic identity, canonical serialization, and digest
