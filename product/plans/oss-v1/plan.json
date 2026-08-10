@@ -171,7 +171,8 @@
         "This task does not implement scanner, evaluation, recommendation, or patch behavior.",
         "Progress is derived from canonical state and ledger files.",
         "No task executor can accept its own candidate.",
-        "As constrained by docs/adr/0005-authorize-bounded-task-shipping.md, network, stored GitHub authentication, and GitHub writes are limited to the maintainer-authorized Factory commit-push lifecycle after exact-candidate independent verification; provider access and unrelated network use remain forbidden."
+        "As constrained by docs/adr/0005-authorize-bounded-task-shipping.md, network, stored GitHub authentication, and GitHub writes are limited to the maintainer-authorized Factory commit-push lifecycle after exact-candidate independent verification; provider access and unrelated network use remain forbidden.",
+        "The temporary branch-level bootstrap merge mode in docs/adr/0006-bootstrap-merge-governance.md never supplies task review evidence, acceptance, promotion, or reviewer separation."
       ],
       "deliverables": [
         "docs/implementation/oss-v1-execution.md",
@@ -198,7 +199,8 @@
         "The product contract and task DAG disagree.",
         "Generated progress differs from canonical state.",
         "Implementation code enters the planning-only change.",
-        "A GitHub lifecycle write occurs before independent verification or targets anything outside the authorized V1-00 branch, pull request, merge, or post-merge monitoring flow."
+        "A GitHub lifecycle write occurs before independent verification or targets anything outside the authorized V1-00 branch, pull request, merge, or post-merge monitoring flow.",
+        "A bootstrap merge authorization is represented as authenticated task review or acceptance evidence."
       ]
     },
     {

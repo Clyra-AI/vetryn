@@ -63,8 +63,16 @@ even if an evidence record names their future command.
 ## Pull requests and review
 
 Use one task per branch and pull request. Pull requests explain the problem, bounded changes, validation,
-risks, and evidence. Required latest-head CI, human review, CODEOWNERS, and passive Codex review must settle
-before merge.
+risks, and evidence. Required latest-head CI and passive Codex review must settle before merge, and all
+implemented review threads must be resolved.
+
+ADR 0006 defines a temporary single-maintainer bootstrap mode in which GitHub branch protection may require zero
+approvals and no CODEOWNER review. A merge in that mode still requires explicit maintainer authorization for the
+exact task or pull request, green latest-head CI and CodeQL, a terminal latest-head Codex approval or thumbs-up,
+and no unresolved actionable findings. Bootstrap merge authorization is lifecycle authority only: it cannot be
+recorded as task review evidence, cannot accept or promote a task, and does not weaken any task's declared review
+roles or reviewer-separation requirements. Restore at least one independent approval and CODEOWNER review when
+the ADR's exit condition is met.
 
 A profile may allow a **standalone P2 exception** only when all of the following are true: a human explicitly
 authorizes that exact task or pull request; the finding is on the current head; exactly one classified P2 and
