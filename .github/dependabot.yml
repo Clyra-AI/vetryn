@@ -13,6 +13,11 @@ updates:
         dependency-type: production
       development-dependencies:
         dependency-type: development
+    ignore:
+      # typescript-eslint 8.66 supports TypeScript versions below 6.1.
+      - dependency-name: typescript
+        versions:
+          - ">=6.1.0"
     commit-message:
       prefix: deps
 

@@ -11,10 +11,7 @@ on:
     - cron: "31 5 * * 1"
   workflow_dispatch:
 
-permissions:
-  contents: read
-  packages: read
-  security-events: write
+permissions: read-all
 
 concurrency:
   group: codeql-${{ github.workflow }}-${{ github.ref }}
@@ -25,6 +22,10 @@ jobs:
     name: analyze (javascript-typescript)
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    permissions:
+      contents: read
+      packages: read
+      security-events: write
     steps:
       - name: Harden runner
         uses: step-security/harden-runner@b09bb98e06d4d774595224525879c09bc6e98c40 # v2.20.1
