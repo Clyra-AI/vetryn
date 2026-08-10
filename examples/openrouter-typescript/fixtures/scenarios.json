@@ -105,6 +105,19 @@
       ]
     },
     {
+      "id": "filter-before-shortlist-truncation",
+      "category": "catalog",
+      "description": "The three lowest projected-cost catalog entries are respectively retired, missing required tool support, and blocked by repository privacy policy, while more than five compatible entries remain.",
+      "expectedDisposition": "idempotent",
+      "expectedReason": "Hard compatibility and policy filters run before the ranked shortlist is truncated.",
+      "assertions": [
+        "The retired, tool-incompatible, and privacy-blocked entries are excluded with deterministic reasons before ranking and truncation.",
+        "The ordered candidate IDs are mock/alpha, mock/bravo, mock/charlie, mock/delta, and mock/echo.",
+        "The filtered entries do not consume candidate slots and mock/foxtrot remains the first eligible model outside the bound.",
+        "Exactly five compatible candidates execute and no filtered model executes."
+      ]
+    },
+    {
       "id": "candidate-limit-above-five",
       "category": "catalog",
       "description": "Repository policy requests a candidate limit greater than the V1 maximum of five.",
@@ -206,6 +219,18 @@
         "The corrupted evidence remains immutable, is flagged integrity-invalid, and is not reused as current.",
         "Candidates execute again within the configured retry, timeout, and spend limits.",
         "The successful reevaluation receives a new run and evidence identity."
+      ]
+    },
+    {
+      "id": "unchanged-input-rerun-after-reuse-expiry",
+      "category": "action",
+      "description": "Complete, integrity-valid evidence has unchanged input digests, but the pinned clock is later than its policy-defined reuse-valid-until timestamp.",
+      "expectedDisposition": "recommend",
+      "expectedReason": "Policy-expired evidence is not reusable even when its inputs and integrity remain unchanged.",
+      "assertions": [
+        "The expired evidence remains immutable and is not reused as current.",
+        "Candidates execute again within the configured retry, timeout, and spend limits.",
+        "The successful reevaluation receives a new run and evidence identity with the current reuse window."
       ]
     },
     {

@@ -2,7 +2,7 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "V1-05",
-  "revision": 5,
+  "revision": 6,
   "state": "planned",
   "attempt": 0,
   "candidate": null,
@@ -105,6 +105,13 @@
       "at": "2026-08-10T13:24:18Z",
       "actor": "planning-agent",
       "reason": "Added adversarial fail-closed coverage for invalid representative usage profiles."
+    },
+    {
+      "from": "planned",
+      "to": "planned",
+      "at": "2026-08-10T13:32:52Z",
+      "actor": "planning-agent",
+      "reason": "Proved compatibility and policy filters run before shortlist truncation."
     }
   ]
 }
