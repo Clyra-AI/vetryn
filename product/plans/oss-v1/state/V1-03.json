@@ -2,51 +2,51 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "V1-03",
-  "revision": 45,
+  "revision": 46,
   "state": "accepted",
   "attempt": 3,
   "candidate": {
     "baseCommit": "3a91ea3652dee363654fe07cd8b191fd65d55c48",
-    "commit": "da3210a6b664b4911b1605772377622dae98d690",
+    "commit": "c2e612a0e7544405c59d674fb981e21bc06cfdde",
     "executor": "implementation-agent"
   },
   "criteria": [
     {
       "criterionId": "SCAN-001",
       "status": "pass",
-      "evidenceRefs": ["ev-v1-03-scanner-corpus-da3210a"]
+      "evidenceRefs": ["ev-v1-03-scanner-corpus-c2e612a"]
     },
     {
       "criterionId": "SCAN-002",
       "status": "pass",
-      "evidenceRefs": ["ev-v1-03-scanner-corpus-da3210a"]
+      "evidenceRefs": ["ev-v1-03-scanner-corpus-c2e612a"]
     },
     {
       "criterionId": "SCAN-003",
       "status": "pass",
-      "evidenceRefs": ["ev-v1-03-scanner-corpus-da3210a"]
+      "evidenceRefs": ["ev-v1-03-scanner-corpus-c2e612a"]
     },
     {
       "criterionId": "SCAN-004",
       "status": "pass",
-      "evidenceRefs": ["ev-v1-03-scanner-corpus-da3210a"]
+      "evidenceRefs": ["ev-v1-03-scanner-corpus-c2e612a"]
     }
   ],
   "gates": [
     {
       "gateId": "QG-REPO-CHECK",
       "status": "pass",
-      "evidenceRefs": ["ev-v1-03-repo-check-da3210a"]
+      "evidenceRefs": ["ev-v1-03-repo-check-c2e612a"]
     },
     {
       "gateId": "QG-CONTRACTS",
       "status": "pass",
-      "evidenceRefs": ["ev-v1-03-contracts-da3210a"]
+      "evidenceRefs": ["ev-v1-03-contracts-c2e612a"]
     },
     {
       "gateId": "QG-SCANNER-CORPUS",
       "status": "pass",
-      "evidenceRefs": ["ev-v1-03-scanner-corpus-da3210a"]
+      "evidenceRefs": ["ev-v1-03-scanner-corpus-c2e612a"]
     },
     {
       "gateId": "QG-INDEPENDENT-VERIFY",
@@ -485,6 +485,27 @@
       "at": "2026-08-11T13:49:30Z",
       "actor": "davidahmann",
       "reason": "Maintainer accepted the final post-authorization scanner candidate after all active command gates passed; named reviewer records remain advisory under ADR 0009."
+    },
+    {
+      "from": "accepted",
+      "to": "changes_requested",
+      "at": "2026-08-11T14:01:42Z",
+      "actor": "chatgpt-codex-connector[bot]",
+      "reason": "Current-head P1 review required the final accessor-scope correction to replace stale candidate-bound command evidence before merge."
+    },
+    {
+      "from": "changes_requested",
+      "to": "verification_pending",
+      "at": "2026-08-11T14:03:16Z",
+      "actor": "implementation-agent",
+      "reason": "Submitted the corrected accessor-scope candidate with replacement repository, contract, and reviewed-corpus command evidence."
+    },
+    {
+      "from": "verification_pending",
+      "to": "accepted",
+      "at": "2026-08-11T14:03:16Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer accepted the exact corrected scanner candidate after all active command gates passed; named review records remain advisory under ADR 0009."
     }
   ]
 }

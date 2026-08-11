@@ -231,7 +231,7 @@
       },
       "waivable": false,
       "status": "accepted",
-      "evidenceRefs": ["ev-v1-03-scanner-corpus-da3210a"]
+      "evidenceRefs": ["ev-v1-03-scanner-corpus-c2e612a"]
     },
     {
       "id": "SCAN-002",
@@ -244,7 +244,7 @@
       },
       "waivable": false,
       "status": "accepted",
-      "evidenceRefs": ["ev-v1-03-scanner-corpus-da3210a"]
+      "evidenceRefs": ["ev-v1-03-scanner-corpus-c2e612a"]
     },
     {
       "id": "SCAN-003",
@@ -257,7 +257,7 @@
       },
       "waivable": false,
       "status": "accepted",
-      "evidenceRefs": ["ev-v1-03-scanner-corpus-da3210a"]
+      "evidenceRefs": ["ev-v1-03-scanner-corpus-c2e612a"]
     },
     {
       "id": "SCAN-004",
@@ -270,7 +270,7 @@
       },
       "waivable": false,
       "status": "accepted",
-      "evidenceRefs": ["ev-v1-03-scanner-corpus-da3210a"]
+      "evidenceRefs": ["ev-v1-03-scanner-corpus-c2e612a"]
     },
     {
       "id": "MANIFEST-001",
