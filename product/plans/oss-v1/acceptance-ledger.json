@@ -119,6 +119,15 @@
       "evidenceRefs": ["ev-m0-03-repo-check-61d5418"]
     },
     {
+      "id": "PROCESS-005",
+      "taskId": "M0-04",
+      "statement": "A separate maintainer-controlled task authorizes only the still-unaccepted third V1-02 attempt to add recursive durable-artifact redaction scanning and a separately controlled promotion.",
+      "verification": { "method": "test", "testLevel": "contract", "gateId": "QG-REPO-CHECK" },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
       "id": "CONTRACT-001",
       "taskId": "V1-01",
       "statement": "Every V1 artifact has a versioned strict schema and canonical serializer.",
