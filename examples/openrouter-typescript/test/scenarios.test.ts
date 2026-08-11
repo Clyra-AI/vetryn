@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 
 import OpenAI from "openai";
 import { describe, expect, it, vi } from "vitest";
@@ -88,6 +88,19 @@ const fixtureFile = (relativePath: string): URL => new URL(relativePath, fixture
 
 const readJson = async <Value>(relativePath: string): Promise<Value> =>
   JSON.parse(await readFile(fixtureFile(relativePath), "utf8")) as Value;
+
+const readDurableArtifactContents = async (relativeDirectory: string): Promise<string[]> => {
+  const entries = await readdir(fixtureFile(relativeDirectory), { withFileTypes: true });
+  const contents = await Promise.all(
+    entries.map(async (entry) => {
+      const relativePath = `${relativeDirectory}/${entry.name}`;
+      return entry.isDirectory()
+        ? readDurableArtifactContents(relativePath)
+        : [await readFile(fixtureFile(relativePath), "utf8")];
+    }),
+  );
+  return contents.flat();
+};
 
 const fixtureDigest = (value: string): string =>
   `sha256:${createHash("sha256").update(value).digest("hex")}`;
@@ -450,15 +463,9 @@ describe("OpenRouter TypeScript golden scenario", () => {
         protectedInput: credentialMarker,
         untrustedModelOutput: protectedOutputMarker,
       });
-      const durableArtifacts = await Promise.all(
-        [
-          "fixtures/manifest.json",
-          "fixtures/eval-suite.json",
-          "fixtures/catalog-snapshot.json",
-          "expected/recommendation-summary.json",
-          "expected/abstention-report.json",
-        ].map((relativePath) => readFile(fixtureFile(relativePath), "utf8")),
-      );
+      const durableArtifacts = (
+        await Promise.all(["fixtures", "expected"].map(readDurableArtifactContents))
+      ).flat();
 
       expect(JSON.stringify(result)).not.toContain(credentialMarker);
       expect(JSON.stringify(result)).not.toContain(protectedOutputMarker);
