@@ -2,47 +2,51 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "V1-03",
-  "revision": 46,
-  "state": "in_progress",
+  "revision": 47,
+  "state": "verification_pending",
   "attempt": 3,
-  "candidate": null,
+  "candidate": {
+    "baseCommit": "c8165c57fc2d871c5012a0fe9c0e2f87467b7712",
+    "commit": "96cff25acc8f76d5073da3547d46908446a32490",
+    "executor": "implementation-agent"
+  },
   "criteria": [
     {
       "criterionId": "SCAN-001",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-03-scanner-corpus-96cff25"]
     },
     {
       "criterionId": "SCAN-002",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-03-scanner-corpus-96cff25"]
     },
     {
       "criterionId": "SCAN-003",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-03-scanner-corpus-96cff25"]
     },
     {
       "criterionId": "SCAN-004",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-03-scanner-corpus-96cff25"]
     }
   ],
   "gates": [
     {
       "gateId": "QG-REPO-CHECK",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-03-repo-check-96cff25"]
     },
     {
       "gateId": "QG-CONTRACTS",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-03-contracts-96cff25"]
     },
     {
       "gateId": "QG-SCANNER-CORPUS",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-03-scanner-corpus-96cff25"]
     },
     {
       "gateId": "QG-INDEPENDENT-VERIFY",
@@ -502,6 +506,13 @@
       "at": "2026-08-11T12:56:35Z",
       "actor": "davidahmann",
       "reason": "Maintainer narrowed the same unmerged repair to the scanner-local accessor and SCAN-004 deterministic-gate correction."
+    },
+    {
+      "from": "in_progress",
+      "to": "verification_pending",
+      "at": "2026-08-11T13:00:22Z",
+      "actor": "implementation-agent",
+      "reason": "Submitted the exact narrowed scanner candidate with replacement repository, contract, and reviewed-corpus command evidence."
     }
   ]
 }
