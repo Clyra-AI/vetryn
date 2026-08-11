@@ -110,6 +110,15 @@
       "evidenceRefs": ["ev-m0-02-repo-check-35e330b"]
     },
     {
+      "id": "PROCESS-004",
+      "taskId": "M0-03",
+      "statement": "A separate maintainer-controlled task authorizes exactly one additional V1-02 attempt for the three concrete current-head pull-request review findings, with no product-scope or capability expansion.",
+      "verification": { "method": "test", "testLevel": "contract", "gateId": "QG-PLAN-CHECK" },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
       "id": "CONTRACT-001",
       "taskId": "V1-01",
       "statement": "Every V1 artifact has a versioned strict schema and canonical serializer.",
