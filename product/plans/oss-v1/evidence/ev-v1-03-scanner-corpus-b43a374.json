@@ -1,0 +1,31 @@
+{
+  "$schema": "../../schemas/evidence.schema.json",
+  "schemaVersion": "1.0.0",
+  "id": "ev-v1-03-scanner-corpus-b43a374",
+  "taskId": "V1-03",
+  "type": "command-run",
+  "actor": "implementation-agent",
+  "commit": "b43a37432a1ef5dbdf107c24792c68cda97502a1",
+  "createdAt": "2026-08-11T12:51:02Z",
+  "result": {
+    "status": "pass",
+    "checks": [
+      {
+        "name": "pnpm test:scanner-corpus",
+        "status": "pass",
+        "summary": "The reviewed offline corpus passed with 100% high-confidence precision and 100% supported-pattern recall; later model accessors abstain, unrelated accessors remain patchable, and SCAN-004 is bound to the deterministic scanner-corpus gate."
+      }
+    ]
+  },
+  "inputs": {
+    "planDigest": "sha256:9db79876b36cb08d05b9aad5c9e9eb4305346196342c7de2018a8340bef87ce0",
+    "lockfileDigest": "sha256:0568848490d539fc4b1a4cd53c2ddd95108a15a0ad1ea37ff6c14f1b748db6ac"
+  },
+  "gateBinding": {
+    "gateId": "QG-SCANNER-CORPUS",
+    "kind": "command",
+    "command": "pnpm test:scanner-corpus"
+  },
+  "review": null,
+  "redaction": { "status": "verified", "containsRawModelOutput": false, "containsSecrets": false }
+}
