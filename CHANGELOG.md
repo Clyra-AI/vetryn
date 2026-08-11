@@ -54,6 +54,8 @@
   active task policy, and made lifecycle preflight reject halted task states or active blockers.
 - Bound recompilation to the frozen candidate's exact task and gate policy so relevant plan drift cannot reuse
   earlier candidate-specific lifecycle evidence while unrelated task edits remain valid.
+- Bound acceptance-policy recompilation to the frozen candidate ledger while continuing to allow authenticated
+  status/evidence promotion tails and unrelated task acceptance edits.
 
 ### Changed
 

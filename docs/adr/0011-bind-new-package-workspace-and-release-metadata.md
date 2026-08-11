@@ -43,9 +43,9 @@ local green result that fails in CI or silently disappears from a release.
 - Once a candidate is frozen, compilation reads each immutable input from that Git commit. Product-contract and
   lockfile bytes must still match the current checkout. The plan digest remains historical candidate provenance,
   while preflight re-derives this task's complete policy from the valid current plan and compares the full task and
-  gate definitions to the candidate plan before emitting a packet; unrelated task edits do not invalidate
-  evidence, but relevant policy drift fails comparison and recompilation. Halted canonical task states and active
-  blockers always stop preflight.
+  gate definitions to the candidate plan, plus policy-bearing acceptance fields to the candidate ledger, before
+  emitting a packet. Unrelated task edits do not invalidate evidence, but relevant plan or acceptance-policy drift
+  fails comparison and recompilation. Halted canonical task states and active blockers always stop preflight.
 - Publishable package documentation refs derive from the task's package deliverables and authorized example paths;
   they are never hard-coded to an unrelated provider package.
 - The lockfile delta is limited to the new workspace importer, internal workspace links, and the already pinned

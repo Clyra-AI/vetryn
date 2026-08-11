@@ -874,6 +874,15 @@ async function validatePacket(packet, { requireBoundCandidate }) {
       `frozen candidate task ${packet.task_id} references an unknown gate`,
     );
     assertSame(candidateGates, canonicalGates, "canonical gate policy has drifted from candidate");
+    const candidateLedger = readJsonAtCommit(canonicalState.candidate.commit, sourcePaths.ledger);
+    const candidateAcceptanceItems = candidateLedger.items.filter(
+      (item) => item.taskId === packet.task_id,
+    );
+    assertSame(
+      candidateAcceptanceItems.map(acceptancePolicyView),
+      canonicalAcceptanceItems.map(acceptancePolicyView),
+      "canonical acceptance policy has drifted from candidate",
+    );
   }
   const expectedSourceFiles = [plan.productContract, sourcePaths.plan, "pnpm-lock.yaml"];
   assertSame(

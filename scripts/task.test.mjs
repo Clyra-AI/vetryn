@@ -903,6 +903,25 @@ describe("task packet compiler", () => {
     );
     await writeFixtureJson(root, planPath, plan);
 
+    const ledgerPath = "product/plans/oss-v1/acceptance-ledger.json";
+    const canonicalLedger = await readFixtureJson(root, ledgerPath);
+    const unrelatedLedger = globalThis.structuredClone(canonicalLedger);
+    unrelatedLedger.items.find((item) => item.taskId === "V1-06").statement +=
+      " Unrelated acceptance clarification.";
+    await writeFixtureJson(root, ledgerPath, unrelatedLedger);
+    expect(runTask(root, "validate", "candidate-packet.json").status).toBe(0);
+    expect(runTask(root, "compile", "V1-05").status).toBe(0);
+
+    const relevantLedger = globalThis.structuredClone(unrelatedLedger);
+    relevantLedger.items.find((item) => item.taskId === "V1-05").waivable = true;
+    await writeFixtureJson(root, ledgerPath, relevantLedger);
+    const relevantLedgerCompile = runTask(root, "compile", "V1-05");
+    expect(relevantLedgerCompile.status).toBe(1);
+    expect(relevantLedgerCompile.stderr).toContain(
+      "canonical acceptance policy has drifted from candidate",
+    );
+    await writeFixtureJson(root, ledgerPath, canonicalLedger);
+
     const productContractPath = path.join(root, "docs/oss-v1.md");
     const productContract = await readFile(productContractPath, "utf8");
     await writeFile(productContractPath, `${productContract}\nCandidate-external drift.\n`);
