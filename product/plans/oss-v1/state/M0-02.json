@@ -2,27 +2,31 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "M0-02",
-  "revision": 4,
-  "state": "in_progress",
+  "revision": 5,
+  "state": "accepted",
   "attempt": 2,
-  "candidate": null,
+  "candidate": {
+    "baseCommit": "5322bdfce5304b1e178c45875d04659b93adcc78",
+    "commit": "35e330b3238c019495be2a448fcfa354e2293801",
+    "executor": "davidahmann"
+  },
   "criteria": [
     {
       "criterionId": "PROCESS-003",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-02-repo-check-35e330b"]
     }
   ],
   "gates": [
     {
       "gateId": "QG-PLAN-CHECK",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-02-plan-check-35e330b"]
     },
     {
       "gateId": "QG-REPO-CHECK",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-02-repo-check-35e330b"]
     }
   ],
   "reviews": [],
@@ -69,6 +73,13 @@
       "at": "2026-08-11T01:09:10Z",
       "actor": "davidahmann",
       "reason": "Reopened M0-02 for its final deterministic skill-contract evidence and attempt accounting repair."
+    },
+    {
+      "from": "in_progress",
+      "to": "accepted",
+      "at": "2026-08-11T01:10:32Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer accepted the final skill-contract candidate after active planning and repository command gates passed."
     }
   ]
 }
