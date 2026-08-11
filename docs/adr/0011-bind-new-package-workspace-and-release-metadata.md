@@ -22,6 +22,9 @@ local green result that fails in CI or silently disappears from a release.
   `product/plans/oss-v1/evidence/lifecycle/<task-id>/<candidate-commit>/`. An unbound pre-candidate packet cannot
   supply lifecycle evidence. This makes high-risk `review_report` preflight immutable and executable while keeping
   lifecycle-owned artifacts outside executor write scope.
+- Consumers run `node scripts/task.mjs validate <packet-path>` before using lifecycle evidence. That validator
+  recomputes every ref from `task_id`, the current candidate (or `unbound` only when null), and the artifact key;
+  JSON Schema shape validation is necessary but not sufficient for this cross-field security boundary.
 - Publishable package documentation refs derive from the task's package deliverables and authorized example paths;
   they are never hard-coded to an unrelated provider package.
 - The lockfile delta is limited to the new workspace importer, internal workspace links, and the already pinned

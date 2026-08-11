@@ -34,6 +34,8 @@
   validate a frozen high-risk candidate's local review before promotion or push.
 - Derived publishable-package documentation requirements from each task's deliverables and example scope rather
   than hard-coding OpenRouter documentation for unrelated packages.
+- Added cross-field packet validation that rejects lifecycle refs bound to the wrong task, candidate, unbound
+  state, or artifact key even when their JSON shape is otherwise valid.
 
 ### Changed
 

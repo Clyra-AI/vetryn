@@ -807,6 +807,55 @@ describe("task packet compiler", () => {
       "product/plans/oss-v1/evidence/lifecycle/V1-05/1111111111111111111111111111111111111111/review_report.json",
     );
     expect(Object.keys(packet.lifecycle_evidence_refs)).toEqual(packet.lifecycle_evidence_required);
+    expect(packet.packet_validation_command).toBe("node scripts/task.mjs validate");
+    await writeFixtureJson(root, "candidate-packet.json", packet);
+    expect(runTask(root, "validate", "candidate-packet.json").status).toBe(0);
+
+    const invalidBindings = [
+      packet.lifecycle_evidence_refs.review_report.replace("/V1-05/", "/V1-06/"),
+      packet.lifecycle_evidence_refs.review_report.replace(
+        "/1111111111111111111111111111111111111111/",
+        "/3333333333333333333333333333333333333333/",
+      ),
+      packet.lifecycle_evidence_refs.review_report.replace(
+        "/1111111111111111111111111111111111111111/",
+        "/unbound/",
+      ),
+      packet.lifecycle_evidence_refs.review_report.replace(
+        "/review_report.json",
+        "/validation_report.json",
+      ),
+    ];
+    for (const [index, invalidRef] of invalidBindings.entries()) {
+      const invalidPacket = globalThis.structuredClone(packet);
+      invalidPacket.lifecycle_evidence_refs.review_report = invalidRef;
+      const packetPath = `invalid-candidate-packet-${index}.json`;
+      await writeFixtureJson(root, packetPath, invalidPacket);
+      const validation = runTask(root, "validate", packetPath);
+      expect(validation.status).toBe(1);
+      expect(validation.stderr).toContain("lifecycle evidence ref review_report must equal");
+    }
+
+    const forgedCandidatePacket = globalThis.structuredClone(packet);
+    forgedCandidatePacket.currentState.candidate.commit =
+      "3333333333333333333333333333333333333333";
+    forgedCandidatePacket.lifecycle_evidence_refs = Object.fromEntries(
+      Object.entries(forgedCandidatePacket.lifecycle_evidence_refs).map(
+        ([artifact, artifactRef]) => [
+          artifact,
+          artifactRef.replace(
+            "/1111111111111111111111111111111111111111/",
+            "/3333333333333333333333333333333333333333/",
+          ),
+        ],
+      ),
+    );
+    await writeFixtureJson(root, "forged-candidate-packet.json", forgedCandidatePacket);
+    const forgedCandidateValidation = runTask(root, "validate", "forged-candidate-packet.json");
+    expect(forgedCandidateValidation.status).toBe(1);
+    expect(forgedCandidateValidation.stderr).toContain(
+      "currentState.candidate does not match canonical task state",
+    );
 
     task.deliverables = ["packages/typescript/**", "packages/cli/**"];
     task.scope.allowedPaths = task.scope.allowedPaths.map((allowedPath) =>

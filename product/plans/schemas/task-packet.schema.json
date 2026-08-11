@@ -27,6 +27,7 @@
     "worker_evidence_required",
     "lifecycle_evidence_required",
     "lifecycle_evidence_refs",
+    "packet_validation_command",
     "stop_conditions",
     "retry_budget",
     "runtime_pins",
@@ -148,6 +149,7 @@
       },
       "additionalProperties": false
     },
+    "packet_validation_command": { "const": "node scripts/task.mjs validate" },
     "stop_conditions": { "$ref": "#/$defs/nonemptyUniqueStrings" },
     "retry_budget": {
       "type": "object",

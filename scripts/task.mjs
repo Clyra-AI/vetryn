@@ -56,13 +56,17 @@ function lifecycleEvidenceRefsForTask(taskId, candidateCommit, requiredEvidence)
 }
 
 function publishableDocumentationRefs(task) {
-  const refs = task.deliverables
-    .map((deliverable) => deliverable.match(/^packages\/([^/]+)\/\*\*$/)?.[1])
-    .filter(Boolean)
-    .map((packageName) => ({
-      path: `packages/${packageName}/README.md`,
-      reason: `Document the ${packageName} package's public contract for this task.`,
-    }));
+  const packageNames = [
+    ...new Set(
+      task.deliverables
+        .map((deliverable) => deliverable.match(/^packages\/([^/]+)\/\*\*$/)?.[1])
+        .filter(Boolean),
+    ),
+  ];
+  const refs = packageNames.map((packageName) => ({
+    path: `packages/${packageName}/README.md`,
+    reason: `Document the ${packageName} package's public contract for this task.`,
+  }));
 
   if (task.scope.allowedPaths.includes("examples/openrouter-typescript/**"))
     refs.push({
@@ -72,6 +76,23 @@ function publishableDocumentationRefs(task) {
     });
 
   return refs;
+}
+
+function assertLifecycleEvidenceBindings(packet) {
+  const expectedCandidate = packet.currentState.candidate?.commit ?? "unbound";
+  const requiredArtifacts = [...packet.lifecycle_evidence_required].sort();
+  const referencedArtifacts = Object.keys(packet.lifecycle_evidence_refs).sort();
+  assert(
+    JSON.stringify(referencedArtifacts) === JSON.stringify(requiredArtifacts),
+    "lifecycle evidence refs do not correspond one-to-one with lifecycle_evidence_required",
+  );
+  for (const artifact of requiredArtifacts) {
+    const expectedRef = `product/plans/oss-v1/evidence/lifecycle/${packet.task_id}/${expectedCandidate}/${artifact}.json`;
+    assert(
+      packet.lifecycle_evidence_refs[artifact] === expectedRef,
+      `lifecycle evidence ref ${artifact} must equal ${expectedRef}`,
+    );
+  }
 }
 
 const runtimePins = {
@@ -274,6 +295,7 @@ async function compile(taskId) {
       state.candidate?.commit,
       lifecycleEvidenceRequired,
     ),
+    packet_validation_command: "node scripts/task.mjs validate",
     stop_conditions: [
       ...task.stopConditions,
       "A changed path is outside allowed_paths or matches forbidden_paths.",
@@ -447,6 +469,11 @@ async function compile(taskId) {
     },
   };
 
+  await validatePacket(packet);
+  process.stdout.write(`${JSON.stringify(packet, null, 2)}\n`);
+}
+
+async function validatePacket(packet) {
   const schema = await readJson("product/plans/schemas/task-packet.schema.json");
   const ajv = new Ajv2020({ allErrors: true, strict: true, allowUnionTypes: true });
   addFormats(ajv);
@@ -457,7 +484,29 @@ async function compile(taskId) {
       .map((error) => `${error.instancePath || "/"} ${error.message}`)
       .join("; ")}`,
   );
-  process.stdout.write(`${JSON.stringify(packet, null, 2)}\n`);
+  assert(packet.task_id === packet.task.id, "task_id does not match task.id");
+  const expectedStatePath = `product/plans/oss-v1/state/${packet.task_id}.json`;
+  assert(
+    packet.source.statePath === expectedStatePath,
+    `source.statePath must equal ${expectedStatePath}`,
+  );
+  const canonicalState = await readJson(expectedStatePath);
+  assert(canonicalState.taskId === packet.task_id, "canonical state task does not match task_id");
+  assert(
+    JSON.stringify(canonicalState.candidate) === JSON.stringify(packet.currentState.candidate),
+    "currentState.candidate does not match canonical task state",
+  );
+  assertLifecycleEvidenceBindings(packet);
+}
+
+async function validatePacketFile(relativePath) {
+  assert(relativePath, "usage: node scripts/task.mjs validate <packet-path>");
+  assert(
+    !path.isAbsolute(relativePath) && !relativePath.split(/[\\/]/u).includes(".."),
+    "packet path must stay within the repository",
+  );
+  await validatePacket(await readJson(relativePath));
+  process.stdout.write(`task packet ${relativePath} is valid\n`);
 }
 
 async function main() {
@@ -465,7 +514,8 @@ async function main() {
   const command = args[0] ?? "next";
   if (command === "next") return next();
   if (command === "compile") return compile(args[1]);
-  fail("usage: node scripts/task.mjs [next|compile <task-id>]");
+  if (command === "validate") return validatePacketFile(args[1]);
+  fail("usage: node scripts/task.mjs [next|compile <task-id>|validate <packet-path>]");
 }
 
 await main().catch((error) => {

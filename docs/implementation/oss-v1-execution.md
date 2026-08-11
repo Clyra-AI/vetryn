@@ -94,6 +94,11 @@ executor may report an acceptance item as implemented, partial, missing, or bloc
 change the ledger or accept the task. Any source drift requires recompilation; plan and lockfile digests in
 already-passing evidence remain immutable historical provenance.
 
+Before consuming lifecycle evidence from a stored packet, run
+`node scripts/task.mjs validate <packet-path>`. The command applies the public JSON Schema and then recomputes each
+lifecycle ref from the packet's task, candidate state, and artifact key, rejecting cross-task, stale-candidate,
+unbound-candidate, and swapped-artifact refs.
+
 ## Quality lanes
 
 | Lane               | Purpose                                                      | Merge policy                                       |
