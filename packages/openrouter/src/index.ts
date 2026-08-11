@@ -1,4 +1,5 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { createReadStream } from "node:fs";
+import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 import {
@@ -95,7 +96,11 @@ export type RefreshObservation = z.infer<typeof refreshObservationSchema>;
 export interface CatalogExclusion {
   readonly modelId: string;
   readonly reason:
-    "invalid-capabilities" | "invalid-context-window" | "invalid-model-id" | "invalid-pricing";
+    | "ambiguous-model-id"
+    | "invalid-capabilities"
+    | "invalid-context-window"
+    | "invalid-model-id"
+    | "invalid-pricing";
 }
 
 export interface NormalizeCatalogResult {
@@ -185,7 +190,7 @@ export class FileCatalogStore implements CatalogStore {
 
   async hasSnapshot(contentDigest: string): Promise<boolean> {
     try {
-      await readFile(this.snapshotPath(contentDigest), "utf8");
+      await readBoundedCatalogFile(this.snapshotPath(contentDigest));
       return true;
     } catch (error: unknown) {
       if (isMissingFileError(error)) return false;
@@ -197,6 +202,7 @@ export class FileCatalogStore implements CatalogStore {
     snapshotInput: CatalogSnapshot,
   ): Promise<{ readonly reused: boolean; readonly snapshot: CatalogSnapshot }> {
     const snapshot = parseCatalogSnapshot(snapshotInput);
+    assertCanonicalOpenRouterSnapshot(snapshot);
     const target = this.snapshotPath(snapshot.contentDigest);
     await mkdir(path.dirname(target), { recursive: true });
     const contents = `${stableJson(snapshot)}\n`;
@@ -206,7 +212,7 @@ export class FileCatalogStore implements CatalogStore {
       return { reused: false, snapshot };
     } catch (error: unknown) {
       if (!isExistingFileError(error)) throw error;
-      const existing = await readFile(target, "utf8");
+      const existing = await readBoundedCatalogFile(target);
       if (existing !== contents) {
         const storedSnapshot = parseCatalogSnapshot(JSON.parse(existing) as unknown);
         if (!isReusableOpenRouterSnapshot(storedSnapshot, snapshot)) {
@@ -258,7 +264,8 @@ export function normalizeOpenRouterCatalog(
   }
 
   const exclusions: CatalogExclusion[] = [];
-  const models: CatalogModel[] = [];
+  const models = new Map<string, CatalogModel>();
+  const ambiguousModelIds = new Set<string>();
 
   for (const value of catalog.data.data) {
     const raw = rawModelSchema.safeParse(value);
@@ -311,7 +318,7 @@ export function normalizeOpenRouterCatalog(
       exclusions.push({ modelId: raw.data.id, reason: "invalid-capabilities" });
       continue;
     }
-    models.push({
+    const model: CatalogModel = {
       capabilities: {
         structuredOutput:
           parameters.includes("response_format") || parameters.includes("structured_outputs"),
@@ -324,15 +331,26 @@ export function normalizeOpenRouterCatalog(
       outputPricePerMillionUsd,
       provider,
       retired: false,
-    });
+    };
+    if (ambiguousModelIds.has(model.id)) continue;
+    const existingModel = models.get(model.id);
+    if (existingModel === undefined) {
+      models.set(model.id, model);
+    } else if (stableJson(existingModel) !== stableJson(model)) {
+      models.delete(model.id);
+      ambiguousModelIds.add(model.id);
+      exclusions.push({ modelId: model.id, reason: "ambiguous-model-id" });
+    }
   }
 
-  if (models.length === 0) {
+  if (models.size === 0) {
     throw new OpenRouterCatalogError(
       "OpenRouter catalog has no models with complete trusted metadata.",
     );
   }
-  const sortedModels = models.toSorted((left, right) => compareText(left.id, right.id));
+  const sortedModels = [...models.values()].toSorted((left, right) =>
+    compareText(left.id, right.id),
+  );
   const contentDigest = createCatalogContentDigest(sortedModels);
   const digestSuffix = contentDigest.slice("sha256:".length);
   const snapshot = parseCatalogSnapshot({
@@ -434,6 +452,7 @@ export function resolveCandidates({
 }: ResolveCandidatesOptions): CandidateShortlist {
   const callSite = parseCallSite(callSiteInput);
   const snapshot = parseCatalogSnapshot(snapshotInput);
+  assertCanonicalOpenRouterSnapshot(snapshot);
   const limit = assertCandidateLimit(limitInput);
   assertRepresentativeUsage(callSite);
 
@@ -589,6 +608,24 @@ async function readResponseBody(
   return Buffer.concat(chunks, byteLength).toString("utf8");
 }
 
+async function readBoundedCatalogFile(filePath: string): Promise<string> {
+  const stream = createReadStream(filePath);
+  const chunks: Buffer[] = [];
+  let byteLength = 0;
+  for await (const chunk of stream) {
+    const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk as Uint8Array);
+    byteLength += buffer.byteLength;
+    if (byteLength > MAX_CATALOG_BYTES) {
+      stream.destroy();
+      throw new OpenRouterCatalogError(
+        `Stored catalog input exceeds the ${MAX_CATALOG_BYTES}-byte limit.`,
+      );
+    }
+    chunks.push(buffer);
+  }
+  return Buffer.concat(chunks, byteLength).toString("utf8");
+}
+
 function parsePerTokenPrice(value: unknown): string | undefined {
   if (
     typeof value !== "string" ||
@@ -697,11 +734,26 @@ function isExistingFileError(error: unknown): error is NodeJS.ErrnoException {
 
 function isReusableOpenRouterSnapshot(stored: CatalogSnapshot, incoming: CatalogSnapshot): boolean {
   return (
-    stored.artifactType === "catalog-snapshot" &&
+    hasCanonicalOpenRouterIdentity(stored) &&
     stored.contentDigest === incoming.contentDigest &&
-    stored.id === incoming.id &&
-    stored.schemaVersion === VETRYN_ARTIFACT_SCHEMA_VERSION &&
-    stored.source === "openrouter" &&
     Date.parse(stored.observedAt) <= Date.parse(incoming.observedAt)
+  );
+}
+
+function assertCanonicalOpenRouterSnapshot(snapshot: CatalogSnapshot): void {
+  if (!hasCanonicalOpenRouterIdentity(snapshot)) {
+    throw new OpenRouterCatalogError(
+      "Candidate resolution requires a canonical digest-derived OpenRouter snapshot.",
+    );
+  }
+}
+
+function hasCanonicalOpenRouterIdentity(snapshot: CatalogSnapshot): boolean {
+  return (
+    snapshot.artifactType === "catalog-snapshot" &&
+    snapshot.id ===
+      `catalog-snapshot:openrouter--sha256-${snapshot.contentDigest.slice("sha256:".length)}` &&
+    snapshot.schemaVersion === VETRYN_ARTIFACT_SCHEMA_VERSION &&
+    snapshot.source === "openrouter"
   );
 }

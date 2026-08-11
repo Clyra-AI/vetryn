@@ -2,7 +2,7 @@
 
 import { randomUUID } from "node:crypto";
 import { createReadStream } from "node:fs";
-import { lstat, mkdir, readFile, readdir, rename, rmdir, rm, writeFile } from "node:fs/promises";
+import { lstat, mkdir, readdir, rename, rmdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { Readable } from "node:stream";
 import { pathToFileURL } from "node:url";
@@ -26,6 +26,7 @@ import {
 } from "@vetryn/openrouter";
 
 export const VERSION = "0.0.0";
+const MAX_REPOSITORY_INPUT_BYTES = 20_000_000;
 const ignoredPathNames = new Set([".artifacts", ".git", "coverage", "dist", "node_modules"]);
 
 export interface Diagnostics {
@@ -175,7 +176,7 @@ export async function scanRepository({
       files.map(async (file) =>
         scanTypeScript({
           file,
-          source: await readFile(path.join(absoluteRoot, file), "utf8"),
+          source: await readBoundedTextFile(path.join(absoluteRoot, file)),
         }),
       ),
     )
@@ -193,7 +194,26 @@ export async function scanRepository({
 }
 
 async function readJsonFile(filePath: string): Promise<unknown> {
-  return JSON.parse(await readFile(filePath, "utf8")) as unknown;
+  return JSON.parse(await readBoundedTextFile(filePath)) as unknown;
+}
+
+async function readBoundedTextFile(
+  filePath: string,
+  maximumBytes = MAX_REPOSITORY_INPUT_BYTES,
+): Promise<string> {
+  const stream = createReadStream(filePath);
+  const chunks: Buffer[] = [];
+  let byteLength = 0;
+  for await (const chunk of stream) {
+    const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk as Uint8Array);
+    byteLength += buffer.byteLength;
+    if (byteLength > maximumBytes) {
+      stream.destroy();
+      throw new Error(`Repository input ${filePath} exceeds the ${maximumBytes}-byte limit.`);
+    }
+    chunks.push(buffer);
+  }
+  return Buffer.concat(chunks, byteLength).toString("utf8");
 }
 
 async function readOptionalJsonFile(filePath: string): Promise<unknown | undefined> {

@@ -9,7 +9,8 @@ snapshot plus a unique observation record; unchanged content reuses the snapshot
 observation. A failed refresh records only failure evidence and never identifies an older snapshot as current.
 Live observations derive their timestamp from the acquisition clock; captured responses accept an explicit
 repository timestamp. Existing same-digest snapshots are reused only when their OpenRouter identity and temporal
-provenance are compatible. Tests inject `fetch`; CI never calls a live provider.
+provenance are compatible. Conflicting duplicate model IDs are excluded, and replay requires the canonical
+digest-derived OpenRouter snapshot identity. Tests inject `fetch`; CI never calls a live provider.
 
 Candidate resolution excludes incomplete catalog entries, the baseline model, retired models, blocked
 providers, and models missing required capabilities before ranking. The default and maximum candidate

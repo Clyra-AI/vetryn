@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, truncate, writeFile } from "node:fs/promises";
 
 import {
   createCatalogContentDigest,
@@ -196,13 +196,17 @@ describe("OpenRouter catalog normalization", () => {
           },
           rawModel("bad_provider/model"),
           rawModel("mock/overflow-price", { completion: "9".repeat(100) }),
+          rawModel("mock/conflict", { prompt: "0.0000001" }),
+          rawModel("mock/conflict", { prompt: "0.0000002" }),
+          rawModel("mock/identical"),
+          rawModel("mock/identical"),
           rawModel("INVALID MODEL"),
         ],
       },
       observedAt,
     );
 
-    expect(result.snapshot.models.map(({ id }) => id)).toEqual(["mock/valid"]);
+    expect(result.snapshot.models.map(({ id }) => id)).toEqual(["mock/identical", "mock/valid"]);
     expect(result.exclusions).toEqual(
       expect.arrayContaining([
         { modelId: "mock/no-price", reason: "invalid-pricing" },
@@ -214,6 +218,7 @@ describe("OpenRouter catalog normalization", () => {
         { modelId: "mock/oversized-capabilities", reason: "invalid-capabilities" },
         { modelId: "bad_provider/model", reason: "invalid-model-id" },
         { modelId: "mock/overflow-price", reason: "invalid-pricing" },
+        { modelId: "mock/conflict", reason: "ambiguous-model-id" },
         { modelId: "INVALID MODEL", reason: "invalid-model-id" },
       ]),
     );
@@ -266,6 +271,16 @@ describe("candidate resolution", () => {
           snapshot,
         }),
       ).toThrow();
+    }
+  });
+
+  it("rejects noncanonical snapshot identity during offline replay", () => {
+    const snapshot = createRankingSnapshot();
+    for (const forged of [
+      { ...snapshot, source: "evil" },
+      { ...snapshot, id: "catalog-snapshot:forged" },
+    ]) {
+      expect(() => resolveCandidates({ callSite, snapshot: forged })).toThrow(/canonical/i);
     }
   });
 });
@@ -468,6 +483,24 @@ describe("refresh evidence", () => {
         /invalid provenance/i,
       );
     }
+  });
+
+  it("bounds preseeded snapshot files before parsing or reuse", async () => {
+    const canonical = normalizeOpenRouterCatalog(
+      { data: [rawModel("mock/alpha")] },
+      observedAt,
+    ).snapshot;
+    const { mkdtemp } = await import("node:fs/promises");
+    const { tmpdir } = await import("node:os");
+    const root = await mkdtemp(`${tmpdir()}/vetryn-openrouter-oversized-`);
+    temporaryDirectories.push(root);
+    const snapshotDirectory = `${root}/snapshots`;
+    const snapshotPath = `${snapshotDirectory}/${canonical.contentDigest.slice(7)}.json`;
+    await mkdir(snapshotDirectory, { recursive: true });
+    await writeFile(snapshotPath, "{");
+    await truncate(snapshotPath, 20_000_001);
+
+    await expect(new FileCatalogStore(root).putSnapshot(canonical)).rejects.toThrow(/byte limit/i);
   });
 });
 

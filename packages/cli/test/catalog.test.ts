@@ -93,6 +93,24 @@ describe("catalog CLI operations", () => {
       }),
     ).rejects.toThrow(/reserved for captured/i);
   });
+
+  it("bounds repository snapshot input before JSON parsing", async () => {
+    const root = await mkdtemp(path.join(tmpdir(), "vetryn-catalog-cli-"));
+    temporaryRoots.push(root);
+    const manifestPath = path.join(root, "manifest.json");
+    const snapshotPath = path.join(root, "oversized-snapshot.json");
+    await writeFile(manifestPath, JSON.stringify(manifest));
+    await writeFile(snapshotPath, "{");
+    await truncate(snapshotPath, 20_000_001);
+
+    await expect(
+      createCatalogShortlistFile({
+        callSiteId: "support-classification",
+        manifestPath,
+        snapshotPath,
+      }),
+    ).rejects.toThrow(/exceeds the .*byte limit/i);
+  });
 });
 
 const rawModel = (id: string, prompt: string, completion: string, context: number) => ({

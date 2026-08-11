@@ -17,7 +17,8 @@ Omit `--catalog-file` to perform an explicit live refresh against OpenRouter's f
 `--observed-at` is reserved for captured responses; live refreshes derive freshness from the acquisition clock.
 The immutable observation distinguishes that live acquisition from a repository-captured response. Every attempt
 needs a unique observation ID; the CLI generates one when omitted. Failures return a non-zero exit code and never
-select a previous snapshot as current.
+select a previous snapshot as current. Repository JSON, snapshot, and scanned source inputs are read through a
+fixed byte limit before parsing.
 
 Resolve a shortlist entirely from checked-in evidence:
 
