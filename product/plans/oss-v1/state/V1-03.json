@@ -2,47 +2,51 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "V1-03",
-  "revision": 40,
-  "state": "in_progress",
+  "revision": 41,
+  "state": "verification_pending",
   "attempt": 3,
-  "candidate": null,
+  "candidate": {
+    "baseCommit": "c8165c57fc2d871c5012a0fe9c0e2f87467b7712",
+    "commit": "287c3b5a25b85c7b85fa5418ce9a0401b3ae43df",
+    "executor": "implementation-agent"
+  },
   "criteria": [
     {
       "criterionId": "SCAN-001",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-03-scanner-corpus-287c3b5"]
     },
     {
       "criterionId": "SCAN-002",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-03-scanner-corpus-287c3b5"]
     },
     {
       "criterionId": "SCAN-003",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-03-scanner-corpus-287c3b5"]
     },
     {
       "criterionId": "SCAN-004",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-03-scanner-corpus-287c3b5"]
     }
   ],
   "gates": [
     {
       "gateId": "QG-REPO-CHECK",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-03-repo-check-287c3b5"]
     },
     {
       "gateId": "QG-CONTRACTS",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-03-contracts-287c3b5"]
     },
     {
       "gateId": "QG-SCANNER-CORPUS",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-03-scanner-corpus-287c3b5"]
     },
     {
       "gateId": "QG-INDEPENDENT-VERIFY",
@@ -446,6 +450,13 @@
       "at": "2026-08-11T12:37:08Z",
       "actor": "davidahmann",
       "reason": "Maintainer reopened the existing scanner correction scope for the single post-merge accessor-abstention remedy."
+    },
+    {
+      "from": "in_progress",
+      "to": "verification_pending",
+      "at": "2026-08-11T12:39:53Z",
+      "actor": "implementation-agent",
+      "reason": "Submitted the exact post-merge accessor-abstention candidate with replacement repository, contract, and reviewed-corpus command evidence."
     }
   ]
 }

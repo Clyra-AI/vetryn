@@ -1,0 +1,31 @@
+{
+  "$schema": "../../schemas/evidence.schema.json",
+  "schemaVersion": "1.0.0",
+  "id": "ev-v1-03-contracts-287c3b5",
+  "taskId": "V1-03",
+  "type": "command-run",
+  "actor": "implementation-agent",
+  "commit": "287c3b5a25b85c7b85fa5418ce9a0401b3ae43df",
+  "createdAt": "2026-08-11T12:39:53Z",
+  "result": {
+    "status": "pass",
+    "checks": [
+      {
+        "name": "pnpm test:contracts",
+        "status": "pass",
+        "summary": "All 135 deterministic contract, CLI, scanner, plan, and adversarial tests passed."
+      }
+    ]
+  },
+  "inputs": {
+    "planDigest": "sha256:97140860e8162660b60b72a93f809266763b174f5aaf015eab9a7e2394ac56f9",
+    "lockfileDigest": "sha256:0568848490d539fc4b1a4cd53c2ddd95108a15a0ad1ea37ff6c14f1b748db6ac"
+  },
+  "gateBinding": { "gateId": "QG-CONTRACTS", "kind": "command", "command": "pnpm test:contracts" },
+  "review": null,
+  "redaction": {
+    "status": "not_applicable",
+    "containsRawModelOutput": false,
+    "containsSecrets": false
+  }
+}
