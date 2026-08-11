@@ -443,6 +443,16 @@ function isVarBinding(declaration: ts.VariableDeclaration): boolean {
 
 function isRuntimeEvalDeclaration(declaration: ts.Declaration): boolean {
   if (ts.isFunctionDeclaration(declaration)) return declaration.body !== undefined;
+  if (ts.isImportClause(declaration)) return !declaration.isTypeOnly;
+  if (ts.isImportSpecifier(declaration)) {
+    if (declaration.isTypeOnly) return false;
+    const namedImports = declaration.parent;
+    return (
+      !ts.isNamedImports(namedImports) ||
+      !ts.isImportClause(namedImports.parent) ||
+      !namedImports.parent.isTypeOnly
+    );
+  }
 
   let current: ts.Node | undefined = declaration;
   while (current !== undefined && !ts.isSourceFile(current)) {
@@ -469,6 +479,7 @@ function isUnshadowedDirectEvalCall(
   checker: ts.TypeChecker,
 ): node is ts.CallExpression {
   if (!ts.isCallExpression(node)) return false;
+  if (node.questionDotToken !== undefined) return false;
   const callee = unwrapExpression(node.expression);
   if (!ts.isIdentifier(callee) || callee.text !== "eval") return false;
 

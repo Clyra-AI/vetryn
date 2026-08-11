@@ -541,6 +541,25 @@ describe("reviewed TypeScript scanner corpus", () => {
     ]);
   });
 
+  it("abstains when a type-only eval import leaves intrinsic eval reachable", () => {
+    const source = `
+      import OpenAI from "openai";
+      import type { Eval as eval } from "./types";
+      export async function run(client: OpenAI) {
+        eval("client = {}");
+        return client.chat.completions.create({ model: "openai/gpt-4.1-mini" });
+      }
+    `;
+
+    expect(scanTypeScript({ file: "src/type-only-eval.ts", source })).toMatchObject([
+      {
+        confidence: "ambiguous",
+        patchability: "not-patchable",
+        reasonCode: "unverified-client",
+      },
+    ]);
+  });
+
   it("keeps a type-proven client patchable when direct eval is in an unrelated function", () => {
     const source = `
       import OpenAI from "openai";
@@ -572,6 +591,25 @@ describe("reviewed TypeScript scanner corpus", () => {
     `;
 
     expect(scanTypeScript({ file: "src/shadowed-eval.ts", source })).toMatchObject([
+      {
+        confidence: "high",
+        modelPin: "openai/gpt-4.1-mini",
+        patchability: "patchable",
+        reasonCode: "static-model-literal",
+      },
+    ]);
+  });
+
+  it("keeps a type-proven client patchable when eval is optional", () => {
+    const source = `
+      import OpenAI from "openai";
+      export async function run(client: OpenAI) {
+        eval?.("client = {}");
+        return client.chat.completions.create({ model: "openai/gpt-4.1-mini" });
+      }
+    `;
+
+    expect(scanTypeScript({ file: "src/optional-eval.ts", source })).toMatchObject([
       {
         confidence: "high",
         modelPin: "openai/gpt-4.1-mini",
