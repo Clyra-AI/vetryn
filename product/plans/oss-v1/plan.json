@@ -320,6 +320,7 @@
         "allowedPaths": [
           ".agents/skills/vetryn-golden-scenario/**",
           "docs/agent-map.md",
+          "scripts/golden-scenario-skill.test.mjs",
           "scripts/plan.test.mjs",
           "scripts/task.test.mjs",
           "product/plans/**"
@@ -333,6 +334,7 @@
       "deliverables": [
         ".agents/skills/vetryn-golden-scenario/**",
         "docs/agent-map.md",
+        "scripts/golden-scenario-skill.test.mjs",
         "scripts/plan.test.mjs",
         "scripts/task.test.mjs"
       ],

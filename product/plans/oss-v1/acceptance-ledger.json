@@ -101,13 +101,13 @@
       "taskId": "M0-02",
       "statement": "The golden-scenario skill has an explicit offline-only fixture boundary and routes V1-02 through deterministic semantic assertions without acceptance or merge authority.",
       "verification": {
-        "method": "inspection",
+        "method": "test",
         "testLevel": "contract",
         "gateId": "QG-REPO-CHECK"
       },
       "waivable": false,
-      "status": "accepted",
-      "evidenceRefs": ["ev-m0-02-repo-check-14c7c62"]
+      "status": "planned",
+      "evidenceRefs": []
     },
     {
       "id": "CONTRACT-001",
