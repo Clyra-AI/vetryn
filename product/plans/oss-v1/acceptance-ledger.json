@@ -221,7 +221,7 @@
         "gateId": "QG-SCANNER-CORPUS"
       },
       "waivable": false,
-      "status": "verification_pending",
+      "status": "accepted",
       "evidenceRefs": ["ev-v1-03-scanner-corpus-c4a9886"]
     },
     {
@@ -234,7 +234,7 @@
         "gateId": "QG-SCANNER-CORPUS"
       },
       "waivable": false,
-      "status": "verification_pending",
+      "status": "accepted",
       "evidenceRefs": ["ev-v1-03-scanner-corpus-c4a9886"]
     },
     {
@@ -247,7 +247,7 @@
         "gateId": "QG-SCANNER-CORPUS"
       },
       "waivable": false,
-      "status": "verification_pending",
+      "status": "accepted",
       "evidenceRefs": ["ev-v1-03-scanner-corpus-c4a9886"]
     },
     {
@@ -256,7 +256,7 @@
       "statement": "Dynamic and ambiguous wrappers are reported without a patchable target or invented semantic ID.",
       "verification": { "method": "test", "testLevel": "adversarial", "gateId": "QG-TRUST-REVIEW" },
       "waivable": false,
-      "status": "verification_pending",
+      "status": "accepted",
       "evidenceRefs": ["ev-v1-03-scanner-corpus-c4a9886"]
     },
     {
