@@ -2,51 +2,47 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "V1-03",
-  "revision": 3,
-  "state": "accepted",
-  "attempt": 1,
-  "candidate": {
-    "baseCommit": "1cd902a6d44e3245240b6f22bca1c3777654558f",
-    "commit": "d32ce7c59ee1c3fdd6f55f97dc7a2b8e979b23a7",
-    "executor": "implementation-agent"
-  },
+  "revision": 4,
+  "state": "in_progress",
+  "attempt": 2,
+  "candidate": null,
   "criteria": [
     {
       "criterionId": "SCAN-001",
-      "status": "pass",
-      "evidenceRefs": ["ev-v1-03-scanner-corpus-d32ce7c"]
+      "status": "pending",
+      "evidenceRefs": []
     },
     {
       "criterionId": "SCAN-002",
-      "status": "pass",
-      "evidenceRefs": ["ev-v1-03-scanner-corpus-d32ce7c"]
+      "status": "pending",
+      "evidenceRefs": []
     },
     {
       "criterionId": "SCAN-003",
-      "status": "pass",
-      "evidenceRefs": ["ev-v1-03-scanner-corpus-d32ce7c"]
+      "status": "pending",
+      "evidenceRefs": []
     },
     {
       "criterionId": "SCAN-004",
-      "status": "pass",
-      "evidenceRefs": ["ev-v1-03-scanner-corpus-d32ce7c"]
+      "status": "pending",
+      "evidenceRefs": []
     }
   ],
   "gates": [
     {
       "gateId": "QG-REPO-CHECK",
-      "status": "pass",
-      "evidenceRefs": ["ev-v1-03-repo-check-d32ce7c"]
+      "status": "pending",
+      "evidenceRefs": []
     },
     {
       "gateId": "QG-CONTRACTS",
-      "status": "pass",
-      "evidenceRefs": ["ev-v1-03-contracts-d32ce7c"]
+      "status": "pending",
+      "evidenceRefs": []
     },
     {
       "gateId": "QG-SCANNER-CORPUS",
-      "status": "pass",
-      "evidenceRefs": ["ev-v1-03-scanner-corpus-d32ce7c"]
+      "status": "pending",
+      "evidenceRefs": []
     },
     {
       "gateId": "QG-INDEPENDENT-VERIFY",
@@ -100,6 +96,20 @@
       "at": "2026-08-11T09:49:00Z",
       "actor": "davidahmann",
       "reason": "Maintainer accepted the exact scanner candidate after all active command gates passed; named review records remain advisory under ADR 0009."
+    },
+    {
+      "from": "accepted",
+      "to": "changes_requested",
+      "at": "2026-08-11T10:03:43Z",
+      "actor": "chatgpt-codex-connector[bot]",
+      "reason": "P1 review feedback found that same-text identifiers could bypass verified OpenAI client provenance; the scope authorization was separately merged in PR #17."
+    },
+    {
+      "from": "changes_requested",
+      "to": "in_progress",
+      "at": "2026-08-11T10:03:43Z",
+      "actor": "implementation-agent",
+      "reason": "Started the permitted second attempt to bind client provenance to lexical declaration symbols."
     }
   ]
 }
