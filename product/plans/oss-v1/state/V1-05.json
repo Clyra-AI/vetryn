@@ -2,52 +2,56 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "V1-05",
-  "revision": 7,
-  "state": "planned",
-  "attempt": 0,
-  "candidate": null,
+  "revision": 9,
+  "state": "accepted",
+  "attempt": 1,
+  "candidate": {
+    "baseCommit": "b866c90dbbb004c92e4ec6ad1998e7db79824a88",
+    "commit": "c58b4584e1d057cc5903d1585cb2c54a84161969",
+    "executor": "implementation-agent"
+  },
   "criteria": [
     {
       "criterionId": "CATALOG-001",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-05-contracts-c58b458"]
     },
     {
       "criterionId": "CATALOG-002",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-05-scenarios-c58b458"]
     },
     {
       "criterionId": "CATALOG-003",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-05-scenarios-c58b458"]
     },
     {
       "criterionId": "CATALOG-004",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-05-scenarios-c58b458"]
     },
     {
       "criterionId": "CATALOG-005",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-05-scenarios-c58b458"]
     }
   ],
   "gates": [
     {
       "gateId": "QG-REPO-CHECK",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-05-repo-check-c58b458"]
     },
     {
       "gateId": "QG-CONTRACTS",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-05-contracts-c58b458"]
     },
     {
       "gateId": "QG-SCENARIOS",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-05-scenarios-c58b458"]
     },
     {
       "gateId": "QG-INDEPENDENT-VERIFY",
@@ -119,6 +123,27 @@
       "at": "2026-08-11T21:36:00Z",
       "actor": "davidahmann",
       "reason": "M0-08 separately authorized only the two temporary planning-test fixture paths needed to keep future V1 promotions isolated."
+    },
+    {
+      "from": "planned",
+      "to": "in_progress",
+      "at": "2026-08-12T00:01:17Z",
+      "actor": "implementation-agent",
+      "reason": "Recompiled V1-05 after M0-08 and repaired all current-head catalog correctness and bounded-ingestion findings."
+    },
+    {
+      "from": "in_progress",
+      "to": "verification_pending",
+      "at": "2026-08-12T00:02:07Z",
+      "actor": "implementation-agent",
+      "reason": "Submitted the exact candidate after all active command gates and structured security review passed."
+    },
+    {
+      "from": "verification_pending",
+      "to": "accepted",
+      "at": "2026-08-12T00:02:10Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer accepted the exact candidate after command gates, adversarial scenarios, and candidate-bound security review passed."
     }
   ]
 }

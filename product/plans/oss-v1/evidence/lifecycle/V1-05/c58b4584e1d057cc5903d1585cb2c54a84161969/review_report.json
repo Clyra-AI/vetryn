@@ -1,0 +1,494 @@
+{
+  "artifact_type": "review_report",
+  "schema_version": "0.1",
+  "task_id": "V1-05",
+  "work_item_id": "V1-05",
+  "review_type": "security",
+  "review_scope": [
+    "packages/openrouter/src/index.ts",
+    "packages/openrouter/test/catalog.test.ts",
+    "packages/cli/src/index.ts",
+    "packages/cli/test/catalog.test.ts",
+    "examples/openrouter-typescript/test/scenarios.test.ts",
+    "scripts/plan.test.mjs",
+    "scripts/task.test.mjs"
+  ],
+  "reviewer_class": "security_reviewer",
+  "reviewer_id": "security-reviewer:codex-local",
+  "producer": {
+    "worker": "code-review",
+    "producer_id": "security-reviewer:codex-local",
+    "producer_class": "security_reviewer"
+  },
+  "current_work": {
+    "validation_run_id": "validation:2026-08-12T00:02:06Z:V1-05",
+    "candidate_digest": "sha256:c183edbebb3398e8ffeec8a552992a95a325ad91c5fd04d93fd9c3c5208a704b",
+    "work_proof_markers": [
+      {
+        "ref": "product/plans/oss-v1/evidence/lifecycle/V1-05/c58b4584e1d057cc5903d1585cb2c54a84161969/work_proof_marker.json",
+        "sha256": "sha256:52bd8eb45c45e3fef8348916f7f425b54f120fe4072e4b02862588a733da1484"
+      }
+    ]
+  },
+  "risk_class": "high",
+  "context_isolation": {
+    "allowed_sources": ["task_packet", "diff", "repo_contracts", "tests", "validation_report"],
+    "disallowed_sources": ["private_builder_notes", "unpromoted_chat_reasoning"],
+    "builder_notes_authoritative": false
+  },
+  "findings": [
+    {
+      "id": "V1-05-F-1",
+      "severity": "P1",
+      "summary": "Live acquisition provenance previously admitted an arbitrary endpoint or injected transport.",
+      "status": "resolved",
+      "claim_source": "independently_observed",
+      "verification_status": "independently_verified",
+      "location": "packages/openrouter/src/index.ts",
+      "failure_scenario": "Untrusted catalog content is mislabeled as live OpenRouter data.",
+      "impact": "Misleading provenance could influence candidate selection.",
+      "minimum_fix": "Fix the live endpoint and separate captured-response acquisition.",
+      "promotion_effect": "block_until_fixed",
+      "evidence_refs": ["git:c198d63", "git:7f88e32", "ev-v1-05-contracts-c58b458"]
+    },
+    {
+      "id": "V1-05-F-2",
+      "severity": "P1",
+      "summary": "One malformed entry previously could abort the entire untrusted catalog.",
+      "status": "resolved",
+      "claim_source": "independently_observed",
+      "verification_status": "independently_verified",
+      "location": "packages/openrouter/src/index.ts",
+      "failure_scenario": "One invalid provider, identifier, or decimal denies a refresh containing other valid entries.",
+      "impact": "Untrusted metadata could cause catalog-wide denial of service.",
+      "minimum_fix": "Validate and exclude each entry independently.",
+      "promotion_effect": "block_until_fixed",
+      "evidence_refs": ["git:600e191", "ev-v1-05-contracts-c58b458"]
+    },
+    {
+      "id": "V1-05-F-3",
+      "severity": "P1",
+      "summary": "The initial candidate retroactively expanded its own planning scope.",
+      "status": "resolved",
+      "claim_source": "independently_observed",
+      "verification_status": "independently_verified",
+      "location": "product/plans/oss-v1/plan.json",
+      "failure_scenario": "An implementation makes an out-of-scope edit legal by editing its own packet source.",
+      "impact": "The reviewed task boundary becomes ineffective.",
+      "minimum_fix": "Authorize the exact test paths in a separate process task merged before recompilation.",
+      "promotion_effect": "block_until_fixed",
+      "evidence_refs": [
+        "https://github.com/Clyra-AI/vetryn/pull/25#discussion_r3761880068",
+        "https://github.com/Clyra-AI/vetryn/pull/26"
+      ]
+    },
+    {
+      "id": "V1-05-F-4",
+      "severity": "P1",
+      "summary": "The provider catalog byte cap was previously applied only after full response buffering.",
+      "status": "resolved",
+      "claim_source": "independently_observed",
+      "verification_status": "independently_verified",
+      "location": "packages/openrouter/src/index.ts",
+      "failure_scenario": "A chunked or inaccurately sized response exhausts memory before validation.",
+      "impact": "Untrusted provider data can deny service to the CLI process.",
+      "minimum_fix": "Count decoded stream bytes and cancel immediately above the cap.",
+      "promotion_effect": "block_until_fixed",
+      "evidence_refs": [
+        "https://github.com/Clyra-AI/vetryn/pull/25#discussion_r3761880072",
+        "ev-v1-05-contracts-c58b458"
+      ]
+    },
+    {
+      "id": "V1-05-F-5",
+      "severity": "P1",
+      "summary": "The shortlist previously admitted models unable to fit representative usage.",
+      "status": "resolved",
+      "claim_source": "independently_observed",
+      "verification_status": "independently_verified",
+      "location": "packages/openrouter/src/index.ts",
+      "failure_scenario": "A cheap undersized model displaces an evaluable model in the bounded shortlist.",
+      "impact": "Candidate budget is wasted and recommendation evidence cannot be valid.",
+      "minimum_fix": "Filter context windows against prompt plus completion tokens before ranking.",
+      "promotion_effect": "block_until_fixed",
+      "evidence_refs": [
+        "https://github.com/Clyra-AI/vetryn/pull/25#discussion_r3761880076",
+        "ev-v1-05-contracts-c58b458"
+      ]
+    },
+    {
+      "id": "V1-05-F-6",
+      "severity": "P1",
+      "summary": "Projected workload cost previously omitted the per-million divisor.",
+      "status": "resolved",
+      "claim_source": "independently_observed",
+      "verification_status": "independently_verified",
+      "location": "packages/openrouter/src/index.ts",
+      "failure_scenario": "A valid shortlist reports projected dollar cost one million times too high.",
+      "impact": "Savings reports and downstream financial decisions are materially wrong.",
+      "minimum_fix": "Divide the exact weighted per-million price by one million before reporting.",
+      "promotion_effect": "block_until_fixed",
+      "evidence_refs": [
+        "https://github.com/Clyra-AI/vetryn/pull/25#discussion_r3762001010",
+        "ev-v1-05-contracts-c58b458",
+        "ev-v1-05-scenarios-c58b458"
+      ]
+    },
+    {
+      "id": "V1-05-F-7",
+      "severity": "P1",
+      "summary": "Captured catalog files previously bypassed bounded ingestion before response construction.",
+      "status": "resolved",
+      "claim_source": "independently_observed",
+      "verification_status": "independently_verified",
+      "location": "packages/cli/src/index.ts",
+      "failure_scenario": "A hostile repository capture is fully allocated before the catalog byte cap runs.",
+      "impact": "Untrusted repository input can deny service to the CLI process.",
+      "minimum_fix": "Stream the file through the same bounded reader used for provider responses.",
+      "promotion_effect": "block_until_fixed",
+      "evidence_refs": [
+        "https://github.com/Clyra-AI/vetryn/pull/25#discussion_r3762001017",
+        "ev-v1-05-contracts-c58b458"
+      ]
+    },
+    {
+      "id": "V1-05-F-8",
+      "severity": "P1",
+      "summary": "Live refreshes previously accepted caller-controlled freshness timestamps.",
+      "status": "resolved",
+      "claim_source": "independently_observed",
+      "verification_status": "independently_verified",
+      "location": "packages/openrouter/src/index.ts",
+      "failure_scenario": "A live fetch is recorded with a caller-selected future observation time.",
+      "impact": "Stale model metadata can masquerade as current evidence.",
+      "minimum_fix": "Derive live freshness from the acquisition clock and reserve explicit timestamps for captures.",
+      "promotion_effect": "block_until_fixed",
+      "evidence_refs": [
+        "https://github.com/Clyra-AI/vetryn/pull/25#discussion_r3762088438",
+        "ev-v1-05-contracts-c58b458"
+      ]
+    },
+    {
+      "id": "V1-05-F-9",
+      "severity": "P1",
+      "summary": "Same-digest snapshot reuse previously trusted metadata outside the content digest.",
+      "status": "resolved",
+      "claim_source": "independently_observed",
+      "verification_status": "independently_verified",
+      "location": "packages/openrouter/src/index.ts",
+      "failure_scenario": "A preseeded snapshot reuses valid models with forged source, identity, or future provenance.",
+      "impact": "A successful observation can bind attacker-controlled catalog provenance.",
+      "minimum_fix": "Require canonical OpenRouter identity and temporally compatible provenance before reuse.",
+      "promotion_effect": "block_until_fixed",
+      "evidence_refs": [
+        "https://github.com/Clyra-AI/vetryn/pull/25#discussion_r3762088447",
+        "ev-v1-05-contracts-c58b458"
+      ]
+    },
+    {
+      "id": "V1-05-F-10",
+      "severity": "P1",
+      "summary": "Repository snapshot replay previously buffered unbounded files before parsing.",
+      "status": "resolved",
+      "claim_source": "independently_observed",
+      "verification_status": "independently_verified",
+      "location": "packages/cli/src/index.ts",
+      "failure_scenario": "An oversized checked-in snapshot exhausts the CLI heap before schema validation.",
+      "impact": "Untrusted repository input can deny service during offline replay.",
+      "minimum_fix": "Apply one streaming byte limit to every repository JSON and scanned source read.",
+      "promotion_effect": "block_until_fixed",
+      "evidence_refs": [
+        "https://github.com/Clyra-AI/vetryn/pull/25#discussion_r3762159331",
+        "ev-v1-05-contracts-c58b458"
+      ]
+    },
+    {
+      "id": "V1-05-F-11",
+      "severity": "P1",
+      "summary": "Offline shortlist replay previously accepted noncanonical snapshot identity.",
+      "status": "resolved",
+      "claim_source": "independently_observed",
+      "verification_status": "independently_verified",
+      "location": "packages/openrouter/src/index.ts",
+      "failure_scenario": "A valid model digest is replayed under an arbitrary source or unrelated snapshot ID.",
+      "impact": "Candidate evidence can cite misleading or reusable catalog identity.",
+      "minimum_fix": "Require the OpenRouter source and digest-derived snapshot ID at storage and replay boundaries.",
+      "promotion_effect": "block_until_fixed",
+      "evidence_refs": [
+        "https://github.com/Clyra-AI/vetryn/pull/25#discussion_r3762159336",
+        "ev-v1-05-contracts-c58b458"
+      ]
+    },
+    {
+      "id": "V1-05-F-12",
+      "severity": "P1",
+      "summary": "Conflicting duplicate provider model IDs previously aborted the entire refresh.",
+      "status": "resolved",
+      "claim_source": "independently_observed",
+      "verification_status": "independently_verified",
+      "location": "packages/openrouter/src/index.ts",
+      "failure_scenario": "Two valid but conflicting rows with one ID make every valid catalog entry unavailable.",
+      "impact": "Ambiguous untrusted metadata can deny catalog refresh service.",
+      "minimum_fix": "Collapse identical rows and exclude conflicting IDs before snapshot construction.",
+      "promotion_effect": "block_until_fixed",
+      "evidence_refs": [
+        "https://github.com/Clyra-AI/vetryn/pull/25#discussion_r3762159341",
+        "ev-v1-05-contracts-c58b458"
+      ]
+    },
+    {
+      "id": "V1-05-F-13",
+      "severity": "P1",
+      "summary": "A valid catalog row previously remained eligible when another row with the same ID failed normalization.",
+      "status": "resolved",
+      "claim_source": "independently_observed",
+      "verification_status": "independently_verified",
+      "location": "packages/openrouter/src/index.ts",
+      "failure_scenario": "A complete row is paired with an invalid duplicate whose pricing, context, or capabilities cannot be trusted.",
+      "impact": "Ambiguous provider metadata can remain eligible for execution despite fail-closed policy.",
+      "minimum_fix": "Count raw model IDs before normalization and exclude the entire repeated ID unless every row normalizes identically.",
+      "promotion_effect": "block_until_fixed",
+      "evidence_refs": [
+        "https://github.com/Clyra-AI/vetryn/pull/25#discussion_r3762229905",
+        "ev-v1-05-contracts-c58b458"
+      ]
+    },
+    {
+      "id": "V1-05-F-14",
+      "severity": "P1",
+      "summary": "Repository catalog captures previously defaulted missing acquisition time to import time.",
+      "status": "resolved",
+      "claim_source": "independently_observed",
+      "verification_status": "independently_verified",
+      "location": "packages/cli/src/index.ts",
+      "failure_scenario": "A stale checked-in provider response is imported without --observed-at and appears freshly acquired.",
+      "impact": "Stale pricing and capabilities can support a shortlist under forged freshness.",
+      "minimum_fix": "Require an explicit offset-aware acquisition timestamp for every captured response.",
+      "promotion_effect": "block_until_fixed",
+      "evidence_refs": [
+        "https://github.com/Clyra-AI/vetryn/pull/25#discussion_r3762286874",
+        "ev-v1-05-contracts-c58b458"
+      ]
+    },
+    {
+      "id": "V1-05-F-15",
+      "severity": "P2",
+      "summary": "A failed observation write previously could leave a directly replayable orphan snapshot.",
+      "status": "resolved",
+      "claim_source": "independently_observed",
+      "verification_status": "independently_verified",
+      "location": "packages/openrouter/src/index.ts",
+      "failure_scenario": "A duplicate refresh ID or filesystem failure interrupts persistence after snapshot publication.",
+      "impact": "Repository state can contain catalog evidence without the acquisition record required to establish provenance.",
+      "minimum_fix": "Commit the observation before publishing a new snapshot and roll it back if snapshot publication fails.",
+      "promotion_effect": "block_until_fixed",
+      "evidence_refs": [
+        "https://github.com/Clyra-AI/vetryn/pull/25#discussion_r3762286881",
+        "ev-v1-05-contracts-c58b458"
+      ]
+    },
+    {
+      "id": "V1-05-F-16",
+      "severity": "P1",
+      "summary": "Captured responses previously accepted timestamps arbitrarily far ahead of the trusted clock.",
+      "status": "resolved",
+      "claim_source": "independently_observed",
+      "verification_status": "independently_verified",
+      "location": "packages/openrouter/src/index.ts",
+      "failure_scenario": "A future-dated capture persists a snapshot that blocks legitimate same-content live refreshes as temporally incompatible.",
+      "impact": "Untrusted repository metadata can poison freshness evidence and prevent current observations.",
+      "minimum_fix": "Reject captured timestamps more than a bounded clock-skew allowance ahead of the trusted process clock.",
+      "promotion_effect": "block_until_fixed",
+      "evidence_refs": [
+        "https://github.com/Clyra-AI/vetryn/pull/25#discussion_r3762353481",
+        "ev-v1-05-contracts-c58b458"
+      ]
+    },
+    {
+      "id": "V1-05-F-17",
+      "severity": "P2",
+      "summary": "File-backed catalog writes previously followed symlinked store directories.",
+      "status": "resolved",
+      "claim_source": "independently_observed",
+      "verification_status": "independently_verified",
+      "location": "packages/openrouter/src/index.ts",
+      "failure_scenario": "An untrusted checkout points snapshots or observations at a directory outside the configured store.",
+      "impact": "Catalog refresh can create attacker-directed files outside its intended repository location.",
+      "minimum_fix": "Reject symbolic-link path components and verify resolved write parents remain beneath the resolved store root.",
+      "promotion_effect": "block_until_fixed",
+      "evidence_refs": [
+        "https://github.com/Clyra-AI/vetryn/pull/25#discussion_r3762353487",
+        "ev-v1-05-contracts-c58b458"
+      ]
+    },
+    {
+      "id": "V1-05-F-18",
+      "severity": "P1",
+      "summary": "Tool-choice-only metadata previously advertised full tool-call capability.",
+      "status": "resolved",
+      "claim_source": "independently_observed",
+      "verification_status": "independently_verified",
+      "location": "packages/openrouter/src/index.ts",
+      "failure_scenario": "An untrusted row exposes tool_choice without accepting the tools definitions required by the call site.",
+      "impact": "An incompatible model can consume bounded candidate budget and fail during execution.",
+      "minimum_fix": "Require explicit tools parameter support before setting tool-call capability.",
+      "promotion_effect": "block_until_fixed",
+      "evidence_refs": [
+        "https://github.com/Clyra-AI/vetryn/pull/25#discussion_r3762409262",
+        "ev-v1-05-contracts-c58b458"
+      ]
+    },
+    {
+      "id": "V1-05-F-19",
+      "severity": "P2",
+      "summary": "Catalog refresh previously had no deadline for response headers or body consumption.",
+      "status": "resolved",
+      "claim_source": "independently_observed",
+      "verification_status": "independently_verified",
+      "location": "packages/openrouter/src/index.ts",
+      "failure_scenario": "The provider accepts a connection but never completes headers or its response stream.",
+      "impact": "The CLI can hang indefinitely without recording required refresh-failure evidence.",
+      "minimum_fix": "Apply one bounded abort deadline across acquisition and body consumption and persist timeout failure evidence.",
+      "promotion_effect": "block_until_fixed",
+      "evidence_refs": [
+        "https://github.com/Clyra-AI/vetryn/pull/25#discussion_r3762409268",
+        "ev-v1-05-contracts-c58b458"
+      ]
+    },
+    {
+      "id": "V1-05-F-20",
+      "severity": "P2",
+      "summary": "Immutable catalog snapshots previously wrote directly to their final digest path.",
+      "status": "resolved",
+      "claim_source": "independently_observed",
+      "verification_status": "independently_verified",
+      "location": "packages/openrouter/src/index.ts",
+      "failure_scenario": "Disk exhaustion or process interruption leaves a truncated digest-named snapshot that blocks a later refresh.",
+      "impact": "Incomplete evidence can occupy an immutable identity and cause durable refresh failure or data loss.",
+      "minimum_fix": "Write a complete same-directory temporary file, atomically link it into the digest path without overwrite, and remove the temporary file.",
+      "promotion_effect": "block_until_fixed",
+      "evidence_refs": [
+        "https://github.com/Clyra-AI/vetryn/pull/25#discussion_r3762458510",
+        "ev-v1-05-contracts-c58b458"
+      ]
+    },
+    {
+      "id": "V1-05-F-21",
+      "severity": "P2",
+      "summary": "Concurrent refreshes previously decided snapshot reuse before atomic publication.",
+      "status": "resolved",
+      "claim_source": "independently_observed",
+      "verification_status": "independently_verified",
+      "location": "packages/openrouter/src/index.ts",
+      "failure_scenario": "Two refreshes for one unseen digest both record reusedSnapshot false even though one loses the publication race and reuses the winner.",
+      "impact": "Immutable refresh evidence can misstate the storage action that actually occurred.",
+      "minimum_fix": "Serialize snapshot inspection, observation publication, and snapshot publication per content digest.",
+      "promotion_effect": "block_until_fixed",
+      "evidence_refs": [
+        "https://github.com/Clyra-AI/vetryn/pull/25#discussion_r3762524358",
+        "ev-v1-05-contracts-c58b458"
+      ]
+    },
+    {
+      "id": "V1-05-F-22",
+      "severity": "P2",
+      "summary": "Immutable refresh observations previously wrote directly to their final ID path.",
+      "status": "resolved",
+      "claim_source": "independently_observed",
+      "verification_status": "independently_verified",
+      "location": "packages/openrouter/src/index.ts",
+      "failure_scenario": "Disk exhaustion or process interruption leaves a truncated observation that blocks retry with the same refresh ID.",
+      "impact": "Incomplete evidence can occupy an immutable identity and require manual recovery.",
+      "minimum_fix": "Write a complete same-directory temporary file and atomically link it into the observation path without overwrite.",
+      "promotion_effect": "block_until_fixed",
+      "evidence_refs": [
+        "https://github.com/Clyra-AI/vetryn/pull/25#discussion_r3762524361",
+        "ev-v1-05-contracts-c58b458"
+      ]
+    },
+    {
+      "id": "V1-05-F-23",
+      "severity": "P1",
+      "summary": "Successful observations previously became visible before a newly referenced snapshot.",
+      "status": "resolved",
+      "claim_source": "independently_observed",
+      "verification_status": "independently_verified",
+      "location": "packages/openrouter/src/index.ts",
+      "failure_scenario": "A concurrent reader or process termination observes successful refresh evidence before its exact snapshot exists.",
+      "impact": "Repository evidence can claim a successful refresh that is not replayable.",
+      "minimum_fix": "Publish the snapshot first and use the atomic successful observation as the final commit record, rolling back on ordinary failure.",
+      "promotion_effect": "block_until_fixed",
+      "evidence_refs": [
+        "https://github.com/Clyra-AI/vetryn/pull/25#discussion_r3762584391",
+        "ev-v1-05-contracts-c58b458"
+      ]
+    },
+    {
+      "id": "V1-05-F-24",
+      "severity": "P1",
+      "summary": "Offline replay previously trusted unauthenticated snapshot freshness metadata.",
+      "status": "resolved",
+      "claim_source": "independently_observed",
+      "verification_status": "independently_verified",
+      "location": "packages/openrouter/src/index.ts",
+      "failure_scenario": "A checked-in snapshot retains its digest and ID while observedAt is edited to a future time.",
+      "impact": "Candidate evidence can cite forged catalog freshness.",
+      "minimum_fix": "Require matching successful refresh evidence, reject temporally incompatible observations, and bind its ID and time into the shortlist.",
+      "promotion_effect": "block_until_fixed",
+      "evidence_refs": [
+        "https://github.com/Clyra-AI/vetryn/pull/25#discussion_r3762584396",
+        "ev-v1-05-contracts-c58b458",
+        "ev-v1-05-scenarios-c58b458"
+      ]
+    },
+    {
+      "id": "V1-05-F-25",
+      "severity": "P2",
+      "summary": "Rejected provider responses previously left their response body active.",
+      "status": "resolved",
+      "claim_source": "independently_observed",
+      "verification_status": "independently_verified",
+      "location": "packages/openrouter/src/index.ts",
+      "failure_scenario": "An HTTP error or oversized declared response retains an unbounded body after the refresh deadline is cleared.",
+      "impact": "Repeated failures can retain network resources or delay CLI termination.",
+      "minimum_fix": "Cancel rejected response bodies before recording failure evidence.",
+      "promotion_effect": "block_until_fixed",
+      "evidence_refs": [
+        "https://github.com/Clyra-AI/vetryn/pull/25#discussion_r3762584401",
+        "ev-v1-05-contracts-c58b458"
+      ]
+    }
+  ],
+  "verdict": "approved",
+  "required_fixes": [],
+  "residual_risks": [
+    "Live OpenRouter transport remains outside offline CI.",
+    "Windows-specific filesystem behavior is outside the current V1 matrix."
+  ],
+  "evidence_refs": [
+    "product/plans/oss-v1/evidence/lifecycle/V1-05/c58b4584e1d057cc5903d1585cb2c54a84161969/validation_report.json",
+    "ev-v1-05-contracts-c58b458",
+    "ev-v1-05-scenarios-c58b458"
+  ],
+  "work_proof_marker_refs": [
+    "product/plans/oss-v1/evidence/lifecycle/V1-05/c58b4584e1d057cc5903d1585cb2c54a84161969/work_proof_marker.json"
+  ],
+  "approval_effect": {
+    "promotion_decision": "ready_for_pr",
+    "approvals_granted": ["security_review_passed"],
+    "blocks_promotion": false
+  },
+  "systems_questions": {
+    "state_impact": ["Refreshes create bounded immutable observations and snapshots."],
+    "source_of_truth_changes": [
+      "Repository snapshots and their digests are authoritative for replay."
+    ],
+    "feedback_plan": ["Remote CI and latest-head Codex review replay the final branch."],
+    "blast_radius": ["Scanner, evaluator, recommendation, and patch behavior remain unchanged."],
+    "rollback_or_deletion_test": [
+      "Deleting the package and CLI commands restores the prior workspace without manifest migration."
+    ],
+    "system_model_summary": "All untrusted repository and provider inputs are byte- and time-bounded and rejected response bodies are canceled; captures require explicit acquisition time within bounded future skew; catalog rows normalize per ID and advertise only explicit capabilities; immutable snapshots and observations publish atomically without overwrite, with the snapshot first and its successful observation as the commit record; per-digest serialization binds reuse evidence to the actual storage decision; file stores reject symlink redirection; replay requires canonical digest-derived identity plus matching successful freshness evidence and binds both into the shortlist; live freshness is clock-derived; and hard filters precede exact-cost ranking."
+  },
+  "created_at": "2026-08-12T00:02:07Z"
+}
