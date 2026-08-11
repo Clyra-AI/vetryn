@@ -2,52 +2,56 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "V1-05",
-  "revision": 7,
-  "state": "planned",
-  "attempt": 0,
-  "candidate": null,
+  "revision": 9,
+  "state": "accepted",
+  "attempt": 1,
+  "candidate": {
+    "baseCommit": "f04241099285898db50da055dd0c13422b42fc97",
+    "commit": "0fbaaa0f01844acc86e36186f5e3695f7d9377a7",
+    "executor": "implementation-agent"
+  },
   "criteria": [
     {
       "criterionId": "CATALOG-001",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-05-contracts-0fbaaa0"]
     },
     {
       "criterionId": "CATALOG-002",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-05-scenarios-0fbaaa0"]
     },
     {
       "criterionId": "CATALOG-003",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-05-scenarios-0fbaaa0"]
     },
     {
       "criterionId": "CATALOG-004",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-05-scenarios-0fbaaa0"]
     },
     {
       "criterionId": "CATALOG-005",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-05-scenarios-0fbaaa0"]
     }
   ],
   "gates": [
     {
       "gateId": "QG-REPO-CHECK",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-05-repo-check-0fbaaa0"]
     },
     {
       "gateId": "QG-CONTRACTS",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-05-contracts-0fbaaa0"]
     },
     {
       "gateId": "QG-SCENARIOS",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-05-scenarios-0fbaaa0"]
     },
     {
       "gateId": "QG-INDEPENDENT-VERIFY",
@@ -119,6 +123,27 @@
       "at": "2026-08-11T21:22:00Z",
       "actor": "davidahmann",
       "reason": "Authorized the two isolated plan/task fixture paths needed to keep contract tests stable as V1-05 and later tasks advance; product scope and acceptance semantics are unchanged."
+    },
+    {
+      "from": "planned",
+      "to": "in_progress",
+      "at": "2026-08-11T21:22:01Z",
+      "actor": "implementation-agent",
+      "reason": "Started the bounded OpenRouter catalog, replay, shortlist, refresh, and fixture-isolation implementation attempt."
+    },
+    {
+      "from": "in_progress",
+      "to": "verification_pending",
+      "at": "2026-08-11T21:24:19Z",
+      "actor": "implementation-agent",
+      "reason": "Submitted the exact catalog candidate with passing repository, contract, and offline-scenario evidence for structured review and maintainer promotion."
+    },
+    {
+      "from": "verification_pending",
+      "to": "accepted",
+      "at": "2026-08-11T21:27:00Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer accepted the exact catalog candidate after active command gates and candidate-bound structured security review passed; named reviewer records remain advisory under ADR 0009."
     }
   ]
 }

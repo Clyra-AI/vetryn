@@ -1,0 +1,50 @@
+{
+  "marker_id": "V1-05-0fbaaa0-pnpm-check",
+  "command": "pnpm check",
+  "cwd": "/Users/davidahmann/Projects/vetryn",
+  "workspace_ref": "codex/v1-05-openrouter-catalog",
+  "git_sha": "0fbaaa0f01844acc86e36186f5e3695f7d9377a7",
+  "exit_code": 0,
+  "stdout_digest": "sha256:e7918dd01b24d5b5b6829941c07bf76f722248401ac1dd8c59fd38e2d7ad337f",
+  "stderr_digest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "raw_log_refs": [
+    ".factoryd/logs/V1-05/0fbaaa0/pnpm-check.stdout.log",
+    ".factoryd/logs/V1-05/0fbaaa0/pnpm-check.stderr.log"
+  ],
+  "execution_status": "pass",
+  "started_at": "2026-08-11T21:23:52Z",
+  "finished_at": "2026-08-11T21:24:19Z",
+  "runner_id": "codex-local:validation-gate",
+  "generated_by": "trusted_runner",
+  "workspace_proof": {
+    "isolation_model": "clean task branch at exact implementation candidate",
+    "clean_checkout_verified": false,
+    "base_ref": "f04241099285898db50da055dd0c13422b42fc97",
+    "branch_name": "codex/v1-05-openrouter-catalog",
+    "allowed_paths": [
+      ".changeset/**",
+      "knip.json",
+      "package.json",
+      "pnpm-lock.yaml",
+      "packages/openrouter/**",
+      "packages/core/**",
+      "packages/cli/**",
+      "examples/openrouter-typescript/**",
+      "product/plans/oss-v1/plan.json",
+      "product/plans/oss-v1/progress.json",
+      "product/plans/oss-v1/state/V1-05.json",
+      "scripts/plan.test.mjs",
+      "scripts/task.test.mjs",
+      "vitest.config.ts"
+    ],
+    "forbidden_paths": ["packages/typescript/**", "action.yml"],
+    "retry_preservation": {
+      "preserve_workspace_on_retry": true,
+      "checkpoint_ref": "0fbaaa0f01844acc86e36186f5e3695f7d9377a7"
+    },
+    "cleanup_policy": {
+      "remove_after_terminal_state": "after merged-main verification",
+      "preserve_on_failure": true
+    }
+  }
+}
