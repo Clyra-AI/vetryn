@@ -426,7 +426,10 @@ function hasModelOverrideAfter(
       const computedName = staticPropertyName(property.name);
       return computedName === undefined || computedName === "model";
     }
-    return propertyName(property.name) === "model";
+    return (
+      (ts.isGetAccessorDeclaration(property) || ts.isSetAccessorDeclaration(property)) &&
+      propertyName(property.name) === "model"
+    );
   });
 }
 
