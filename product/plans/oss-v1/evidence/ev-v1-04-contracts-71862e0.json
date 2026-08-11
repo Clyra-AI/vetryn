@@ -1,0 +1,35 @@
+{
+  "$schema": "../../schemas/evidence.schema.json",
+  "schemaVersion": "1.0.0",
+  "id": "ev-v1-04-contracts-71862e0",
+  "taskId": "V1-04",
+  "type": "command-run",
+  "actor": "implementation-agent",
+  "commit": "71862e0c859e3f37c4ce4987b09e3d7e3105cca9",
+  "createdAt": "2026-08-11T04:30:12Z",
+  "result": {
+    "status": "pass",
+    "checks": [
+      {
+        "name": "pnpm test:contracts",
+        "status": "pass",
+        "summary": "All 104 contract and integration tests passed, including explicit manifest identity, reviewed usage provenance, idempotency, collision, and no-partial-write cases."
+      }
+    ]
+  },
+  "inputs": {
+    "planDigest": "sha256:17b53d33b9dd0cb03b7b9fb24a07a081098d4a6a37a0fb476ca7354bd86f39b0",
+    "lockfileDigest": "sha256:b68a2a883aa93aa747fefbd98c16401d4950c585654ae83cf3ec359aa081dece"
+  },
+  "gateBinding": {
+    "gateId": "QG-CONTRACTS",
+    "kind": "command",
+    "command": "pnpm test:contracts"
+  },
+  "review": null,
+  "redaction": {
+    "status": "not_applicable",
+    "containsRawModelOutput": false,
+    "containsSecrets": false
+  }
+}

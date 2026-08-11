@@ -1,0 +1,35 @@
+{
+  "currentModel": "openai/gpt-4.1-mini",
+  "evalSuiteId": "eval-suite:support-classification",
+  "gates": {
+    "maxP95LatencyMs": 750,
+    "maxQualityRegression": 0.01,
+    "minCases": 30,
+    "minPassRate": 0.98,
+    "minRecommendationConfidence": 0.8,
+    "minSavingsPercent": 20
+  },
+  "id": "support-classification",
+  "name": "Support classification",
+  "owner": "support-platform",
+  "providerPolicy": {
+    "allowedProviders": ["openai"]
+  },
+  "representativeUsage": {
+    "completionTokens": 1,
+    "promptTokens": 9,
+    "provenanceRef": "reviewed-fixture:2026-08-10",
+    "reviewed": true
+  },
+  "requiredCapabilities": {
+    "structuredOutput": true,
+    "textGeneration": true,
+    "toolCalls": false
+  },
+  "sourceBinding": {
+    "adapter": "openai.chat.completions.create",
+    "file": "src/support-classification.ts",
+    "sourceFingerprint": "sha256:8a25603767dacc7c18fade046a5ca77f29baf3053e2f40cd840ac1c610a1707e",
+    "symbol": "classifySupportTicket"
+  }
+}

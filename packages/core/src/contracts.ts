@@ -201,6 +201,10 @@ export const callSiteSchema = z
 
 export type CallSite = z.infer<typeof callSiteSchema>;
 
+export function parseCallSite(value: unknown): CallSite {
+  return parseWithDiagnostics(callSiteSchema, "call site", value);
+}
+
 export const callSiteManifestSchema = z
   .object({
     artifactType: z.literal("call-site-manifest"),
@@ -219,6 +223,61 @@ export const callSiteManifestSchema = z
   });
 
 export type CallSiteManifest = z.infer<typeof callSiteManifestSchema>;
+
+export interface InitializeCallSiteManifestOptions {
+  readonly callSite: unknown;
+  readonly existingManifest?: unknown;
+  readonly manifestId?: string;
+}
+
+export function initializeCallSiteManifest({
+  callSite: callSiteInput,
+  existingManifest,
+  manifestId,
+}: InitializeCallSiteManifestOptions): CallSiteManifest {
+  const callSite = parseCallSite(callSiteInput);
+  const existing =
+    existingManifest === undefined ? undefined : parseCallSiteManifest(existingManifest);
+
+  if (existing === undefined) {
+    if (manifestId === undefined) {
+      throw new VetrynContractError(
+        "Manifest initialization requires an explicit human-owned manifest ID.",
+      );
+    }
+
+    return parseCallSiteManifest({
+      artifactType: "call-site-manifest",
+      callSites: [callSite],
+      id: manifestId,
+      schemaVersion: VETRYN_ARTIFACT_SCHEMA_VERSION,
+    });
+  }
+
+  if (manifestId !== undefined && manifestId !== existing.id) {
+    throw new VetrynContractError(
+      "Manifest initialization cannot silently rename an existing manifest ID.",
+    );
+  }
+
+  const existingCallSite = existing.callSites.find(({ id }) => id === callSite.id);
+  if (existingCallSite !== undefined) {
+    if (canonicalizeJson(existingCallSite) !== canonicalizeJson(callSite)) {
+      throw new VetrynContractError(
+        `Call-site ID collision for ${callSite.id}; edit the human-owned manifest explicitly.`,
+      );
+    }
+
+    return existing;
+  }
+
+  return parseCallSiteManifest({
+    ...existing,
+    callSites: [...existing.callSites, callSite].toSorted((left, right) =>
+      left.id < right.id ? -1 : left.id > right.id ? 1 : 0,
+    ),
+  });
+}
 
 export const evalSuiteSchema = z
   .object({

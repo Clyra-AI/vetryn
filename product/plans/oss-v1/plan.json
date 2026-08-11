@@ -541,16 +541,22 @@
       "acceptanceItemIds": ["MANIFEST-001", "MANIFEST-002", "MANIFEST-003"],
       "scope": {
         "allowedPaths": [
+          "package.json",
+          "pnpm-lock.yaml",
           "packages/core/**",
           "packages/cli/**",
-          "examples/openrouter-typescript/**"
+          "examples/openrouter-typescript/**",
+          "scripts/plan.test.mjs",
+          "scripts/task.test.mjs",
+          "vitest.config.ts"
         ],
         "forbiddenPaths": ["packages/openrouter/**", "action.yml"]
       },
       "semanticInvariants": [
         "Re-scans do not silently rename human-owned call-site IDs.",
         "Each manifest pins a human-reviewed representative prompt/completion token-weight profile with provenance for candidate cost ranking.",
-        "Manifest initialization is reviewable and idempotent."
+        "Manifest initialization is reviewable and idempotent.",
+        "The only root test and typecheck support changes are the explicit paths needed to exercise the new internal core dependency and keep plan fixtures isolated from V1-04 lifecycle state."
       ],
       "deliverables": ["packages/core/**", "packages/cli/**", "examples/openrouter-typescript/**"],
       "requiredTestLevels": ["unit", "contract", "integration"],
