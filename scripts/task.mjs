@@ -116,7 +116,7 @@ function assertAcceptancePromotionTails(packetItems, canonicalItems) {
     };
     const exactCurrentTail = isDeepStrictEqual(packetTail, canonicalTail);
     const frozenPrePromotionTail =
-      canonical.status !== "planned" &&
+      canonical.status === "accepted" &&
       item.status === "planned" &&
       Array.isArray(item.evidenceRefs) &&
       item.evidenceRefs.length === 0;

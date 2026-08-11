@@ -58,6 +58,8 @@
   status/evidence promotion tails and unrelated task acceptance edits.
 - Bound packet-bearing plan identity, baseline repository and commit, and product-contract path to the frozen
   candidate so source provenance cannot be rewritten while reusing candidate-specific lifecycle evidence.
+- Restricted frozen empty acceptance tails to canonical `accepted` promotion only, so `blocked`, deferred, or
+  otherwise non-promoted ledger states cannot be hidden during lifecycle preflight.
 
 ### Changed
 

@@ -110,8 +110,9 @@ Canonical objects use structural equality: object member order is irrelevant, bu
 contract.
 The packet's immutable digest map contains only the product contract, plan, and lockfile. Ledger and task-state
 paths remain explicit canonical inputs whose current contracts are validated directly. An acceptance item may
-carry either the exact current ledger tail or an empty `planned` tail frozen before promotion; invented status or
-evidence references fail preflight.
+carry either the exact current ledger tail or an empty `planned` tail frozen before a canonical `accepted`
+promotion; invented status or evidence references and blocked or deferred canonical outcomes hidden behind a stale
+planned tail fail preflight.
 For a frozen candidate, immutable inputs are read from the candidate's Git tree. Product-contract and lockfile
 bytes must also equal the current checkout. The plan digest remains bound to the candidate while the validator
 compares packet-bearing plan identity, baseline repository and commit, and product-contract path with the candidate

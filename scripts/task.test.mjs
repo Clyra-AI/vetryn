@@ -1007,6 +1007,18 @@ describe("task packet compiler", () => {
     await writeFixtureJson(root, statePath, state);
     expect(runPlan(root, "write").status).toBe(0);
 
+    const blockedLedger = globalThis.structuredClone(canonicalLedger);
+    const blockedAcceptance = blockedLedger.items.find((item) => item.taskId === "V1-05");
+    blockedAcceptance.status = "blocked";
+    blockedAcceptance.evidenceRefs = [];
+    await writeFixtureJson(root, ledgerPath, blockedLedger);
+    expect(runPlan(root, "write").status).toBe(0);
+    const blockedAcceptanceValidation = runTask(root, "validate", "candidate-packet.json");
+    expect(blockedAcceptanceValidation.status).toBe(1);
+    expect(blockedAcceptanceValidation.stderr).toContain("has an invalid promotion tail");
+    await writeFixtureJson(root, ledgerPath, canonicalLedger);
+    expect(runPlan(root, "write").status).toBe(0);
+
     const invalidBindings = [
       packet.lifecycle_evidence_refs.review_report.replace("/V1-05/", "/V1-06/"),
       packet.lifecycle_evidence_refs.review_report.replace(

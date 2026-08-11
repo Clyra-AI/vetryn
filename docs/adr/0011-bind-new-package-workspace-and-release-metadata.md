@@ -39,7 +39,8 @@ local green result that fails in CI or silently disappears from a release.
 - Immutable source digests cover only the product contract, plan, and lockfile. The ledger and task state remain
   named canonical inputs but are not represented by unauthenticated raw hashes because their lifecycle tails
   legitimately change. Preflight validates their current schemas and semantics, permits only an exact acceptance
-  tail or the empty `planned` tail frozen before promotion, and rejects fabricated status or evidence claims.
+  tail or the empty `planned` tail frozen before a canonical `accepted` promotion, and rejects fabricated status,
+  evidence claims, and blocked or deferred canonical outcomes hidden behind a stale planned tail.
 - Once a candidate is frozen, compilation reads each immutable input from that Git commit. Product-contract and
   lockfile bytes must still match the current checkout. The plan digest remains historical candidate provenance,
   while preflight compares packet-bearing plan identity, baseline repository and commit, and product-contract path
