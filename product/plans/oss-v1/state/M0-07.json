@@ -2,27 +2,31 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "M0-07",
-  "revision": 32,
-  "state": "in_progress",
+  "revision": 34,
+  "state": "accepted",
   "attempt": 3,
-  "candidate": null,
+  "candidate": {
+    "baseCommit": "08c3ef067e6be834142b6bd6cb3a17c406e4ea3b",
+    "commit": "605e0007f22bf82f7c0e5d11eaa2ea9c87749866",
+    "executor": "implementation-agent"
+  },
   "criteria": [
     {
       "criterionId": "PROCESS-008",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-07-repo-check-605e000"]
     }
   ],
   "gates": [
     {
       "gateId": "QG-PLAN-CHECK",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-07-plan-check-605e000"]
     },
     {
       "gateId": "QG-REPO-CHECK",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-07-repo-check-605e000"]
     }
   ],
   "reviews": [],
@@ -258,6 +262,20 @@
       "at": "2026-08-11T19:49:30Z",
       "actor": "implementation-agent",
       "reason": "Continued the same third review-correction attempt to bind packet-bearing plan identity, baseline, and product-contract metadata to the frozen candidate."
+    },
+    {
+      "from": "in_progress",
+      "to": "verification_pending",
+      "at": "2026-08-11T19:52:59Z",
+      "actor": "validation-agent",
+      "reason": "Bound the exact source-metadata candidate after repository, baseline-commit, product-contract-path, focused, and full repository gates passed."
+    },
+    {
+      "from": "verification_pending",
+      "to": "accepted",
+      "at": "2026-08-11T19:54:20Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer accepted the exact source-metadata candidate after candidate-bound packet validation and all command evidence passed."
     }
   ]
 }
