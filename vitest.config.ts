@@ -6,6 +6,7 @@ export default defineConfig({
   resolve: {
     alias: {
       "@vetryn/core": path.resolve(import.meta.dirname, "packages/core/src/index.ts"),
+      "@vetryn/typescript": path.resolve(import.meta.dirname, "packages/typescript/src/index.ts"),
     },
   },
   test: {

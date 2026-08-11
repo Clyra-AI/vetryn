@@ -150,4 +150,46 @@ describe("initializeManifestFile", () => {
     });
     await expect(readFile(dryRunPath, "utf8")).rejects.toMatchObject({ code: "ENOENT" });
   });
+
+  it("serializes concurrent manifest initializations so neither reviewed call site is lost", async () => {
+    const { callSitePath, manifestPath } = await createFixture();
+    const secondCallSitePath = path.join(path.dirname(callSitePath), "second-call-site.json");
+    await writeFile(
+      secondCallSitePath,
+      `${JSON.stringify({
+        ...callSite,
+        evalSuiteId: "eval-suite:account-classification",
+        id: "account-classification",
+        name: "Account classification",
+      })}\n`,
+    );
+
+    await expect(
+      Promise.all([
+        initializeManifestFile({
+          callSitePath,
+          manifestId: "call-site-manifest:sample-app",
+          manifestPath,
+        }),
+        initializeManifestFile({
+          callSitePath: secondCallSitePath,
+          manifestId: "call-site-manifest:sample-app",
+          manifestPath,
+        }),
+      ]),
+    ).resolves.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ callSiteId: "support-classification", changed: true }),
+        expect.objectContaining({ callSiteId: "account-classification", changed: true }),
+      ]),
+    );
+
+    const manifest = JSON.parse(await readFile(manifestPath, "utf8")) as {
+      readonly callSites: readonly { readonly id: string }[];
+    };
+    expect(manifest.callSites.map(({ id }) => id)).toEqual([
+      "account-classification",
+      "support-classification",
+    ]);
+  });
 });

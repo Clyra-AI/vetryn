@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 
-import { readFile, rename, rm, writeFile } from "node:fs/promises";
+import { lstat, mkdir, readFile, readdir, rename, rmdir, rm, writeFile } from "node:fs/promises";
+import path from "node:path";
 import { pathToFileURL } from "node:url";
 
 import { Command } from "commander";
+import { scanTypeScript, type ScanFinding } from "@vetryn/typescript";
 import {
   canonicalizeArtifact,
   initializeCallSiteManifest,
@@ -12,6 +14,7 @@ import {
 } from "@vetryn/core";
 
 export const VERSION = "0.0.0";
+const ignoredPathNames = new Set([".artifacts", ".git", "coverage", "dist", "node_modules"]);
 
 export interface Diagnostics {
   architecture: string;
@@ -34,6 +37,16 @@ export interface ManifestInitResult {
   readonly wouldChange: boolean;
 }
 
+export interface ScanRepositoryOptions {
+  readonly paths?: readonly string[];
+  readonly repositoryRoot?: string;
+}
+
+export interface ScanRepositoryResult {
+  readonly files: readonly string[];
+  readonly findings: readonly ScanFinding[];
+}
+
 export async function initializeManifestFile({
   callSitePath,
   dryRun = false,
@@ -41,23 +54,66 @@ export async function initializeManifestFile({
   manifestPath,
 }: ManifestInitOptions): Promise<ManifestInitResult> {
   const callSite = parseCallSite(await readJsonFile(callSitePath));
-  const existingManifest = await readOptionalJsonFile(manifestPath);
-  const manifest = initializeCallSiteManifest({
-    callSite,
-    existingManifest,
-    ...(manifestId === undefined ? {} : { manifestId }),
-  });
-  const nextContents = `${canonicalizeArtifact(manifest)}\n`;
-  const currentContents =
-    existingManifest === undefined ? undefined : `${canonicalizeArtifact(existingManifest)}\n`;
+  const normalizedManifestPath = path.resolve(manifestPath);
 
-  const wouldChange = nextContents !== currentContents;
-  if (!wouldChange || dryRun) {
-    return { callSiteId: callSite.id, changed: false, manifest, wouldChange };
+  return withManifestLock(normalizedManifestPath, async () => {
+    const existingManifest = await readOptionalJsonFile(normalizedManifestPath);
+    const manifest = initializeCallSiteManifest({
+      callSite,
+      existingManifest,
+      ...(manifestId === undefined ? {} : { manifestId }),
+    });
+    const nextContents = `${canonicalizeArtifact(manifest)}\n`;
+    const currentContents =
+      existingManifest === undefined ? undefined : `${canonicalizeArtifact(existingManifest)}\n`;
+
+    const wouldChange = nextContents !== currentContents;
+    if (!wouldChange || dryRun) {
+      return { callSiteId: callSite.id, changed: false, manifest, wouldChange };
+    }
+
+    await writeFileAtomically(normalizedManifestPath, nextContents);
+    return { callSiteId: callSite.id, changed: true, manifest, wouldChange: true };
+  });
+}
+
+export async function scanRepository({
+  paths = ["."],
+  repositoryRoot = process.cwd(),
+}: ScanRepositoryOptions = {}): Promise<ScanRepositoryResult> {
+  const absoluteRoot = path.resolve(repositoryRoot);
+  const sourcePaths = new Set<string>();
+  for (const requestedPath of paths) {
+    const absolutePath = path.resolve(absoluteRoot, requestedPath);
+    assertWithinRepository(absoluteRoot, absolutePath);
+    for (const sourcePath of await collectTypeScriptFiles(absoluteRoot, absolutePath)) {
+      sourcePaths.add(sourcePath);
+    }
   }
 
-  await writeFileAtomically(manifestPath, nextContents);
-  return { callSiteId: callSite.id, changed: true, manifest, wouldChange: true };
+  const files = [...sourcePaths]
+    .map((sourcePath) => repositoryPath(absoluteRoot, sourcePath))
+    .toSorted();
+  const findings = (
+    await Promise.all(
+      files.map(async (file) =>
+        scanTypeScript({
+          file,
+          source: await readFile(path.join(absoluteRoot, file), "utf8"),
+        }),
+      ),
+    )
+  )
+    .flat()
+    .toSorted((left, right) =>
+      left.file === right.file
+        ? left.location.line === right.location.line
+          ? left.location.column - right.location.column
+          : left.location.line - right.location.line
+        : left.file.localeCompare(right.file),
+    );
+
+  return { files, findings };
 }
 
 async function readJsonFile(filePath: string): Promise<unknown> {
@@ -83,6 +139,99 @@ async function writeFileAtomically(filePath: string, contents: string): Promise<
     await rm(temporaryPath, { force: true });
     throw error;
   }
+}
+
+async function withManifestLock<Value>(
+  manifestPath: string,
+  operation: () => Promise<Value>,
+): Promise<Value> {
+  const lockPath = `${manifestPath}.vetryn-lock`;
+  const maximumAttempts = 40;
+
+  for (let attempt = 0; attempt < maximumAttempts; attempt += 1) {
+    try {
+      await mkdir(lockPath);
+    } catch (error: unknown) {
+      if (!isExistingFileError(error)) throw error;
+      await delay(5);
+      continue;
+    }
+
+    try {
+      return await operation();
+    } finally {
+      await rmdir(lockPath);
+    }
+  }
+
+  throw new Error(
+    `Manifest initialization is already in progress for ${manifestPath}; retry shortly.`,
+  );
+}
+
+async function collectTypeScriptFiles(
+  repositoryRoot: string,
+  absolutePath: string,
+): Promise<string[]> {
+  assertWithinRepository(repositoryRoot, absolutePath);
+  const fileInfo = await lstat(absolutePath);
+  if (fileInfo.isSymbolicLink()) {
+    throw new Error(
+      `Refusing to scan symbolic link outside the repository boundary: ${absolutePath}`,
+    );
+  }
+  if (fileInfo.isFile()) return isTypeScriptFile(absolutePath) ? [absolutePath] : [];
+  if (!fileInfo.isDirectory()) return [];
+
+  const entries = (await readdir(absolutePath, { withFileTypes: true })).toSorted((left, right) =>
+    left.name.localeCompare(right.name),
+  );
+  const files: string[] = [];
+  for (const entry of entries) {
+    if (isIgnoredPath(entry.name)) continue;
+    const entryPath = path.join(absolutePath, entry.name);
+    if (entry.isSymbolicLink()) continue;
+    if (entry.isFile() && isTypeScriptFile(entry.name)) {
+      files.push(entryPath);
+      continue;
+    }
+    if (entry.isDirectory())
+      files.push(...(await collectTypeScriptFiles(repositoryRoot, entryPath)));
+  }
+  return files;
+}
+
+function assertWithinRepository(repositoryRoot: string, candidatePath: string): void {
+  const relativePath = path.relative(repositoryRoot, candidatePath);
+  if (
+    relativePath === ".." ||
+    relativePath.startsWith(`..${path.sep}`) ||
+    path.isAbsolute(relativePath)
+  ) {
+    throw new Error(`Refusing to scan a path outside repository root: ${candidatePath}`);
+  }
+}
+
+function repositoryPath(repositoryRoot: string, absolutePath: string): string {
+  const relativePath = path.relative(repositoryRoot, absolutePath);
+  assertWithinRepository(repositoryRoot, absolutePath);
+  return relativePath.split(path.sep).join("/");
+}
+
+function isExistingFileError(error: unknown): error is NodeJS.ErrnoException {
+  return typeof error === "object" && error !== null && "code" in error && error.code === "EEXIST";
+}
+
+function isIgnoredPath(name: string): boolean {
+  return ignoredPathNames.has(name);
+}
+
+function isTypeScriptFile(filePath: string): boolean {
+  return [".cts", ".mts", ".ts", ".tsx"].some((extension) => filePath.endsWith(extension));
+}
+
+function delay(milliseconds: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
 }
 
 function isMissingFileError(error: unknown): error is NodeJS.ErrnoException {
@@ -174,6 +323,37 @@ export function createProgram(): Command {
         process.stdout.write(`${outcome} ${summary.manifestId} for ${summary.callSiteId}.\n`);
       },
     );
+
+  program
+    .command("scan")
+    .description("Discover high-confidence OpenAI-compatible TypeScript model pins.")
+    .argument("[paths...]", "TypeScript files or directories relative to the repository root.")
+    .option(
+      "--root <path>",
+      "Repository root used to derive durable relative source paths.",
+      process.cwd(),
+    )
+    .option("--json", "Print machine-readable JSON.")
+    .action(async (paths: string[] | undefined, options: { json?: boolean; root: string }) => {
+      const result = await scanRepository({
+        paths: paths === undefined || paths.length === 0 ? ["."] : paths,
+        repositoryRoot: options.root,
+      });
+      if (options.json === true) {
+        process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+        return;
+      }
+
+      process.stdout.write(
+        `Scanned ${result.files.length} TypeScript file(s); found ${result.findings.length} finding(s).\n`,
+      );
+      for (const finding of result.findings) {
+        const model = finding.modelPin === undefined ? "" : ` ${finding.modelPin}`;
+        process.stdout.write(
+          `[${finding.confidence}] ${finding.file}:${finding.location.line}:${finding.location.column} ${finding.reasonCode}${model}\n`,
+        );
+      }
+    });
 
   return program;
 }

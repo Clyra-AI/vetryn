@@ -18,10 +18,16 @@ command requires the stable manifest ID only on first creation; rerunning it wit
 it refuses to overwrite a different record with the same human-owned call-site ID.
 
 ```sh
-pnpm --filter vetryn build
+pnpm build
 node packages/cli/dist/index.js manifest init \
   --manifest examples/openrouter-typescript/fixtures/manifest.json \
   --call-site examples/openrouter-typescript/fixtures/manifest-input.json
+```
+
+To inspect the scanner output without executing the fixture source, run:
+
+```sh
+node packages/cli/dist/index.js scan --root examples/openrouter-typescript src --json
 ```
 
 The golden pipeline is:
