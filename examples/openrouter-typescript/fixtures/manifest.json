@@ -32,7 +32,7 @@
       "sourceBinding": {
         "adapter": "openai.chat.completions.create",
         "file": "src/support-classification.ts",
-        "sourceFingerprint": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "sourceFingerprint": "sha256:8a25603767dacc7c18fade046a5ca77f29baf3053e2f40cd840ac1c610a1707e",
         "symbol": "classifySupportTicket"
       }
     }

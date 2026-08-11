@@ -392,7 +392,7 @@
         "provider": false,
         "githubWrite": false
       },
-      "maxAttempts": 2,
+      "maxAttempts": 3,
       "stopConditions": [
         "A scenario depends on live provider state.",
         "Expected snapshots replace semantic assertions."

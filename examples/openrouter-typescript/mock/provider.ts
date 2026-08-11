@@ -1,6 +1,15 @@
 export type MockOutcome =
   "success" | "invalid-output" | "timeout" | "rate-limit" | "usage" | "budget-exhaustion";
 
+const mockOutcomes = new Set<MockOutcome>([
+  "success",
+  "invalid-output",
+  "timeout",
+  "rate-limit",
+  "usage",
+  "budget-exhaustion",
+]);
+
 export interface MockUsage {
   readonly completionTokens: number;
   readonly promptTokens: number;
@@ -22,6 +31,7 @@ export interface MockRequest {
 
 export type MockEvent =
   | { readonly kind: "completed"; readonly usage: MockUsage }
+  | { readonly kind: "invalid-request"; readonly reason: "unknown-outcome" }
   | { readonly kind: "invalid-usage"; readonly reason: "usage-accounting-invalid" }
   | { readonly kind: "invalid-output"; readonly reason: "schema-mismatch" }
   | { readonly kind: "timeout"; readonly reason: "timeout" }
@@ -40,6 +50,7 @@ export interface MockResult {
   readonly attempts: number;
   readonly code:
     | "budget-exhausted"
+    | "invalid-request"
     | "invalid-output"
     | "invalid-usage"
     | "rate-limit-exhausted"
@@ -61,6 +72,9 @@ const isValidUsage = (usage: MockUsage): boolean =>
   [usage.promptTokens, usage.completionTokens, usage.totalTokens].every(
     (value) => Number.isSafeInteger(value) && value >= 0,
   ) && usage.totalTokens === usage.promptTokens + usage.completionTokens;
+
+const isMockOutcome = (outcome: unknown): outcome is MockOutcome =>
+  typeof outcome === "string" && mockOutcomes.has(outcome as MockOutcome);
 
 export const evaluatePatchPrecondition = (
   expectedFingerprint: string,
@@ -118,6 +132,17 @@ export const createMockProvider = (options: MockProviderOptions) => {
 
   return {
     async execute(request: MockRequest): Promise<MockResult> {
+      if (!isMockOutcome(request.outcome)) {
+        return createResult(
+          options,
+          requestCount,
+          0,
+          "invalid-request",
+          [{ kind: "invalid-request", reason: "unknown-outcome" }],
+          EMPTY_USAGE,
+        );
+      }
+
       if (request.outcome === "budget-exhaustion" || requestCount >= options.requestBudget) {
         return budgetResult(0, []);
       }
@@ -192,5 +217,86 @@ export const createMockProvider = (options: MockProviderOptions) => {
         usage,
       );
     },
+  };
+};
+
+interface OpenAIRequestObservation {
+  readonly endpoint: "/api/v1/chat/completions";
+  readonly method: "POST";
+  readonly model: string;
+  readonly responseFormat: "json_object";
+}
+
+export interface OpenAICompatibleMockTransport {
+  readonly fetch: typeof globalThis.fetch;
+  readonly requests: readonly OpenAIRequestObservation[];
+}
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const createJsonResponse = (body: unknown, status = 200): Response =>
+  new Response(JSON.stringify(body), {
+    headers: { "content-type": "application/json", "x-request-id": "golden-request" },
+    status,
+  });
+
+/**
+ * A deterministic fetch substitute for the real OpenAI SDK. It records only the request shape
+ * required by the scenario; prompt text, credentials, and model output remain transient.
+ */
+export const createOpenAICompatibleMockTransport = (
+  options: MockProviderOptions,
+): OpenAICompatibleMockTransport => {
+  const provider = createMockProvider(options);
+  const requests: OpenAIRequestObservation[] = [];
+
+  return {
+    fetch: async (input, init) => {
+      const request = new Request(input, init);
+      const url = new URL(request.url);
+      const body: unknown = JSON.parse(await request.text());
+      const responseFormat =
+        isRecord(body) && isRecord(body.response_format) ? body.response_format : null;
+      const model = isRecord(body) && typeof body.model === "string" ? body.model : null;
+
+      if (
+        request.method !== "POST" ||
+        url.pathname !== "/api/v1/chat/completions" ||
+        model === null ||
+        responseFormat?.type !== "json_object"
+      ) {
+        return createJsonResponse({ error: { message: "invalid golden request" } }, 400);
+      }
+
+      const result = await provider.execute({ outcome: "success" });
+      requests.push({
+        endpoint: "/api/v1/chat/completions",
+        method: "POST",
+        model,
+        responseFormat: "json_object",
+      });
+
+      return createJsonResponse({
+        choices: [
+          {
+            finish_reason: "stop",
+            index: 0,
+            logprobs: null,
+            message: { content: '{"classification":"billing"}', refusal: null, role: "assistant" },
+          },
+        ],
+        created: 1_723_248_000,
+        id: "chatcmpl-golden",
+        model,
+        object: "chat.completion",
+        usage: {
+          completion_tokens: result.artifact.usage.completionTokens,
+          prompt_tokens: result.artifact.usage.promptTokens,
+          total_tokens: result.artifact.usage.totalTokens,
+        },
+      });
+    },
+    requests,
   };
 };

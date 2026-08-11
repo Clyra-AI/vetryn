@@ -2,13 +2,18 @@ import OpenAI from "openai";
 
 export const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
 
-/** Construction is synchronous; the offline scenario suite never invokes the returned client. */
-export const createOpenRouterClient = (apiKey: string): OpenAI =>
-  new OpenAI({ apiKey, baseURL: OPENROUTER_BASE_URL, maxRetries: 0 });
+/** Construction is synchronous; callers may inject an offline OpenAI-compatible transport for replay. */
+export const createOpenRouterClient = (apiKey: string, fetch?: typeof globalThis.fetch): OpenAI =>
+  new OpenAI({
+    apiKey,
+    baseURL: OPENROUTER_BASE_URL,
+    ...(fetch === undefined ? {} : { fetch }),
+    maxRetries: 0,
+  });
 
 /**
- * This direct literal is deliberately scanner-friendly. The golden suite never invokes this
- * function; deterministic behavior is exercised through mock/provider.ts instead.
+ * This direct literal is deliberately scanner-friendly and is replayed through an injected,
+ * offline OpenAI-compatible transport by the golden scenario suite.
  */
 export const classifySupportTicket = async (client: OpenAI, subject: string): Promise<unknown> =>
   client.chat.completions.create({

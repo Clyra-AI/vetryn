@@ -2,46 +2,42 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "V1-02",
-  "revision": 4,
-  "state": "accepted",
-  "attempt": 2,
-  "candidate": {
-    "baseCommit": "a98ebca134c25cca7414cfbb9ca798511758c728",
-    "commit": "167042637e6d82ca5a6f574c27b4f13e94e60b4c",
-    "executor": "davidahmann"
-  },
+  "revision": 5,
+  "state": "in_progress",
+  "attempt": 3,
+  "candidate": null,
   "criteria": [
     {
       "criterionId": "GOLDEN-001",
-      "status": "pass",
-      "evidenceRefs": ["ev-v1-02-scenarios-1670426"]
+      "status": "pending",
+      "evidenceRefs": []
     },
     {
       "criterionId": "GOLDEN-002",
-      "status": "pass",
-      "evidenceRefs": ["ev-v1-02-scenarios-1670426"]
+      "status": "pending",
+      "evidenceRefs": []
     },
     {
       "criterionId": "GOLDEN-003",
-      "status": "pass",
-      "evidenceRefs": ["ev-v1-02-scenarios-1670426"]
+      "status": "pending",
+      "evidenceRefs": []
     },
     {
       "criterionId": "GOLDEN-004",
-      "status": "pass",
-      "evidenceRefs": ["ev-v1-02-scenarios-1670426"]
+      "status": "pending",
+      "evidenceRefs": []
     }
   ],
   "gates": [
     {
       "gateId": "QG-REPO-CHECK",
-      "status": "pass",
-      "evidenceRefs": ["ev-v1-02-repo-check-1670426"]
+      "status": "pending",
+      "evidenceRefs": []
     },
     {
       "gateId": "QG-SCENARIOS",
-      "status": "pass",
-      "evidenceRefs": ["ev-v1-02-scenarios-1670426"]
+      "status": "pending",
+      "evidenceRefs": []
     },
     {
       "gateId": "QG-INDEPENDENT-VERIFY",
@@ -102,6 +98,13 @@
       "at": "2026-08-11T01:52:11Z",
       "actor": "davidahmann",
       "reason": "Maintainer accepted the repaired, independently verified exact candidate after active scenario and repository command gates passed under ADR 0009 single-maintainer delivery."
+    },
+    {
+      "from": "accepted",
+      "to": "in_progress",
+      "at": "2026-08-11T02:00:00Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer-authorized final V1-02 correction pass for current-head review findings: replay the application through an offline OpenAI-compatible transport, reject unknown mock outcomes, and bind stale-source proof to the real fixture fingerprint."
     }
   ]
 }

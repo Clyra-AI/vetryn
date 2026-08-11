@@ -9,6 +9,7 @@ import {
   parseVetrynArtifact,
 } from "../../../packages/core/src/index.js";
 import {
+  createOpenAICompatibleMockTransport,
   createMockProvider,
   evaluatePatchPrecondition,
   type MockOutcome,
@@ -31,6 +32,7 @@ interface CallSiteManifest {
     };
     readonly sourceBinding: {
       readonly file: string;
+      readonly sourceFingerprint: string;
       readonly symbol: string;
     };
   }[];
@@ -107,6 +109,11 @@ describe("OpenRouter TypeScript golden scenario", () => {
     const cases = parseJsonLines(evalCaseText);
     const callSite = manifest.callSites[0];
 
+    expect(callSite).toBeDefined();
+    if (callSite === undefined) {
+      throw new Error("golden manifest must declare the support-classification call site");
+    }
+
     expect(callSite).toMatchObject({
       currentModel: "openai/gpt-4.1-mini",
       evalSuiteId: evalSuite.id,
@@ -122,6 +129,7 @@ describe("OpenRouter TypeScript golden scenario", () => {
     expect(client.maxRetries).toBe(0);
     expect(classifySupportTicket).toBeTypeOf("function");
     expect(application).toContain('model: "openai/gpt-4.1-mini"');
+    expect(callSite.sourceBinding.sourceFingerprint).toBe(fixtureDigest(application));
     expect(OPENROUTER_BASE_URL).toBe("https://openrouter.ai/api/v1");
     expect(cases).toHaveLength(30);
     expect(new Set(cases.map(({ id }) => id)).size).toBe(30);
@@ -175,15 +183,29 @@ describe("OpenRouter TypeScript golden scenario", () => {
   });
 
   it("refuses a stale source fingerprint without producing a patch", async () => {
-    const [scenarioMatrix, expectedStaleReport] = await Promise.all([
+    const [application, manifest, scenarioMatrix, expectedStaleReport] = await Promise.all([
+      readFile(fixtureFile("src/support-classification.ts"), "utf8"),
+      readJson<CallSiteManifest>("fixtures/manifest.json"),
       readJson<ScenarioMatrix>("fixtures/scenarios.json"),
       readJson<ExpectedSummary>("expected/stale-source-report.json"),
     ]);
     const staleScenario = scenarioMatrix.scenarios.find(
       ({ id }) => id === "stale-source-fingerprint",
     );
-    const matched = evaluatePatchPrecondition("sha256:fixture-source", "sha256:fixture-source");
-    const stale = evaluatePatchPrecondition("sha256:fixture-source", "sha256:changed-source");
+    const callSite = manifest.callSites[0];
+
+    expect(callSite).toBeDefined();
+    if (callSite === undefined) {
+      throw new Error("golden manifest must declare the support-classification call site");
+    }
+
+    const expectedFingerprint = callSite.sourceBinding.sourceFingerprint;
+    const changedSource = application.replace(
+      'model: "openai/gpt-4.1-mini"',
+      'model: "openai/gpt-4.1"',
+    );
+    const matched = evaluatePatchPrecondition(expectedFingerprint, fixtureDigest(application));
+    const stale = evaluatePatchPrecondition(expectedFingerprint, fixtureDigest(changedSource));
 
     expect(staleScenario).toMatchObject({
       expectedDisposition: "refuse",
@@ -339,6 +361,20 @@ describe("OpenRouter TypeScript golden scenario", () => {
       });
     }
 
+    const unknownOutcomeResult = await createMockProvider({
+      clock: clock.now,
+      requestBudget: 3,
+      retryLimit: 2,
+    }).execute({ outcome: "typo" as MockOutcome });
+    expect(unknownOutcomeResult).toMatchObject({
+      attempts: 0,
+      code: "invalid-request",
+      disposition: "abstain",
+    });
+    expect(unknownOutcomeResult.artifact.events).toEqual([
+      { kind: "invalid-request", reason: "unknown-outcome" },
+    ]);
+
     const replayOne = await createMockProvider({
       clock: clock.now,
       requestBudget: 3,
@@ -354,6 +390,31 @@ describe("OpenRouter TypeScript golden scenario", () => {
       outcome: "success",
     });
     expect(replayTwo).toEqual(replayOne);
+  });
+
+  it("replays the application call through an offline OpenAI-compatible transport", async () => {
+    const transport = createOpenAICompatibleMockTransport({
+      clock: "2026-08-10T00:00:00.000Z",
+      requestBudget: 3,
+      retryLimit: 2,
+    });
+    const client = createOpenRouterClient("fixture-only-key-not-a-secret", transport.fetch);
+
+    const completion = await classifySupportTicket(client, "Synthetic billing question");
+
+    expect(completion).toMatchObject({
+      choices: [{ message: { content: '{"classification":"billing"}', role: "assistant" } }],
+      model: "openai/gpt-4.1-mini",
+      usage: { completion_tokens: 1, prompt_tokens: 9, total_tokens: 10 },
+    });
+    expect(transport.requests).toEqual([
+      {
+        endpoint: "/api/v1/chat/completions",
+        method: "POST",
+        model: "openai/gpt-4.1-mini",
+        responseFormat: "json_object",
+      },
+    ]);
   });
 
   it("keeps protected runtime markers out of logs, provider reports, and durable expected artifacts", async () => {
