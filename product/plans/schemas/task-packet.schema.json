@@ -368,7 +368,11 @@
         "promoteSkill": { "const": "vetryn-promote-task" },
         "factorySkills": {
           "type": "array",
-          "const": ["task-executor", "validation-gate", "commit-push"]
+          "minItems": 3,
+          "uniqueItems": true,
+          "items": {
+            "enum": ["task-executor", "validation-gate", "code-review", "commit-push"]
+          }
         },
         "executorMayAccept": { "const": false },
         "verifierMustDifferFromExecutor": { "type": "boolean" },
@@ -387,6 +391,64 @@
       }
     }
   },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "risk_class": { "const": "high" } },
+        "required": ["risk_class"]
+      },
+      "then": {
+        "properties": {
+          "required_worker_chain": {
+            "const": ["task-executor", "validation-gate", "code-review", "commit-push"]
+          },
+          "lifecycle_gates": {
+            "type": "object",
+            "properties": { "code_review_required": { "const": true } },
+            "required": ["code_review_required"]
+          },
+          "lifecycle_evidence_required": {
+            "type": "array",
+            "contains": { "const": "review_report" }
+          },
+          "execution": {
+            "type": "object",
+            "properties": {
+              "factorySkills": {
+                "const": ["task-executor", "validation-gate", "code-review", "commit-push"]
+              }
+            },
+            "required": ["factorySkills"]
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "required_worker_chain": {
+            "const": ["task-executor", "validation-gate", "commit-push"]
+          },
+          "lifecycle_gates": {
+            "type": "object",
+            "properties": { "code_review_required": { "const": false } },
+            "required": ["code_review_required"]
+          },
+          "lifecycle_evidence_required": {
+            "type": "array",
+            "not": { "contains": { "const": "review_report" } }
+          },
+          "execution": {
+            "type": "object",
+            "properties": {
+              "factorySkills": {
+                "const": ["task-executor", "validation-gate", "commit-push"]
+              }
+            },
+            "required": ["factorySkills"]
+          }
+        }
+      }
+    }
+  ],
   "$defs": {
     "sha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
     "digest": { "type": "string", "pattern": "^[0-9a-f]{64}$" },

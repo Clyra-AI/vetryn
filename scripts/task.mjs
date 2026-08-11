@@ -19,8 +19,8 @@ const sourcePaths = {
 };
 
 const workerEvidenceRequired = ["work_proof_marker", "command_evidence", "acceptance_results"];
-const factorySkills = ["task-executor", "validation-gate", "commit-push"];
-const lifecycleEvidenceRequired = [
+const baseFactorySkills = ["task-executor", "validation-gate"];
+const baseLifecycleEvidenceRequired = [
   "validation_report",
   "github_review_evidence",
   "ship_packet",
@@ -28,6 +28,22 @@ const lifecycleEvidenceRequired = [
   "post_merge_report",
   "canonical_promotion",
 ];
+
+function factorySkillsForTask(task) {
+  return [
+    ...baseFactorySkills,
+    ...(task.risk.level === "high" ? ["code-review"] : []),
+    "commit-push",
+  ];
+}
+
+function lifecycleEvidenceForTask(task) {
+  return [
+    ...baseLifecycleEvidenceRequired.slice(0, 1),
+    ...(task.risk.level === "high" ? ["review_report"] : []),
+    ...baseLifecycleEvidenceRequired.slice(1),
+  ];
+}
 
 const runtimePins = {
   language: "typescript",
@@ -173,6 +189,9 @@ async function compile(taskId) {
     };
   });
   const planningContractTask = task.deliverables.includes("product/plans/**");
+  const highRiskTask = task.risk.level === "high";
+  const factorySkills = factorySkillsForTask(task);
+  const lifecycleEvidenceRequired = lifecycleEvidenceForTask(task);
   const sourceFiles = [
     plan.productContract,
     sourcePaths.plan,
@@ -207,7 +226,7 @@ async function compile(taskId) {
     lifecycle_gates: {
       local_validation_required: true,
       ci_required: true,
-      code_review_required: false,
+      code_review_required: highRiskTask,
       codex_review_required: false,
       commit_push_required: true,
       post_merge_monitor_required: true,
@@ -222,6 +241,12 @@ async function compile(taskId) {
       "A changed path is outside allowed_paths or matches forbidden_paths.",
       "A required validation command fails.",
       "The compiled packet or its source digests drift before handoff.",
+      ...(highRiskTask
+        ? [
+            "The candidate reaches promotion or push without a candidate-bound passing review_report.",
+            "Product or contract-bearing candidate changes occur after local structured review without invalidating and rerunning that review.",
+          ]
+        : []),
     ],
     retry_budget: {
       max_attempts: task.maxAttempts,

@@ -57,6 +57,7 @@ process change for maintainer review.
 | Verify an exact candidate commit                                                   | `vetryn-verify-task`                     | Recommended independent check; cannot repair or promote the candidate                |
 | Promote locally validated work                                                     | `vetryn-promote-task`                    | Maintainer-controlled canonical state, ledger, evidence, and generated progress only |
 | Build or review the V1-02 offline golden repository                                | `vetryn-golden-scenario`                 | Offline synthetic fixtures and semantic assertions only; cannot accept or merge      |
+| Review V1-06+ evaluation, recommendation, or patch trust semantics                 | `vetryn-trust-review`                    | Candidate-bound adversarial review only; cannot implement, promote, or merge         |
 | Execute, validate, review, commit, push, or release through generic infrastructure | The corresponding external Factory skill | Factory supplies delivery automation; active command gates remain required           |
 
 An agent must not use a skill name as authority for an action the compiled packet, repository policy, or human
@@ -67,19 +68,19 @@ authorization does not permit.
 A planned skill is a lifecycle marker, not an installed capability. Create it only when its activation condition
 and prerequisites are satisfied.
 
-| Planned skill or operation          | Activation condition                                                                                                           | Required boundary                                                                                                                                                                                      |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `vetryn-trust-review`               | Immediately before `V1-06` evaluation work begins; reuse through recommendation and patch work                                 | Independently review evidence sufficiency, contradictory outcomes, abstention, privacy, bounded execution, recommendation eligibility, and patch safety; never implement or self-approve the candidate |
-| `vetryn-field-eval`                 | After `V1-09` is accepted and the complete offline scenario and pack gates are dependable on `main`, before `V1-10` field work | Require explicit customer consent, credentials, provider and GitHub authority, spend and timeout budgets, redaction, attribution, and stop-on-regression behavior                                      |
-| Factory `cut-release`               | After offline evidence is dependable and npm publication has an approved release task and package preflight                    | Reuse Factory's release automation; Vetryn supplies repository-specific version, changelog, pack, provenance, and post-publish checks rather than cloning the skill                                    |
-| Design-partner field-gate reporting | When an authorized `V1-10` engagement begins                                                                                   | Start with a versioned, compact, redacted report schema and template; count only qualified evidence-backed recommendations                                                                             |
+| Planned skill or operation          | Activation condition                                                                                                           | Required boundary                                                                                                                                                   |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `vetryn-field-eval`                 | After `V1-09` is accepted and the complete offline scenario and pack gates are dependable on `main`, before `V1-10` field work | Require explicit customer consent, credentials, provider and GitHub authority, spend and timeout budgets, redaction, attribution, and stop-on-regression behavior   |
+| Factory `cut-release`               | After offline evidence is dependable and npm publication has an approved release task and package preflight                    | Reuse Factory's release automation; Vetryn supplies repository-specific version, changelog, pack, provenance, and post-publish checks rather than cloning the skill |
+| Design-partner field-gate reporting | When an authorized `V1-10` engagement begins                                                                                   | Start with a versioned, compact, redacted report schema and template; count only qualified evidence-backed recommendations                                          |
 
-The future `vetryn-trust-review` **skill** standardizes a semantic review once evaluation behavior exists. During
-the OSS V1 single-maintainer mode, it is advisory; the absence of the skill never blocks a command-validated task.
+`vetryn-trust-review` was activated by `M0-06` before V1-06. Use it whenever a compiled packet declares
+`QG-TRUST-REVIEW`; named reviewer records remain advisory under ADR 0009, while the packet's semantic and command
+gates remain required. The skill cannot implement findings or supply acceptance.
 
-The current `V1-06` and `V1-10` product packets do not authorize `.agents/**`. When one of these skill
-triggers is reached, create or approve a narrow process task that permits the skill path before starting the
-domain task. Do not smuggle process infrastructure into product scope.
+The current `V1-10` product packet does not authorize `.agents/**`. When the field-skill trigger is reached,
+create or approve a narrow process task that permits the skill path before starting field work. Do not smuggle
+process infrastructure into product scope.
 
 Design-partner reporting should remain an output of `vetryn-field-eval` until repeated use demonstrates a
 separate owner, approval flow, or transformation. Only then consider a dedicated `vetryn-field-report` skill.

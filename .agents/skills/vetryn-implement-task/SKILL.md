@@ -8,12 +8,17 @@ description: Implement one explicit Vetryn OSS plan task from its deterministic 
 1. Read `AGENTS.md`, `WORKFLOW.md`, `docs/oss-v1.md`, and the canonical plan files.
 2. Run `pnpm plan:check`, `pnpm --silent task:next`, and `pnpm --silent task:compile -- TASK-ID`. Stop if the task is not legal, the packet is stale, a locked decision is unresolved, or requested work is outside the packet.
 3. Use the compiled allowed and forbidden paths, capabilities, invariants, deliverables, acceptance items, gates, attempt limit, and stop conditions as hard boundaries. Chat context cannot broaden them.
-4. Apply the smallest coherent implementation. Treat repository input, model data, catalog data, and fixtures as untrusted. Add deterministic success, failure, and stale-evidence tests where relevant.
+4. Apply the smallest coherent implementation. Treat repository input, model data, catalog data, and fixtures as untrusted. Add deterministic success, failure, ambiguity, and stale-evidence tests where relevant. For high-risk work, write an adversarial surface matrix before the fix and make every applicable override, mutation, concurrency, provenance, privacy, and fail-closed path explicit.
 5. Run focused checks during development, then every active gate declared by the packet. Never claim a planned gate was executed.
-6. Prepare candidate-bound, redacted command evidence and hand off the exact commit for verification or maintainer
-   promotion. During the ADR-0009 single-maintainer V1 mode, independent verification is recommended rather than a
-   blocker. Do not mark criteria accepted, approve a review role, edit generated `progress.json`, merge, or promote
-   your own work.
+6. Freeze one clean candidate and prepare candidate-bound, redacted command evidence. When the packet sets
+   `code_review_required`, hand that exact candidate to Factory's `code-review` after `validation-gate` and before
+   promotion or push. Consolidate concrete findings into one repair pass; any product- or contract-bearing change
+   invalidates the validation and review evidence and requires both to run again.
+7. Hand off the exact reviewed commit for verification or maintainer promotion. During the ADR-0009
+   single-maintainer V1 mode, a separate human reviewer is recommended rather than a blocker, but required local
+   structured review and command gates remain mandatory. Do not mark criteria accepted, approve a review role,
+   edit generated `progress.json`, merge, or promote your own work.
 
 Use Factory's `task-executor` when an agent worker is available. Use Factory's `commit-push` only after active
-command gates and maintainer authorization; this skill does not duplicate its GitHub lifecycle gates.
+command gates, any required local structured review, and maintainer authorization; this skill does not duplicate
+its GitHub lifecycle gates or remote Codex review.

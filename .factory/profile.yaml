@@ -30,4 +30,12 @@ skills:
   implement: .agents/skills/vetryn-implement-task/SKILL.md
   verify: .agents/skills/vetryn-verify-task/SKILL.md
   promote: .agents/skills/vetryn-promote-task/SKILL.md
+  trust_review: .agents/skills/vetryn-trust-review/SKILL.md
+review_policy:
+  high_risk_local_review: required
+  worker: code-review
+  order: validation-gate_then_code-review_then_promotion_then_commit-push
+  candidate_change_invalidates_validation_and_review: true
+  promotion_tail: state_ledger_evidence_and_generated_progress_only
+  remote_codex: separate_latest_head_residual_gate
 canonical_factory_profile: profiles/vetryn.yaml

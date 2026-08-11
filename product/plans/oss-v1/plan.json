@@ -474,6 +474,66 @@
       ]
     },
     {
+      "id": "M0-06",
+      "milestone": "M0",
+      "title": "Activate local adversarial review for high-risk work",
+      "objective": "Require a frozen-candidate Factory code review before promotion and push for high-risk V1 tasks, activate the bounded Vetryn trust-review skill before V1-06, and preserve remote Codex as a separate residual gate.",
+      "risk": {
+        "level": "medium",
+        "domains": ["delivery-policy", "review-integrity", "agent-workflow"]
+      },
+      "dependsOn": [{ "taskId": "M0-05", "kind": "hard" }],
+      "acceptanceItemIds": ["PROCESS-007"],
+      "scope": {
+        "allowedPaths": [
+          ".agents/skills/vetryn-implement-task/**",
+          ".agents/skills/vetryn-verify-task/**",
+          ".agents/skills/vetryn-promote-task/**",
+          ".agents/skills/vetryn-trust-review/**",
+          ".factory/**",
+          "WORKFLOW.md",
+          "CHANGELOG.md",
+          "docs/agent-map.md",
+          "docs/implementation/oss-v1-execution.md",
+          "product/plans/oss-v1/**",
+          "product/plans/schemas/task-packet.schema.json",
+          "scripts/plan.test.mjs",
+          "scripts/task.mjs",
+          "scripts/task.test.mjs"
+        ],
+        "forbiddenPaths": ["packages/**", "examples/**", "action.yml", ".github/**"]
+      },
+      "semanticInvariants": [
+        "High-risk packets place code-review after validation-gate and before commit-push, require candidate-bound review_report lifecycle evidence, and invalidate that evidence when product or contract-bearing candidate bytes change.",
+        "Local structured review runs on the frozen candidate before maintainer promotion and the first push; deterministic command gates remain required and remote Codex remains a separate latest-head residual review gate.",
+        "The trust-review skill is limited to evaluation, recommendation, and patch trust semantics; it cannot implement, repair, accept, promote, merge, or substitute LLM judgment for deterministic evidence.",
+        "Single-maintainer delivery remains in force: this process task does not restore CODEOWNERS, named human-review blockers, or automatic merge.",
+        "The task changes process contracts only and does not alter product behavior, provider access, credentials, GitHub authority, or acceptance semantics for completed tasks."
+      ],
+      "deliverables": [
+        ".agents/skills/vetryn-trust-review/**",
+        "scripts/task.mjs",
+        "product/plans/schemas/task-packet.schema.json",
+        "WORKFLOW.md"
+      ],
+      "requiredTestLevels": ["static", "contract", "adversarial"],
+      "requiredGates": ["QG-PLAN-CHECK", "QG-REPO-CHECK"],
+      "requiredReviews": [],
+      "capabilities": {
+        "network": false,
+        "credentials": false,
+        "provider": false,
+        "githubWrite": false
+      },
+      "maxAttempts": 2,
+      "stopConditions": [
+        "A high-risk packet can reach promotion or push without candidate-bound local review evidence.",
+        "Local review replaces deterministic gates or remote latest-head Codex review.",
+        "The trust-review skill gains implementation, acceptance, promotion, merge, provider, credential, or GitHub-write authority.",
+        "A product source, package, fixture, workflow, capability, or completed-task acceptance record changes."
+      ]
+    },
+    {
       "id": "V1-02",
       "milestone": "M1",
       "title": "Build the deterministic golden repository",
@@ -631,7 +691,8 @@
       "risk": { "level": "high", "domains": ["provider", "pricing", "reproducibility"] },
       "dependsOn": [
         { "taskId": "V1-01", "kind": "hard" },
-        { "taskId": "V1-02", "kind": "hard" }
+        { "taskId": "V1-02", "kind": "hard" },
+        { "taskId": "M0-06", "kind": "hard" }
       ],
       "acceptanceItemIds": [
         "CATALOG-001",
@@ -686,7 +747,8 @@
       "risk": { "level": "high", "domains": ["evaluation", "cost", "privacy", "reliability"] },
       "dependsOn": [
         { "taskId": "V1-01", "kind": "hard" },
-        { "taskId": "V1-02", "kind": "hard" }
+        { "taskId": "V1-02", "kind": "hard" },
+        { "taskId": "M0-06", "kind": "hard" }
       ],
       "acceptanceItemIds": ["EVAL-001", "EVAL-002", "EVAL-003", "EVAL-004"],
       "scope": {

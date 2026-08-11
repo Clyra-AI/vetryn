@@ -22,6 +22,7 @@ const fixtureTaskIds = [
   "M0-03",
   "M0-04",
   "M0-05",
+  "M0-06",
   "V1-01",
   "V1-02",
   "V1-03",
@@ -414,6 +415,37 @@ async function normalizeV1Fixture(root) {
     scannerCorrectionAuthorizationStatePath,
     scannerCorrectionAuthorizationState,
   );
+
+  const localReviewStatePath = "product/plans/oss-v1/state/M0-06.json";
+  const localReviewState = await readFixtureJson(root, localReviewStatePath);
+  Object.assign(localReviewState, {
+    revision: 0,
+    state: "planned",
+    attempt: 0,
+    candidate: null,
+    criteria: localReviewState.criteria.map((criterion) => ({
+      ...criterion,
+      status: "pending",
+      evidenceRefs: [],
+    })),
+    gates: localReviewState.gates.map((gate) => ({
+      ...gate,
+      status: "pending",
+      evidenceRefs: [],
+    })),
+    reviews: [],
+    blockers: [],
+    history: [
+      {
+        from: null,
+        to: "planned",
+        at: "2026-08-10T00:00:00Z",
+        actor: "plan-test-fixture",
+        reason: "Reset the local-review process task with the V1-00 fixture baseline.",
+      },
+    ],
+  });
+  await writeFixtureJson(root, localReviewStatePath, localReviewState);
 
   const goldenRepositoryStatePath = "product/plans/oss-v1/state/V1-02.json";
   const goldenRepositoryState = await readFixtureJson(root, goldenRepositoryStatePath);
