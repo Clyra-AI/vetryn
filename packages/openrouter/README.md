@@ -13,8 +13,10 @@ provenance are compatible. Duplicate model IDs are retained only when every row 
 or invalid duplicate rows exclude that model ID. Replay requires the canonical
 digest-derived OpenRouter snapshot identity. Successful refresh persistence records the immutable observation before
 publishing a new snapshot and rolls the observation back if snapshot publication fails, so a failed refresh cannot
-leave a directly replayable orphan snapshot. Completed snapshots publish atomically from same-directory temporary
-files without overwriting an existing digest path. File-backed stores reject symbolic-link components and verify resolved
+leave a directly replayable orphan snapshot. Completed snapshots and observations publish atomically from
+same-directory temporary files without overwriting an existing immutable identity. Snapshot persistence is serialized
+per content digest so concurrent refresh observations report whether they actually reused an existing snapshot. A stale
+lock fails closed with an actionable error rather than changing evidence. File-backed stores reject symbolic-link components and verify resolved
 write destinations remain beneath the configured store root. Catalog acquisition and body consumption share a
 30-second abort deadline; expiration records explicit failure evidence. Tool-call compatibility requires explicit
 `tools` parameter support rather than `tool_choice` alone. Tests inject `fetch`; CI never calls a live provider.

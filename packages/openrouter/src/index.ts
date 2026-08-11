@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { createReadStream } from "node:fs";
-import { link, lstat, mkdir, realpath, unlink, writeFile } from "node:fs/promises";
+import { link, lstat, mkdir, realpath, rmdir, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 import {
@@ -22,6 +22,8 @@ const MAX_CATALOG_BYTES = 20_000_000;
 const MAX_CATALOG_MODELS = 20_000;
 const MAX_CAPTURE_CLOCK_SKEW_MS = 5 * 60 * 1000;
 const MAX_REFRESH_DURATION_MS = 30_000;
+const MAX_STORE_LOCK_DURATION_MS = 30_000;
+const STORE_LOCK_RETRY_MS = 10;
 
 const digestSchema = z.string().regex(/^sha256:[0-9a-f]{64}$/);
 const modelIdSchema = z.string().regex(/^[a-z0-9][a-z0-9._-]*(?:\/[a-z0-9][a-z0-9._:-]*)+$/);
@@ -216,6 +218,12 @@ export class FileCatalogStore implements CatalogStore {
   ): Promise<{ readonly reused: boolean; readonly snapshot: CatalogSnapshot }> {
     const snapshot = parseCatalogSnapshot(snapshotInput);
     assertCanonicalOpenRouterSnapshot(snapshot);
+    return this.withSnapshotLock(snapshot.contentDigest, () => this.putSnapshotUnlocked(snapshot));
+  }
+
+  protected async putSnapshotUnlocked(
+    snapshot: CatalogSnapshot,
+  ): Promise<{ readonly reused: boolean; readonly snapshot: CatalogSnapshot }> {
     const target = this.snapshotPath(snapshot.contentDigest);
     await this.assertSafeTarget(target, true);
     const contents = `${stableJson(snapshot)}\n`;
@@ -256,48 +264,91 @@ export class FileCatalogStore implements CatalogStore {
   ): Promise<{ readonly observation: RefreshObservation; readonly snapshot: CatalogSnapshot }> {
     const snapshot = parseCatalogSnapshot(snapshotInput);
     assertCanonicalOpenRouterSnapshot(snapshot);
-    const existingSnapshot = await this.readReusableSnapshot(snapshot);
-    const observation = refreshObservationSchema.parse({
-      ...observationInput,
-      reusedSnapshot: existingSnapshot !== undefined,
+    return this.withSnapshotLock(snapshot.contentDigest, async () => {
+      const existingSnapshot = await this.readReusableSnapshot(snapshot);
+      const observation = refreshObservationSchema.parse({
+        ...observationInput,
+        reusedSnapshot: existingSnapshot !== undefined,
+      });
+      if (
+        observation.status !== "success" ||
+        observation.contentDigest !== snapshot.contentDigest ||
+        observation.snapshotId !== snapshot.id
+      ) {
+        throw new OpenRouterCatalogError(
+          "Successful refresh evidence must identify its exact canonical snapshot.",
+        );
+      }
+
+      await this.putObservation(observation);
+      if (existingSnapshot !== undefined) {
+        return { observation, snapshot: existingSnapshot };
+      }
+
+      try {
+        const stored = await this.putSnapshotUnlocked(snapshot);
+        return { observation, snapshot: stored.snapshot };
+      } catch (error: unknown) {
+        await this.removeObservation(observation);
+        throw error;
+      }
     });
-    if (
-      observation.status !== "success" ||
-      observation.contentDigest !== snapshot.contentDigest ||
-      observation.snapshotId !== snapshot.id
-    ) {
-      throw new OpenRouterCatalogError(
-        "Successful refresh evidence must identify its exact canonical snapshot.",
-      );
-    }
-
-    await this.putObservation(observation);
-    if (existingSnapshot !== undefined) {
-      return { observation, snapshot: existingSnapshot };
-    }
-
-    try {
-      const stored = await this.putSnapshot(snapshot);
-      return { observation, snapshot: stored.snapshot };
-    } catch (error: unknown) {
-      await this.removeObservation(observation);
-      throw error;
-    }
   }
 
   async putObservation(observationInput: RefreshObservation): Promise<void> {
     const observation = refreshObservationSchema.parse(observationInput);
     const target = path.join(this.root, "observations", `${observation.id}.json`);
     await this.assertSafeTarget(target, true);
+    const temporary = path.join(
+      path.dirname(target),
+      `.${path.basename(target)}.${randomUUID()}.tmp`,
+    );
     try {
-      await writeFile(target, `${stableJson(observation)}\n`, { encoding: "utf8", flag: "wx" });
-    } catch (error: unknown) {
-      if (isExistingFileError(error)) {
-        throw new OpenRouterCatalogError(
-          `Refresh observation ${observation.id} already exists; use a unique refresh ID.`,
-        );
+      await writeFile(temporary, `${stableJson(observation)}\n`, { encoding: "utf8", flag: "wx" });
+      try {
+        await link(temporary, target);
+      } catch (error: unknown) {
+        if (isExistingFileError(error)) {
+          throw new OpenRouterCatalogError(
+            `Refresh observation ${observation.id} already exists; use a unique refresh ID.`,
+          );
+        }
+        throw error;
       }
-      throw error;
+    } finally {
+      await unlink(temporary).catch((error: unknown) => {
+        if (!isMissingFileError(error)) throw error;
+      });
+    }
+  }
+
+  private async withSnapshotLock<T>(
+    contentDigest: string,
+    operation: () => Promise<T>,
+  ): Promise<T> {
+    const lockPath = path.join(this.root, "locks", `${contentDigest.slice(7)}.lock`);
+    await this.assertSafeTarget(lockPath, true);
+    const deadline = Date.now() + MAX_STORE_LOCK_DURATION_MS;
+
+    while (true) {
+      try {
+        await mkdir(lockPath);
+        break;
+      } catch (error: unknown) {
+        if (!isExistingFileError(error)) throw error;
+        if (Date.now() >= deadline) {
+          throw new OpenRouterCatalogError(
+            `Timed out waiting for catalog snapshot lock ${contentDigest}; remove a stale lock only after confirming no refresh is active.`,
+          );
+        }
+        await new Promise((resolve) => setTimeout(resolve, STORE_LOCK_RETRY_MS));
+      }
+    }
+
+    try {
+      return await operation();
+    } finally {
+      await rmdir(lockPath);
     }
   }
 

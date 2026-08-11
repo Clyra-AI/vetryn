@@ -586,9 +586,50 @@ describe("refresh evidence", () => {
     expect(JSON.parse(await readFile(`${root}/observations/refresh-file.json`, "utf8"))).toEqual(
       result.observation,
     );
+    expect(await readdir(`${root}/observations`)).toEqual(["refresh-file.json"]);
     await expect(
       store.putObservation({ ...result.observation, observedAt: "2026-08-11T15:00:00.000Z" }),
     ).rejects.toThrow(/already exists/i);
+  });
+
+  it("serializes concurrent refresh persistence and records actual snapshot reuse", async () => {
+    const { mkdtemp } = await import("node:fs/promises");
+    const { tmpdir } = await import("node:os");
+    const root = await mkdtemp(`${tmpdir()}/vetryn-openrouter-concurrent-`);
+    temporaryDirectories.push(root);
+    const store = new FileCatalogStore(root);
+    const snapshot = normalizeOpenRouterCatalog(
+      { data: [rawModel("mock/concurrent")] },
+      observedAt,
+    ).snapshot;
+    const observation: Omit<RefreshObservation, "id" | "reusedSnapshot"> = {
+      acquisition: "captured-response",
+      artifactType: "openrouter-catalog-refresh-observation",
+      contentDigest: snapshot.contentDigest,
+      errorCode: null,
+      normalizerVersion: "1.0.0",
+      observedAt,
+      schemaVersion: "1.0.0",
+      snapshotId: snapshot.id,
+      source: "openrouter",
+      sourceRef: "repository-captured-response",
+      status: "success",
+    };
+
+    const results = await Promise.all([
+      store.putRefresh(snapshot, { ...observation, id: "concurrent-a" }),
+      store.putRefresh(snapshot, { ...observation, id: "concurrent-b" }),
+    ]);
+
+    expect(results.map(({ observation: item }) => item.reusedSnapshot).sort()).toEqual([
+      false,
+      true,
+    ]);
+    await expect(store.hasSnapshot(snapshot.contentDigest)).resolves.toBe(true);
+    expect((await readdir(`${root}/observations`)).sort()).toEqual([
+      "concurrent-a.json",
+      "concurrent-b.json",
+    ]);
   });
 
   it("does not publish a snapshot when its refresh observation cannot be committed", async () => {
@@ -628,7 +669,7 @@ describe("refresh evidence", () => {
     const root = await mkdtemp(`${tmpdir()}/vetryn-openrouter-rollback-`);
     temporaryDirectories.push(root);
     class FailingSnapshotStore extends FileCatalogStore {
-      override async putSnapshot(): Promise<{
+      protected override async putSnapshotUnlocked(): Promise<{
         readonly reused: boolean;
         readonly snapshot: CatalogSnapshot;
       }> {
