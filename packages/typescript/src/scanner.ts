@@ -56,7 +56,7 @@ interface FindingInput {
 
 interface OpenAIClientEvidence {
   readonly importedSymbols: ReadonlySet<ts.Symbol>;
-  readonly reassignmentPositions: ReadonlyMap<ts.Symbol, readonly number[]>;
+  readonly reassignedClientSymbols: ReadonlySet<ts.Symbol>;
   readonly verifiedClientSymbols: ReadonlySet<ts.Symbol>;
 }
 
@@ -157,7 +157,7 @@ function scanOpenAIChatCompletion({
     sourceSymbol: sourceSymbolFor(call),
   } as const;
 
-  if (!isVerifiedOpenAIReceiver(operation.receiver, call, checker, clientEvidence)) {
+  if (!isVerifiedOpenAIReceiver(operation.receiver, checker, clientEvidence)) {
     return createFinding({
       ...base,
       confidence: "ambiguous",
@@ -333,7 +333,11 @@ function collectOpenAIClientEvidence(
 
   return {
     importedSymbols,
-    reassignmentPositions: collectReassignmentPositions(sourceFile, checker, verifiedClientSymbols),
+    reassignedClientSymbols: collectReassignedClientSymbols(
+      sourceFile,
+      checker,
+      verifiedClientSymbols,
+    ),
     verifiedClientSymbols,
   };
 }
@@ -352,14 +356,13 @@ function matchOpenAIChatCompletion(call: ts.CallExpression): OperationMatch | un
 
 function isVerifiedOpenAIReceiver(
   receiver: ts.Expression,
-  call: ts.CallExpression,
   checker: ts.TypeChecker,
-  { importedSymbols, reassignmentPositions, verifiedClientSymbols }: OpenAIClientEvidence,
+  { importedSymbols, reassignedClientSymbols, verifiedClientSymbols }: OpenAIClientEvidence,
 ): boolean {
   return (
     (ts.isIdentifier(receiver) &&
       hasSymbol(verifiedClientSymbols, checker, receiver) &&
-      !hasPriorReassignment(receiver, call, checker, reassignmentPositions)) ||
+      !hasSymbol(reassignedClientSymbols, checker, receiver)) ||
     isOpenAIConstruction(receiver, checker, importedSymbols)
   );
 }
@@ -431,12 +434,12 @@ function isConstBinding(declaration: ts.VariableDeclaration): boolean {
   );
 }
 
-function collectReassignmentPositions(
+function collectReassignedClientSymbols(
   sourceFile: ts.SourceFile,
   checker: ts.TypeChecker,
   verifiedClientSymbols: ReadonlySet<ts.Symbol>,
-): ReadonlyMap<ts.Symbol, readonly number[]> {
-  const positionsBySymbol = new Map<ts.Symbol, number[]>();
+): ReadonlySet<ts.Symbol> {
+  const reassignedSymbols = new Set<ts.Symbol>();
   const visit = (node: ts.Node): void => {
     if (
       ts.isBinaryExpression(node) &&
@@ -445,27 +448,12 @@ function collectReassignmentPositions(
     ) {
       const target = unwrapExpression(node.left);
       const symbol = checker.getSymbolAtLocation(target);
-      if (symbol !== undefined && verifiedClientSymbols.has(symbol)) {
-        const positions = positionsBySymbol.get(symbol) ?? [];
-        positions.push(node.getStart(sourceFile));
-        positionsBySymbol.set(symbol, positions);
-      }
+      if (symbol !== undefined && verifiedClientSymbols.has(symbol)) reassignedSymbols.add(symbol);
     }
     ts.forEachChild(node, visit);
   };
   visit(sourceFile);
-  return positionsBySymbol;
-}
-
-function hasPriorReassignment(
-  receiver: ts.Identifier,
-  call: ts.CallExpression,
-  checker: ts.TypeChecker,
-  reassignmentPositions: ReadonlyMap<ts.Symbol, readonly number[]>,
-): boolean {
-  const symbol = checker.getSymbolAtLocation(receiver);
-  const positions = symbol === undefined ? undefined : reassignmentPositions.get(symbol);
-  return positions?.some((position) => position < call.getStart()) ?? false;
+  return reassignedSymbols;
 }
 
 function isModelProperty(
