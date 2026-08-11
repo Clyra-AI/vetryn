@@ -293,6 +293,63 @@ describe("reviewed TypeScript scanner corpus", () => {
     ]);
   });
 
+  it("abstains when a later computed option key could override a literal model pin", () => {
+    const source = `
+      import OpenAI from "openai";
+      export async function run(client: OpenAI, key: string, replacement: string) {
+        return client.chat.completions.create({
+          model: "openai/gpt-4.1-mini",
+          [key]: replacement,
+        });
+      }
+    `;
+
+    expect(scanTypeScript({ file: "src/computed-override.ts", source })).toMatchObject([
+      {
+        confidence: "ambiguous",
+        patchability: "not-patchable",
+        reasonCode: "dynamic-model",
+      },
+    ]);
+  });
+
+  it("abstains when a mutable OpenAI client binding can be reassigned", () => {
+    const source = `
+      import OpenAI from "openai";
+      export async function run() {
+        let client = new OpenAI({ apiKey: "fixture-only" });
+        client = {} as OpenAI;
+        return client.chat.completions.create({ model: "openai/gpt-4.1-mini" });
+      }
+    `;
+
+    expect(scanTypeScript({ file: "src/mutable-client.ts", source })).toMatchObject([
+      {
+        confidence: "ambiguous",
+        patchability: "not-patchable",
+        reasonCode: "unverified-client",
+      },
+    ]);
+  });
+
+  it("abstains when a type-proven client is reassigned before the call", () => {
+    const source = `
+      import OpenAI from "openai";
+      export async function run(client: OpenAI) {
+        client = {} as OpenAI;
+        return client.chat.completions.create({ model: "openai/gpt-4.1-mini" });
+      }
+    `;
+
+    expect(scanTypeScript({ file: "src/reassigned-parameter.ts", source })).toMatchObject([
+      {
+        confidence: "ambiguous",
+        patchability: "not-patchable",
+        reasonCode: "unverified-client",
+      },
+    ]);
+  });
+
   it("discovers the checked-in golden call without assigning its human-owned manifest ID", async () => {
     const fixtureRoot = path.resolve(
       import.meta.dirname,
