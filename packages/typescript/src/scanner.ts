@@ -547,6 +547,28 @@ function collectAssignedClientSymbols(
   }
 }
 
+function collectAssignedClientBindingSymbols(
+  binding: ts.BindingName,
+  checker: ts.TypeChecker,
+  verifiedClientSymbols: ReadonlySet<ts.Symbol>,
+  reassignedSymbols: Set<ts.Symbol>,
+): void {
+  if (ts.isIdentifier(binding)) {
+    collectAssignedClientSymbols(binding, checker, verifiedClientSymbols, reassignedSymbols);
+    return;
+  }
+
+  for (const element of binding.elements) {
+    if (ts.isOmittedExpression(element)) continue;
+    collectAssignedClientBindingSymbols(
+      element.name,
+      checker,
+      verifiedClientSymbols,
+      reassignedSymbols,
+    );
+  }
+}
+
 function collectReassignedClientSymbols(
   sourceFile: ts.SourceFile,
   checker: ts.TypeChecker,
@@ -559,11 +581,15 @@ function collectReassignedClientSymbols(
       directEvalScopes.push(lexicalScopeFor(node));
     } else if (
       ts.isVariableDeclaration(node) &&
-      ts.isIdentifier(node.name) &&
       node.initializer !== undefined &&
       isVarBinding(node)
     ) {
-      collectAssignedClientSymbols(node.name, checker, verifiedClientSymbols, reassignedSymbols);
+      collectAssignedClientBindingSymbols(
+        node.name,
+        checker,
+        verifiedClientSymbols,
+        reassignedSymbols,
+      );
     } else if (ts.isBinaryExpression(node) && isAssignmentOperator(node.operatorToken.kind)) {
       collectAssignedClientSymbols(node.left, checker, verifiedClientSymbols, reassignedSymbols);
     } else if (

@@ -409,6 +409,26 @@ describe("reviewed TypeScript scanner corpus", () => {
     ]);
   });
 
+  it("abstains when a destructuring merged var declaration replaces a type-proven client", () => {
+    const source = `
+      import OpenAI from "openai";
+      export async function run(client: OpenAI) {
+        var [client] = [{} as OpenAI];
+        return client.chat.completions.create({ model: "openai/gpt-4.1-mini" });
+      }
+    `;
+
+    expect(
+      scanTypeScript({ file: "src/destructuring-merged-var-reassignment.ts", source }),
+    ).toMatchObject([
+      {
+        confidence: "ambiguous",
+        patchability: "not-patchable",
+        reasonCode: "unverified-client",
+      },
+    ]);
+  });
+
   it("abstains when a hoisted helper reassigns a type-proven client", () => {
     const source = `
       import OpenAI from "openai";
