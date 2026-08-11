@@ -313,6 +313,47 @@ describe("reviewed TypeScript scanner corpus", () => {
     ]);
   });
 
+  it("keeps a literal model pin patchable when a later computed key is known not to override it", () => {
+    const source = `
+      import OpenAI from "openai";
+      export async function run(client: OpenAI) {
+        return client.chat.completions.create({
+          model: "openai/gpt-4.1-mini",
+          ["temperature"]: 0,
+        });
+      }
+    `;
+
+    expect(scanTypeScript({ file: "src/computed-temperature.ts", source })).toMatchObject([
+      {
+        confidence: "high",
+        modelPin: "openai/gpt-4.1-mini",
+        patchability: "patchable",
+        reasonCode: "static-model-literal",
+      },
+    ]);
+  });
+
+  it("abstains when a later computed model key overrides a literal model pin", () => {
+    const source = `
+      import OpenAI from "openai";
+      export async function run(client: OpenAI, replacement: string) {
+        return client.chat.completions.create({
+          model: "openai/gpt-4.1-mini",
+          ["model"]: replacement,
+        });
+      }
+    `;
+
+    expect(scanTypeScript({ file: "src/computed-model-override.ts", source })).toMatchObject([
+      {
+        confidence: "ambiguous",
+        patchability: "not-patchable",
+        reasonCode: "dynamic-model",
+      },
+    ]);
+  });
+
   it("abstains when a mutable OpenAI client binding can be reassigned", () => {
     const source = `
       import OpenAI from "openai";
@@ -439,6 +480,46 @@ describe("reviewed TypeScript scanner corpus", () => {
         confidence: "ambiguous",
         patchability: "not-patchable",
         reasonCode: "unverified-client",
+      },
+    ]);
+  });
+
+  it("keeps a type-proven client patchable when direct eval is in an unrelated function", () => {
+    const source = `
+      import OpenAI from "openai";
+      function unrelated() {
+        eval("void 0");
+      }
+      export async function run(client: OpenAI) {
+        return client.chat.completions.create({ model: "openai/gpt-4.1-mini" });
+      }
+    `;
+
+    expect(scanTypeScript({ file: "src/unrelated-eval.ts", source })).toMatchObject([
+      {
+        confidence: "high",
+        modelPin: "openai/gpt-4.1-mini",
+        patchability: "patchable",
+        reasonCode: "static-model-literal",
+      },
+    ]);
+  });
+
+  it("keeps a type-proven client patchable when eval is shadowed", () => {
+    const source = `
+      import OpenAI from "openai";
+      export async function run(client: OpenAI, eval: (source: string) => void) {
+        eval("client = {}");
+        return client.chat.completions.create({ model: "openai/gpt-4.1-mini" });
+      }
+    `;
+
+    expect(scanTypeScript({ file: "src/shadowed-eval.ts", source })).toMatchObject([
+      {
+        confidence: "high",
+        modelPin: "openai/gpt-4.1-mini",
+        patchability: "patchable",
+        reasonCode: "static-model-literal",
       },
     ]);
   });

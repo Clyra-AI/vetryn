@@ -420,11 +420,11 @@ function hasComputedPropertyAfter(
   modelProperty: ts.ObjectLiteralElementLike,
 ): boolean {
   const modelPropertyIndex = options.properties.indexOf(modelProperty);
-  return options.properties
-    .slice(modelPropertyIndex + 1)
-    .some(
-      (property) => !ts.isSpreadAssignment(property) && ts.isComputedPropertyName(property.name),
-    );
+  return options.properties.slice(modelPropertyIndex + 1).some((property) => {
+    if (ts.isSpreadAssignment(property) || !ts.isComputedPropertyName(property.name)) return false;
+    const computedName = staticPropertyName(property.name);
+    return computedName === undefined || computedName === "model";
+  });
 }
 
 function isConstBinding(declaration: ts.VariableDeclaration): boolean {
@@ -442,10 +442,21 @@ function isUpdateOperator(kind: ts.SyntaxKind): boolean {
   return kind === ts.SyntaxKind.PlusPlusToken || kind === ts.SyntaxKind.MinusMinusToken;
 }
 
-function isDirectEvalCall(node: ts.Node): node is ts.CallExpression {
+function isUnshadowedDirectEvalCall(
+  node: ts.Node,
+  checker: ts.TypeChecker,
+): node is ts.CallExpression {
   if (!ts.isCallExpression(node)) return false;
   const callee = unwrapExpression(node.expression);
-  return ts.isIdentifier(callee) && callee.text === "eval";
+  if (!ts.isIdentifier(callee) || callee.text !== "eval") return false;
+
+  const symbol = checker.getSymbolAtLocation(callee);
+  return (
+    symbol === undefined ||
+    !symbol.declarations?.some(
+      (declaration) => declaration.getSourceFile() === node.getSourceFile(),
+    )
+  );
 }
 
 function collectAssignedClientSymbols(
@@ -518,10 +529,10 @@ function collectReassignedClientSymbols(
   verifiedClientSymbols: ReadonlySet<ts.Symbol>,
 ): ReadonlySet<ts.Symbol> {
   const reassignedSymbols = new Set<ts.Symbol>();
-  let hasDirectEval = false;
+  const directEvalScopes: ts.Node[] = [];
   const visit = (node: ts.Node): void => {
-    if (isDirectEvalCall(node)) {
-      hasDirectEval = true;
+    if (isUnshadowedDirectEvalCall(node, checker)) {
+      directEvalScopes.push(lexicalScopeFor(node));
     } else if (ts.isBinaryExpression(node) && isAssignmentOperator(node.operatorToken.kind)) {
       collectAssignedClientSymbols(node.left, checker, verifiedClientSymbols, reassignedSymbols);
     } else if (
@@ -543,9 +554,9 @@ function collectReassignedClientSymbols(
     ts.forEachChild(node, visit);
   };
   visit(sourceFile);
-  if (hasDirectEval) {
-    for (const symbol of verifiedClientSymbols) reassignedSymbols.add(symbol);
-  }
+  for (const symbol of verifiedClientSymbols)
+    if (directEvalScopes.some((scope) => canDirectEvalReachSymbol(scope, symbol)))
+      reassignedSymbols.add(symbol);
   return reassignedSymbols;
 }
 
@@ -562,6 +573,39 @@ function propertyName(name: ts.PropertyName): string | undefined {
   if (ts.isIdentifier(name) || ts.isStringLiteral(name) || ts.isNumericLiteral(name))
     return name.text;
   return undefined;
+}
+
+function staticPropertyName(name: ts.ComputedPropertyName): string | undefined {
+  const expression = unwrapExpression(name.expression);
+  if (
+    ts.isStringLiteral(expression) ||
+    ts.isNumericLiteral(expression) ||
+    ts.isNoSubstitutionTemplateLiteral(expression)
+  )
+    return expression.text;
+  return undefined;
+}
+
+function lexicalScopeFor(node: ts.Node): ts.Node {
+  let current: ts.Node | undefined = node;
+  while (current !== undefined) {
+    if (ts.isFunctionLike(current) || ts.isSourceFile(current)) return current;
+    current = current.parent;
+  }
+  return node.getSourceFile();
+}
+
+function canDirectEvalReachSymbol(directEvalScope: ts.Node, symbol: ts.Symbol): boolean {
+  const declaration = symbol.valueDeclaration;
+  if (declaration === undefined) return true;
+
+  const declarationScope = lexicalScopeFor(declaration);
+  let current: ts.Node | undefined = directEvalScope;
+  while (current !== undefined) {
+    if (current === declarationScope) return true;
+    current = current.parent;
+  }
+  return false;
 }
 
 function isCanonicalModelPin(value: string): boolean {
