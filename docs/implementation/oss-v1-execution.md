@@ -78,11 +78,17 @@ repository skill required by an active domain gate; `QG-TRUST-REVIEW` therefore 
 `trust_review_required`, and requires a candidate-bound `trust_review_report`. A generic code review cannot satisfy
 that semantic gate.
 
+Tasks that add or change publishable workspace packages must explicitly include `.changeset/**` and every root
+workspace file they need. Their compiled packets require release metadata, a semver marker, and package-facing
+documentation sync; package-local scope alone is not sufficient evidence for a clean frozen install or release.
+
 `evidence_required` and `worker_evidence_required` contain only evidence the executor can produce before
 shipping. `lifecycle_evidence_required` names the outputs produced later by `validation-gate`, `code-review`,
 `commit-push`, and Vetryn's specialized promote role: validation, high-risk structured review, shipping,
 pull-request lifecycle, post-merge, and canonical promotion evidence. Factoryd-only scope-closure artifacts are
-not required while Factoryd remains deferred. An
+not required while Factoryd remains deferred. `lifecycle_evidence_refs` maps every required output to one
+deterministic JSON path under `product/plans/oss-v1/evidence/lifecycle/<task-id>/`; those artifacts are
+lifecycle-owned and remain outside the executor's allowed paths. An
 executor may report an acceptance item as implemented, partial, missing, or blocked, but that result does not
 change the ledger or accept the task. Any source drift requires recompilation; plan and lockfile digests in
 already-passing evidence remain immutable historical provenance.

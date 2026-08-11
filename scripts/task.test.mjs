@@ -21,6 +21,7 @@ const fixtureTaskIds = [
   "M0-04",
   "M0-05",
   "M0-06",
+  "M0-07",
   "V1-01",
   "V1-02",
   "V1-03",
@@ -313,6 +314,37 @@ async function normalizeV1Fixture(root) {
   });
   await writeFixtureJson(root, localReviewAuthorizationStatePath, localReviewAuthorizationState);
 
+  const packageScopeStatePath = "product/plans/oss-v1/state/M0-07.json";
+  const packageScopeState = await readFixtureJson(root, packageScopeStatePath);
+  Object.assign(packageScopeState, {
+    revision: 0,
+    state: "planned",
+    attempt: 0,
+    candidate: null,
+    criteria: packageScopeState.criteria.map((criterion) => ({
+      ...criterion,
+      status: "pending",
+      evidenceRefs: [],
+    })),
+    gates: packageScopeState.gates.map((gate) => ({
+      ...gate,
+      status: "pending",
+      evidenceRefs: [],
+    })),
+    reviews: [],
+    blockers: [],
+    history: [
+      {
+        from: null,
+        to: "planned",
+        at: "2026-08-10T00:00:00Z",
+        actor: "task-test-fixture",
+        reason: "Reset the V1-05 package-scope process task with the V1-00 fixture baseline.",
+      },
+    ],
+  });
+  await writeFixtureJson(root, packageScopeStatePath, packageScopeState);
+
   const goldenRepositoryStatePath = "product/plans/oss-v1/state/V1-02.json";
   const goldenRepositoryState = await readFixtureJson(root, goldenRepositoryStatePath);
   Object.assign(goldenRepositoryState, {
@@ -600,6 +632,15 @@ describe("task packet compiler", () => {
       "canonical_promotion",
     ]);
     expect(packet.lifecycle_evidence_required).not.toContain("scope_closure_report");
+    expect(Object.keys(packet.lifecycle_evidence_refs)).toEqual(packet.lifecycle_evidence_required);
+    expect(packet.lifecycle_evidence_refs.trust_review_report).toBe(
+      "product/plans/oss-v1/evidence/lifecycle/V1-00/trust_review_report.json",
+    );
+    expect(
+      Object.values(packet.lifecycle_evidence_refs).every((artifactRef) =>
+        artifactRef.includes(`/V1-00/`),
+      ),
+    ).toBe(true);
     expect(packet.lifecycle_gates).toMatchObject({
       code_review_required: false,
       trust_review_required: true,
@@ -652,6 +693,9 @@ describe("task packet compiler", () => {
       codex_review_required: false,
     });
     expect(packet.lifecycle_evidence_required).toContain("review_report");
+    expect(packet.lifecycle_evidence_refs.review_report).toBe(
+      "product/plans/oss-v1/evidence/lifecycle/V1-00/review_report.json",
+    );
     expect(packet.stop_conditions).toEqual(
       expect.arrayContaining([
         expect.stringContaining("review_report"),
@@ -674,6 +718,7 @@ describe("task packet compiler", () => {
     unsafe.lifecycle_evidence_required = unsafe.lifecycle_evidence_required.filter(
       (item) => item !== "review_report",
     );
+    delete unsafe.lifecycle_evidence_refs.review_report;
 
     expect(validate(unsafe)).toBe(false);
     expect(validate.errors).toEqual(
@@ -687,9 +732,70 @@ describe("task packet compiler", () => {
           instancePath: "/lifecycle_evidence_required",
           keyword: "contains",
         }),
+        expect.objectContaining({
+          instancePath: "/lifecycle_evidence_refs",
+          keyword: "required",
+        }),
       ]),
     );
   });
+
+  it("compiles the actual V1-05 package and release scope for clean installs", async () => {
+    const root = await createFixture();
+    const planPath = "product/plans/oss-v1/plan.json";
+    const plan = await readFixtureJson(root, planPath);
+    const task = plan.tasks.find((candidate) => candidate.id === "V1-05");
+    task.dependsOn = [];
+    await writeFixtureJson(root, planPath, plan);
+
+    const statePath = "product/plans/oss-v1/state/V1-05.json";
+    const state = await readFixtureJson(root, statePath);
+    Object.assign(state, {
+      revision: 1,
+      state: "in_progress",
+      attempt: 1,
+      candidate: null,
+      history: [
+        ...state.history,
+        {
+          from: "planned",
+          to: "in_progress",
+          at: "2026-08-10T01:00:00Z",
+          actor: "task-test-fixture",
+          reason: "Exercise the actual V1-05 executable packet.",
+        },
+      ],
+    });
+    await writeFixtureJson(root, statePath, state);
+    const writeResult = runPlan(root, "write");
+    expect(writeResult.status, writeResult.stderr).toBe(0);
+
+    const result = runTask(root, "compile", "V1-05");
+    expect(result.status, result.stderr).toBe(0);
+    const packet = JSON.parse(result.stdout);
+    expect(packet.allowed_paths).toEqual(
+      expect.arrayContaining([
+        ".changeset/**",
+        "knip.json",
+        "package.json",
+        "pnpm-lock.yaml",
+        "vitest.config.ts",
+      ]),
+    );
+    expect(packet.changelog_intent).toMatchObject({
+      impact: "required",
+      semver_marker: "minor",
+    });
+    expect(packet.versioning_impact).toContain("minor Changeset");
+    expect(packet.docs_sync_refs.map(({ path: docPath }) => docPath)).toEqual([
+      "packages/openrouter/README.md",
+      "examples/openrouter-typescript/README.md",
+    ]);
+    expect(packet.lifecycle_evidence_refs.review_report).toBe(
+      "product/plans/oss-v1/evidence/lifecycle/V1-05/review_report.json",
+    );
+    expect(Object.keys(packet.lifecycle_evidence_refs)).toEqual(packet.lifecycle_evidence_required);
+  }, 10_000);
 
   it("routes the actual V1-06 trust gate through the domain review skill", async () => {
     const root = await createFixture();

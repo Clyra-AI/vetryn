@@ -150,6 +150,19 @@
       "evidenceRefs": ["ev-m0-06-repo-check-559f364"]
     },
     {
+      "id": "PROCESS-008",
+      "taskId": "M0-07",
+      "statement": "V1-05 can add a publishable OpenRouter workspace package and pass frozen-candidate Factory review preflight without a false-green workspace, release-metadata, or lifecycle-reference gap, while its product and safety scope remains unchanged.",
+      "verification": {
+        "method": "test",
+        "testLevel": "contract",
+        "gateId": "QG-REPO-CHECK"
+      },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
       "id": "CONTRACT-001",
       "taskId": "V1-01",
       "statement": "Every V1 artifact has a versioned strict schema and canonical serializer.",

@@ -46,6 +46,15 @@ function lifecycleEvidenceForTask(task, trustReviewRequired) {
   ];
 }
 
+function lifecycleEvidenceRefsForTask(taskId, requiredEvidence) {
+  return Object.fromEntries(
+    requiredEvidence.map((artifact) => [
+      artifact,
+      `product/plans/oss-v1/evidence/lifecycle/${taskId}/${artifact}.json`,
+    ]),
+  );
+}
+
 const runtimePins = {
   language: "typescript",
   toolchain_version: "node-22 / pnpm-10.23.0 / typescript-6.0.3",
@@ -190,6 +199,7 @@ async function compile(taskId) {
     };
   });
   const planningContractTask = task.deliverables.includes("product/plans/**");
+  const publishablePackageTask = task.scope.allowedPaths.includes(".changeset/**");
   const highRiskTask = task.risk.level === "high";
   const trustReviewRequired = task.requiredGates.includes("QG-TRUST-REVIEW");
   const factorySkills = factorySkillsForTask(task);
@@ -240,6 +250,7 @@ async function compile(taskId) {
     evidence_required: workerEvidenceRequired,
     worker_evidence_required: workerEvidenceRequired,
     lifecycle_evidence_required: lifecycleEvidenceRequired,
+    lifecycle_evidence_refs: lifecycleEvidenceRefsForTask(task.id, lifecycleEvidenceRequired),
     stop_conditions: [
       ...task.stopConditions,
       "A changed path is outside allowed_paths or matches forbidden_paths.",
@@ -318,14 +329,18 @@ async function compile(taskId) {
       },
     ],
     changelog_intent: {
-      impact: planningContractTask ? "required" : "not_required",
-      section: planningContractTask ? "Added" : "Unreleased",
+      impact: planningContractTask || publishablePackageTask ? "required" : "not_required",
+      section: planningContractTask || publishablePackageTask ? "Added" : "Unreleased",
       draft_entry: planningContractTask
         ? "Made compiled Vetryn task packets runner-ready for Factory task-executor."
-        : "No changelog edit is authorized unless the task scope explicitly includes CHANGELOG.md.",
-      semver_marker: "none",
+        : publishablePackageTask
+          ? "Add a Changeset for every new or changed public package and CLI surface in this task."
+          : "No changelog edit is authorized unless the task scope explicitly includes CHANGELOG.md.",
+      semver_marker: publishablePackageTask ? "minor" : "none",
     },
-    versioning_impact: "No package version change or release is authorized by this task packet.",
+    versioning_impact: publishablePackageTask
+      ? "Record a minor Changeset for each new or changed publishable package; publication remains a separate release operation."
+      : "No package version change or release is authorized by this task packet.",
     migration_impact: planningContractTask
       ? "Packet consumers must accept the additive runner-ready fields; existing Vetryn packet fields remain available."
       : "No migration work is authorized by this task packet.",
@@ -354,13 +369,26 @@ async function compile(taskId) {
               "Keep the portable Factory adapter description aligned with the packet surface.",
           },
         ]
-      : [
-          {
-            path: plan.productContract,
-            reason:
-              "Product-facing documentation changes require explicit task scope and contract alignment.",
-          },
-        ],
+      : publishablePackageTask
+        ? [
+            {
+              path: "packages/openrouter/README.md",
+              reason:
+                "Document the staged provider package's public offline and live-refresh contract.",
+            },
+            {
+              path: "examples/openrouter-typescript/README.md",
+              reason:
+                "Keep the golden repository commands aligned with the new package and CLI surface.",
+            },
+          ]
+        : [
+            {
+              path: plan.productContract,
+              reason:
+                "Product-facing documentation changes require explicit task scope and contract alignment.",
+            },
+          ],
     source: {
       repository: plan.baseline.repository,
       baselineCommit: plan.baseline.commit,

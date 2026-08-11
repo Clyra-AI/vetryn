@@ -537,6 +537,61 @@
       ]
     },
     {
+      "id": "M0-07",
+      "milestone": "M0",
+      "title": "Complete the executable V1-05 packet",
+      "objective": "Make the V1-05 packet executable in clean frozen installs and Factory's frozen-candidate review preflight by authorizing only the required workspace, release, and lifecycle-reference contract changes.",
+      "risk": {
+        "level": "medium",
+        "domains": ["delivery-policy", "package-integrity", "release-metadata"]
+      },
+      "dependsOn": [{ "taskId": "M0-06", "kind": "hard" }],
+      "acceptanceItemIds": ["PROCESS-008"],
+      "scope": {
+        "allowedPaths": [
+          "CHANGELOG.md",
+          "docs/adr/0011-bind-new-package-workspace-and-release-metadata.md",
+          "docs/implementation/oss-v1-execution.md",
+          "product/plans/oss-v1/**",
+          "product/plans/schemas/task-packet.schema.json",
+          "scripts/plan.test.mjs",
+          "scripts/task.mjs",
+          "scripts/task.test.mjs"
+        ],
+        "forbiddenPaths": ["packages/**", "examples/**", "action.yml", ".github/**"]
+      },
+      "semanticInvariants": [
+        "The correction authorizes only root files mechanically required to add and publish the V1-05 workspace package: .changeset/**, knip.json, package.json, pnpm-lock.yaml, and vitest.config.ts.",
+        "A publishable-package task declares required release metadata, a minor Changeset marker, and package/example documentation sync in its compiled packet.",
+        "Every lifecycle evidence name has one deterministic repo-relative ref beneath the trusted Factory artifact namespace, and high-risk V1-05 names its review_report ref explicitly.",
+        "V1-05 retains its existing product acceptance criteria, provider capability, high-risk review gates, retry limit, deterministic ranking policy, and fail-closed semantics.",
+        "The process task changes no product source, fixture, dependency version, workflow, credential, provider call, or completed-task acceptance record."
+      ],
+      "deliverables": [
+        "product/plans/**",
+        "product/plans/schemas/task-packet.schema.json",
+        "scripts/task.mjs",
+        "scripts/task.test.mjs",
+        "docs/adr/0011-bind-new-package-workspace-and-release-metadata.md"
+      ],
+      "requiredTestLevels": ["static", "contract", "adversarial"],
+      "requiredGates": ["QG-PLAN-CHECK", "QG-REPO-CHECK"],
+      "requiredReviews": [],
+      "capabilities": {
+        "network": false,
+        "credentials": false,
+        "provider": false,
+        "githubWrite": false
+      },
+      "maxAttempts": 1,
+      "stopConditions": [
+        "The correction authorizes a root path beyond .changeset/**, knip.json, package.json, pnpm-lock.yaml, or vitest.config.ts for V1-05.",
+        "The correction changes V1-05 product behavior, acceptance criteria, capabilities, high-risk gates, attempt limit, or provider policy.",
+        "A lifecycle artifact ref escapes product/plans/oss-v1/evidence/lifecycle/TASK-ID or does not correspond one-to-one with lifecycle_evidence_required.",
+        "A product source, package, fixture, dependency version, CI or GitHub workflow, credential, or completed-task acceptance record changes."
+      ]
+    },
+    {
       "id": "V1-02",
       "milestone": "M1",
       "title": "Build the deterministic golden repository",
@@ -695,7 +750,8 @@
       "dependsOn": [
         { "taskId": "V1-01", "kind": "hard" },
         { "taskId": "V1-02", "kind": "hard" },
-        { "taskId": "M0-06", "kind": "hard" }
+        { "taskId": "M0-06", "kind": "hard" },
+        { "taskId": "M0-07", "kind": "hard" }
       ],
       "acceptanceItemIds": [
         "CATALOG-001",
@@ -706,10 +762,15 @@
       ],
       "scope": {
         "allowedPaths": [
+          ".changeset/**",
+          "knip.json",
+          "package.json",
+          "pnpm-lock.yaml",
           "packages/openrouter/**",
           "packages/core/**",
           "packages/cli/**",
-          "examples/openrouter-typescript/**"
+          "examples/openrouter-typescript/**",
+          "vitest.config.ts"
         ],
         "forbiddenPaths": ["packages/typescript/**", "action.yml"]
       },
@@ -720,9 +781,17 @@
         "Projected workload cost uses exact-decimal catalog prices weighted by the manifest's pinned representative prompt/completion token profile.",
         "Candidate ranking uses projected workload cost ascending, context limit descending, and canonical model ID ascending.",
         "Every successful live refresh records immutable freshness evidence even when its content-addressed snapshot is reused.",
-        "A failed live refresh cannot silently relabel an older snapshot as current."
+        "A failed live refresh cannot silently relabel an older snapshot as current.",
+        "Workspace and release metadata changes are limited to the staged OpenRouter package, its CLI integration, deterministic test resolution, dead-code analysis, frozen lockfile importer, and required Changeset."
       ],
-      "deliverables": ["packages/openrouter/**", "packages/cli/**"],
+      "deliverables": [
+        ".changeset/**",
+        "knip.json",
+        "pnpm-lock.yaml",
+        "packages/openrouter/**",
+        "packages/cli/**",
+        "vitest.config.ts"
+      ],
       "requiredTestLevels": ["unit", "contract", "integration", "adversarial"],
       "requiredGates": ["QG-REPO-CHECK", "QG-CONTRACTS", "QG-SCENARIOS", "QG-INDEPENDENT-VERIFY"],
       "requiredReviews": ["maintainer"],
@@ -739,7 +808,8 @@
         "A missing, invalid, unreviewed, or unprovenanced representative usage profile produces a shortlist.",
         "Candidate selection exceeds its configured bound or changes under identical inputs.",
         "Candidate ranking uses a different field, direction, or tie-break order than the locked ranking tuple.",
-        "An unchanged normalized catalog creates a distinct snapshot, omits its new refresh observation, or a failed refresh is reported as fresh."
+        "An unchanged normalized catalog creates a distinct snapshot, omits its new refresh observation, or a failed refresh is reported as fresh.",
+        "The lockfile or workspace analysis changes include anything beyond the new OpenRouter workspace importer, internal workspace links, and its existing pinned toolchain."
       ]
     },
     {

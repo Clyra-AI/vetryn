@@ -28,6 +28,10 @@
 - Uses built-in HTTPS for GitHub evidence authentication so repository binaries cannot shadow the collector.
 - Added frozen-candidate local adversarial review for high-risk tasks and a machine-required, candidate-bound
   Vetryn trust-review step for evaluation, recommendation, and patch semantics before V1-06 begins.
+- Bound new publishable-package tasks to explicit frozen-lockfile, test-resolution, dead-code-analysis, Changeset,
+  semver, and documentation intent so clean CI and future releases cannot omit a staged package.
+- Bound every required lifecycle artifact to a deterministic trusted-namespace path so Factory can validate a
+  frozen high-risk candidate's local review before promotion or push.
 
 ### Changed
 
