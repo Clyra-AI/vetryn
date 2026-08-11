@@ -191,6 +191,33 @@ describe("OpenRouter catalog normalization", () => {
     ]);
   });
 
+  it("requires explicit tools support before advertising tool-call capability", () => {
+    const result = normalizeOpenRouterCatalog(
+      {
+        data: [
+          rawModel("mock/tool-choice-only", {
+            parameters: ["response_format", "tool_choice"],
+          }),
+        ],
+      },
+      observedAt,
+    );
+    expect(result.snapshot.models[0]?.capabilities.toolCalls).toBe(false);
+
+    const shortlist = resolveCandidates({
+      callSite: {
+        ...callSite,
+        requiredCapabilities: { ...callSite.requiredCapabilities, toolCalls: true },
+      },
+      snapshot: result.snapshot,
+    });
+    expect(shortlist.candidates).toEqual([]);
+    expect(shortlist.exclusions).toContainEqual({
+      modelId: "mock/tool-choice-only",
+      reason: "capability-incompatible",
+    });
+  });
+
   it("fails closed on missing, malformed, or ambiguous pricing and capabilities", () => {
     const result = normalizeOpenRouterCatalog(
       {
@@ -307,6 +334,68 @@ describe("candidate resolution", () => {
 });
 
 describe("refresh evidence", () => {
+  it("records failure evidence when response headers exceed the acquisition deadline", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(observedAt));
+    const store = new MemoryStore();
+    const fetch = vi.fn(
+      async (
+        _input: Parameters<typeof globalThis.fetch>[0],
+        init?: Parameters<typeof globalThis.fetch>[1],
+      ): Promise<Response> =>
+        new Promise((_resolve, reject) => {
+          init?.signal?.addEventListener(
+            "abort",
+            () => reject(new DOMException("aborted", "AbortError")),
+            { once: true },
+          );
+        }),
+    );
+
+    const pending = refreshOpenRouterCatalog({
+      acquisition: "captured-response",
+      fetch,
+      observedAt,
+      refreshId: "headers-timeout",
+      store,
+    });
+    await vi.advanceTimersByTimeAsync(30_000);
+
+    await expect(pending).resolves.toMatchObject({
+      observation: { errorCode: "fetch-failed", status: "failure" },
+      snapshot: null,
+      status: "failure",
+    });
+    expect(store.observations).toHaveLength(1);
+  });
+
+  it("records failure evidence when response body consumption exceeds the deadline", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(observedAt));
+    const store = new MemoryStore();
+    const body = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(new TextEncoder().encode("{"));
+      },
+    });
+
+    const pending = refreshOpenRouterCatalog({
+      acquisition: "captured-response",
+      fetch: async () => new Response(body),
+      observedAt,
+      refreshId: "body-timeout",
+      store,
+    });
+    await vi.advanceTimersByTimeAsync(30_000);
+
+    await expect(pending).resolves.toMatchObject({
+      observation: { errorCode: "fetch-failed", status: "failure" },
+      snapshot: null,
+      status: "failure",
+    });
+    expect(store.observations).toHaveLength(1);
+  });
+
   it("rejects future-dated captured observations before fetching or persistence", async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date(observedAt));

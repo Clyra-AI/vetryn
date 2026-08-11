@@ -20,6 +20,7 @@ export const MAX_CANDIDATE_LIMIT = 5;
 const MAX_CATALOG_BYTES = 20_000_000;
 const MAX_CATALOG_MODELS = 20_000;
 const MAX_CAPTURE_CLOCK_SKEW_MS = 5 * 60 * 1000;
+const MAX_REFRESH_DURATION_MS = 30_000;
 
 const digestSchema = z.string().regex(/^sha256:[0-9a-f]{64}$/);
 const modelIdSchema = z.string().regex(/^[a-z0-9][a-z0-9._-]*(?:\/[a-z0-9][a-z0-9._:-]*)+$/);
@@ -477,7 +478,7 @@ export function normalizeOpenRouterCatalog(
         structuredOutput:
           parameters.includes("response_format") || parameters.includes("structured_outputs"),
         textGeneration: true,
-        toolCalls: parameters.includes("tools") || parameters.includes("tool_choice"),
+        toolCalls: parameters.includes("tools"),
       },
       contextWindowTokens: raw.data.context_length,
       id: modelId,
@@ -548,11 +549,14 @@ export async function refreshOpenRouterCatalog(
     );
   }
 
+  const abortController = new AbortController();
+  const timeout = setTimeout(() => abortController.abort(), MAX_REFRESH_DURATION_MS);
   let body: string;
   try {
     const response = await fetchImplementation(OPENROUTER_CATALOG_URL, {
       headers: { accept: "application/json" },
       method: "GET",
+      signal: abortController.signal,
     });
     if (!response.ok) {
       return recordRefreshFailure(store, refreshId, observedAt, acquisition, "http-error");
@@ -561,13 +565,18 @@ export async function refreshOpenRouterCatalog(
     if (declaredLength !== null && Number(declaredLength) > MAX_CATALOG_BYTES) {
       return recordRefreshFailure(store, refreshId, observedAt, acquisition, "invalid-catalog");
     }
-    const boundedBody = await readResponseBody(response, MAX_CATALOG_BYTES);
+    const boundedBody = await readResponseBody(response, MAX_CATALOG_BYTES, abortController.signal);
+    if (abortController.signal.aborted) {
+      return recordRefreshFailure(store, refreshId, observedAt, acquisition, "fetch-failed");
+    }
     if (boundedBody === undefined) {
       return recordRefreshFailure(store, refreshId, observedAt, acquisition, "invalid-catalog");
     }
     body = boundedBody;
   } catch {
     return recordRefreshFailure(store, refreshId, observedAt, acquisition, "fetch-failed");
+  } finally {
+    clearTimeout(timeout);
   }
 
   let input: unknown;
@@ -744,14 +753,21 @@ function assertRepresentativeUsage(callSite: CallSite): void {
 async function readResponseBody(
   response: Response,
   maximumBytes: number,
+  signal: AbortSignal,
 ): Promise<string | undefined> {
   if (response.body === null) return "";
   const reader = response.body.getReader();
   const chunks: Buffer[] = [];
   let byteLength = 0;
+  const abort = (): void => {
+    void reader.cancel().catch(() => undefined);
+  };
+  signal.addEventListener("abort", abort, { once: true });
   try {
     while (true) {
+      if (signal.aborted) return undefined;
       const { done, value } = await reader.read();
+      if (signal.aborted) return undefined;
       if (done) break;
       byteLength += value.byteLength;
       if (byteLength > maximumBytes) {
@@ -761,6 +777,7 @@ async function readResponseBody(
       chunks.push(Buffer.from(value.buffer, value.byteOffset, value.byteLength));
     }
   } finally {
+    signal.removeEventListener("abort", abort);
     reader.releaseLock();
   }
   return Buffer.concat(chunks, byteLength).toString("utf8");
