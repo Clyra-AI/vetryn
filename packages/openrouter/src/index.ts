@@ -264,6 +264,11 @@ export function normalizeOpenRouterCatalog(
       exclusions.push({ modelId: rawId, reason: "invalid-model-id" });
       continue;
     }
+    const provider = raw.data.id.slice(0, raw.data.id.indexOf("/"));
+    if (!/^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/.test(provider)) {
+      exclusions.push({ modelId: raw.data.id, reason: "invalid-model-id" });
+      continue;
+    }
     if (
       typeof raw.data.context_length !== "number" ||
       !Number.isSafeInteger(raw.data.context_length) ||
@@ -276,6 +281,12 @@ export function normalizeOpenRouterCatalog(
     const prompt = parsePerTokenPrice(pricing?.prompt);
     const completion = parsePerTokenPrice(pricing?.completion);
     if (prompt === undefined || completion === undefined) {
+      exclusions.push({ modelId: raw.data.id, reason: "invalid-pricing" });
+      continue;
+    }
+    const inputPricePerMillionUsd = multiplyDecimalByInteger(prompt, 1_000_000);
+    const outputPricePerMillionUsd = multiplyDecimalByInteger(completion, 1_000_000);
+    if (!isCoreDecimal(inputPricePerMillionUsd) || !isCoreDecimal(outputPricePerMillionUsd)) {
       exclusions.push({ modelId: raw.data.id, reason: "invalid-pricing" });
       continue;
     }
@@ -292,11 +303,6 @@ export function normalizeOpenRouterCatalog(
       exclusions.push({ modelId: raw.data.id, reason: "invalid-capabilities" });
       continue;
     }
-    const provider = raw.data.id.split("/", 1)[0];
-    if (provider === undefined) {
-      exclusions.push({ modelId: raw.data.id, reason: "invalid-model-id" });
-      continue;
-    }
     models.push({
       capabilities: {
         structuredOutput:
@@ -306,8 +312,8 @@ export function normalizeOpenRouterCatalog(
       },
       contextWindowTokens: raw.data.context_length,
       id: raw.data.id,
-      inputPricePerMillionUsd: multiplyDecimalByInteger(prompt, 1_000_000),
-      outputPricePerMillionUsd: multiplyDecimalByInteger(completion, 1_000_000),
+      inputPricePerMillionUsd,
+      outputPricePerMillionUsd,
       provider,
       retired: false,
     });
@@ -538,6 +544,10 @@ function parsePerTokenPrice(value: unknown): string | undefined {
   )
     return undefined;
   return normalizeDecimal(value);
+}
+
+function isCoreDecimal(value: string): boolean {
+  return value.length <= 100 && /^(?:0|[1-9][0-9]*)(?:\.[0-9]+)?$/.test(value);
 }
 
 function parseBoundedStringArray(value: unknown, maximumLength: number): string[] | undefined {

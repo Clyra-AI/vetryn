@@ -192,6 +192,8 @@ describe("OpenRouter catalog normalization", () => {
             ...rawModel("mock/oversized-capabilities"),
             supported_parameters: Array.from({ length: 201 }, () => "tools"),
           },
+          rawModel("bad_provider/model"),
+          rawModel("mock/overflow-price", { completion: "9".repeat(100) }),
           rawModel("INVALID MODEL"),
         ],
       },
@@ -208,6 +210,8 @@ describe("OpenRouter catalog normalization", () => {
         { modelId: "mock/no-context", reason: "invalid-context-window" },
         { modelId: "mock/oversized-price", reason: "invalid-pricing" },
         { modelId: "mock/oversized-capabilities", reason: "invalid-capabilities" },
+        { modelId: "bad_provider/model", reason: "invalid-model-id" },
+        { modelId: "mock/overflow-price", reason: "invalid-pricing" },
         { modelId: "INVALID MODEL", reason: "invalid-model-id" },
       ]),
     );
