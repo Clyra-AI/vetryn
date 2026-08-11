@@ -114,11 +114,12 @@ carry either the exact current ledger tail or an empty `planned` tail frozen bef
 evidence references fail preflight.
 For a frozen candidate, immutable inputs are read from the candidate's Git tree. Product-contract and lockfile
 bytes must also equal the current checkout. The plan digest remains bound to the candidate while the validator
-re-derives this task's complete policy from the valid current plan and compares the current task and gate
+compares packet-bearing plan identity, baseline repository and commit, and product-contract path with the candidate
+plan; re-derives this task's complete policy from the valid current plan; and compares the current task and gate
 definitions with the candidate plan and policy-bearing acceptance fields with the candidate ledger before packet
-emission. Unrelated task edits preserve historical evidence, but relevant plan or acceptance-policy drift fails
-validation and recompilation. A blocked, failed, or superseded canonical state—or any active blocker—halts
-preflight regardless of the packet's historical state label.
+emission. Unrelated task edits preserve historical evidence, but relevant source metadata, plan, or
+acceptance-policy drift fails validation and recompilation. A blocked, failed, or superseded canonical state—or any
+active blocker—halts preflight regardless of the packet's historical state label.
 
 ## Quality lanes
 

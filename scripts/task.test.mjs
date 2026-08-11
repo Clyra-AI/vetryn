@@ -768,6 +768,7 @@ describe("task packet compiler", () => {
     const root = await createFixture();
     const planPath = "product/plans/oss-v1/plan.json";
     const plan = await readFixtureJson(root, planPath);
+    await writeFile(path.join(root, "docs/candidate-contract.md"), "Candidate contract.\n");
     const task = plan.tasks.find((candidate) => candidate.id === "V1-05");
     task.dependsOn = [];
     await writeFixtureJson(root, planPath, plan);
@@ -900,6 +901,34 @@ describe("task packet compiler", () => {
     expect(relevantPlanCompile.status).toBe(1);
     expect(relevantPlanCompile.stderr).toContain(
       "canonical task policy has drifted from candidate",
+    );
+    await writeFixtureJson(root, planPath, plan);
+
+    const metadataPlan = globalThis.structuredClone(plan);
+    metadataPlan.baseline.repository = "https://github.com/Clyra-AI/other-repository";
+    await writeFixtureJson(root, planPath, metadataPlan);
+    const repositoryMetadataCompile = runTask(root, "compile", "V1-05");
+    expect(repositoryMetadataCompile.status).toBe(1);
+    expect(repositoryMetadataCompile.stderr).toContain(
+      "canonical plan source metadata has drifted from candidate",
+    );
+
+    metadataPlan.baseline.repository = plan.baseline.repository;
+    metadataPlan.baseline.commit = "3".repeat(40);
+    await writeFixtureJson(root, planPath, metadataPlan);
+    const baselineMetadataCompile = runTask(root, "compile", "V1-05");
+    expect(baselineMetadataCompile.status).toBe(1);
+    expect(baselineMetadataCompile.stderr).toContain(
+      "canonical plan source metadata has drifted from candidate",
+    );
+
+    metadataPlan.baseline.commit = plan.baseline.commit;
+    metadataPlan.productContract = "docs/candidate-contract.md";
+    await writeFixtureJson(root, planPath, metadataPlan);
+    const contractMetadataCompile = runTask(root, "compile", "V1-05");
+    expect(contractMetadataCompile.status).toBe(1);
+    expect(contractMetadataCompile.stderr).toContain(
+      "canonical plan source metadata has drifted from candidate",
     );
     await writeFixtureJson(root, planPath, plan);
 

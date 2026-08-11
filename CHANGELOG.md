@@ -56,6 +56,8 @@
   earlier candidate-specific lifecycle evidence while unrelated task edits remain valid.
 - Bound acceptance-policy recompilation to the frozen candidate ledger while continuing to allow authenticated
   status/evidence promotion tails and unrelated task acceptance edits.
+- Bound packet-bearing plan identity, baseline repository and commit, and product-contract path to the frozen
+  candidate so source provenance cannot be rewritten while reusing candidate-specific lifecycle evidence.
 
 ### Changed
 

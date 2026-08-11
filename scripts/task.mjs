@@ -93,6 +93,17 @@ function acceptancePolicyView(item) {
   return policy;
 }
 
+function planSourceMetadataView(plan) {
+  return {
+    planId: plan.planId,
+    baseline: {
+      repository: plan.baseline.repository,
+      commit: plan.baseline.commit,
+    },
+    productContract: plan.productContract,
+  };
+}
+
 function assertAcceptancePromotionTails(packetItems, canonicalItems) {
   const canonicalById = new Map(canonicalItems.map((item) => [item.id, item]));
   for (const item of packetItems) {
@@ -856,6 +867,11 @@ async function validatePacket(packet, { requireBoundCandidate }) {
   );
   if (canonicalState.candidate?.commit) {
     const candidatePlan = readJsonAtCommit(canonicalState.candidate.commit, sourcePaths.plan);
+    assertSame(
+      planSourceMetadataView(candidatePlan),
+      planSourceMetadataView(plan),
+      "canonical plan source metadata has drifted from candidate",
+    );
     const candidateTasks = candidatePlan.tasks.filter((task) => task.id === packet.task_id);
     assert(
       candidateTasks.length === 1,
