@@ -513,7 +513,8 @@
       "semanticInvariants": [
         "Scanner output never invents the stable semantic call-site ID.",
         "Ambiguous or dynamic calls are findings, never patch targets.",
-        "Root workspace support and release metadata are limited to the staged scanner package, its tests, and the previously accepted manifest-init public APIs."
+        "Root workspace support and release metadata are limited to the staged scanner package, its tests, and the previously accepted manifest-init public APIs.",
+        "The final safety-correction attempt may only downgrade uncertain scanner findings to abstentions; it may not expand supported call patterns or patchable output."
       ],
       "deliverables": ["packages/typescript/**", "packages/cli/**"],
       "requiredTestLevels": ["unit", "contract", "integration", "adversarial"],
@@ -531,7 +532,7 @@
         "provider": false,
         "githubWrite": false
       },
-      "maxAttempts": 2,
+      "maxAttempts": 3,
       "stopConditions": [
         "High-confidence precision falls below 95%.",
         "Supported-pattern recall falls below 80%.",
