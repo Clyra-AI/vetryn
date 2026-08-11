@@ -67,6 +67,22 @@ function runPlan(root, command) {
   });
 }
 
+function createGitCandidate(root) {
+  for (const arguments_ of [
+    ["init", "--quiet"],
+    ["config", "user.name", "Vetryn test fixture"],
+    ["config", "user.email", "fixture@vetryn.invalid"],
+    ["add", "docs", "product", "pnpm-lock.yaml"],
+    ["commit", "--quiet", "-m", "fixture candidate"],
+  ]) {
+    const result = spawnSync("git", ["-C", root, ...arguments_], { encoding: "utf8" });
+    expect(result.status, result.stderr).toBe(0);
+  }
+  const result = spawnSync("git", ["-C", root, "rev-parse", "HEAD"], { encoding: "utf8" });
+  expect(result.status, result.stderr).toBe(0);
+  return result.stdout.trim();
+}
+
 async function normalizeV1Fixture(root) {
   const statePath = "product/plans/oss-v1/state/V1-00.json";
   const state = await readFixtureJson(root, statePath);
@@ -755,6 +771,30 @@ describe("task packet compiler", () => {
     const task = plan.tasks.find((candidate) => candidate.id === "V1-05");
     task.dependsOn = [];
     await writeFixtureJson(root, planPath, plan);
+    expect(runPlan(root, "write").status).toBe(0);
+
+    const originalTask = globalThis.structuredClone(task);
+    task.deliverables = ["packages/typescript/**", "packages/cli/**"];
+    task.scope.allowedPaths = task.scope.allowedPaths.map((allowedPath) =>
+      allowedPath === "packages/openrouter/**" ? "packages/typescript/**" : allowedPath,
+    );
+    task.scope.forbiddenPaths = ["packages/openrouter/**", "action.yml"];
+    await writeFixtureJson(root, planPath, plan);
+    expect(runPlan(root, "write").status).toBe(0);
+    const alternateResult = runTask(root, "compile", "V1-05");
+    expect(alternateResult.status, alternateResult.stderr).toBe(0);
+    expect(
+      JSON.parse(alternateResult.stdout).docs_sync_refs.map(({ path: docPath }) => docPath),
+    ).toEqual([
+      "packages/typescript/README.md",
+      "packages/cli/README.md",
+      "examples/openrouter-typescript/README.md",
+    ]);
+
+    plan.tasks[plan.tasks.findIndex((candidate) => candidate.id === "V1-05")] = originalTask;
+    await writeFixtureJson(root, planPath, plan);
+    expect(runPlan(root, "write").status).toBe(0);
+    const candidateCommit = createGitCandidate(root);
 
     const statePath = "product/plans/oss-v1/state/V1-05.json";
     const state = await readFixtureJson(root, statePath);
@@ -764,7 +804,7 @@ describe("task packet compiler", () => {
       attempt: 1,
       candidate: {
         baseCommit: "2222222222222222222222222222222222222222",
-        commit: "1111111111111111111111111111111111111111",
+        commit: candidateCommit,
         executor: "task-test-fixture",
       },
       history: [
@@ -812,7 +852,7 @@ describe("task packet compiler", () => {
       "examples/openrouter-typescript/README.md",
     ]);
     expect(packet.lifecycle_evidence_refs.review_report).toBe(
-      "product/plans/oss-v1/evidence/lifecycle/V1-05/1111111111111111111111111111111111111111/review_report.json",
+      `product/plans/oss-v1/evidence/lifecycle/V1-05/${candidateCommit}/review_report.json`,
     );
     expect(Object.keys(packet.lifecycle_evidence_refs)).toEqual(packet.lifecycle_evidence_required);
     expect(packet.packet_validation_command).toBe("node scripts/task.mjs validate {packet_path}");
@@ -842,6 +882,14 @@ describe("task packet compiler", () => {
     const reorderedValidation = runTask(root, "validate", "reordered-packet.json");
     expect(reorderedValidation.status, reorderedValidation.stderr).toBe(0);
 
+    const productContractPath = path.join(root, "docs/oss-v1.md");
+    const productContract = await readFile(productContractPath, "utf8");
+    await writeFile(productContractPath, `${productContract}\nCandidate-external drift.\n`);
+    const driftedCandidateCompile = runTask(root, "compile", "V1-05");
+    expect(driftedCandidateCompile.status).toBe(1);
+    expect(driftedCandidateCompile.stderr).toContain("source digest is stale for docs/oss-v1.md");
+    await writeFile(productContractPath, productContract);
+
     const canonicalPlan = await readFixtureJson(root, planPath);
     const malformedPlan = globalThis.structuredClone(canonicalPlan);
     malformedPlan.tasks.push(globalThis.structuredClone(malformedPlan.tasks[0]));
@@ -866,13 +914,10 @@ describe("task packet compiler", () => {
     const invalidBindings = [
       packet.lifecycle_evidence_refs.review_report.replace("/V1-05/", "/V1-06/"),
       packet.lifecycle_evidence_refs.review_report.replace(
-        "/1111111111111111111111111111111111111111/",
+        `/${candidateCommit}/`,
         "/3333333333333333333333333333333333333333/",
       ),
-      packet.lifecycle_evidence_refs.review_report.replace(
-        "/1111111111111111111111111111111111111111/",
-        "/unbound/",
-      ),
+      packet.lifecycle_evidence_refs.review_report.replace(`/${candidateCommit}/`, "/unbound/"),
       packet.lifecycle_evidence_refs.review_report.replace(
         "/review_report.json",
         "/validation_report.json",
@@ -895,10 +940,7 @@ describe("task packet compiler", () => {
       Object.entries(forgedCandidatePacket.lifecycle_evidence_refs).map(
         ([artifact, artifactRef]) => [
           artifact,
-          artifactRef.replace(
-            "/1111111111111111111111111111111111111111/",
-            "/3333333333333333333333333333333333333333/",
-          ),
+          artifactRef.replace(`/${candidateCommit}/`, "/3333333333333333333333333333333333333333/"),
         ],
       ),
     );
@@ -1017,26 +1059,8 @@ describe("task packet compiler", () => {
     const stalePlanValidation = runTask(root, "validate", "stale-plan-packet.json");
     expect(stalePlanValidation.status).toBe(1);
     expect(stalePlanValidation.stderr).toContain(
-      "source digest is stale for product/plans/oss-v1/plan.json",
+      "source digest is not bound to candidate for product/plans/oss-v1/plan.json",
     );
-
-    task.deliverables = ["packages/typescript/**", "packages/cli/**"];
-    task.scope.allowedPaths = task.scope.allowedPaths.map((allowedPath) =>
-      allowedPath === "packages/openrouter/**" ? "packages/typescript/**" : allowedPath,
-    );
-    task.scope.forbiddenPaths = ["packages/openrouter/**", "action.yml"];
-    await writeFixtureJson(root, planPath, plan);
-    expect(runPlan(root, "write").status).toBe(0);
-
-    const alternateResult = runTask(root, "compile", "V1-05");
-    expect(alternateResult.status, alternateResult.stderr).toBe(0);
-    expect(
-      JSON.parse(alternateResult.stdout).docs_sync_refs.map(({ path: docPath }) => docPath),
-    ).toEqual([
-      "packages/typescript/README.md",
-      "packages/cli/README.md",
-      "examples/openrouter-typescript/README.md",
-    ]);
   }, 20_000);
 
   it("routes the actual V1-06 trust gate through the domain review skill", async () => {

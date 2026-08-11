@@ -1,3 +1,4 @@
+import { Buffer } from "node:buffer";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
@@ -264,6 +265,18 @@ async function digest(relativePath) {
   return createHash("sha256").update(contents).digest("hex");
 }
 
+function digestAtCommit(commit, relativePath) {
+  const result = spawnSync("git", ["-C", root, "show", `${commit}:${relativePath}`], {
+    encoding: null,
+    maxBuffer: 10 * 1024 * 1024,
+  });
+  assert(
+    result.status === 0 && Buffer.isBuffer(result.stdout),
+    `cannot read frozen candidate input ${relativePath} at ${commit}`,
+  );
+  return createHash("sha256").update(result.stdout).digest("hex");
+}
+
 function validateCanonicalPlan() {
   const result = spawnSync(process.execPath, [planScript, "check"], {
     encoding: "utf8",
@@ -348,7 +361,12 @@ async function compile(taskId) {
   const lifecycleEvidenceRequired = lifecycleEvidenceForTask(task, trustReviewRequired);
   const sourceFiles = [plan.productContract, sourcePaths.plan, "pnpm-lock.yaml"];
   const sourceDigests = Object.fromEntries(
-    await Promise.all(sourceFiles.map(async (file) => [file, await digest(file)])),
+    await Promise.all(
+      sourceFiles.map(async (file) => [
+        file,
+        state.candidate?.commit ? digestAtCommit(state.candidate.commit, file) : await digest(file),
+      ]),
+    ),
   );
   const packet = {
     $schema: "https://vetryn.dev/schemas/planning/task-packet-v1.json",
@@ -830,11 +848,18 @@ async function validatePacket(packet, { requireBoundCandidate }) {
     packet.source.digests[plan.productContract],
     "source.productContractDigest",
   );
-  for (const sourceFile of [plan.productContract, sourcePaths.plan, "pnpm-lock.yaml"])
+  for (const sourceFile of [plan.productContract, sourcePaths.plan, "pnpm-lock.yaml"]) {
+    if (packet.currentState.candidate?.commit)
+      assert(
+        packet.source.digests[sourceFile] ===
+          digestAtCommit(packet.currentState.candidate.commit, sourceFile),
+        `source digest is not bound to candidate for ${sourceFile}`,
+      );
     assert(
       packet.source.digests[sourceFile] === (await digest(sourceFile)),
       `source digest is stale for ${sourceFile}`,
     );
+  }
   if (requireBoundCandidate)
     assert(packet.currentState.candidate?.commit, "lifecycle preflight requires a bound candidate");
   assertLifecycleEvidenceBindings(packet);

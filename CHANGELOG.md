@@ -48,6 +48,8 @@
   lifecycle policy from them.
 - Restricted immutable packet digests to the product contract, plan, and lockfile; lifecycle-mutable ledger and
   state are validated canonically, and acceptance promotion tails now fail closed unless exact or pre-promotion.
+- Bound immutable packet inputs to both the frozen candidate commit and current checkout so post-review product
+  contract, plan, or lockfile drift cannot reuse earlier lifecycle review evidence.
 
 ### Changed
 
