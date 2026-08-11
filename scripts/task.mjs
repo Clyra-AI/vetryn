@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 import { spawnSync } from "node:child_process";
+import { isDeepStrictEqual } from "node:util";
 
 import Ajv2020 from "ajv/dist/2020.js";
 import addFormats from "ajv-formats";
@@ -121,10 +122,11 @@ function stopConditionsForTask(task, highRiskTask, trustReviewRequired) {
 }
 
 function assertSame(actual, expected, field) {
-  assert(
-    JSON.stringify(actual) === JSON.stringify(expected),
-    `${field} does not match canonical plan`,
-  );
+  assert(isDeepStrictEqual(actual, expected), `${field} does not match canonical plan`);
+}
+
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
 }
 
 function lifecycleEvidenceForTask(task, trustReviewRequired) {
@@ -503,11 +505,11 @@ async function compile(taskId) {
     },
   };
 
-  await validatePacket(packet);
+  await validatePacket(packet, { requireBoundCandidate: false });
   process.stdout.write(`${JSON.stringify(packet, null, 2)}\n`);
 }
 
-async function validatePacket(packet) {
+async function validatePacket(packet, { requireBoundCandidate }) {
   const schema = await readJson("product/plans/schemas/task-packet.schema.json");
   const ajv = new Ajv2020({ allErrors: true, strict: true, allowUnionTypes: true });
   addFormats(ajv);
@@ -525,6 +527,12 @@ async function validatePacket(packet) {
   ]);
   const canonicalTask = plan.tasks.find((task) => task.id === packet.task_id);
   assert(canonicalTask, `canonical plan does not contain task ${packet.task_id}`);
+  assert(
+    new RegExp(`^${escapeRegExp(plan.planId)}:${escapeRegExp(packet.task_id)}:r\\d+$`, "u").test(
+      packet.packetId,
+    ),
+    "packetId does not match canonical plan and task",
+  );
   const canonicalGates = canonicalTask.requiredGates.map((gateId) =>
     plan.gateCatalog.find((gate) => gate.id === gateId),
   );
@@ -789,7 +797,7 @@ async function validatePacket(packet) {
     "retry_budget",
   );
   assert(
-    JSON.stringify(canonicalState.candidate) === JSON.stringify(packet.currentState.candidate),
+    isDeepStrictEqual(canonicalState.candidate, packet.currentState.candidate),
     "currentState.candidate does not match canonical task state",
   );
   const expectedSourceFiles = [
@@ -810,6 +818,8 @@ async function validatePacket(packet) {
       packet.source.digests[sourceFile] === (await digest(sourceFile)),
       `source digest is stale for ${sourceFile}`,
     );
+  if (requireBoundCandidate)
+    assert(packet.currentState.candidate?.commit, "lifecycle preflight requires a bound candidate");
   assertLifecycleEvidenceBindings(packet);
 }
 
@@ -819,7 +829,7 @@ async function validatePacketFile(relativePath) {
     !path.isAbsolute(relativePath) && !relativePath.split(/[\\/]/u).includes(".."),
     "packet path must stay within the repository",
   );
-  await validatePacket(await readJson(relativePath));
+  await validatePacket(await readJson(relativePath), { requireBoundCandidate: true });
   process.stdout.write(`task packet ${relativePath} is valid\n`);
 }
 

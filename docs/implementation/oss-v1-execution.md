@@ -98,12 +98,15 @@ Before consuming lifecycle evidence from a stored packet, replace `{packet_path}
 and run `node scripts/task.mjs validate <packet-path>`. The command applies the public JSON Schema, authenticates
 the current product-contract, plan, and lockfile inputs, re-derives task risk and lifecycle gates from canonical
 policy, binds the candidate to canonical state, and then recomputes each lifecycle ref. It rejects policy
-downgrade, cross-task, stale-candidate, unbound-candidate, swapped-artifact, and security-input drift while
+downgrade, cross-plan or cross-task packet identity, stale-candidate, unbound-candidate, swapped-artifact, and
+security-input drift while
 allowing ledger/status-only promotion tails that preserve the frozen candidate. The canonical comparison includes
 executor evidence, item-level acceptance closure, commands, scope exclusions, stop conditions, retry/runtime pins,
 Factory compatibility, execution permissions, lifecycle policy, acceptance-item policy, scanner/CI gates,
 release/documentation intent, and source metadata. Only packet revision, lifecycle state label, and ledger/state
 status-evidence bytes may differ as a promotion tail while the candidate remains exact.
+Canonical objects use structural equality: object member order is irrelevant, but array order remains part of the
+contract.
 
 ## Quality lanes
 

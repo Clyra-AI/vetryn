@@ -42,6 +42,8 @@
   closure fields, plus commands, scope, retry/runtime, compatibility, execution, and lifecycle policy.
 - Completed stored-packet authentication for acceptance-item policy, scanner and CI gates, release/documentation
   intent, and source metadata, with only exact-candidate promotion-tail state explicitly mutable.
+- Made lifecycle preflight reject unbound packets, authenticate packet identity against the canonical plan and
+  task, and compare JSON objects structurally without treating member order as policy drift.
 
 ### Changed
 

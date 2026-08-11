@@ -2,31 +2,27 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "M0-07",
-  "revision": 13,
-  "state": "accepted",
+  "revision": 14,
+  "state": "in_progress",
   "attempt": 3,
-  "candidate": {
-    "baseCommit": "08c3ef067e6be834142b6bd6cb3a17c406e4ea3b",
-    "commit": "59d8ff60555204893c07ae17b534e14882019e13",
-    "executor": "implementation-agent"
-  },
+  "candidate": null,
   "criteria": [
     {
       "criterionId": "PROCESS-008",
-      "status": "pass",
-      "evidenceRefs": ["ev-m0-07-repo-check-59d8ff6"]
+      "status": "pending",
+      "evidenceRefs": []
     }
   ],
   "gates": [
     {
       "gateId": "QG-PLAN-CHECK",
-      "status": "pass",
-      "evidenceRefs": ["ev-m0-07-plan-check-59d8ff6"]
+      "status": "pending",
+      "evidenceRefs": []
     },
     {
       "gateId": "QG-REPO-CHECK",
-      "status": "pass",
-      "evidenceRefs": ["ev-m0-07-repo-check-59d8ff6"]
+      "status": "pending",
+      "evidenceRefs": []
     }
   ],
   "reviews": [],
@@ -129,6 +125,13 @@
       "at": "2026-08-11T18:20:40Z",
       "actor": "davidahmann",
       "reason": "Maintainer accepted the exact complete-policy-authentication candidate after adversarial acceptance, scanner, CI, release, documentation, source-metadata, stale-input, and lifecycle-binding tests and both active command gates passed."
+    },
+    {
+      "from": "accepted",
+      "to": "in_progress",
+      "at": "2026-08-11T18:27:00Z",
+      "actor": "implementation-agent",
+      "reason": "Continued the same third review-correction attempt to reject unbound lifecycle preflight, authenticate packet identity, and make canonical object comparison insensitive to JSON member order."
     }
   ]
 }

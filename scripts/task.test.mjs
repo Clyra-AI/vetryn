@@ -668,6 +668,10 @@ describe("task packet compiler", () => {
       "PLAN-003",
       "PLAN-004",
     ]);
+    await writeFixtureJson(root, "unbound-packet.json", packet);
+    const unboundValidation = runTask(root, "validate", "unbound-packet.json");
+    expect(unboundValidation.status).toBe(1);
+    expect(unboundValidation.stderr).toContain("lifecycle preflight requires a bound candidate");
   });
 
   it("requires frozen-candidate structured review evidence for high-risk tasks", async () => {
@@ -810,6 +814,26 @@ describe("task packet compiler", () => {
     expect(packet.packet_validation_command).toBe("node scripts/task.mjs validate {packet_path}");
     await writeFixtureJson(root, "candidate-packet.json", packet);
     expect(runTask(root, "validate", "candidate-packet.json").status).toBe(0);
+
+    const rewrittenPacketId = globalThis.structuredClone(packet);
+    rewrittenPacketId.packetId = "other-plan:V1-06:r999";
+    await writeFixtureJson(root, "rewritten-packet-id.json", rewrittenPacketId);
+    const rewrittenPacketIdValidation = runTask(root, "validate", "rewritten-packet-id.json");
+    expect(rewrittenPacketIdValidation.status).toBe(1);
+    expect(rewrittenPacketIdValidation.stderr).toContain(
+      "packetId does not match canonical plan and task",
+    );
+
+    const reorderedPacket = globalThis.structuredClone(packet);
+    reorderedPacket.lifecycle_gates = Object.fromEntries(
+      Object.entries(reorderedPacket.lifecycle_gates).reverse(),
+    );
+    reorderedPacket.task.risk = Object.fromEntries(
+      Object.entries(reorderedPacket.task.risk).reverse(),
+    );
+    await writeFixtureJson(root, "reordered-packet.json", reorderedPacket);
+    const reorderedValidation = runTask(root, "validate", "reordered-packet.json");
+    expect(reorderedValidation.status, reorderedValidation.stderr).toBe(0);
 
     state.state = "review_pending";
     state.history.push({
