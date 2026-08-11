@@ -442,6 +442,12 @@ function isUpdateOperator(kind: ts.SyntaxKind): boolean {
   return kind === ts.SyntaxKind.PlusPlusToken || kind === ts.SyntaxKind.MinusMinusToken;
 }
 
+function isDirectEvalCall(node: ts.Node): node is ts.CallExpression {
+  if (!ts.isCallExpression(node)) return false;
+  const callee = unwrapExpression(node.expression);
+  return ts.isIdentifier(callee) && callee.text === "eval";
+}
+
 function collectAssignedClientSymbols(
   target: ts.Expression,
   checker: ts.TypeChecker,
@@ -512,8 +518,11 @@ function collectReassignedClientSymbols(
   verifiedClientSymbols: ReadonlySet<ts.Symbol>,
 ): ReadonlySet<ts.Symbol> {
   const reassignedSymbols = new Set<ts.Symbol>();
+  let hasDirectEval = false;
   const visit = (node: ts.Node): void => {
-    if (ts.isBinaryExpression(node) && isAssignmentOperator(node.operatorToken.kind)) {
+    if (isDirectEvalCall(node)) {
+      hasDirectEval = true;
+    } else if (ts.isBinaryExpression(node) && isAssignmentOperator(node.operatorToken.kind)) {
       collectAssignedClientSymbols(node.left, checker, verifiedClientSymbols, reassignedSymbols);
     } else if (
       (ts.isPrefixUnaryExpression(node) || ts.isPostfixUnaryExpression(node)) &&
@@ -534,6 +543,9 @@ function collectReassignedClientSymbols(
     ts.forEachChild(node, visit);
   };
   visit(sourceFile);
+  if (hasDirectEval) {
+    for (const symbol of verifiedClientSymbols) reassignedSymbols.add(symbol);
+  }
   return reassignedSymbols;
 }
 

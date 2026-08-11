@@ -425,6 +425,24 @@ describe("reviewed TypeScript scanner corpus", () => {
     ]);
   });
 
+  it("abstains when direct eval can replace a type-proven client", () => {
+    const source = `
+      import OpenAI from "openai";
+      export async function run(client: OpenAI) {
+        eval("client = {}");
+        return client.chat.completions.create({ model: "openai/gpt-4.1-mini" });
+      }
+    `;
+
+    expect(scanTypeScript({ file: "src/eval-reassignment.ts", source })).toMatchObject([
+      {
+        confidence: "ambiguous",
+        patchability: "not-patchable",
+        reasonCode: "unverified-client",
+      },
+    ]);
+  });
+
   it("discovers the checked-in golden call without assigning its human-owned manifest ID", async () => {
     const fixtureRoot = path.resolve(
       import.meta.dirname,
