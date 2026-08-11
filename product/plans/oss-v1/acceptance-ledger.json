@@ -128,6 +128,15 @@
       "evidenceRefs": ["ev-m0-04-repo-check-fe9515c"]
     },
     {
+      "id": "PROCESS-006",
+      "taskId": "M0-05",
+      "statement": "A separate maintainer-controlled task authorizes only the still-unaccepted V1-03 third attempt to make later model accessors abstain and bind SCAN-004 to its deterministic scanner-corpus gate, while preserving V1-01 and V1-02 review boundaries.",
+      "verification": { "method": "test", "testLevel": "contract", "gateId": "QG-REPO-CHECK" },
+      "waivable": false,
+      "status": "accepted",
+      "evidenceRefs": ["ev-m0-05-repo-check-4e18798"]
+    },
+    {
       "id": "CONTRACT-001",
       "taskId": "V1-01",
       "statement": "Every V1 artifact has a versioned strict schema and canonical serializer.",
@@ -221,8 +230,8 @@
         "gateId": "QG-SCANNER-CORPUS"
       },
       "waivable": false,
-      "status": "accepted",
-      "evidenceRefs": ["ev-v1-03-scanner-corpus-c8ca57d"]
+      "status": "planned",
+      "evidenceRefs": []
     },
     {
       "id": "SCAN-002",
@@ -234,8 +243,8 @@
         "gateId": "QG-SCANNER-CORPUS"
       },
       "waivable": false,
-      "status": "accepted",
-      "evidenceRefs": ["ev-v1-03-scanner-corpus-c8ca57d"]
+      "status": "planned",
+      "evidenceRefs": []
     },
     {
       "id": "SCAN-003",
@@ -247,17 +256,21 @@
         "gateId": "QG-SCANNER-CORPUS"
       },
       "waivable": false,
-      "status": "accepted",
-      "evidenceRefs": ["ev-v1-03-scanner-corpus-c8ca57d"]
+      "status": "planned",
+      "evidenceRefs": []
     },
     {
       "id": "SCAN-004",
       "taskId": "V1-03",
       "statement": "Dynamic and ambiguous wrappers are reported without a patchable target or invented semantic ID.",
-      "verification": { "method": "test", "testLevel": "adversarial", "gateId": "QG-TRUST-REVIEW" },
+      "verification": {
+        "method": "test",
+        "testLevel": "adversarial",
+        "gateId": "QG-SCANNER-CORPUS"
+      },
       "waivable": false,
-      "status": "accepted",
-      "evidenceRefs": ["ev-v1-03-scanner-corpus-c8ca57d"]
+      "status": "planned",
+      "evidenceRefs": []
     },
     {
       "id": "MANIFEST-001",
