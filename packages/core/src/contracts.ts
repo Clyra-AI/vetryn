@@ -251,7 +251,18 @@ const catalogModelSchema = z
     provider: stableIdSchema,
     retired: z.boolean(),
   })
-  .strict();
+  .strict()
+  .superRefine((model, context) => {
+    const providerFromModelId = model.id.split("/", 1)[0];
+
+    if (model.provider !== providerFromModelId) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Catalog model provider must match the canonical model ID provider segment.",
+        path: ["provider"],
+      });
+    }
+  });
 
 export type CatalogModel = z.infer<typeof catalogModelSchema>;
 
@@ -776,6 +787,20 @@ export function assertCandidateRunPolicy(
   return candidateRun;
 }
 
+function recommendationConfidenceUpperBound(candidateRun: CandidateRun): number {
+  if (candidateRun.status !== "complete" || candidateRun.metrics === undefined) {
+    throw new VetrynContractError(
+      "Only complete candidate runs with aggregate metrics can support recommendation confidence.",
+    );
+  }
+
+  return Math.max(
+    0,
+    candidateRun.metrics.passedCases / candidateRun.metrics.caseCount -
+      candidateRun.provenance.variance.passRateStdDev,
+  );
+}
+
 export function assertRecommendationEvidence(
   recommendation: Recommendation,
   candidateRuns: readonly CandidateRun[],
@@ -801,6 +826,7 @@ export function assertRecommendationEvidence(
   const candidateRunsById = new Map(
     candidateRuns.map((candidateRun) => [candidateRun.id, candidateRun]),
   );
+  let confidenceUpperBound = 1;
 
   for (const candidateRunId of recommendation.candidateRunIds) {
     const candidateRun = candidateRunsById.get(candidateRunId);
@@ -855,6 +881,16 @@ export function assertRecommendationEvidence(
 
     assertCandidateRunCatalog(candidateRun, catalogSnapshot, callSite);
     assertPassedHardGates(candidateRun);
+    confidenceUpperBound = Math.min(
+      confidenceUpperBound,
+      recommendationConfidenceUpperBound(candidateRun),
+    );
+  }
+
+  if (recommendation.status === "recommend" && recommendation.confidence > confidenceUpperBound) {
+    throw new VetrynContractError(
+      "Recommendation confidence exceeds the evidence-bound quality lower bound.",
+    );
   }
 
   return recommendation;
