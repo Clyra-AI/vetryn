@@ -2,47 +2,51 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "V1-03",
-  "revision": 25,
-  "state": "in_progress",
+  "revision": 26,
+  "state": "verification_pending",
   "attempt": 3,
-  "candidate": null,
+  "candidate": {
+    "baseCommit": "b19bd97c20999f944029f35b64559dfe85da2632",
+    "commit": "e1964dda1ff4e6db0e3e2427ea7d7e78a10067f1",
+    "executor": "implementation-agent"
+  },
   "criteria": [
     {
       "criterionId": "SCAN-001",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-03-scanner-corpus-e1964dd"]
     },
     {
       "criterionId": "SCAN-002",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-03-scanner-corpus-e1964dd"]
     },
     {
       "criterionId": "SCAN-003",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-03-scanner-corpus-e1964dd"]
     },
     {
       "criterionId": "SCAN-004",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-03-scanner-corpus-e1964dd"]
     }
   ],
   "gates": [
     {
       "gateId": "QG-REPO-CHECK",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-03-repo-check-e1964dd"]
     },
     {
       "gateId": "QG-CONTRACTS",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-03-contracts-e1964dd"]
     },
     {
       "gateId": "QG-SCANNER-CORPUS",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-03-scanner-corpus-e1964dd"]
     },
     {
       "gateId": "QG-INDEPENDENT-VERIFY",
@@ -306,6 +310,13 @@
       "at": "2026-08-11T11:32:45Z",
       "actor": "davidahmann",
       "reason": "Maintainer reopened the same unmerged final scanner attempt with a plan-embedded boundary for exactly the two current-head precision remedies."
+    },
+    {
+      "from": "in_progress",
+      "to": "verification_pending",
+      "at": "2026-08-11T11:36:58Z",
+      "actor": "implementation-agent",
+      "reason": "Submitted the exact scanner precision candidate with replacement repository, contract, and reviewed-corpus command evidence."
     }
   ]
 }
