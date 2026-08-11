@@ -72,6 +72,40 @@ function runPlan(root, command = "check", env = {}) {
   });
 }
 
+const reauthorizationFindingIds = [
+  "r3754744063",
+  "r3754744064",
+  "r3754744067",
+  "r3754790013",
+  "r3754790019",
+];
+
+function assertV102ReauthorizationBoundary(plan, v102State, m003State) {
+  const m003Task = plan.tasks.find((task) => task.id === "M0-03");
+  const v102Task = plan.tasks.find((task) => task.id === "V1-02");
+  const m003AcceptedAt = m003State.history.find((entry) => entry.to === "accepted")?.at;
+  const priorV102History = v102State.history.filter(
+    (entry) => m003AcceptedAt !== undefined && entry.at < m003AcceptedAt,
+  );
+  const findingIds = (task) =>
+    [...task.semanticInvariants.join(" ").matchAll(/r[0-9]{10}/gu)].map(([id]) => id).sort();
+
+  expect(m003Task).toBeDefined();
+  expect(v102Task).toBeDefined();
+  if (m003Task === undefined || v102Task === undefined || m003AcceptedAt === undefined)
+    throw new Error("M0-03 and V1-02 reauthorization records must be present");
+
+  expect(m003Task.maxAttempts).toBe(1);
+  expect(v102Task.maxAttempts).toBe(3);
+  expect(v102Task.dependsOn).toContainEqual({ taskId: "M0-03", kind: "hard" });
+  expect(findingIds(m003Task)).toEqual(reauthorizationFindingIds);
+  expect(findingIds(v102Task)).toEqual(reauthorizationFindingIds);
+  expect(priorV102History.filter((entry) => entry.to === "in_progress")).toHaveLength(2);
+  expect(priorV102History.filter((entry) => entry.to === "verification_pending")).toHaveLength(2);
+  expect(priorV102History.filter((entry) => entry.to === "changes_requested")).toHaveLength(2);
+  if (v102State.state === "planned") expect(v102State.attempt).toBe(2);
+}
+
 async function normalizeV1Fixture(root) {
   const statePath = "product/plans/oss-v1/state/V1-00.json";
   const state = await readFixtureJson(root, statePath);
@@ -394,6 +428,30 @@ afterEach(async () => {
 });
 
 describe("implementation plan validator", () => {
+  it("locks the M0-03 one-attempt, five-finding V1-02 reauthorization boundary", async () => {
+    const planPath = "product/plans/oss-v1/plan.json";
+    const v102StatePath = "product/plans/oss-v1/state/V1-02.json";
+    const m003StatePath = "product/plans/oss-v1/state/M0-03.json";
+    const plan = await readFixtureJson(repositoryRoot, planPath);
+    const v102State = await readFixtureJson(repositoryRoot, v102StatePath);
+    const m003State = await readFixtureJson(repositoryRoot, m003StatePath);
+
+    assertV102ReauthorizationBoundary(plan, v102State, m003State);
+
+    const tooManyAttempts = JSON.parse(JSON.stringify(plan));
+    tooManyAttempts.tasks.find((task) => task.id === "V1-02").maxAttempts = 4;
+    expect(() =>
+      assertV102ReauthorizationBoundary(tooManyAttempts, v102State, m003State),
+    ).toThrow();
+
+    const missingFinding = JSON.parse(JSON.stringify(plan));
+    missingFinding.tasks.find((task) => task.id === "M0-03").semanticInvariants =
+      missingFinding.tasks
+        .find((task) => task.id === "M0-03")
+        .semanticInvariants.filter((invariant) => !invariant.includes("r3754790019"));
+    expect(() => assertV102ReauthorizationBoundary(missingFinding, v102State, m003State)).toThrow();
+  });
+
   it("normalizes promoted V1-00 lifecycle data back to the isolated fixture baseline", async () => {
     const root = await createFixture();
     const evidence = await createV1Evidence(root, { id: "ev-v1-promoted-fixture" });
