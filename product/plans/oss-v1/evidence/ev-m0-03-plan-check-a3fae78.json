@@ -1,0 +1,35 @@
+{
+  "$schema": "../../schemas/evidence.schema.json",
+  "schemaVersion": "1.0.0",
+  "id": "ev-m0-03-plan-check-a3fae78",
+  "taskId": "M0-03",
+  "type": "command-run",
+  "actor": "davidahmann",
+  "commit": "a3fae784264487cf864abc20e2114c08133286dd",
+  "createdAt": "2026-08-11T02:28:38Z",
+  "result": {
+    "status": "pass",
+    "checks": [
+      {
+        "name": "pnpm plan:check",
+        "status": "pass",
+        "summary": "The exact plan-only candidate validates the immutable five-finding authorization, records two consumed V1-02 attempts and one remaining attempt, and preserves the hard M0-03 dependency without product-path or capability expansion."
+      }
+    ]
+  },
+  "inputs": {
+    "planDigest": "sha256:c2098c1f53aa209733324ddc4a55dd846bde82f5ec60619331abfd00e78e2814",
+    "lockfileDigest": "sha256:4a89ac1f2863dc3591fae73e1ee0474cbab8cb0725ff80dfc57b1590f42d1a88"
+  },
+  "gateBinding": {
+    "gateId": "QG-PLAN-CHECK",
+    "kind": "command",
+    "command": "pnpm plan:check"
+  },
+  "review": null,
+  "redaction": {
+    "status": "not_applicable",
+    "containsRawModelOutput": false,
+    "containsSecrets": false
+  }
+}

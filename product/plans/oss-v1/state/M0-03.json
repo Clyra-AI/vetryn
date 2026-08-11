@@ -2,27 +2,31 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "M0-03",
-  "revision": 1,
-  "state": "in_progress",
+  "revision": 2,
+  "state": "accepted",
   "attempt": 1,
-  "candidate": null,
+  "candidate": {
+    "baseCommit": "ebb19dd41abeb97934d6b147f7292eb01cf3de96",
+    "commit": "a3fae784264487cf864abc20e2114c08133286dd",
+    "executor": "davidahmann"
+  },
   "criteria": [
     {
       "criterionId": "PROCESS-004",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-03-plan-check-a3fae78"]
     }
   ],
   "gates": [
     {
       "gateId": "QG-PLAN-CHECK",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-03-plan-check-a3fae78"]
     },
     {
       "gateId": "QG-REPO-CHECK",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-03-repo-check-a3fae78"]
     }
   ],
   "reviews": [],
@@ -41,6 +45,13 @@
       "at": "2026-08-11T02:15:00Z",
       "actor": "davidahmann",
       "reason": "Started the plan-only reauthorization before any fresh V1-02 candidate is created."
+    },
+    {
+      "from": "in_progress",
+      "to": "accepted",
+      "at": "2026-08-11T02:28:38Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer accepted the exact plan-only authorization candidate after the active plan and repository command gates passed."
     }
   ]
 }
