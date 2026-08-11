@@ -20,6 +20,7 @@ const fixtureTaskIds = [
   "M0-03",
   "M0-04",
   "M0-05",
+  "M0-06",
   "V1-01",
   "V1-02",
   "V1-03",
@@ -278,6 +279,40 @@ async function normalizeV1Fixture(root) {
     scannerCorrectionAuthorizationState,
   );
 
+  const localReviewAuthorizationStatePath = "product/plans/oss-v1/state/M0-06.json";
+  const localReviewAuthorizationState = await readFixtureJson(
+    root,
+    localReviewAuthorizationStatePath,
+  );
+  Object.assign(localReviewAuthorizationState, {
+    revision: 0,
+    state: "planned",
+    attempt: 0,
+    candidate: null,
+    criteria: localReviewAuthorizationState.criteria.map((criterion) => ({
+      ...criterion,
+      status: "pending",
+      evidenceRefs: [],
+    })),
+    gates: localReviewAuthorizationState.gates.map((gate) => ({
+      ...gate,
+      status: "pending",
+      evidenceRefs: [],
+    })),
+    reviews: [],
+    blockers: [],
+    history: [
+      {
+        from: null,
+        to: "planned",
+        at: "2026-08-10T00:00:00Z",
+        actor: "task-test-fixture",
+        reason: "Reset local-review process policy with the V1-00 fixture baseline.",
+      },
+    ],
+  });
+  await writeFixtureJson(root, localReviewAuthorizationStatePath, localReviewAuthorizationState);
+
   const goldenRepositoryStatePath = "product/plans/oss-v1/state/V1-02.json";
   const goldenRepositoryState = await readFixtureJson(root, goldenRepositoryStatePath);
   Object.assign(goldenRepositoryState, {
@@ -501,7 +536,7 @@ describe("task packet compiler", () => {
       packetId: "oss-v1:V1-00:r5",
       currentState: { state: "in_progress", candidate: null },
     });
-  });
+  }, 10_000);
 
   it("reports active and next legal work from generated progress", async () => {
     const root = await createFixture();
@@ -589,6 +624,68 @@ describe("task packet compiler", () => {
       "PLAN-003",
       "PLAN-004",
     ]);
+  });
+
+  it("requires frozen-candidate structured review evidence for high-risk tasks", async () => {
+    const root = await createFixture();
+    const planPath = "product/plans/oss-v1/plan.json";
+    const plan = await readFixtureJson(root, planPath);
+    plan.tasks.find((task) => task.id === v1TaskId).risk.level = "high";
+    await writeFixtureJson(root, planPath, plan);
+
+    const result = runTask(root, "compile", v1TaskId);
+
+    expect(result.status, result.stderr).toBe(0);
+    const packet = JSON.parse(result.stdout);
+    expect(packet.required_worker_chain).toEqual([
+      "task-executor",
+      "validation-gate",
+      "code-review",
+      "commit-push",
+    ]);
+    expect(packet.execution.factorySkills).toEqual(packet.required_worker_chain);
+    expect(packet.lifecycle_gates).toMatchObject({
+      code_review_required: true,
+      codex_review_required: false,
+    });
+    expect(packet.lifecycle_evidence_required).toContain("review_report");
+    expect(packet.stop_conditions).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining("review_report"),
+        expect.stringContaining("candidate changes"),
+      ]),
+    );
+
+    const schema = await readFixtureJson(root, "product/plans/schemas/task-packet.schema.json");
+    const ajv = new Ajv2020({ allErrors: true, strict: true, allowUnionTypes: true });
+    addFormats(ajv);
+    const validate = ajv.compile(schema);
+    const unsafe = globalThis.structuredClone(packet);
+    unsafe.required_worker_chain = unsafe.required_worker_chain.filter(
+      (worker) => worker !== "code-review",
+    );
+    unsafe.execution.factorySkills = unsafe.execution.factorySkills.filter(
+      (worker) => worker !== "code-review",
+    );
+    unsafe.lifecycle_gates.code_review_required = false;
+    unsafe.lifecycle_evidence_required = unsafe.lifecycle_evidence_required.filter(
+      (item) => item !== "review_report",
+    );
+
+    expect(validate(unsafe)).toBe(false);
+    expect(validate.errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ instancePath: "/required_worker_chain", keyword: "const" }),
+        expect.objectContaining({
+          instancePath: "/lifecycle_gates/code_review_required",
+          keyword: "const",
+        }),
+        expect.objectContaining({
+          instancePath: "/lifecycle_evidence_required",
+          keyword: "contains",
+        }),
+      ]),
+    );
   });
 
   it("preserves reviewed capability denials while declaring separate maintainer delivery authority", async () => {

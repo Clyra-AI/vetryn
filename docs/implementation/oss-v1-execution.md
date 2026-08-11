@@ -35,8 +35,9 @@ flowchart LR
 
 A task is ready only when every hard, contract, or field dependency is accepted. An executor may submit a
 candidate and evidence but cannot accept its own task. During the ADR-0009 single-maintainer V1 mode, the
-maintainer promotes an exact candidate after its active command gates pass. Independent verification and trust
-review remain useful checks, but are advisory rather than a prerequisite. Two failed attempts with the same
+maintainer promotes an exact candidate after its active command gates pass. Named human reviewer records remain
+advisory. A high-risk packet's candidate-bound local structured review is a required process gate, and
+`QG-TRUST-REVIEW` invokes the repository's domain-specific semantic review. Two failed attempts with the same
 failure fingerprint stop automatic repair and require maintainer triage.
 
 ## Agent roles and handoff
@@ -52,16 +53,17 @@ not executable. The full repository lifecycle is in `WORKFLOW.md`.
    candidate commit and command evidence.
 3. **Verifier** independently reruns active gates when available and checks candidate binding, redaction, and
    scope. It does not repair or promote the candidate.
-4. **Trust reviewer** reviews high-risk semantics when the product has enough behavior to review: no patch on
+4. **Trust reviewer** reviews high-risk semantics when `QG-TRUST-REVIEW` is active: no patch on
    ambiguity, stale source, insufficient evidence, compatibility failure, privacy risk, or hard-limit failure.
 5. **Maintainer** accepts, requests changes, or records an explicit waiver where the ledger allows it.
 
 Agents should work on one task per branch/PR. Parallel work is permitted only when the DAG allows it
 and paths do not overlap. A task brief is disposable; canonical state and evidence are committed.
 
-ADR 0009 makes named review roles and `CODEOWNERS` advisory for the OSS V1 build. The maintainer's explicit
-approval plus exact-candidate command evidence controls promotion. Review feedback still informs the PR loop, but
-it is not represented as a substitute for CI or deterministic command evidence.
+ADR 0009 makes named reviewer records and `CODEOWNERS` advisory for the OSS V1 build. The maintainer's explicit
+approval plus exact-candidate command evidence controls promotion. High-risk work also requires a frozen-candidate
+Factory `code-review` report after validation, and an active `QG-TRUST-REVIEW` requires the Vetryn semantic review.
+Neither report substitutes for CI or deterministic command evidence.
 
 ## Runner-ready task packet
 
@@ -72,9 +74,10 @@ chain, lifecycle gates, retry budget, runtime pins, Factory compatibility, polic
 release intent, and item-level acceptance-result requirements.
 
 `evidence_required` and `worker_evidence_required` contain only evidence the executor can produce before
-shipping. `lifecycle_evidence_required` names the outputs produced later by `validation-gate`, `commit-push`, and
-Vetryn's specialized promote role: validation, shipping, pull-request lifecycle, post-merge, and canonical
-promotion evidence. Factoryd-only scope-closure artifacts are not required while Factoryd remains deferred. An
+shipping. `lifecycle_evidence_required` names the outputs produced later by `validation-gate`, `code-review`,
+`commit-push`, and Vetryn's specialized promote role: validation, high-risk structured review, shipping,
+pull-request lifecycle, post-merge, and canonical promotion evidence. Factoryd-only scope-closure artifacts are
+not required while Factoryd remains deferred. An
 executor may report an acceptance item as implemented, partial, missing, or blocked, but that result does not
 change the ledger or accept the task. Any source drift requires recompilation; plan and lockfile digests in
 already-passing evidence remain immutable historical provenance.
@@ -117,6 +120,8 @@ ledger, evidence, and progress schemas. `.factory/profile.yaml` is a thin local 
 Factoryd is deferred until it supports the TypeScript package graph without inheriting a Go-specific
 bootstrap contract.
 
-The repository-local `$vetryn-implement-task`, `$vetryn-verify-task`, and `$vetryn-promote-task` skills
-specialize the task lifecycle. They deliberately reuse Factory's universal execution, validation, review,
-and shipping skills instead of copying them into this repository.
+The repository-local `$vetryn-implement-task`, `$vetryn-verify-task`, `$vetryn-promote-task`, and
+`$vetryn-trust-review` skills specialize the task lifecycle. The trust skill activates for V1-06 and later
+evaluation, recommendation, and patch work when `QG-TRUST-REVIEW` is declared. They deliberately reuse Factory's
+universal execution, validation, structured review, and shipping skills instead of copying them into this
+repository.

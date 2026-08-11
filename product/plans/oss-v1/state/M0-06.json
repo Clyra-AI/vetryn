@@ -1,0 +1,53 @@
+{
+  "$schema": "../../schemas/task-state.schema.json",
+  "schemaVersion": "1.0.0",
+  "taskId": "M0-06",
+  "revision": 2,
+  "state": "in_progress",
+  "attempt": 1,
+  "candidate": null,
+  "criteria": [
+    {
+      "criterionId": "PROCESS-007",
+      "status": "pending",
+      "evidenceRefs": []
+    }
+  ],
+  "gates": [
+    {
+      "gateId": "QG-PLAN-CHECK",
+      "status": "pending",
+      "evidenceRefs": []
+    },
+    {
+      "gateId": "QG-REPO-CHECK",
+      "status": "pending",
+      "evidenceRefs": []
+    }
+  ],
+  "reviews": [],
+  "blockers": [],
+  "history": [
+    {
+      "from": null,
+      "to": "planned",
+      "at": "2026-08-11T17:00:00Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer authorized the narrow process task for local adversarial review and V1-06 trust-review activation."
+    },
+    {
+      "from": "planned",
+      "to": "in_progress",
+      "at": "2026-08-11T17:00:00Z",
+      "actor": "implementation-agent",
+      "reason": "Started the process-only review integration without product, provider, credential, or GitHub-write scope."
+    },
+    {
+      "from": "in_progress",
+      "to": "in_progress",
+      "at": "2026-08-11T18:00:00Z",
+      "actor": "davidahmann",
+      "reason": "Authorized the plan-test fixture path required to keep the canonical plan harness isolated after adding M0-06."
+    }
+  ]
+}

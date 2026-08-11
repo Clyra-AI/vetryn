@@ -137,6 +137,19 @@
       "evidenceRefs": ["ev-m0-05-repo-check-4e18798"]
     },
     {
+      "id": "PROCESS-007",
+      "taskId": "M0-06",
+      "statement": "High-risk V1 packets require frozen-candidate local structured review before promotion and push, V1-06 routes through a bounded trust-review skill, and deterministic plus remote latest-head gates remain independent.",
+      "verification": {
+        "method": "test",
+        "testLevel": "contract",
+        "gateId": "QG-REPO-CHECK"
+      },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
       "id": "CONTRACT-001",
       "taskId": "V1-01",
       "statement": "Every V1 artifact has a versioned strict schema and canonical serializer.",

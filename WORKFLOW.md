@@ -22,8 +22,9 @@ access.
 4. Use `$vetryn-implement-task` for implementation. Use `$vetryn-verify-task` for an additional independent check
    when available, and `$vetryn-promote-task` for maintainer-controlled state promotion.
 
-Factory's `task-executor`, `validation-gate`, and `commit-push` skills provide generic execution, validation, and
-GitHub delivery behavior. Factory is an external development tool, not a product dependency or git submodule.
+Factory's `task-executor`, `validation-gate`, `code-review`, and `commit-push` skills provide generic execution,
+validation, structured local review, and GitHub delivery behavior. Factory is an external development tool, not a
+product dependency or git submodule.
 
 ## Evidence and promotion
 
@@ -32,11 +33,15 @@ Run focused checks, then every active command gate in the packet. Do not claim p
 
 Evidence is compact, redacted, and bound to the exact candidate and command gate it proves. Recorded plan and
 lockfile digests preserve the inputs observed at execution time; they are historical provenance, so a later
-unrelated plan edit does not invalidate accepted evidence. Re-run active checks when the candidate changes.
+unrelated plan edit does not invalidate accepted evidence. For high-risk work, freeze the candidate after command
+validation and run Factory `code-review` before promotion or the first push. The review report must bind that exact
+candidate and validation report. Re-run both validation and local review after any product- or contract-bearing
+candidate change.
 
 With explicit maintainer approval, promotion changes only that task's state, ledger status/evidence, new compact
-evidence, and generated progress. First commit the candidate and its evidence, then run `pnpm plan:write` and
-commit the generated progress. Never edit `progress.json` directly.
+evidence, and generated progress. First commit the reviewed candidate and its evidence, then run `pnpm plan:write`
+and commit the generated progress. Inspect the full promotion tail before shipping; if it contains product or
+contract-bearing bytes, invalidate the review and return to implementation. Never edit `progress.json` directly.
 
 ## Pull requests and shipping
 
@@ -46,8 +51,9 @@ describes the bounded change, validation, risks, and any provider or submodule n
 and monitor `main` afterward.
 
 Review feedback remains valuable. Address P0/P1 and concrete correctness, security, privacy, data-loss, or
-contract issues. A maintainer may use the Factory standalone-P2 disposition only when its documented conditions
-are met. Do not delay a small V1 task for speculative, duplicative, or non-actionable review churn.
+contract issues. Remote Codex is a separate latest-head residual gate and does not satisfy the local structured
+review. A maintainer may use the Factory standalone-P2 disposition only when its documented conditions are met.
+Do not delay a small V1 task for speculative, duplicative, or non-actionable review churn.
 
 ## Provider and field work
 

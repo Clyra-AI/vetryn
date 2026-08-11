@@ -1,0 +1,4 @@
+interface:
+  display_name: "Vetryn Trust Review"
+  short_description: "Review Vetryn evidence and abstention safety"
+  default_prompt: "Use $vetryn-trust-review to independently assess this Vetryn evaluation, recommendation, or patch candidate."
