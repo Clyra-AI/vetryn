@@ -1,29 +1,16 @@
-export const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
-export const SUPPORT_CLASSIFICATION_MODEL = "openai/gpt-4.1-mini";
+import OpenAI from "openai";
 
-interface OpenAICompatibleClient {
-  readonly chat: {
-    readonly completions: {
-      readonly create: (request: {
-        readonly messages: readonly {
-          readonly content: string;
-          readonly role: "system" | "user";
-        }[];
-        readonly model: string;
-        readonly response_format: { readonly type: "json_object" };
-      }) => Promise<unknown>;
-    };
-  };
-}
+export const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
+
+/** Construction is synchronous; the offline scenario suite never invokes the returned client. */
+export const createOpenRouterClient = (apiKey: string): OpenAI =>
+  new OpenAI({ apiKey, baseURL: OPENROUTER_BASE_URL, maxRetries: 0 });
 
 /**
  * This direct literal is deliberately scanner-friendly. The golden suite never invokes this
  * function; deterministic behavior is exercised through mock/provider.ts instead.
  */
-export const classifySupportTicket = async (
-  client: OpenAICompatibleClient,
-  subject: string,
-): Promise<unknown> =>
+export const classifySupportTicket = async (client: OpenAI, subject: string): Promise<unknown> =>
   client.chat.completions.create({
     messages: [
       {
@@ -31,6 +18,6 @@ export const classifySupportTicket = async (
         role: "user",
       },
     ],
-    model: SUPPORT_CLASSIFICATION_MODEL,
+    model: "openai/gpt-4.1-mini",
     response_format: { type: "json_object" },
   });

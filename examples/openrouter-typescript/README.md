@@ -3,7 +3,7 @@
 This directory is the contract for the first end-to-end fixture repository on the supported V1 path:
 
 - TypeScript on Node.js
-- an OpenAI-compatible client contract configured for OpenRouter
+- the `openai` SDK configured for OpenRouter
 - a direct, statically pinned model literal
 - JSON or tool-call output
 - checked-in, human-reviewed eval cases
@@ -23,8 +23,9 @@ The golden pipeline is:
 6. create a minimal patch only when its source fingerprint is still current;
 7. rerun and prove artifact and Action idempotency.
 
-Run `pnpm test:scenarios` to replay the fixture. It is intentionally offline: the source application is inspected
-but never invoked, the mock provider never performs I/O, and the test asserts semantics such as retry bounds,
-usage, abstention, artifact shape, and redaction rather than using result snapshots.
+Run `pnpm test:scenarios` to replay the fixture. It is intentionally offline: the test constructs the real SDK
+with a synthetic key to verify its OpenRouter configuration but never invokes it, the mock provider never performs
+I/O, and the suite asserts semantics such as retry bounds, usage, abstention, artifact shape, and redaction rather
+than using result snapshots.
 
 Until the remaining V1 tasks land, Vetryn is pre-alpha and not ready for production migrations.

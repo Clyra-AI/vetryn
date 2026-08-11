@@ -22,6 +22,7 @@ export interface MockRequest {
 
 export type MockEvent =
   | { readonly kind: "completed"; readonly usage: MockUsage }
+  | { readonly kind: "invalid-usage"; readonly reason: "usage-accounting-invalid" }
   | { readonly kind: "invalid-output"; readonly reason: "schema-mismatch" }
   | { readonly kind: "timeout"; readonly reason: "timeout" }
   | { readonly kind: "rate-limit"; readonly retry: number }
@@ -38,7 +39,12 @@ export interface MockResult {
   };
   readonly attempts: number;
   readonly code:
-    "budget-exhausted" | "invalid-output" | "rate-limit-exhausted" | "success" | "timeout";
+    | "budget-exhausted"
+    | "invalid-output"
+    | "invalid-usage"
+    | "rate-limit-exhausted"
+    | "success"
+    | "timeout";
   readonly disposition: "abstain" | "complete";
 }
 
@@ -50,6 +56,27 @@ const assertNonNegativeInteger = (value: number, label: string): void => {
     throw new Error(`${label} must be a non-negative safe integer`);
   }
 };
+
+const isValidUsage = (usage: MockUsage): boolean =>
+  [usage.promptTokens, usage.completionTokens, usage.totalTokens].every(
+    (value) => Number.isSafeInteger(value) && value >= 0,
+  ) && usage.totalTokens === usage.promptTokens + usage.completionTokens;
+
+export const evaluatePatchPrecondition = (
+  expectedFingerprint: string,
+  observedFingerprint: string,
+) =>
+  expectedFingerprint === observedFingerprint
+    ? {
+        diagnosticCodes: [] as const,
+        disposition: "eligible" as const,
+        patch: { operation: "replace-model-literal" as const },
+      }
+    : {
+        diagnosticCodes: ["stale-source-fingerprint"] as const,
+        disposition: "refuse" as const,
+        patch: null,
+      };
 
 const createResult = (
   options: MockProviderOptions,
@@ -144,6 +171,17 @@ export const createMockProvider = (options: MockProviderOptions) => {
       }
 
       const usage = request.outcome === "usage" ? (request.usage ?? DEFAULT_USAGE) : DEFAULT_USAGE;
+
+      if (!isValidUsage(usage)) {
+        return createResult(
+          options,
+          requestCount,
+          1,
+          "invalid-usage",
+          [{ kind: "invalid-usage", reason: "usage-accounting-invalid" }],
+          EMPTY_USAGE,
+        );
+      }
 
       return createResult(
         options,

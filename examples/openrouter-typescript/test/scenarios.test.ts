@@ -1,17 +1,23 @@
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 
+import OpenAI from "openai";
 import { describe, expect, it, vi } from "vitest";
 
 import {
   createCatalogContentDigest,
   parseVetrynArtifact,
 } from "../../../packages/core/src/index.js";
-import { createMockProvider, type MockOutcome, type MockUsage } from "../mock/provider.js";
+import {
+  createMockProvider,
+  evaluatePatchPrecondition,
+  type MockOutcome,
+  type MockUsage,
+} from "../mock/provider.js";
 import {
   classifySupportTicket,
+  createOpenRouterClient,
   OPENROUTER_BASE_URL,
-  SUPPORT_CLASSIFICATION_MODEL,
 } from "../src/support-classification.js";
 
 interface CallSiteManifest {
@@ -60,7 +66,11 @@ interface ClockFixture {
 
 interface ScenarioMatrix {
   readonly offline: boolean;
-  readonly scenarios: readonly { readonly id: string }[];
+  readonly scenarios: readonly {
+    readonly assertions: readonly string[];
+    readonly expectedDisposition: string;
+    readonly id: string;
+  }[];
 }
 
 interface ExpectedSummary {
@@ -105,32 +115,14 @@ describe("OpenRouter TypeScript golden scenario", () => {
       representativeUsage: { reviewed: true },
       sourceBinding: { file: "src/support-classification.ts", symbol: "classifySupportTicket" },
     });
-    const capturedRequests: unknown[] = [];
-    const client = {
-      chat: {
-        completions: {
-          create: async (request: unknown): Promise<unknown> => {
-            capturedRequests.push(request);
-            return { accepted: true };
-          },
-        },
-      },
-    };
+    const client = createOpenRouterClient("fixture-only-key-not-a-secret");
 
-    await classifySupportTicket(
-      client as Parameters<typeof classifySupportTicket>[0],
-      "Synthetic request: classify an account access question.",
-    );
-
-    expect(application).toContain("model: SUPPORT_CLASSIFICATION_MODEL");
-    expect(SUPPORT_CLASSIFICATION_MODEL).toBe("openai/gpt-4.1-mini");
+    expect(client).toBeInstanceOf(OpenAI);
+    expect(client.baseURL).toBe(OPENROUTER_BASE_URL);
+    expect(client.maxRetries).toBe(0);
+    expect(classifySupportTicket).toBeTypeOf("function");
+    expect(application).toContain('model: "openai/gpt-4.1-mini"');
     expect(OPENROUTER_BASE_URL).toBe("https://openrouter.ai/api/v1");
-    expect(capturedRequests).toEqual([
-      expect.objectContaining({
-        model: SUPPORT_CLASSIFICATION_MODEL,
-        response_format: { type: "json_object" },
-      }),
-    ]);
     expect(cases).toHaveLength(30);
     expect(new Set(cases.map(({ id }) => id)).size).toBe(30);
     expect(cases.every(({ expectedClass }) => expectedClass.length > 0)).toBe(true);
@@ -164,6 +156,7 @@ describe("OpenRouter TypeScript golden scenario", () => {
       "invalid-json-output",
       "contradictory-evidence",
       "rate-limit-budget-exhaustion",
+      "stale-source-fingerprint",
     ];
 
     expect(clock).toEqual({
@@ -179,6 +172,34 @@ describe("OpenRouter TypeScript golden scenario", () => {
     expect(catalog.models.every(({ id, provider }) => id.startsWith(`${provider}/`))).toBe(true);
     expect(() => parseVetrynArtifact(catalog)).not.toThrow();
     expect(mockSource).not.toMatch(/\bfetch\s*\(|\bprocess\.env\b|node:(?:http|https)/u);
+  });
+
+  it("refuses a stale source fingerprint without producing a patch", async () => {
+    const [scenarioMatrix, expectedStaleReport] = await Promise.all([
+      readJson<ScenarioMatrix>("fixtures/scenarios.json"),
+      readJson<ExpectedSummary>("expected/stale-source-report.json"),
+    ]);
+    const staleScenario = scenarioMatrix.scenarios.find(
+      ({ id }) => id === "stale-source-fingerprint",
+    );
+    const matched = evaluatePatchPrecondition("sha256:fixture-source", "sha256:fixture-source");
+    const stale = evaluatePatchPrecondition("sha256:fixture-source", "sha256:changed-source");
+
+    expect(staleScenario).toMatchObject({
+      expectedDisposition: "refuse",
+      assertions: expect.arrayContaining(["No stale patch is applied."]),
+    });
+    expect(matched).toEqual({
+      diagnosticCodes: [],
+      disposition: "eligible",
+      patch: { operation: "replace-model-literal" },
+    });
+    expect(stale).toEqual({
+      diagnosticCodes: ["stale-source-fingerprint"],
+      disposition: "refuse",
+      patch: null,
+    });
+    expect(expectedStaleReport).toMatchObject(stale);
   });
 
   it("models success, invalid output, timeout, rate limiting, usage, retries, and request-budget exhaustion", async () => {
@@ -291,6 +312,33 @@ describe("OpenRouter TypeScript golden scenario", () => {
       disposition: "abstain",
     });
 
+    for (const invalidUsage of [
+      { completionTokens: -1, promptTokens: 1, totalTokens: 0 },
+      { completionTokens: Number.POSITIVE_INFINITY, promptTokens: 1, totalTokens: 1 },
+      { completionTokens: 0.5, promptTokens: 1, totalTokens: 1.5 },
+      { completionTokens: 1, promptTokens: 1, totalTokens: 3 },
+    ]) {
+      const invalidUsageResult = await createMockProvider({
+        clock: clock.now,
+        requestBudget: 3,
+        retryLimit: 2,
+      }).execute({ outcome: "usage", usage: invalidUsage });
+
+      expect(invalidUsageResult).toMatchObject({
+        attempts: 1,
+        code: "invalid-usage",
+        disposition: "abstain",
+      });
+      expect(invalidUsageResult.artifact.events).toEqual([
+        { kind: "invalid-usage", reason: "usage-accounting-invalid" },
+      ]);
+      expect(invalidUsageResult.artifact.usage).toEqual({
+        completionTokens: 0,
+        promptTokens: 0,
+        totalTokens: 0,
+      });
+    }
+
     const replayOne = await createMockProvider({
       clock: clock.now,
       requestBudget: 3,
@@ -348,9 +396,10 @@ describe("OpenRouter TypeScript golden scenario", () => {
   });
 
   it("uses redacted expected artifact shapes and semantic abstention rather than result snapshots", async () => {
-    const [recommendation, abstention] = await Promise.all([
+    const [recommendation, abstention, staleSource] = await Promise.all([
       readJson<ExpectedSummary>("expected/recommendation-summary.json"),
       readJson<ExpectedSummary>("expected/abstention-report.json"),
+      readJson<ExpectedSummary>("expected/stale-source-report.json"),
     ]);
 
     expect(recommendation).toMatchObject({
@@ -362,6 +411,12 @@ describe("OpenRouter TypeScript golden scenario", () => {
     expect(abstention).toMatchObject({
       artifactType: "golden-scenario-summary",
       disposition: "abstain",
+      patch: null,
+      redaction: { rawInputs: false, rawOutputs: false },
+    });
+    expect(staleSource).toMatchObject({
+      artifactType: "golden-scenario-summary",
+      disposition: "refuse",
       patch: null,
       redaction: { rawInputs: false, rawOutputs: false },
     });
