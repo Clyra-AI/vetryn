@@ -254,7 +254,11 @@
       "id": "SCAN-004",
       "taskId": "V1-03",
       "statement": "Dynamic and ambiguous wrappers are reported without a patchable target or invented semantic ID.",
-      "verification": { "method": "test", "testLevel": "adversarial", "gateId": "QG-SCANNER-CORPUS" },
+      "verification": {
+        "method": "test",
+        "testLevel": "adversarial",
+        "gateId": "QG-SCANNER-CORPUS"
+      },
       "waivable": false,
       "status": "planned",
       "evidenceRefs": []
