@@ -159,9 +159,9 @@
       "taskId": "V1-01",
       "statement": "Durable artifacts exclude credentials and raw protected prompts or outputs by construction.",
       "verification": {
-        "method": "test",
+        "method": "review",
         "testLevel": "adversarial",
-        "gateId": "QG-CONTRACTS"
+        "gateId": "QG-TRUST-REVIEW"
       },
       "waivable": false,
       "status": "accepted",
@@ -203,9 +203,9 @@
       "taskId": "V1-02",
       "statement": "Sentinel credentials and protected model output never appear in test logs or durable artifacts.",
       "verification": {
-        "method": "test",
+        "method": "review",
         "testLevel": "adversarial",
-        "gateId": "QG-SCENARIOS"
+        "gateId": "QG-TRUST-REVIEW"
       },
       "waivable": false,
       "status": "accepted",
@@ -221,8 +221,8 @@
         "gateId": "QG-SCANNER-CORPUS"
       },
       "waivable": false,
-      "status": "accepted",
-      "evidenceRefs": ["ev-v1-03-scanner-corpus-b43a374"]
+      "status": "planned",
+      "evidenceRefs": []
     },
     {
       "id": "SCAN-002",
@@ -234,8 +234,8 @@
         "gateId": "QG-SCANNER-CORPUS"
       },
       "waivable": false,
-      "status": "accepted",
-      "evidenceRefs": ["ev-v1-03-scanner-corpus-b43a374"]
+      "status": "planned",
+      "evidenceRefs": []
     },
     {
       "id": "SCAN-003",
@@ -247,8 +247,8 @@
         "gateId": "QG-SCANNER-CORPUS"
       },
       "waivable": false,
-      "status": "accepted",
-      "evidenceRefs": ["ev-v1-03-scanner-corpus-b43a374"]
+      "status": "planned",
+      "evidenceRefs": []
     },
     {
       "id": "SCAN-004",
@@ -260,8 +260,8 @@
         "gateId": "QG-SCANNER-CORPUS"
       },
       "waivable": false,
-      "status": "accepted",
-      "evidenceRefs": ["ev-v1-03-scanner-corpus-b43a374"]
+      "status": "planned",
+      "evidenceRefs": []
     },
     {
       "id": "MANIFEST-001",

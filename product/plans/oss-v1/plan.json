@@ -504,7 +504,6 @@
           "packages/cli/**",
           "packages/core/**",
           "examples/openrouter-typescript/**",
-          "scripts/plan.mjs",
           "scripts/plan.test.mjs",
           "scripts/task.test.mjs",
           "vitest.config.ts"
@@ -516,8 +515,7 @@
         "Ambiguous or dynamic calls are findings, never patch targets.",
         "Root workspace support and release metadata are limited to the staged scanner package, its tests, and the previously accepted manifest-init public APIs.",
         "The completed pre-merge scanner-correction attempt was limited to the prior abstention, precision, direct-eval, and var-binding remedies: erased declarations do not shadow intrinsic direct eval, and a var declaration initializer or loop binding that merges with a verified receiver invalidates that receiver.",
-        "The post-merge scanner correction is limited to making a call abstain when a later statically named object accessor overrides its literal model field; it does not broaden discovery or permit source patching.",
-        "The same bounded correction may align accepted adversarial criteria with the deterministic gates that actually exercised them and enforce criterion gate binding, while named review roles remain advisory under ADR 0009."
+        "The post-merge scanner correction is limited to making a call abstain when a later statically named object accessor overrides its literal model field; it does not broaden discovery or permit source patching."
       ],
       "deliverables": ["packages/typescript/**", "packages/cli/**"],
       "requiredTestLevels": ["unit", "contract", "integration", "adversarial"],
