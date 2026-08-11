@@ -1,0 +1,35 @@
+{
+  "$schema": "../../schemas/evidence.schema.json",
+  "schemaVersion": "1.0.0",
+  "id": "ev-v1-02-scenarios-9ecc4ca",
+  "taskId": "V1-02",
+  "type": "command-run",
+  "actor": "implementation-agent",
+  "commit": "9ecc4cac5329e0f68522495d4ad47edaf89b4e83",
+  "createdAt": "2026-08-11T03:40:55Z",
+  "result": {
+    "status": "pass",
+    "checks": [
+      {
+        "name": "pnpm test:scenarios",
+        "status": "pass",
+        "summary": "Seven deterministic offline scenarios passed, including a recursive scan of every durable fixture and expected artifact for credential and protected-output markers."
+      }
+    ]
+  },
+  "inputs": {
+    "planDigest": "sha256:96090a1ac8812076063809870a9c53f54d1d0b053210f58b481974ea5c0c4b75",
+    "lockfileDigest": "sha256:b6ea1c788e4f17af516bdf10745fcb27f4f49c29065fc4616c374334f88ac2ae"
+  },
+  "gateBinding": {
+    "gateId": "QG-SCENARIOS",
+    "kind": "command",
+    "command": "pnpm test:scenarios"
+  },
+  "review": null,
+  "redaction": {
+    "status": "verified",
+    "containsRawModelOutput": false,
+    "containsSecrets": false
+  }
+}

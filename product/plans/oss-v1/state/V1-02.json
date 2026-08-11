@@ -2,42 +2,46 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "V1-02",
-  "revision": 4,
-  "state": "in_progress",
+  "revision": 5,
+  "state": "verification_pending",
   "attempt": 3,
-  "candidate": null,
+  "candidate": {
+    "baseCommit": "99b1919bcb5a24394b1aa4ab5f0fdb003e0d1c30",
+    "commit": "9ecc4cac5329e0f68522495d4ad47edaf89b4e83",
+    "executor": "implementation-agent"
+  },
   "criteria": [
     {
       "criterionId": "GOLDEN-001",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-02-scenarios-9ecc4ca"]
     },
     {
       "criterionId": "GOLDEN-002",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-02-scenarios-9ecc4ca"]
     },
     {
       "criterionId": "GOLDEN-003",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-02-scenarios-9ecc4ca"]
     },
     {
       "criterionId": "GOLDEN-004",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-02-scenarios-9ecc4ca"]
     }
   ],
   "gates": [
     {
       "gateId": "QG-REPO-CHECK",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-02-repo-check-9ecc4ca"]
     },
     {
       "gateId": "QG-SCENARIOS",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-02-scenarios-9ecc4ca"]
     },
     {
       "gateId": "QG-INDEPENDENT-VERIFY",
@@ -140,6 +144,13 @@
       "at": "2026-08-11T03:39:39Z",
       "actor": "implementation-agent",
       "reason": "Reopened the still-unmerged golden-scenario task so the P1-required independent maintainer promotion can follow a new exact candidate."
+    },
+    {
+      "from": "in_progress",
+      "to": "verification_pending",
+      "at": "2026-08-11T03:40:55Z",
+      "actor": "implementation-agent",
+      "reason": "Submitted the exact P1/P2 corrective candidate with compact command evidence for independent maintainer promotion."
     }
   ]
 }
