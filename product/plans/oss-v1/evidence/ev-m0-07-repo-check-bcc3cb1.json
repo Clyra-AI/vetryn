@@ -1,0 +1,35 @@
+{
+  "$schema": "../../schemas/evidence.schema.json",
+  "schemaVersion": "1.0.0",
+  "id": "ev-m0-07-repo-check-bcc3cb1",
+  "taskId": "M0-07",
+  "type": "command-run",
+  "actor": "validation-agent",
+  "commit": "bcc3cb1da7e57fd884863b7181fdf10e504a3f4d",
+  "createdAt": "2026-08-11T18:09:56Z",
+  "result": {
+    "status": "pass",
+    "checks": [
+      {
+        "name": "pnpm check",
+        "status": "pass",
+        "summary": "The exact full-surface authentication candidate passed formatting, plan validation, lint, dead-code analysis, typechecking, all 139 repository tests, build, and package smoke checks."
+      }
+    ]
+  },
+  "inputs": {
+    "planDigest": "sha256:d632eca946b88203be4bb4a827def767826dbf4fca542b4717a0eda4b0d8ad72",
+    "lockfileDigest": "sha256:0568848490d539fc4b1a4cd53c2ddd95108a15a0ad1ea37ff6c14f1b748db6ac"
+  },
+  "gateBinding": {
+    "gateId": "QG-REPO-CHECK",
+    "kind": "command",
+    "command": "pnpm check"
+  },
+  "review": null,
+  "redaction": {
+    "status": "not_applicable",
+    "containsRawModelOutput": false,
+    "containsSecrets": false
+  }
+}
