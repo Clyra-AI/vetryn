@@ -52,6 +52,8 @@
   contract, plan, or lockfile drift cannot reuse earlier lifecycle review evidence.
 - Preserved candidate-bound plan provenance across unrelated current plan edits while continuing to re-derive the
   active task policy, and made lifecycle preflight reject halted task states or active blockers.
+- Bound recompilation to the frozen candidate's exact task and gate policy so relevant plan drift cannot reuse
+  earlier candidate-specific lifecycle evidence while unrelated task edits remain valid.
 
 ### Changed
 

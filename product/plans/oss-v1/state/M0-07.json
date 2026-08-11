@@ -2,31 +2,27 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "M0-07",
-  "revision": 27,
-  "state": "accepted",
+  "revision": 28,
+  "state": "in_progress",
   "attempt": 3,
-  "candidate": {
-    "baseCommit": "08c3ef067e6be834142b6bd6cb3a17c406e4ea3b",
-    "commit": "35bca85dc22cbc51da85908bdceb12742f267507",
-    "executor": "implementation-agent"
-  },
+  "candidate": null,
   "criteria": [
     {
       "criterionId": "PROCESS-008",
-      "status": "pass",
-      "evidenceRefs": ["ev-m0-07-repo-check-35bca85"]
+      "status": "pending",
+      "evidenceRefs": []
     }
   ],
   "gates": [
     {
       "gateId": "QG-PLAN-CHECK",
-      "status": "pass",
-      "evidenceRefs": ["ev-m0-07-plan-check-35bca85"]
+      "status": "pending",
+      "evidenceRefs": []
     },
     {
       "gateId": "QG-REPO-CHECK",
-      "status": "pass",
-      "evidenceRefs": ["ev-m0-07-repo-check-35bca85"]
+      "status": "pending",
+      "evidenceRefs": []
     }
   ],
   "reviews": [],
@@ -227,6 +223,13 @@
       "at": "2026-08-11T19:13:15Z",
       "actor": "davidahmann",
       "reason": "Maintainer accepted the exact bounded-CI-budget candidate after the targeted real-Git lifecycle test and full repository gate completed within the explicit budget."
+    },
+    {
+      "from": "accepted",
+      "to": "in_progress",
+      "at": "2026-08-11T19:29:00Z",
+      "actor": "implementation-agent",
+      "reason": "Continued the same third review-correction attempt to bind recompilation to the frozen candidate's exact task and gate policy while preserving unrelated plan edits."
     }
   ]
 }

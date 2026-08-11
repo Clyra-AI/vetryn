@@ -265,7 +265,7 @@ async function digest(relativePath) {
   return createHash("sha256").update(contents).digest("hex");
 }
 
-function digestAtCommit(commit, relativePath) {
+function readAtCommit(commit, relativePath) {
   const result = spawnSync("git", ["-C", root, "show", `${commit}:${relativePath}`], {
     encoding: null,
     maxBuffer: 10 * 1024 * 1024,
@@ -274,7 +274,19 @@ function digestAtCommit(commit, relativePath) {
     result.status === 0 && Buffer.isBuffer(result.stdout),
     `cannot read frozen candidate input ${relativePath} at ${commit}`,
   );
-  return createHash("sha256").update(result.stdout).digest("hex");
+  return result.stdout;
+}
+
+function digestAtCommit(commit, relativePath) {
+  return createHash("sha256").update(readAtCommit(commit, relativePath)).digest("hex");
+}
+
+function readJsonAtCommit(commit, relativePath) {
+  try {
+    return JSON.parse(readAtCommit(commit, relativePath).toString("utf8"));
+  } catch {
+    fail(`cannot parse frozen candidate input ${relativePath} at ${commit}`);
+  }
 }
 
 function validateCanonicalPlan() {
@@ -842,6 +854,27 @@ async function validatePacket(packet, { requireBoundCandidate }) {
     isDeepStrictEqual(canonicalState.candidate, packet.currentState.candidate),
     "currentState.candidate does not match canonical task state",
   );
+  if (canonicalState.candidate?.commit) {
+    const candidatePlan = readJsonAtCommit(canonicalState.candidate.commit, sourcePaths.plan);
+    const candidateTasks = candidatePlan.tasks.filter((task) => task.id === packet.task_id);
+    assert(
+      candidateTasks.length === 1,
+      "frozen candidate plan does not contain one canonical task",
+    );
+    assertSame(
+      candidateTasks[0],
+      canonicalTask,
+      "canonical task policy has drifted from candidate",
+    );
+    const candidateGates = candidateTasks[0].requiredGates.map((gateId) =>
+      candidatePlan.gateCatalog.find((gate) => gate.id === gateId),
+    );
+    assert(
+      candidateGates.every(Boolean),
+      `frozen candidate task ${packet.task_id} references an unknown gate`,
+    );
+    assertSame(candidateGates, canonicalGates, "canonical gate policy has drifted from candidate");
+  }
   const expectedSourceFiles = [plan.productContract, sourcePaths.plan, "pnpm-lock.yaml"];
   assertSame(
     Object.keys(packet.source.digests).toSorted(),

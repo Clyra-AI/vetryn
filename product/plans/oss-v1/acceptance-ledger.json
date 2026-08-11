@@ -159,8 +159,8 @@
         "gateId": "QG-REPO-CHECK"
       },
       "waivable": false,
-      "status": "accepted",
-      "evidenceRefs": ["ev-m0-07-repo-check-35bca85"]
+      "status": "planned",
+      "evidenceRefs": []
     },
     {
       "id": "CONTRACT-001",

@@ -42,8 +42,9 @@ local green result that fails in CI or silently disappears from a release.
   tail or the empty `planned` tail frozen before promotion, and rejects fabricated status or evidence claims.
 - Once a candidate is frozen, compilation reads each immutable input from that Git commit. Product-contract and
   lockfile bytes must still match the current checkout. The plan digest remains historical candidate provenance,
-  while preflight re-derives this task's complete policy from the valid current plan; unrelated task edits do not
-  invalidate evidence, but relevant policy drift fails comparison. Halted canonical task states and active
+  while preflight re-derives this task's complete policy from the valid current plan and compares the full task and
+  gate definitions to the candidate plan before emitting a packet; unrelated task edits do not invalidate
+  evidence, but relevant policy drift fails comparison and recompilation. Halted canonical task states and active
   blockers always stop preflight.
 - Publishable package documentation refs derive from the task's package deliverables and authorized example paths;
   they are never hard-coded to an unrelated provider package.

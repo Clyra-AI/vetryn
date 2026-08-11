@@ -887,6 +887,7 @@ describe("task packet compiler", () => {
       " Unrelated planning clarification.";
     await writeFixtureJson(root, planPath, unrelatedPlan);
     expect(runTask(root, "validate", "candidate-packet.json").status).toBe(0);
+    expect(runTask(root, "compile", "V1-05").status).toBe(0);
 
     const relevantPlan = globalThis.structuredClone(unrelatedPlan);
     relevantPlan.tasks.find((candidate) => candidate.id === "V1-05").objective +=
@@ -895,6 +896,11 @@ describe("task packet compiler", () => {
     const relevantPlanValidation = runTask(root, "validate", "candidate-packet.json");
     expect(relevantPlanValidation.status).toBe(1);
     expect(relevantPlanValidation.stderr).toContain("task does not match canonical plan");
+    const relevantPlanCompile = runTask(root, "compile", "V1-05");
+    expect(relevantPlanCompile.status).toBe(1);
+    expect(relevantPlanCompile.stderr).toContain(
+      "canonical task policy has drifted from candidate",
+    );
     await writeFixtureJson(root, planPath, plan);
 
     const productContractPath = path.join(root, "docs/oss-v1.md");
