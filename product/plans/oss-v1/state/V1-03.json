@@ -2,8 +2,8 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "V1-03",
-  "revision": 2,
-  "state": "verification_pending",
+  "revision": 3,
+  "state": "accepted",
   "attempt": 1,
   "candidate": {
     "baseCommit": "1cd902a6d44e3245240b6f22bca1c3777654558f",
@@ -45,8 +45,8 @@
     },
     {
       "gateId": "QG-SCANNER-CORPUS",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-03-scanner-corpus-d32ce7c"]
     },
     {
       "gateId": "QG-INDEPENDENT-VERIFY",
@@ -93,6 +93,13 @@
       "at": "2026-08-11T09:47:56Z",
       "actor": "implementation-agent",
       "reason": "Submitted the exact scanner candidate with repository, contract, and reviewed-corpus command evidence for maintainer promotion."
+    },
+    {
+      "from": "verification_pending",
+      "to": "accepted",
+      "at": "2026-08-11T09:49:00Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer accepted the exact scanner candidate after all active command gates passed; named review records remain advisory under ADR 0009."
     }
   ]
 }
