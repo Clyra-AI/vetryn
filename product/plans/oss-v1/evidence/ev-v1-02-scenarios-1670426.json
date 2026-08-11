@@ -1,0 +1,35 @@
+{
+  "$schema": "../../schemas/evidence.schema.json",
+  "schemaVersion": "1.0.0",
+  "id": "ev-v1-02-scenarios-1670426",
+  "taskId": "V1-02",
+  "type": "command-run",
+  "actor": "davidahmann",
+  "commit": "167042637e6d82ca5a6f574c27b4f13e94e60b4c",
+  "createdAt": "2026-08-11T01:52:11Z",
+  "result": {
+    "status": "pass",
+    "checks": [
+      {
+        "name": "pnpm test:scenarios",
+        "status": "pass",
+        "summary": "The exact candidate passed six semantic offline scenarios covering real SDK construction, an inline patchable model literal, reviewed cases, pinned replay, success and abstention outcomes, retry and budget bounds, malformed-usage abstention, stale-source refusal, and runtime-marker redaction."
+      }
+    ]
+  },
+  "inputs": {
+    "planDigest": "sha256:232d745d2e776a7a7f2157b9b724d9a7dda94053a178f56753e6e7ad46b45b8b",
+    "lockfileDigest": "sha256:b6ea1c788e4f17af516bdf10745fcb27f4f49c29065fc4616c374334f88ac2ae"
+  },
+  "gateBinding": {
+    "gateId": "QG-SCENARIOS",
+    "kind": "command",
+    "command": "pnpm test:scenarios"
+  },
+  "review": null,
+  "redaction": {
+    "status": "verified",
+    "containsRawModelOutput": false,
+    "containsSecrets": false
+  }
+}

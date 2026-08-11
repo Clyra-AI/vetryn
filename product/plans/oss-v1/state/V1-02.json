@@ -2,42 +2,46 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "V1-02",
-  "revision": 3,
-  "state": "in_progress",
+  "revision": 4,
+  "state": "accepted",
   "attempt": 2,
-  "candidate": null,
+  "candidate": {
+    "baseCommit": "a98ebca134c25cca7414cfbb9ca798511758c728",
+    "commit": "167042637e6d82ca5a6f574c27b4f13e94e60b4c",
+    "executor": "davidahmann"
+  },
   "criteria": [
     {
       "criterionId": "GOLDEN-001",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-02-scenarios-1670426"]
     },
     {
       "criterionId": "GOLDEN-002",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-02-scenarios-1670426"]
     },
     {
       "criterionId": "GOLDEN-003",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-02-scenarios-1670426"]
     },
     {
       "criterionId": "GOLDEN-004",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-02-scenarios-1670426"]
     }
   ],
   "gates": [
     {
       "gateId": "QG-REPO-CHECK",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-02-repo-check-1670426"]
     },
     {
       "gateId": "QG-SCENARIOS",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-02-scenarios-1670426"]
     },
     {
       "gateId": "QG-INDEPENDENT-VERIFY",
@@ -91,6 +95,13 @@
       "at": "2026-08-11T01:46:24Z",
       "actor": "davidahmann",
       "reason": "Reopened for current-head review fixes: real SDK construction, direct literal patchability, malformed-usage abstention, and stale-source no-patch coverage."
+    },
+    {
+      "from": "in_progress",
+      "to": "accepted",
+      "at": "2026-08-11T01:52:11Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer accepted the repaired, independently verified exact candidate after active scenario and repository command gates passed under ADR 0009 single-maintainer delivery."
     }
   ]
 }
