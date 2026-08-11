@@ -11,7 +11,9 @@ Live observations derive their timestamp from the acquisition clock; captured re
 repository timestamp. Existing same-digest snapshots are reused only when their OpenRouter identity and temporal
 provenance are compatible. Duplicate model IDs are retained only when every row normalizes identically; conflicting
 or invalid duplicate rows exclude that model ID. Replay requires the canonical
-digest-derived OpenRouter snapshot identity. Tests inject `fetch`; CI never calls a live provider.
+digest-derived OpenRouter snapshot identity. Successful refresh persistence records the immutable observation before
+publishing a new snapshot and rolls the observation back if snapshot publication fails, so a failed refresh cannot
+leave a directly replayable orphan snapshot. Tests inject `fetch`; CI never calls a live provider.
 
 Candidate resolution excludes incomplete catalog entries, the baseline model, retired models, blocked
 providers, and models missing required capabilities before ranking. The default and maximum candidate

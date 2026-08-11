@@ -83,27 +83,25 @@ export async function refreshCatalogFile({
   if (catalogFile === undefined && observedAt !== undefined) {
     throw new Error("--observed-at is reserved for captured catalog files.");
   }
-  const fetch =
-    catalogFile === undefined
-      ? undefined
-      : async (): Promise<Response> =>
-          new Response(
-            Readable.toWeb(createReadStream(catalogFile)) as ReadableStream<Uint8Array>,
-            {
-              headers: { "content-type": "application/json" },
-              status: 200,
-            },
-          );
   const store = new FileCatalogStore(path.resolve(storePath));
-  return catalogFile === undefined
-    ? refreshOpenRouterCatalog({ acquisition: "live-api", refreshId, store })
-    : refreshOpenRouterCatalog({
-        acquisition: "captured-response",
-        fetch: fetch as typeof globalThis.fetch,
-        observedAt: observedAt ?? new Date().toISOString(),
-        refreshId,
-        store,
-      });
+  if (catalogFile === undefined) {
+    return refreshOpenRouterCatalog({ acquisition: "live-api", refreshId, store });
+  }
+  if (observedAt === undefined) {
+    throw new Error("--observed-at is required for captured catalog files.");
+  }
+  const fetch = async (): Promise<Response> =>
+    new Response(Readable.toWeb(createReadStream(catalogFile)) as ReadableStream<Uint8Array>, {
+      headers: { "content-type": "application/json" },
+      status: 200,
+    });
+  return refreshOpenRouterCatalog({
+    acquisition: "captured-response",
+    fetch: fetch as typeof globalThis.fetch,
+    observedAt,
+    refreshId,
+    store,
+  });
 }
 
 export async function createCatalogShortlistFile({
@@ -432,7 +430,10 @@ export function createProgram(): Command {
       "--catalog-file <path>",
       "Import a local OpenRouter response instead of using the network.",
     )
-    .option("--observed-at <timestamp>", "Offset-aware observation timestamp.")
+    .option(
+      "--observed-at <timestamp>",
+      "Required acquisition timestamp when importing --catalog-file.",
+    )
     .option("--refresh-id <id>", "Unique immutable observation ID.")
     .action(
       async (options: {

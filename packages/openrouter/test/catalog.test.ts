@@ -113,6 +113,21 @@ class MemoryStore implements CatalogStore {
     this.observations.push(observation);
   }
 
+  async putRefresh(
+    snapshot: CatalogSnapshot,
+    observationInput: Omit<RefreshObservation, "reusedSnapshot">,
+  ): Promise<{ readonly observation: RefreshObservation; readonly snapshot: CatalogSnapshot }> {
+    const existing = this.snapshots.get(snapshot.contentDigest);
+    const observation = {
+      ...observationInput,
+      reusedSnapshot: existing !== undefined,
+    } as RefreshObservation;
+    await this.putObservation(observation);
+    if (existing !== undefined) return { observation, snapshot: existing };
+    this.snapshots.set(snapshot.contentDigest, snapshot);
+    return { observation, snapshot };
+  }
+
   async putSnapshot(
     snapshot: CatalogSnapshot,
   ): Promise<{ readonly reused: boolean; readonly snapshot: CatalogSnapshot }> {
@@ -460,6 +475,69 @@ describe("refresh evidence", () => {
     await expect(
       store.putObservation({ ...result.observation, observedAt: "2026-08-11T15:00:00.000Z" }),
     ).rejects.toThrow(/already exists/i);
+  });
+
+  it("does not publish a snapshot when its refresh observation cannot be committed", async () => {
+    const { mkdtemp } = await import("node:fs/promises");
+    const { tmpdir } = await import("node:os");
+    const root = await mkdtemp(`${tmpdir()}/vetryn-openrouter-atomic-`);
+    temporaryDirectories.push(root);
+    const store = new FileCatalogStore(root);
+    const refreshId = "same-refresh-id";
+
+    const failed = await refreshOpenRouterCatalog({
+      acquisition: "captured-response",
+      fetch: async () => new Response(JSON.stringify({ data: [] })),
+      observedAt,
+      refreshId,
+      store,
+    });
+    expect(failed.status).toBe("failure");
+
+    const validInput = { data: [rawModel("mock/alpha")] };
+    const contentDigest = normalizeOpenRouterCatalog(validInput, observedAt).snapshot.contentDigest;
+    await expect(
+      refreshOpenRouterCatalog({
+        acquisition: "captured-response",
+        fetch: async () => new Response(JSON.stringify(validInput)),
+        observedAt,
+        refreshId,
+        store,
+      }),
+    ).rejects.toThrow(/already exists/i);
+    await expect(store.hasSnapshot(contentDigest)).resolves.toBe(false);
+  });
+
+  it("rolls back a new observation when snapshot publication fails", async () => {
+    const { mkdtemp } = await import("node:fs/promises");
+    const { tmpdir } = await import("node:os");
+    const root = await mkdtemp(`${tmpdir()}/vetryn-openrouter-rollback-`);
+    temporaryDirectories.push(root);
+    class FailingSnapshotStore extends FileCatalogStore {
+      override async putSnapshot(): Promise<{
+        readonly reused: boolean;
+        readonly snapshot: CatalogSnapshot;
+      }> {
+        throw new Error("injected snapshot write failure");
+      }
+    }
+    const store = new FailingSnapshotStore(root);
+    const validInput = { data: [rawModel("mock/alpha")] };
+    const contentDigest = normalizeOpenRouterCatalog(validInput, observedAt).snapshot.contentDigest;
+
+    await expect(
+      refreshOpenRouterCatalog({
+        acquisition: "captured-response",
+        fetch: async () => new Response(JSON.stringify(validInput)),
+        observedAt,
+        refreshId: "snapshot-write-fails",
+        store,
+      }),
+    ).rejects.toThrow(/injected snapshot write failure/i);
+    await expect(
+      readFile(`${root}/observations/snapshot-write-fails.json`, "utf8"),
+    ).rejects.toMatchObject({ code: "ENOENT" });
+    await expect(store.hasSnapshot(contentDigest)).resolves.toBe(false);
   });
 
   it("rejects same-digest snapshots with forged identity or future provenance", async () => {

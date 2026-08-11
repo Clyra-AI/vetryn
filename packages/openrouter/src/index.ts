@@ -1,5 +1,5 @@
 import { createReadStream } from "node:fs";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 import {
@@ -111,6 +111,10 @@ export interface NormalizeCatalogResult {
 export interface CatalogStore {
   hasSnapshot(contentDigest: string): Promise<boolean>;
   putObservation(observation: RefreshObservation): Promise<void>;
+  putRefresh(
+    snapshot: CatalogSnapshot,
+    observation: Omit<RefreshObservation, "reusedSnapshot">,
+  ): Promise<{ readonly observation: RefreshObservation; readonly snapshot: CatalogSnapshot }>;
   putSnapshot(
     snapshot: CatalogSnapshot,
   ): Promise<{ readonly reused: boolean; readonly snapshot: CatalogSnapshot }>;
@@ -226,6 +230,41 @@ export class FileCatalogStore implements CatalogStore {
     }
   }
 
+  async putRefresh(
+    snapshotInput: CatalogSnapshot,
+    observationInput: Omit<RefreshObservation, "reusedSnapshot">,
+  ): Promise<{ readonly observation: RefreshObservation; readonly snapshot: CatalogSnapshot }> {
+    const snapshot = parseCatalogSnapshot(snapshotInput);
+    assertCanonicalOpenRouterSnapshot(snapshot);
+    const existingSnapshot = await this.readReusableSnapshot(snapshot);
+    const observation = refreshObservationSchema.parse({
+      ...observationInput,
+      reusedSnapshot: existingSnapshot !== undefined,
+    });
+    if (
+      observation.status !== "success" ||
+      observation.contentDigest !== snapshot.contentDigest ||
+      observation.snapshotId !== snapshot.id
+    ) {
+      throw new OpenRouterCatalogError(
+        "Successful refresh evidence must identify its exact canonical snapshot.",
+      );
+    }
+
+    await this.putObservation(observation);
+    if (existingSnapshot !== undefined) {
+      return { observation, snapshot: existingSnapshot };
+    }
+
+    try {
+      const stored = await this.putSnapshot(snapshot);
+      return { observation, snapshot: stored.snapshot };
+    } catch (error: unknown) {
+      await this.removeObservation(observation);
+      throw error;
+    }
+  }
+
   async putObservation(observationInput: RefreshObservation): Promise<void> {
     const observation = refreshObservationSchema.parse(observationInput);
     const target = path.join(this.root, "observations", `${observation.id}.json`);
@@ -239,6 +278,37 @@ export class FileCatalogStore implements CatalogStore {
         );
       }
       throw error;
+    }
+  }
+
+  private async readReusableSnapshot(
+    snapshot: CatalogSnapshot,
+  ): Promise<CatalogSnapshot | undefined> {
+    try {
+      const existing = parseCatalogSnapshot(
+        JSON.parse(
+          await readBoundedCatalogFile(this.snapshotPath(snapshot.contentDigest)),
+        ) as unknown,
+      );
+      if (!isReusableOpenRouterSnapshot(existing, snapshot)) {
+        throw new OpenRouterCatalogError(
+          `Snapshot collision or invalid provenance for immutable digest ${snapshot.contentDigest}.`,
+        );
+      }
+      return existing;
+    } catch (error: unknown) {
+      if (isMissingFileError(error)) return undefined;
+      throw error;
+    }
+  }
+
+  private async removeObservation(observation: RefreshObservation): Promise<void> {
+    const target = path.join(this.root, "observations", `${observation.id}.json`);
+    const expected = `${stableJson(observation)}\n`;
+    try {
+      if ((await readBoundedCatalogFile(target)) === expected) await unlink(target);
+    } catch (error: unknown) {
+      if (!isMissingFileError(error)) throw error;
     }
   }
 
@@ -443,26 +513,23 @@ export async function refreshOpenRouterCatalog(
     return recordRefreshFailure(store, refreshId, observedAt, acquisition, "invalid-catalog");
   }
 
-  const stored = await store.putSnapshot(normalizedSnapshot);
-  const snapshot = stored.snapshot;
-  const observation = refreshObservationSchema.parse({
+  const observationInput = {
     artifactType: "openrouter-catalog-refresh-observation",
     acquisition,
-    contentDigest: snapshot.contentDigest,
+    contentDigest: normalizedSnapshot.contentDigest,
     errorCode: null,
     id: refreshId,
     normalizerVersion: OPENROUTER_NORMALIZER_VERSION,
     observedAt,
-    reusedSnapshot: stored.reused,
     schemaVersion: "1.0.0",
-    snapshotId: snapshot.id,
+    snapshotId: normalizedSnapshot.id,
     source: "openrouter",
     sourceRef:
       acquisition === "live-api" ? "openrouter-models-api" : "repository-captured-response",
     status: "success",
-  });
-  await store.putObservation(observation);
-  return { observation, snapshot, status: "success" };
+  } as const;
+  const committed = await store.putRefresh(normalizedSnapshot, observationInput);
+  return { ...committed, status: "success" };
 }
 
 export function resolveCandidates({

@@ -94,6 +94,21 @@ describe("catalog CLI operations", () => {
     ).rejects.toThrow(/reserved for captured/i);
   });
 
+  it("requires the acquisition timestamp for captured responses", async () => {
+    const root = await mkdtemp(path.join(tmpdir(), "vetryn-catalog-cli-"));
+    temporaryRoots.push(root);
+    const catalogPath = path.join(root, "catalog.json");
+    await writeFile(catalogPath, JSON.stringify({ data: [] }));
+
+    await expect(
+      refreshCatalogFile({
+        catalogFile: catalogPath,
+        refreshId: "capture-without-time",
+        storePath: path.join(root, "store"),
+      }),
+    ).rejects.toThrow(/observed-at is required/i);
+  });
+
   it("bounds repository snapshot input before JSON parsing", async () => {
     const root = await mkdtemp(path.join(tmpdir(), "vetryn-catalog-cli-"));
     temporaryRoots.push(root);

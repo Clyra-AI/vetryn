@@ -715,6 +715,24 @@ class ScenarioCatalogStore implements CatalogStore {
     this.observations.push(observation);
   }
 
+  async putRefresh(
+    snapshot: CoreCatalogSnapshot,
+    observationInput: Omit<RefreshObservation, "reusedSnapshot">,
+  ): Promise<{
+    readonly observation: RefreshObservation;
+    readonly snapshot: CoreCatalogSnapshot;
+  }> {
+    const existing = this.snapshots.get(snapshot.contentDigest);
+    const observation = {
+      ...observationInput,
+      reusedSnapshot: existing !== undefined,
+    } as RefreshObservation;
+    await this.putObservation(observation);
+    if (existing !== undefined) return { observation, snapshot: existing };
+    this.snapshots.set(snapshot.contentDigest, snapshot);
+    return { observation, snapshot };
+  }
+
   async putSnapshot(
     snapshot: CoreCatalogSnapshot,
   ): Promise<{ readonly reused: boolean; readonly snapshot: CoreCatalogSnapshot }> {
