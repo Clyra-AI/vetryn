@@ -385,7 +385,7 @@ async function main() {
       const criterionGate = plan.gateCatalog.find(
         (item) => item.id === ledgerItem.verification.gateId,
       );
-      if (criterion.status === "pass" && criterionGate && criterionGate.kind !== "review")
+      if (criterion.status === "pass" && criterionGate)
         for (const evidenceRef of criterion.evidenceRefs) {
           assertGateEvidence(
             evidenceRef,

@@ -593,8 +593,9 @@ async function passFirstPlanningCriterion(root, evidenceId, candidateCommit = "a
     commit: candidateCommit,
     executor: "implementation-agent",
   };
-  state.criteria[0].status = "pass";
-  state.criteria[0].evidenceRefs = [evidenceId];
+  const criterion = state.criteria.find((candidate) => candidate.criterionId === "PLAN-002");
+  criterion.status = "pass";
+  criterion.evidenceRefs = [evidenceId];
   await writeFixtureJson(root, statePath, state);
 }
 
@@ -1040,6 +1041,27 @@ describe("implementation plan validator", () => {
 
     expect(result.status).not.toBe(0);
     expect(result.stderr).toContain("bound to QG-PLAN-CHECK, not QG-REPO-CHECK");
+  });
+
+  it("rejects command evidence for a passing review-gated criterion", async () => {
+    const root = await createFixture();
+    const evidence = await createV1Evidence(root);
+    const statePath = "product/plans/oss-v1/state/V1-00.json";
+    const state = await readFixtureJson(root, statePath);
+    state.candidate = {
+      baseCommit: "eb970bf3708ceb7a0d93d93481812dac090428b9",
+      commit: evidence.commit,
+      executor: "implementation-agent",
+    };
+    const criterion = state.criteria.find((candidate) => candidate.criterionId === "PLAN-003");
+    criterion.status = "pass";
+    criterion.evidenceRefs = [evidence.id];
+    await writeFixtureJson(root, statePath, state);
+
+    const result = runPlan(root);
+
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain("cites command-run evidence for review gate QG-TRUST-REVIEW");
   });
 
   it("accepts command evidence bound to the exact gate and command", async () => {
