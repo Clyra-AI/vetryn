@@ -2,8 +2,8 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "V1-03",
-  "revision": 40,
-  "state": "planned",
+  "revision": 41,
+  "state": "changes_requested",
   "attempt": 3,
   "candidate": null,
   "criteria": [
@@ -446,6 +446,13 @@
       "at": "2026-08-11T13:29:00Z",
       "actor": "davidahmann",
       "reason": "Maintainer reset the correction to planned pending M0-05; prior V1-03 evidence remains immutable historical provenance."
+    },
+    {
+      "from": "planned",
+      "to": "changes_requested",
+      "at": "2026-08-11T13:37:00Z",
+      "actor": "davidahmann",
+      "reason": "After M0-05 accepted, the maintainer preserved the existing third V1-03 attempt as an active correction without authorizing a fourth attempt."
     }
   ]
 }

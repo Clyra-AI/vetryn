@@ -169,7 +169,7 @@ function assertV102ReauthorizationBoundary(plan, v102State, m003State) {
   }
 }
 
-function assertV103CorrectionAuthorization(plan, ledger) {
+function assertV103CorrectionAuthorization(plan, ledger, v103State) {
   const m005Task = plan.tasks.find((task) => task.id === "M0-05");
   const v103Task = plan.tasks.find((task) => task.id === "V1-03");
   const findingIds = (task) =>
@@ -190,6 +190,7 @@ function assertV103CorrectionAuthorization(plan, ledger) {
   expect(findingIds(m005Task)).toEqual(m005FindingIds);
   expect(v103Task.dependsOn).toContainEqual({ taskId: "M0-05", kind: "hard" });
   expect(v103Task.maxAttempts).toBe(3);
+  expect(v103State).toMatchObject({ state: "changes_requested", attempt: 3, candidate: null });
   expect(v103Task.semanticInvariants).toContain(
     "The M0-05 authorization is limited to r3758194562 accessor abstention and r3758194569 binding SCAN-004 to QG-SCANNER-CORPUS; it does not broaden discovery or permit source patching.",
   );
@@ -700,27 +701,32 @@ describe("implementation plan validator", () => {
   it("locks the M0-05 bounded V1-03 correction authorization", async () => {
     const planPath = "product/plans/oss-v1/plan.json";
     const ledgerPath = "product/plans/oss-v1/acceptance-ledger.json";
+    const v103StatePath = "product/plans/oss-v1/state/V1-03.json";
     const plan = await readFixtureJson(repositoryRoot, planPath);
     const ledger = await readFixtureJson(repositoryRoot, ledgerPath);
+    const v103State = await readFixtureJson(repositoryRoot, v103StatePath);
 
-    assertV103CorrectionAuthorization(plan, ledger);
+    assertV103CorrectionAuthorization(plan, ledger, v103State);
 
     const missingDependency = JSON.parse(JSON.stringify(plan));
     missingDependency.tasks.find((task) => task.id === "V1-03").dependsOn = missingDependency.tasks
       .find((task) => task.id === "V1-03")
       .dependsOn.filter((dependency) => dependency.taskId !== "M0-05");
-    expect(() => assertV103CorrectionAuthorization(missingDependency, ledger)).toThrow();
+    expect(() => assertV103CorrectionAuthorization(missingDependency, ledger, v103State)).toThrow();
 
     const extraCorrection = JSON.parse(JSON.stringify(plan));
     extraCorrection.tasks
       .find((task) => task.id === "M0-05")
       .semanticInvariants.push("An additional correction without a review ID.");
-    expect(() => assertV103CorrectionAuthorization(extraCorrection, ledger)).toThrow();
+    expect(() => assertV103CorrectionAuthorization(extraCorrection, ledger, v103State)).toThrow();
 
     const trustBoundCriterion = JSON.parse(JSON.stringify(ledger));
     trustBoundCriterion.items.find((item) => item.id === "SCAN-004").verification.gateId =
       "QG-TRUST-REVIEW";
-    expect(() => assertV103CorrectionAuthorization(plan, trustBoundCriterion)).toThrow();
+    expect(() => assertV103CorrectionAuthorization(plan, trustBoundCriterion, v103State)).toThrow();
+
+    const inactiveCorrection = { ...v103State, state: "planned" };
+    expect(() => assertV103CorrectionAuthorization(plan, ledger, inactiveCorrection)).toThrow();
   });
 
   it("locks the M0-03 and M0-04 bounded V1-02 reauthorization boundaries", async () => {
