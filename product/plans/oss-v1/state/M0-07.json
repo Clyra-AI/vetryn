@@ -2,27 +2,31 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "M0-07",
-  "revision": 18,
-  "state": "in_progress",
+  "revision": 19,
+  "state": "accepted",
   "attempt": 3,
-  "candidate": null,
+  "candidate": {
+    "baseCommit": "08c3ef067e6be834142b6bd6cb3a17c406e4ea3b",
+    "commit": "e4f04db01ecb9f920d3756f097199447d28be25e",
+    "executor": "implementation-agent"
+  },
   "criteria": [
     {
       "criterionId": "PROCESS-008",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-07-repo-check-e4f04db"]
     }
   ],
   "gates": [
     {
       "gateId": "QG-PLAN-CHECK",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-07-plan-check-e4f04db"]
     },
     {
       "gateId": "QG-REPO-CHECK",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-07-repo-check-e4f04db"]
     }
   ],
   "reviews": [],
@@ -160,6 +164,13 @@
       "at": "2026-08-11T18:41:30Z",
       "actor": "implementation-agent",
       "reason": "Continued the same third review-correction attempt to give the expanded adversarial packet test a bounded Linux CI timeout matching its measured subprocess workload."
+    },
+    {
+      "from": "in_progress",
+      "to": "accepted",
+      "at": "2026-08-11T18:42:06Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer accepted the exact bounded-timeout candidate after the focused suite and full repository gate completed within the new explicit test budget."
     }
   ]
 }

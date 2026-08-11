@@ -1,0 +1,35 @@
+{
+  "$schema": "../../schemas/evidence.schema.json",
+  "schemaVersion": "1.0.0",
+  "id": "ev-m0-07-plan-check-e4f04db",
+  "taskId": "M0-07",
+  "type": "command-run",
+  "actor": "validation-agent",
+  "commit": "e4f04db01ecb9f920d3756f097199447d28be25e",
+  "createdAt": "2026-08-11T18:42:06Z",
+  "result": {
+    "status": "pass",
+    "checks": [
+      {
+        "name": "pnpm plan:check",
+        "status": "pass",
+        "summary": "The exact CI-timeout candidate preserves the accepted canonical packet-validation policy and current generated progress."
+      }
+    ]
+  },
+  "inputs": {
+    "planDigest": "sha256:341aae9d999129cef5c6f8104a3a9f321c5607c84da012fa3c1c41ba67883091",
+    "lockfileDigest": "sha256:0568848490d539fc4b1a4cd53c2ddd95108a15a0ad1ea37ff6c14f1b748db6ac"
+  },
+  "gateBinding": {
+    "gateId": "QG-PLAN-CHECK",
+    "kind": "command",
+    "command": "pnpm plan:check"
+  },
+  "review": null,
+  "redaction": {
+    "status": "not_applicable",
+    "containsRawModelOutput": false,
+    "containsSecrets": false
+  }
+}
