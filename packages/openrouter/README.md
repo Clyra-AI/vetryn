@@ -7,7 +7,9 @@ Catalog refreshes are explicit. Each observation binds its acquisition mode to e
 public models endpoint or a repository-captured response. A successful refresh stores a content-addressed
 snapshot plus a unique observation record; unchanged content reuses the snapshot but still records the new
 observation. A failed refresh records only failure evidence and never identifies an older snapshot as current.
-Tests inject `fetch`; CI never calls a live provider.
+Live observations derive their timestamp from the acquisition clock; captured responses accept an explicit
+repository timestamp. Existing same-digest snapshots are reused only when their OpenRouter identity and temporal
+provenance are compatible. Tests inject `fetch`; CI never calls a live provider.
 
 Candidate resolution excludes incomplete catalog entries, the baseline model, retired models, blocked
 providers, and models missing required capabilities before ranking. The default and maximum candidate
@@ -19,7 +21,6 @@ import { FileCatalogStore, refreshOpenRouterCatalog, resolveCandidates } from "@
 
 const refresh = await refreshOpenRouterCatalog({
   acquisition: "live-api",
-  observedAt: new Date().toISOString(),
   refreshId: crypto.randomUUID(),
   store: new FileCatalogStore(".vetryn/catalog"),
 });

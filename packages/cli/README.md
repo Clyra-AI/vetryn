@@ -14,9 +14,10 @@ vetryn catalog refresh \
 ```
 
 Omit `--catalog-file` to perform an explicit live refresh against OpenRouter's fixed public model endpoint.
-The immutable observation distinguishes that live acquisition from a repository-captured response. Every
-attempt needs a unique observation ID; the CLI generates one when omitted. Failures return a non-zero exit
-code and never select a previous snapshot as current.
+`--observed-at` is reserved for captured responses; live refreshes derive freshness from the acquisition clock.
+The immutable observation distinguishes that live acquisition from a repository-captured response. Every attempt
+needs a unique observation ID; the CLI generates one when omitted. Failures return a non-zero exit code and never
+select a previous snapshot as current.
 
 Resolve a shortlist entirely from checked-in evidence:
 

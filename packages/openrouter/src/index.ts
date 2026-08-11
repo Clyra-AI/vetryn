@@ -112,15 +112,18 @@ export interface CatalogStore {
 }
 
 interface RefreshCatalogBaseOptions {
-  readonly observedAt: string;
   readonly refreshId: string;
   readonly store: CatalogStore;
 }
 
 export type RefreshCatalogOptions = RefreshCatalogBaseOptions &
   (
-    | { readonly acquisition: "captured-response"; readonly fetch: typeof globalThis.fetch }
-    | { readonly acquisition: "live-api"; readonly fetch?: never }
+    | {
+        readonly acquisition: "captured-response";
+        readonly fetch: typeof globalThis.fetch;
+        readonly observedAt: string;
+      }
+    | { readonly acquisition: "live-api"; readonly fetch?: never; readonly observedAt?: never }
   );
 
 export type RefreshCatalogResult =
@@ -206,9 +209,9 @@ export class FileCatalogStore implements CatalogStore {
       const existing = await readFile(target, "utf8");
       if (existing !== contents) {
         const storedSnapshot = parseCatalogSnapshot(JSON.parse(existing) as unknown);
-        if (storedSnapshot.contentDigest !== snapshot.contentDigest) {
+        if (!isReusableOpenRouterSnapshot(storedSnapshot, snapshot)) {
           throw new OpenRouterCatalogError(
-            `Snapshot collision for immutable digest ${snapshot.contentDigest}.`,
+            `Snapshot collision or invalid provenance for immutable digest ${snapshot.contentDigest}.`,
           );
         }
         return { reused: true, snapshot: storedSnapshot };
@@ -347,7 +350,7 @@ export function normalizeOpenRouterCatalog(
 export async function refreshOpenRouterCatalog(
   options: RefreshCatalogOptions,
 ): Promise<RefreshCatalogResult> {
-  const { acquisition, observedAt, refreshId, store } = options;
+  const { acquisition, refreshId, store } = options;
   if (acquisition !== "captured-response" && acquisition !== "live-api") {
     throw new OpenRouterCatalogError("Catalog refresh requires an explicit acquisition mode.");
   }
@@ -362,6 +365,7 @@ export async function refreshOpenRouterCatalog(
     );
   }
   const fetchImplementation = options.fetch ?? globalThis.fetch;
+  const observedAt = acquisition === "live-api" ? new Date().toISOString() : options.observedAt;
   refreshIdSchema.parse(refreshId);
   timestampSchema.parse(observedAt);
 
@@ -689,4 +693,15 @@ function isMissingFileError(error: unknown): error is NodeJS.ErrnoException {
 
 function isExistingFileError(error: unknown): error is NodeJS.ErrnoException {
   return typeof error === "object" && error !== null && "code" in error && error.code === "EEXIST";
+}
+
+function isReusableOpenRouterSnapshot(stored: CatalogSnapshot, incoming: CatalogSnapshot): boolean {
+  return (
+    stored.artifactType === "catalog-snapshot" &&
+    stored.contentDigest === incoming.contentDigest &&
+    stored.id === incoming.id &&
+    stored.schemaVersion === VETRYN_ARTIFACT_SCHEMA_VERSION &&
+    stored.source === "openrouter" &&
+    Date.parse(stored.observedAt) <= Date.parse(incoming.observedAt)
+  );
 }

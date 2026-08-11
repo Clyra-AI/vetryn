@@ -1,4 +1,4 @@
-import { readFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 
 import {
   createCatalogContentDigest,
@@ -127,6 +127,8 @@ const temporaryDirectories: string[] = [];
 
 afterEach(async () => {
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
+  vi.useRealTimers();
   const { rm } = await import("node:fs/promises");
   await Promise.all(
     temporaryDirectories
@@ -390,6 +392,31 @@ describe("refresh evidence", () => {
     ).rejects.toThrow(/capture transport/i);
   });
 
+  it("derives live freshness from the acquisition clock instead of caller input", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-08-11T16:00:00.000Z"));
+    const fetch = vi.fn(
+      async () => new Response(JSON.stringify({ data: [rawModel("mock/live")] })),
+    );
+    vi.stubGlobal("fetch", fetch);
+
+    const result = await refreshOpenRouterCatalog({
+      acquisition: "live-api",
+      refreshId: "trusted-live-time",
+      store: new MemoryStore(),
+    });
+
+    expect(result).toMatchObject({
+      observation: { observedAt: "2026-08-11T16:00:00.000Z", status: "success" },
+      snapshot: { observedAt: "2026-08-11T16:00:00.000Z" },
+      status: "success",
+    });
+    expect(fetch).toHaveBeenCalledWith(
+      "https://openrouter.ai/api/v1/models",
+      expect.objectContaining({ method: "GET" }),
+    );
+  });
+
   it("persists immutable content-addressed snapshots and observations", async () => {
     const { mkdtemp } = await import("node:fs/promises");
     const { tmpdir } = await import("node:os");
@@ -412,6 +439,35 @@ describe("refresh evidence", () => {
     await expect(
       store.putObservation({ ...result.observation, observedAt: "2026-08-11T15:00:00.000Z" }),
     ).rejects.toThrow(/already exists/i);
+  });
+
+  it("rejects same-digest snapshots with forged identity or future provenance", async () => {
+    const canonical = normalizeOpenRouterCatalog(
+      { data: [rawModel("mock/alpha")] },
+      observedAt,
+    ).snapshot;
+    const variants = [
+      { ...canonical, source: "evil" },
+      { ...canonical, id: "catalog-snapshot:forged" },
+      { ...canonical, observedAt: "2099-01-01T00:00:00.000Z" },
+    ];
+
+    for (const [index, forged] of variants.entries()) {
+      const { mkdtemp } = await import("node:fs/promises");
+      const { tmpdir } = await import("node:os");
+      const root = await mkdtemp(`${tmpdir()}/vetryn-openrouter-forged-${index}-`);
+      temporaryDirectories.push(root);
+      const snapshotDirectory = `${root}/snapshots`;
+      await mkdir(snapshotDirectory, { recursive: true });
+      await writeFile(
+        `${snapshotDirectory}/${canonical.contentDigest.slice(7)}.json`,
+        `${JSON.stringify(forged)}\n`,
+      );
+
+      await expect(new FileCatalogStore(root).putSnapshot(canonical)).rejects.toThrow(
+        /invalid provenance/i,
+      );
+    }
   });
 });
 

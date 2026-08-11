@@ -75,10 +75,13 @@ export interface CatalogShortlistFileOptions {
 
 export async function refreshCatalogFile({
   catalogFile,
-  observedAt = new Date().toISOString(),
+  observedAt,
   refreshId = randomUUID(),
   storePath,
 }: CatalogRefreshFileOptions): Promise<RefreshCatalogResult> {
+  if (catalogFile === undefined && observedAt !== undefined) {
+    throw new Error("--observed-at is reserved for captured catalog files.");
+  }
   const fetch =
     catalogFile === undefined
       ? undefined
@@ -92,11 +95,11 @@ export async function refreshCatalogFile({
           );
   const store = new FileCatalogStore(path.resolve(storePath));
   return catalogFile === undefined
-    ? refreshOpenRouterCatalog({ acquisition: "live-api", observedAt, refreshId, store })
+    ? refreshOpenRouterCatalog({ acquisition: "live-api", refreshId, store })
     : refreshOpenRouterCatalog({
         acquisition: "captured-response",
         fetch: fetch as typeof globalThis.fetch,
-        observedAt,
+        observedAt: observedAt ?? new Date().toISOString(),
         refreshId,
         store,
       });

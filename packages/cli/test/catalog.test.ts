@@ -80,6 +80,19 @@ describe("catalog CLI operations", () => {
       status: "failure",
     });
   });
+
+  it("reserves caller-supplied observation times for captured responses", async () => {
+    const root = await mkdtemp(path.join(tmpdir(), "vetryn-catalog-cli-"));
+    temporaryRoots.push(root);
+
+    await expect(
+      refreshCatalogFile({
+        observedAt: "2099-01-01T00:00:00.000Z",
+        refreshId: "forged-live-time",
+        storePath: path.join(root, "store"),
+      }),
+    ).rejects.toThrow(/reserved for captured/i);
+  });
 });
 
 const rawModel = (id: string, prompt: string, completion: string, context: number) => ({
