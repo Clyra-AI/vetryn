@@ -35,6 +35,7 @@ const decimalSchema = z
   .max(100, "Decimal values are limited to 100 characters.")
   .regex(/^(?:0|[1-9][0-9]*)(?:\.[0-9]+)?$/, "Use a canonical non-negative decimal string.");
 const confidenceSchema = z.number().finite().min(0).max(1);
+const confidenceComparisonTolerance = Number.EPSILON * 4;
 const modelIdSchema = z
   .string()
   .regex(
@@ -887,7 +888,10 @@ export function assertRecommendationEvidence(
     );
   }
 
-  if (recommendation.status === "recommend" && recommendation.confidence > confidenceUpperBound) {
+  if (
+    recommendation.status === "recommend" &&
+    recommendation.confidence - confidenceUpperBound > confidenceComparisonTolerance
+  ) {
     throw new VetrynContractError(
       "Recommendation confidence exceeds the evidence-bound quality lower bound.",
     );

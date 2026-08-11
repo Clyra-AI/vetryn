@@ -9,7 +9,9 @@ as an approved provider while recomputing the catalog content digest.
 ## Decision
 
 - For a recommend outcome, confidence cannot exceed the lowest cited complete candidate run's variance-adjusted
-  pass-rate lower bound: `passedCases / caseCount - passRateStdDev`, clamped to `[0, 1]`.
+  pass-rate lower bound: `passedCases / caseCount - passRateStdDev`, clamped to `[0, 1]`. The comparison admits
+  only a four-`Number.EPSILON` absolute tolerance to preserve an exact mathematical boundary across IEEE-754
+  representation noise.
 - A catalog model's `provider` must equal the provider segment before the first slash in its canonical model ID.
 
 ## Consequences

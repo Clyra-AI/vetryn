@@ -480,6 +480,38 @@ describe("V1 artifact contracts", () => {
       ),
     ).toMatchObject({ confidence: 0.98 });
 
+    const boundaryCallSite = callSiteSchema.parse({
+      ...callSite,
+      gates: {
+        ...callSite.gates,
+        maxQualityRegression: 0.8,
+        minPassRate: 0,
+        minRecommendationConfidence: 0.1,
+      },
+    });
+    const boundaryRun = candidateRunWith({
+      confidenceFloor: 0.1,
+      metrics: {
+        ...candidateRun.metrics,
+        failedCaseIds: Array.from({ length: 21 }, (_, index) => `case-${index + 1}`),
+        passedCases: 9,
+      },
+      provenance: {
+        ...candidateRun.provenance,
+        variance: { ...candidateRun.provenance.variance, passRateStdDev: 0.2 },
+      },
+    });
+    expect(
+      assertRecommendationEvidence(
+        parseRecommendation({ ...recommendation, confidence: 0.1, confidenceFloor: 0.1 }),
+        [boundaryRun],
+        candidateRun.evaluationInputDigest,
+        boundaryCallSite,
+        parsedEvalSuite,
+        parsedCatalogSnapshot,
+      ),
+    ).toMatchObject({ confidence: 0.1 });
+
     expect(() =>
       assertRecommendationEvidence(
         parsedRecommendation,
