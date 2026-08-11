@@ -553,11 +553,11 @@ describe("OpenRouter catalog evidence and shortlist replay", () => {
 
     expect(afterLiveChange).toEqual(beforeLiveChange);
     expect(beforeLiveChange.candidates).toEqual([
-      expect.objectContaining({ modelId: "mock/alpha", projectedCostUsd: "10.9" }),
-      expect.objectContaining({ modelId: "mock/bravo", projectedCostUsd: "11" }),
-      expect.objectContaining({ modelId: "mock/charlie", projectedCostUsd: "11" }),
-      expect.objectContaining({ modelId: "mock/delta", projectedCostUsd: "11" }),
-      expect.objectContaining({ modelId: "mock/echo", projectedCostUsd: "11.8" }),
+      expect.objectContaining({ modelId: "mock/alpha", projectedCostUsd: "0.0000109" }),
+      expect.objectContaining({ modelId: "mock/bravo", projectedCostUsd: "0.000011" }),
+      expect.objectContaining({ modelId: "mock/charlie", projectedCostUsd: "0.000011" }),
+      expect.objectContaining({ modelId: "mock/delta", projectedCostUsd: "0.000011" }),
+      expect.objectContaining({ modelId: "mock/echo", projectedCostUsd: "0.0000118" }),
     ]);
     expect(
       resolveCandidates({ callSite: mockCallSite, limit: 2, snapshot }).candidates.map(

@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, truncate, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
@@ -53,11 +53,32 @@ describe("catalog CLI operations", () => {
 
     expect(shortlist).toMatchObject({
       baselineModel: "openai/baseline",
-      candidates: [{ modelId: "openai/candidate", projectedCostUsd: "1.1" }],
+      candidates: [{ modelId: "openai/candidate", projectedCostUsd: "0.0000011" }],
       catalogSnapshotId: refresh.snapshot.id,
       limit: 5,
     });
     expect(JSON.parse(await readFile(snapshotPath, "utf8"))).toEqual(refresh.snapshot);
+  });
+
+  it("streams captured files through the catalog byte limit", async () => {
+    const root = await mkdtemp(path.join(tmpdir(), "vetryn-catalog-cli-"));
+    temporaryRoots.push(root);
+    const catalogPath = path.join(root, "oversized-catalog.json");
+    await writeFile(catalogPath, "{");
+    await truncate(catalogPath, 20_000_001);
+
+    const refresh = await refreshCatalogFile({
+      catalogFile: catalogPath,
+      observedAt: "2026-08-11T12:00:00.000Z",
+      refreshId: "cli-oversized-capture",
+      storePath: path.join(root, "store"),
+    });
+
+    expect(refresh).toMatchObject({
+      observation: { errorCode: "invalid-catalog", status: "failure" },
+      snapshot: null,
+      status: "failure",
+    });
   });
 });
 

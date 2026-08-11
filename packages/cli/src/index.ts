@@ -1,8 +1,10 @@
 #!/usr/bin/env node
 
 import { randomUUID } from "node:crypto";
+import { createReadStream } from "node:fs";
 import { lstat, mkdir, readFile, readdir, rename, rmdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { Readable } from "node:stream";
 import { pathToFileURL } from "node:url";
 
 import { Command } from "commander";
@@ -81,10 +83,13 @@ export async function refreshCatalogFile({
     catalogFile === undefined
       ? undefined
       : async (): Promise<Response> =>
-          new Response(await readFile(catalogFile, "utf8"), {
-            headers: { "content-type": "application/json" },
-            status: 200,
-          });
+          new Response(
+            Readable.toWeb(createReadStream(catalogFile)) as ReadableStream<Uint8Array>,
+            {
+              headers: { "content-type": "application/json" },
+              status: 200,
+            },
+          );
   const store = new FileCatalogStore(path.resolve(storePath));
   return catalogFile === undefined
     ? refreshOpenRouterCatalog({ acquisition: "live-api", observedAt, refreshId, store })

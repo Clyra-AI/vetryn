@@ -224,11 +224,11 @@ describe("candidate resolution", () => {
     const shortlist = resolveCandidates({ callSite, snapshot });
 
     expect(shortlist.candidates).toEqual([
-      expect.objectContaining({ modelId: "mock/alpha", projectedCostUsd: "10.9" }),
-      expect.objectContaining({ modelId: "mock/bravo", projectedCostUsd: "11" }),
-      expect.objectContaining({ modelId: "mock/charlie", projectedCostUsd: "11" }),
-      expect.objectContaining({ modelId: "mock/delta", projectedCostUsd: "11" }),
-      expect.objectContaining({ modelId: "mock/echo", projectedCostUsd: "11.8" }),
+      expect.objectContaining({ modelId: "mock/alpha", projectedCostUsd: "0.0000109" }),
+      expect.objectContaining({ modelId: "mock/bravo", projectedCostUsd: "0.000011" }),
+      expect.objectContaining({ modelId: "mock/charlie", projectedCostUsd: "0.000011" }),
+      expect.objectContaining({ modelId: "mock/delta", projectedCostUsd: "0.000011" }),
+      expect.objectContaining({ modelId: "mock/echo", projectedCostUsd: "0.0000118" }),
     ]);
     expect(shortlist.catalogSnapshotId).toBe(snapshot.id);
     expect(shortlist.catalogContentDigest).toBe(snapshot.contentDigest);

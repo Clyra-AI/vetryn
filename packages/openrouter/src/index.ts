@@ -444,15 +444,18 @@ export function resolveCandidates({
     candidates.push({
       contextWindowTokens: model.contextWindowTokens,
       modelId: model.id,
-      projectedCostUsd: addDecimals(
-        multiplyDecimalByInteger(
-          model.inputPricePerMillionUsd,
-          callSite.representativeUsage.promptTokens,
+      projectedCostUsd: divideDecimalByPowerOfTen(
+        addDecimals(
+          multiplyDecimalByInteger(
+            model.inputPricePerMillionUsd,
+            callSite.representativeUsage.promptTokens,
+          ),
+          multiplyDecimalByInteger(
+            model.outputPricePerMillionUsd,
+            callSite.representativeUsage.completionTokens,
+          ),
         ),
-        multiplyDecimalByInteger(
-          model.outputPricePerMillionUsd,
-          callSite.representativeUsage.completionTokens,
-        ),
+        6,
       ),
       provider: model.provider,
     });
@@ -621,6 +624,14 @@ function addDecimals(left: string, right: string): string {
   const leftInteger = a.integer * 10n ** BigInt(scale - a.scale);
   const rightInteger = b.integer * 10n ** BigInt(scale - b.scale);
   return formatDecimal(leftInteger + rightInteger, scale);
+}
+
+function divideDecimalByPowerOfTen(value: string, exponent: number): string {
+  if (!Number.isSafeInteger(exponent) || exponent < 0) {
+    throw new OpenRouterCatalogError("Decimal exponent must be a non-negative safe integer.");
+  }
+  const decimal = parseDecimal(value);
+  return formatDecimal(decimal.integer, decimal.scale + exponent);
 }
 
 function compareDecimals(left: string, right: string): number {
