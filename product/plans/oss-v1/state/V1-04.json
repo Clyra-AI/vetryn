@@ -2,37 +2,41 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "V1-04",
-  "revision": 2,
-  "state": "in_progress",
+  "revision": 3,
+  "state": "verification_pending",
   "attempt": 1,
-  "candidate": null,
+  "candidate": {
+    "baseCommit": "e9a36cb0df2566b9c059265b6f472528c15f4e73",
+    "commit": "71862e0c859e3f37c4ce4987b09e3d7e3105cca9",
+    "executor": "implementation-agent"
+  },
   "criteria": [
     {
       "criterionId": "MANIFEST-001",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-04-contracts-71862e0"]
     },
     {
       "criterionId": "MANIFEST-002",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-04-repo-check-71862e0"]
     },
     {
       "criterionId": "MANIFEST-003",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-04-contracts-71862e0"]
     }
   ],
   "gates": [
     {
       "gateId": "QG-REPO-CHECK",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-04-repo-check-71862e0"]
     },
     {
       "gateId": "QG-CONTRACTS",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-04-contracts-71862e0"]
     },
     {
       "gateId": "QG-INDEPENDENT-VERIFY",
@@ -69,6 +73,13 @@
       "at": "2026-08-11T04:20:00Z",
       "actor": "implementation-agent",
       "reason": "Started the first manifest initialization and validation implementation attempt."
+    },
+    {
+      "from": "in_progress",
+      "to": "verification_pending",
+      "at": "2026-08-11T04:30:12Z",
+      "actor": "implementation-agent",
+      "reason": "Submitted the exact manifest candidate with contract and repository-gate evidence for separate maintainer promotion."
     }
   ]
 }
