@@ -269,7 +269,7 @@ describe("task packet compiler", () => {
     expect(JSON.parse(nextResult.stdout)).toEqual({
       planId: "oss-v1",
       activeTasks: [{ taskId: v1TaskId, state: "in_progress" }],
-      nextLegalTasks: ["M0-02"],
+      nextLegalTasks: [],
       blockedTasks: [],
     });
     const compileResult = runTask(root, "compile", v1TaskId);
@@ -288,7 +288,7 @@ describe("task packet compiler", () => {
     expect(JSON.parse(result.stdout)).toEqual({
       planId: "oss-v1",
       activeTasks: [{ taskId: "V1-00", state: "in_progress" }],
-      nextLegalTasks: ["M0-02"],
+      nextLegalTasks: [],
       blockedTasks: [],
     });
   });

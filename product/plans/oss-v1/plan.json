@@ -314,7 +314,7 @@
       "title": "Activate the golden-scenario execution skill",
       "objective": "Create the narrowly scoped reusable workflow required to construct and validate the offline V1-02 golden repository.",
       "risk": { "level": "low", "domains": ["agent-workflow", "fixtures"] },
-      "dependsOn": [],
+      "dependsOn": [{ "taskId": "V1-00", "kind": "hard" }],
       "acceptanceItemIds": ["PROCESS-003"],
       "scope": {
         "allowedPaths": [
