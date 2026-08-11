@@ -438,6 +438,74 @@ function isAssignmentOperator(kind: ts.SyntaxKind): boolean {
   return kind >= ts.SyntaxKind.FirstAssignment && kind <= ts.SyntaxKind.LastAssignment;
 }
 
+function isUpdateOperator(kind: ts.SyntaxKind): boolean {
+  return kind === ts.SyntaxKind.PlusPlusToken || kind === ts.SyntaxKind.MinusMinusToken;
+}
+
+function collectAssignedClientSymbols(
+  target: ts.Expression,
+  checker: ts.TypeChecker,
+  verifiedClientSymbols: ReadonlySet<ts.Symbol>,
+  reassignedSymbols: Set<ts.Symbol>,
+): void {
+  const expression = unwrapExpression(target);
+  if (ts.isIdentifier(expression)) {
+    const symbol = checker.getSymbolAtLocation(expression);
+    if (symbol !== undefined && verifiedClientSymbols.has(symbol)) reassignedSymbols.add(symbol);
+    return;
+  }
+
+  if (ts.isArrayLiteralExpression(expression)) {
+    for (const element of expression.elements) {
+      if (ts.isOmittedExpression(element)) continue;
+      collectAssignedClientSymbols(
+        ts.isSpreadElement(element) ? element.expression : element,
+        checker,
+        verifiedClientSymbols,
+        reassignedSymbols,
+      );
+    }
+    return;
+  }
+
+  if (ts.isObjectLiteralExpression(expression)) {
+    for (const property of expression.properties) {
+      if (ts.isPropertyAssignment(property)) {
+        collectAssignedClientSymbols(
+          property.initializer,
+          checker,
+          verifiedClientSymbols,
+          reassignedSymbols,
+        );
+      } else if (ts.isShorthandPropertyAssignment(property)) {
+        collectAssignedClientSymbols(
+          property.name,
+          checker,
+          verifiedClientSymbols,
+          reassignedSymbols,
+        );
+      } else if (ts.isSpreadAssignment(property)) {
+        collectAssignedClientSymbols(
+          property.expression,
+          checker,
+          verifiedClientSymbols,
+          reassignedSymbols,
+        );
+      }
+    }
+    return;
+  }
+
+  if (ts.isBinaryExpression(expression) && isAssignmentOperator(expression.operatorToken.kind)) {
+    collectAssignedClientSymbols(
+      expression.left,
+      checker,
+      verifiedClientSymbols,
+      reassignedSymbols,
+    );
+  }
+}
+
 function collectReassignedClientSymbols(
   sourceFile: ts.SourceFile,
   checker: ts.TypeChecker,
@@ -445,14 +513,23 @@ function collectReassignedClientSymbols(
 ): ReadonlySet<ts.Symbol> {
   const reassignedSymbols = new Set<ts.Symbol>();
   const visit = (node: ts.Node): void => {
-    if (
-      ts.isBinaryExpression(node) &&
-      isAssignmentOperator(node.operatorToken.kind) &&
-      ts.isIdentifier(unwrapExpression(node.left))
+    if (ts.isBinaryExpression(node) && isAssignmentOperator(node.operatorToken.kind)) {
+      collectAssignedClientSymbols(node.left, checker, verifiedClientSymbols, reassignedSymbols);
+    } else if (
+      (ts.isPrefixUnaryExpression(node) || ts.isPostfixUnaryExpression(node)) &&
+      isUpdateOperator(node.operator)
     ) {
-      const target = unwrapExpression(node.left);
-      const symbol = checker.getSymbolAtLocation(target);
-      if (symbol !== undefined && verifiedClientSymbols.has(symbol)) reassignedSymbols.add(symbol);
+      collectAssignedClientSymbols(node.operand, checker, verifiedClientSymbols, reassignedSymbols);
+    } else if (
+      (ts.isForInStatement(node) || ts.isForOfStatement(node)) &&
+      !ts.isVariableDeclarationList(node.initializer)
+    ) {
+      collectAssignedClientSymbols(
+        node.initializer,
+        checker,
+        verifiedClientSymbols,
+        reassignedSymbols,
+      );
     }
     ts.forEachChild(node, visit);
   };
