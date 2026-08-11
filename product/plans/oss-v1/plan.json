@@ -608,17 +608,24 @@
           "product/plans/oss-v1/acceptance-ledger.json",
           "product/plans/oss-v1/state/M0-08.json",
           "product/plans/oss-v1/state/V1-05.json",
-          "product/plans/oss-v1/evidence/**"
+          "product/plans/oss-v1/evidence/**",
+          "scripts/plan.test.mjs",
+          "scripts/task.test.mjs"
         ],
-        "forbiddenPaths": ["packages/**", "examples/**", "scripts/**", "action.yml", ".github/**"]
+        "forbiddenPaths": ["packages/**", "examples/**", "action.yml", ".github/**"]
       },
       "semanticInvariants": [
         "The authorization adds only scripts/plan.test.mjs and scripts/task.test.mjs to V1-05 implementation scope.",
+        "The M0-08 fixture records itself as planned inside the existing temporary V1-00 harness so the process task can pass repository validation without changing canonical state.",
         "The future-task reset is confined to temporary V1-00 plan and task test fixtures and covers V1-05 through V1-10.",
         "V1-05 product behavior, acceptance criteria, capabilities, provider policy, review gates, and retry limit remain unchanged.",
         "This process task changes no product source, fixture, dependency, workflow, credential, provider call, or completed-task acceptance record."
       ],
-      "deliverables": ["product/plans/oss-v1/**"],
+      "deliverables": [
+        "product/plans/oss-v1/**",
+        "scripts/plan.test.mjs",
+        "scripts/task.test.mjs"
+      ],
       "requiredTestLevels": ["static", "contract"],
       "requiredGates": ["QG-PLAN-CHECK", "QG-REPO-CHECK"],
       "requiredReviews": [],
