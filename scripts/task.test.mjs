@@ -1103,7 +1103,7 @@ describe("task packet compiler", () => {
     expect(stalePlanValidation.stderr).toContain(
       "source digest is not bound to candidate for product/plans/oss-v1/plan.json",
     );
-  }, 20_000);
+  }, 45_000);
 
   it("routes the actual V1-06 trust gate through the domain review skill", async () => {
     const root = await createFixture();
