@@ -2,8 +2,8 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "V1-03",
-  "revision": 44,
-  "state": "verification_pending",
+  "revision": 45,
+  "state": "accepted",
   "attempt": 3,
   "candidate": {
     "baseCommit": "3a91ea3652dee363654fe07cd8b191fd65d55c48",
@@ -478,6 +478,13 @@
       "at": "2026-08-11T13:48:00Z",
       "actor": "implementation-agent",
       "reason": "Submitted the final fresh scanner candidate after the active-state regression assertion passed with exact command evidence."
+    },
+    {
+      "from": "verification_pending",
+      "to": "accepted",
+      "at": "2026-08-11T13:49:30Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer accepted the final post-authorization scanner candidate after all active command gates passed; named reviewer records remain advisory under ADR 0009."
     }
   ]
 }

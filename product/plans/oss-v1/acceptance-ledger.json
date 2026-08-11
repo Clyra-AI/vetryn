@@ -230,8 +230,8 @@
         "gateId": "QG-SCANNER-CORPUS"
       },
       "waivable": false,
-      "status": "planned",
-      "evidenceRefs": []
+      "status": "accepted",
+      "evidenceRefs": ["ev-v1-03-scanner-corpus-da3210a"]
     },
     {
       "id": "SCAN-002",
@@ -243,8 +243,8 @@
         "gateId": "QG-SCANNER-CORPUS"
       },
       "waivable": false,
-      "status": "planned",
-      "evidenceRefs": []
+      "status": "accepted",
+      "evidenceRefs": ["ev-v1-03-scanner-corpus-da3210a"]
     },
     {
       "id": "SCAN-003",
@@ -256,8 +256,8 @@
         "gateId": "QG-SCANNER-CORPUS"
       },
       "waivable": false,
-      "status": "planned",
-      "evidenceRefs": []
+      "status": "accepted",
+      "evidenceRefs": ["ev-v1-03-scanner-corpus-da3210a"]
     },
     {
       "id": "SCAN-004",
@@ -269,8 +269,8 @@
         "gateId": "QG-SCANNER-CORPUS"
       },
       "waivable": false,
-      "status": "planned",
-      "evidenceRefs": []
+      "status": "accepted",
+      "evidenceRefs": ["ev-v1-03-scanner-corpus-da3210a"]
     },
     {
       "id": "MANIFEST-001",
