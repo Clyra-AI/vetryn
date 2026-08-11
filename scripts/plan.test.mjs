@@ -86,8 +86,17 @@ const reauthorizationRemedyInvariants = [
   "The only authorized budget correction is r3754790013: propagate provider budget exhaustion through the SDK-compatible transport.",
   "The only authorized typecheck correction is r3754790019: run golden-fixture typechecking through the repository quality gate.",
 ];
-const v102ReauthorizationInvariant =
-  "This reauthorized attempt is limited to r3754744063 application replay, r3754744064 unknown-outcome rejection, r3754744067 stale-source binding, r3754790013 transport budget propagation, and r3754790019 golden-fixture typechecking.";
+const m003AuthorizedInvariantSet = [
+  "The reauthorization is limited to exactly one additional V1-02 attempt: its canonical state records two consumed attempts, revision 1, and maxAttempts 3.",
+  ...reauthorizationRemedyInvariants,
+  "The process task does not implement product behavior, broaden V1-02 capabilities, or weaken offline, redaction, or fail-closed requirements.",
+  "V1-02 cannot begin its reauthorized attempt until this task is accepted with candidate-bound command evidence.",
+];
+const v102AuthorizedInvariantSet = [
+  "The golden suite runs without network access.",
+  "Fixture secrets and protected output markers never appear in logs or reports.",
+  "This reauthorized attempt is limited to r3754744063 application replay, r3754744064 unknown-outcome rejection, r3754744067 stale-source binding, r3754790013 transport budget propagation, and r3754790019 golden-fixture typechecking.",
+];
 
 function assertV102ReauthorizationBoundary(plan, v102State, m003State) {
   const m003Task = plan.tasks.find((task) => task.id === "M0-03");
@@ -109,14 +118,16 @@ function assertV102ReauthorizationBoundary(plan, v102State, m003State) {
   expect(v102Task.dependsOn).toContainEqual({ taskId: "M0-03", kind: "hard" });
   expect(findingIds(m003Task)).toEqual(reauthorizationFindingIds);
   expect(findingIds(v102Task)).toEqual(reauthorizationFindingIds);
-  expect(m003Task.semanticInvariants).toEqual(
-    expect.arrayContaining(reauthorizationRemedyInvariants),
-  );
-  expect(v102Task.semanticInvariants).toContain(v102ReauthorizationInvariant);
+  expect(m003Task.semanticInvariants).toEqual(m003AuthorizedInvariantSet);
+  expect(v102Task.semanticInvariants).toEqual(v102AuthorizedInvariantSet);
   expect(priorV102History.filter((entry) => entry.to === "in_progress")).toHaveLength(2);
   expect(priorV102History.filter((entry) => entry.to === "verification_pending")).toHaveLength(2);
   expect(priorV102History.filter((entry) => entry.to === "changes_requested")).toHaveLength(2);
-  if (v102State.state === "planned") expect(v102State.attempt).toBe(2);
+  if (["planned", "ready"].includes(v102State.state)) {
+    expect(v102State.attempt).toBe(2);
+  } else {
+    expect(v102State.attempt).toBe(3);
+  }
 }
 
 async function normalizeV1Fixture(root) {
@@ -474,6 +485,19 @@ describe("implementation plan validator", () => {
         ),
       );
     expect(() => assertV102ReauthorizationBoundary(alteredRemedy, v102State, m003State)).toThrow();
+
+    const extraCorrection = JSON.parse(JSON.stringify(plan));
+    extraCorrection.tasks
+      .find((task) => task.id === "V1-02")
+      .semanticInvariants.push("An additional authorization invariant without a review ID.");
+    expect(() =>
+      assertV102ReauthorizationBoundary(extraCorrection, v102State, m003State),
+    ).toThrow();
+
+    const staleActiveAttempt = JSON.parse(JSON.stringify(v102State));
+    staleActiveAttempt.state = "in_progress";
+    staleActiveAttempt.attempt = 2;
+    expect(() => assertV102ReauthorizationBoundary(plan, staleActiveAttempt, m003State)).toThrow();
   });
 
   it("normalizes promoted V1-00 lifecycle data back to the isolated fixture baseline", async () => {
