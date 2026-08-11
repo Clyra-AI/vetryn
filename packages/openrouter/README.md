@@ -7,13 +7,14 @@ Catalog refreshes are explicit. Each observation binds its acquisition mode to e
 public models endpoint or a repository-captured response. A successful refresh stores a content-addressed
 snapshot plus a unique observation record; unchanged content reuses the snapshot but still records the new
 observation. A failed refresh records only failure evidence and never identifies an older snapshot as current.
-Live observations derive their timestamp from the acquisition clock; captured responses accept an explicit
-repository timestamp. Existing same-digest snapshots are reused only when their OpenRouter identity and temporal
+Live observations derive their timestamp from the acquisition clock; captured responses require an explicit
+repository timestamp and reject values more than five minutes ahead of the trusted clock. Existing same-digest snapshots are reused only when their OpenRouter identity and temporal
 provenance are compatible. Duplicate model IDs are retained only when every row normalizes identically; conflicting
 or invalid duplicate rows exclude that model ID. Replay requires the canonical
 digest-derived OpenRouter snapshot identity. Successful refresh persistence records the immutable observation before
 publishing a new snapshot and rolls the observation back if snapshot publication fails, so a failed refresh cannot
-leave a directly replayable orphan snapshot. Tests inject `fetch`; CI never calls a live provider.
+leave a directly replayable orphan snapshot. File-backed stores reject symbolic-link components and verify resolved
+write destinations remain beneath the configured store root. Tests inject `fetch`; CI never calls a live provider.
 
 Candidate resolution excludes incomplete catalog entries, the baseline model, retired models, blocked
 providers, and models missing required capabilities before ranking. The default and maximum candidate

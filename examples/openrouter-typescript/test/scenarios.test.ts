@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { readFile, readdir } from "node:fs/promises";
 
 import OpenAI from "openai";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   createCatalogContentDigest,
@@ -45,6 +45,10 @@ interface CallSiteManifest {
     };
   }[];
 }
+
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 interface EvalSuite {
   readonly caseCount: number;
@@ -579,6 +583,8 @@ describe("OpenRouter catalog evidence and shortlist replay", () => {
   });
 
   it("records unchanged refreshes separately and never presents stale data after failure", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-08-12T00:00:00.000Z"));
     const store = new ScenarioCatalogStore();
     const fetch = vi.fn(
       async () =>

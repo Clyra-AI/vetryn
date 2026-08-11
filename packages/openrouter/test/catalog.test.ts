@@ -1,4 +1,4 @@
-import { mkdir, readFile, truncate, writeFile } from "node:fs/promises";
+import { mkdir, readFile, readdir, symlink, truncate, writeFile } from "node:fs/promises";
 
 import {
   createCatalogContentDigest,
@@ -307,6 +307,28 @@ describe("candidate resolution", () => {
 });
 
 describe("refresh evidence", () => {
+  it("rejects future-dated captured observations before fetching or persistence", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(observedAt));
+    const store = new MemoryStore();
+    const fetch = vi.fn(
+      async () => new Response(JSON.stringify({ data: [rawModel("mock/alpha")] })),
+    );
+
+    await expect(
+      refreshOpenRouterCatalog({
+        acquisition: "captured-response",
+        fetch,
+        observedAt: "2099-01-01T00:00:00.000Z",
+        refreshId: "future-capture",
+        store,
+      }),
+    ).rejects.toThrow(/trusted clock/i);
+    expect(fetch).not.toHaveBeenCalled();
+    expect(store.observations).toEqual([]);
+    expect(store.snapshots.size).toBe(0);
+  });
+
   it("reuses unchanged content while recording every successful observation", async () => {
     const store = new MemoryStore();
     const fetch = vi.fn(
@@ -538,6 +560,46 @@ describe("refresh evidence", () => {
       readFile(`${root}/observations/snapshot-write-fails.json`, "utf8"),
     ).rejects.toMatchObject({ code: "ENOENT" });
     await expect(store.hasSnapshot(contentDigest)).resolves.toBe(false);
+  });
+
+  it("refuses a symlinked snapshot directory before publishing outside the store", async () => {
+    const { mkdtemp } = await import("node:fs/promises");
+    const { tmpdir } = await import("node:os");
+    const root = await mkdtemp(`${tmpdir()}/vetryn-openrouter-symlink-store-`);
+    const outside = await mkdtemp(`${tmpdir()}/vetryn-openrouter-symlink-outside-`);
+    temporaryDirectories.push(root, outside);
+    await symlink(outside, `${root}/snapshots`, "dir");
+
+    await expect(
+      refreshOpenRouterCatalog({
+        acquisition: "captured-response",
+        fetch: async () => new Response(JSON.stringify({ data: [rawModel("mock/alpha")] })),
+        observedAt,
+        refreshId: "symlinked-snapshot-directory",
+        store: new FileCatalogStore(root),
+      }),
+    ).rejects.toThrow(/symbolic-link/i);
+    expect(await readdir(outside)).toEqual([]);
+  });
+
+  it("refuses a symlinked observation directory before recording outside the store", async () => {
+    const { mkdtemp } = await import("node:fs/promises");
+    const { tmpdir } = await import("node:os");
+    const root = await mkdtemp(`${tmpdir()}/vetryn-openrouter-symlink-store-`);
+    const outside = await mkdtemp(`${tmpdir()}/vetryn-openrouter-symlink-outside-`);
+    temporaryDirectories.push(root, outside);
+    await symlink(outside, `${root}/observations`, "dir");
+
+    await expect(
+      refreshOpenRouterCatalog({
+        acquisition: "captured-response",
+        fetch: async () => new Response(JSON.stringify({ data: [] })),
+        observedAt,
+        refreshId: "symlinked-observation-directory",
+        store: new FileCatalogStore(root),
+      }),
+    ).rejects.toThrow(/symbolic-link/i);
+    expect(await readdir(outside)).toEqual([]);
   });
 
   it("rejects same-digest snapshots with forged identity or future provenance", async () => {

@@ -1,5 +1,5 @@
 import { createReadStream } from "node:fs";
-import { mkdir, unlink, writeFile } from "node:fs/promises";
+import { lstat, mkdir, realpath, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 import {
@@ -19,6 +19,7 @@ export const DEFAULT_CANDIDATE_LIMIT = 5;
 export const MAX_CANDIDATE_LIMIT = 5;
 const MAX_CATALOG_BYTES = 20_000_000;
 const MAX_CATALOG_MODELS = 20_000;
+const MAX_CAPTURE_CLOCK_SKEW_MS = 5 * 60 * 1000;
 
 const digestSchema = z.string().regex(/^sha256:[0-9a-f]{64}$/);
 const modelIdSchema = z.string().regex(/^[a-z0-9][a-z0-9._-]*(?:\/[a-z0-9][a-z0-9._:-]*)+$/);
@@ -190,11 +191,17 @@ export class OpenRouterCatalogError extends Error {
 }
 
 export class FileCatalogStore implements CatalogStore {
-  constructor(readonly root: string) {}
+  readonly root: string;
+
+  constructor(root: string) {
+    this.root = path.resolve(root);
+  }
 
   async hasSnapshot(contentDigest: string): Promise<boolean> {
     try {
-      await readBoundedCatalogFile(this.snapshotPath(contentDigest));
+      const target = this.snapshotPath(contentDigest);
+      await this.assertSafeTarget(target, false);
+      await readBoundedCatalogFile(target);
       return true;
     } catch (error: unknown) {
       if (isMissingFileError(error)) return false;
@@ -208,7 +215,7 @@ export class FileCatalogStore implements CatalogStore {
     const snapshot = parseCatalogSnapshot(snapshotInput);
     assertCanonicalOpenRouterSnapshot(snapshot);
     const target = this.snapshotPath(snapshot.contentDigest);
-    await mkdir(path.dirname(target), { recursive: true });
+    await this.assertSafeTarget(target, true);
     const contents = `${stableJson(snapshot)}\n`;
 
     try {
@@ -268,7 +275,7 @@ export class FileCatalogStore implements CatalogStore {
   async putObservation(observationInput: RefreshObservation): Promise<void> {
     const observation = refreshObservationSchema.parse(observationInput);
     const target = path.join(this.root, "observations", `${observation.id}.json`);
-    await mkdir(path.dirname(target), { recursive: true });
+    await this.assertSafeTarget(target, true);
     try {
       await writeFile(target, `${stableJson(observation)}\n`, { encoding: "utf8", flag: "wx" });
     } catch (error: unknown) {
@@ -285,10 +292,10 @@ export class FileCatalogStore implements CatalogStore {
     snapshot: CatalogSnapshot,
   ): Promise<CatalogSnapshot | undefined> {
     try {
+      const target = this.snapshotPath(snapshot.contentDigest);
+      await this.assertSafeTarget(target, false);
       const existing = parseCatalogSnapshot(
-        JSON.parse(
-          await readBoundedCatalogFile(this.snapshotPath(snapshot.contentDigest)),
-        ) as unknown,
+        JSON.parse(await readBoundedCatalogFile(target)) as unknown,
       );
       if (!isReusableOpenRouterSnapshot(existing, snapshot)) {
         throw new OpenRouterCatalogError(
@@ -306,9 +313,65 @@ export class FileCatalogStore implements CatalogStore {
     const target = path.join(this.root, "observations", `${observation.id}.json`);
     const expected = `${stableJson(observation)}\n`;
     try {
+      await this.assertSafeTarget(target, false);
       if ((await readBoundedCatalogFile(target)) === expected) await unlink(target);
     } catch (error: unknown) {
       if (!isMissingFileError(error)) throw error;
+    }
+  }
+
+  private async assertSafeTarget(target: string, createParent: boolean): Promise<void> {
+    const absoluteTarget = path.resolve(target);
+    const relativeTarget = path.relative(this.root, absoluteTarget);
+    if (
+      relativeTarget === ".." ||
+      relativeTarget.startsWith(`..${path.sep}`) ||
+      path.isAbsolute(relativeTarget)
+    ) {
+      throw new OpenRouterCatalogError("Catalog store target escapes its configured root.");
+    }
+
+    const parent = path.dirname(absoluteTarget);
+    await this.assertNoSymbolicLinks(parent, absoluteTarget);
+    if (!createParent) return;
+    await mkdir(parent, { recursive: true });
+    await this.assertNoSymbolicLinks(parent, absoluteTarget);
+
+    const [resolvedRoot, resolvedParent] = await Promise.all([
+      realpath(this.root),
+      realpath(parent),
+    ]);
+    const relativeParent = path.relative(resolvedRoot, resolvedParent);
+    if (
+      relativeParent === ".." ||
+      relativeParent.startsWith(`..${path.sep}`) ||
+      path.isAbsolute(relativeParent)
+    ) {
+      throw new OpenRouterCatalogError("Catalog store destination resolves outside its root.");
+    }
+  }
+
+  private async assertNoSymbolicLinks(parent: string, target: string): Promise<void> {
+    const relativeParent = path.relative(this.root, parent);
+    const components = [this.root];
+    let current = this.root;
+    for (const component of relativeParent.split(path.sep).filter(Boolean)) {
+      current = path.join(current, component);
+      components.push(current);
+    }
+    components.push(target);
+
+    for (const component of components) {
+      try {
+        if ((await lstat(component)).isSymbolicLink()) {
+          throw new OpenRouterCatalogError(
+            `Catalog store refuses symbolic-link path component ${component}.`,
+          );
+        }
+      } catch (error: unknown) {
+        if (isMissingFileError(error)) continue;
+        throw error;
+      }
     }
   }
 
@@ -476,6 +539,14 @@ export async function refreshOpenRouterCatalog(
   const observedAt = acquisition === "live-api" ? new Date().toISOString() : options.observedAt;
   refreshIdSchema.parse(refreshId);
   timestampSchema.parse(observedAt);
+  if (
+    acquisition === "captured-response" &&
+    Date.parse(observedAt) > Date.now() + MAX_CAPTURE_CLOCK_SKEW_MS
+  ) {
+    throw new OpenRouterCatalogError(
+      "Captured catalog observation time cannot exceed the trusted clock by more than five minutes.",
+    );
+  }
 
   let body: string;
   try {
