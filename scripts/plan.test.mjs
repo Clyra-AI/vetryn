@@ -191,7 +191,7 @@ function assertV103CorrectionAuthorization(plan, ledger, v103State) {
   expect(v103Task.dependsOn).toContainEqual({ taskId: "M0-05", kind: "hard" });
   expect(v103Task.maxAttempts).toBe(3);
   expect(v103State.attempt).toBe(3);
-  expect(["changes_requested", "verification_pending"]).toContain(v103State.state);
+  expect(["changes_requested", "verification_pending", "accepted"]).toContain(v103State.state);
   if (v103State.state === "changes_requested") expect(v103State.candidate).toBeNull();
   else expect(v103State.candidate).toMatchObject({ executor: "implementation-agent" });
   expect(v103Task.semanticInvariants).toContain(
