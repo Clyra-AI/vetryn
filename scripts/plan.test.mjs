@@ -15,7 +15,7 @@ const planScript = path.join(repositoryRoot, "scripts/plan.mjs");
 const temporaryRoots = [];
 const bootstrapCommentId = 987654321;
 const v1TaskId = "V1-00";
-const fixtureTaskIds = [v1TaskId, "M0-01", "M0-02", "V1-01"];
+const fixtureTaskIds = [v1TaskId, "M0-01", "M0-02", "M0-03", "V1-01"];
 
 function bootstrapBody(overrides = {}) {
   const values = {
@@ -169,6 +169,41 @@ async function normalizeV1Fixture(root) {
     ],
   });
   await writeFixtureJson(root, goldenScenarioSkillStatePath, goldenScenarioSkillState);
+
+  const reauthorizationStatePath = "product/plans/oss-v1/state/M0-03.json";
+  const reauthorizationState = await readFixtureJson(root, reauthorizationStatePath);
+  Object.assign(reauthorizationState, {
+    revision: 0,
+    state: "planned",
+    attempt: 0,
+    candidate: null,
+    criteria: reauthorizationState.criteria.map((criterion) => ({
+      ...criterion,
+      status: "pending",
+      evidenceRefs: [],
+    })),
+    gates: reauthorizationState.gates.map((gate) => ({
+      ...gate,
+      status: "pending",
+      evidenceRefs: [],
+    })),
+    reviews: reauthorizationState.reviews.map((review) => ({
+      ...review,
+      status: "pending",
+      evidenceRefs: [],
+    })),
+    blockers: [],
+    history: [
+      {
+        from: null,
+        to: "planned",
+        at: "2026-08-10T00:00:00Z",
+        actor: "plan-test-fixture",
+        reason: "Reset the reauthorization process task with the V1-00 fixture baseline.",
+      },
+    ],
+  });
+  await writeFixtureJson(root, reauthorizationStatePath, reauthorizationState);
 
   const dependentStatePath = "product/plans/oss-v1/state/V1-01.json";
   const dependentState = await readFixtureJson(root, dependentStatePath);

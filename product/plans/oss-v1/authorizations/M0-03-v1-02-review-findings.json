@@ -1,0 +1,59 @@
+{
+  "authorizationId": "m0-03-v1-02-review-correction-v1",
+  "schemaVersion": "1.0.0",
+  "authorizationTaskId": "M0-03",
+  "targetTaskId": "V1-02",
+  "attemptAccounting": {
+    "originalMaximum": 2,
+    "consumed": 2,
+    "reauthorizedMaximum": 3,
+    "remaining": 1
+  },
+  "source": {
+    "repository": "Clyra-AI/vetryn",
+    "pullRequest": 9,
+    "closedAt": "2026-08-11T02:20:33Z"
+  },
+  "findings": [
+    {
+      "id": "r3754744063",
+      "priority": "P2",
+      "reviewedHead": "131c3ba68ecf4b3a643922431207269929046a6a",
+      "path": "examples/openrouter-typescript/src/support-classification.ts",
+      "requiredCorrection": "Replay the real application call through a deterministic OpenAI-compatible transport."
+    },
+    {
+      "id": "r3754744064",
+      "priority": "P2",
+      "reviewedHead": "131c3ba68ecf4b3a643922431207269929046a6a",
+      "path": "examples/openrouter-typescript/mock/provider.ts",
+      "requiredCorrection": "Reject unknown mock outcomes instead of reporting a successful completion."
+    },
+    {
+      "id": "r3754744067",
+      "priority": "P2",
+      "reviewedHead": "131c3ba68ecf4b3a643922431207269929046a6a",
+      "path": "examples/openrouter-typescript/test/scenarios.test.ts",
+      "requiredCorrection": "Bind stale-source refusal to the checked-in source and manifest fingerprint."
+    },
+    {
+      "id": "r3754790013",
+      "priority": "P2",
+      "reviewedHead": "3b39ac4b500abc7f7a43ab8c9d78a1349eb291d0",
+      "path": "examples/openrouter-typescript/mock/provider.ts",
+      "requiredCorrection": "Propagate provider budget exhaustion through the SDK-compatible transport."
+    },
+    {
+      "id": "r3754790019",
+      "priority": "P2",
+      "reviewedHead": "3b39ac4b500abc7f7a43ab8c9d78a1349eb291d0",
+      "path": "examples/openrouter-typescript/tsconfig.json",
+      "requiredCorrection": "Run golden-fixture typechecking through the repository quality gate."
+    }
+  ],
+  "prohibitedChanges": [
+    "Provider calls, credentials, or network access.",
+    "Changes outside V1-02's compiled allowed paths.",
+    "Relaxation of offline, redaction, or fail-closed requirements."
+  ]
+}
