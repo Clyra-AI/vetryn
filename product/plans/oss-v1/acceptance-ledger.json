@@ -221,7 +221,7 @@
         "gateId": "QG-SCANNER-CORPUS"
       },
       "waivable": false,
-      "status": "verification_pending",
+      "status": "accepted",
       "evidenceRefs": ["ev-v1-03-scanner-corpus-b43a374"]
     },
     {
@@ -234,7 +234,7 @@
         "gateId": "QG-SCANNER-CORPUS"
       },
       "waivable": false,
-      "status": "verification_pending",
+      "status": "accepted",
       "evidenceRefs": ["ev-v1-03-scanner-corpus-b43a374"]
     },
     {
@@ -247,7 +247,7 @@
         "gateId": "QG-SCANNER-CORPUS"
       },
       "waivable": false,
-      "status": "verification_pending",
+      "status": "accepted",
       "evidenceRefs": ["ev-v1-03-scanner-corpus-b43a374"]
     },
     {
@@ -260,7 +260,7 @@
         "gateId": "QG-SCANNER-CORPUS"
       },
       "waivable": false,
-      "status": "verification_pending",
+      "status": "accepted",
       "evidenceRefs": ["ev-v1-03-scanner-corpus-b43a374"]
     },
     {

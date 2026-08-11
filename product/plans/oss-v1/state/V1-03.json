@@ -2,8 +2,8 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "V1-03",
-  "revision": 44,
-  "state": "verification_pending",
+  "revision": 45,
+  "state": "accepted",
   "attempt": 3,
   "candidate": {
     "baseCommit": "c8165c57fc2d871c5012a0fe9c0e2f87467b7712",
@@ -485,6 +485,13 @@
       "at": "2026-08-11T12:51:02Z",
       "actor": "implementation-agent",
       "reason": "Submitted the exact criterion-gate-binding candidate with replacement repository, contract, and reviewed-corpus command evidence."
+    },
+    {
+      "from": "verification_pending",
+      "to": "accepted",
+      "at": "2026-08-11T12:52:04Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer accepted the exact criterion-gate-binding candidate after all active command gates passed; reviewer records remain advisory under ADR 0009."
     }
   ]
 }
