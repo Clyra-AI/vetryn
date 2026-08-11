@@ -1,0 +1,35 @@
+{
+  "$schema": "../../schemas/evidence.schema.json",
+  "schemaVersion": "1.0.0",
+  "id": "ev-m0-03-plan-check-3eb46d2",
+  "taskId": "M0-03",
+  "type": "command-run",
+  "actor": "davidahmann",
+  "commit": "3eb46d2d9218990ebff903a93766c0bbb05320b1",
+  "createdAt": "2026-08-11T02:52:35Z",
+  "result": {
+    "status": "pass",
+    "checks": [
+      {
+        "name": "pnpm plan:check",
+        "status": "pass",
+        "summary": "The corrected authorization preserves two historical V1-02 attempt lifecycles and its contract test rejects an extra attempt or a missing authorized review finding."
+      }
+    ]
+  },
+  "inputs": {
+    "planDigest": "sha256:96090a1ac8812076063809870a9c53f54d1d0b053210f58b481974ea5c0c4b75",
+    "lockfileDigest": "sha256:4a89ac1f2863dc3591fae73e1ee0474cbab8cb0725ff80dfc57b1590f42d1a88"
+  },
+  "gateBinding": {
+    "gateId": "QG-PLAN-CHECK",
+    "kind": "command",
+    "command": "pnpm plan:check"
+  },
+  "review": null,
+  "redaction": {
+    "status": "not_applicable",
+    "containsRawModelOutput": false,
+    "containsSecrets": false
+  }
+}
