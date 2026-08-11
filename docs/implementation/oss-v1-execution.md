@@ -101,7 +101,9 @@ policy, binds the candidate to canonical state, and then recomputes each lifecyc
 downgrade, cross-task, stale-candidate, unbound-candidate, swapped-artifact, and security-input drift while
 allowing ledger/status-only promotion tails that preserve the frozen candidate. The canonical comparison includes
 executor evidence, item-level acceptance closure, commands, scope exclusions, stop conditions, retry/runtime pins,
-Factory compatibility, execution permissions, and lifecycle policy.
+Factory compatibility, execution permissions, lifecycle policy, acceptance-item policy, scanner/CI gates,
+release/documentation intent, and source metadata. Only packet revision, lifecycle state label, and ledger/state
+status-evidence bytes may differ as a promotion tail while the candidate remains exact.
 
 ## Quality lanes
 

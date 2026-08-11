@@ -40,6 +40,8 @@
   machine-readable validation command's `{packet_path}` substitution explicit.
 - Extended stored-packet authentication across all runner-consumed executor evidence and item-level acceptance
   closure fields, plus commands, scope, retry/runtime, compatibility, execution, and lifecycle policy.
+- Completed stored-packet authentication for acceptance-item policy, scanner and CI gates, release/documentation
+  intent, and source metadata, with only exact-candidate promotion-tail state explicitly mutable.
 
 ### Changed
 

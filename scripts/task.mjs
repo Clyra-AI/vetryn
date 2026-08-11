@@ -84,6 +84,13 @@ function acceptanceResultRequirementsForItems(items) {
   });
 }
 
+function acceptancePolicyView(item) {
+  const policy = { ...item };
+  delete policy.status;
+  delete policy.evidenceRefs;
+  return policy;
+}
+
 function scopeExclusionsForTask(task) {
   return [
     ...task.scope.forbiddenPaths.map((pattern) => `Do not change ${pattern}.`),
@@ -536,6 +543,7 @@ async function validatePacket(packet) {
     ]),
   ];
   assertSame(packet.task, taskView(canonicalTask), "task");
+  assertSame(packet.objective, canonicalTask.objective, "objective");
   assertSame(packet.risk_class, canonicalTask.risk.level, "risk_class");
   assertSame(packet.allowed_paths, canonicalTask.scope.allowedPaths, "allowed_paths");
   assertSame(packet.forbidden_paths, canonicalTask.scope.forbiddenPaths, "forbidden_paths");
@@ -589,6 +597,156 @@ async function validatePacket(packet) {
   assertSame(packet.factory_compatibility, factoryCompatibility, "factory_compatibility");
   assertSame(packet.acceptance_ledger_ref, sourcePaths.ledger, "acceptance_ledger_ref");
   assertSame(
+    packet.acceptanceItems.map(acceptancePolicyView),
+    canonicalAcceptanceItems.map(acceptancePolicyView),
+    "acceptanceItems policy",
+  );
+  assertSame(
+    packet.alignment_gate_ref,
+    "docs/implementation/oss-v1-execution.md#agent-roles-and-handoff",
+    "alignment_gate_ref",
+  );
+  assertSame(
+    packet.plan_drift_policy_ref,
+    "WORKFLOW.md#select-and-compile-work",
+    "plan_drift_policy_ref",
+  );
+  assertSame(
+    packet.ci_lane_refs,
+    [
+      {
+        source_ref: ".factory/profile.yaml#/ci_lanes",
+        rule: "Run the active task gates locally and require the repository's latest-head CI lanes before shipping.",
+        command_refs: canonicalValidationCommands,
+      },
+    ],
+    "ci_lane_refs",
+  );
+  assertSame(
+    packet.test_matrix_refs,
+    [
+      {
+        source_ref: ".factory/profile.yaml#/test_matrix",
+        rule: `Preserve the declared ${canonicalTask.requiredTestLevels.join(", ")} test levels for this task.`,
+        command_refs: canonicalValidationCommands,
+      },
+    ],
+    "test_matrix_refs",
+  );
+  assertSame(
+    packet.coverage_policy_refs,
+    {
+      required: false,
+      source_ref: ".factory/profile.yaml#/coverage_policy",
+      policy:
+        "Numeric coverage is advisory until V1-01; behavior and contract changes still require focused deterministic tests.",
+      command_refs: ["pnpm test:coverage", "pnpm check"],
+    },
+    "coverage_policy_refs",
+  );
+  assertSame(
+    packet.security_scanner_gates,
+    {
+      required: true,
+      source_ref: ".factory/profile.yaml#/security_scanning",
+      policy:
+        "CodeQL must settle for schema, contract, evidence, workflow, or release-sensitive changes.",
+      command_refs: ["GitHub Actions CodeQL analyze (javascript-typescript)"],
+    },
+    "security_scanner_gates",
+  );
+  assertSame(
+    packet.engineering_policy_refs,
+    [
+      {
+        source_ref: ".factory/profile.yaml#/engineering_policies/docs_parity",
+        rule: "Keep public commands, schemas, compiler output, documentation, and changelog aligned.",
+      },
+      {
+        source_ref: ".factory/profile.yaml#/engineering_policies/provenance_evidence",
+        rule: "Keep executor evidence distinct from lifecycle-owned review, shipping, and post-merge evidence.",
+      },
+    ],
+    "engineering_policy_refs",
+  );
+  assertSame(
+    packet.architecture_guidance_refs,
+    [
+      {
+        source_ref: "docs/architecture.md#trust-boundaries",
+        rule: "Preserve repository-owned evidence, explicit authority, and fail-closed boundaries.",
+      },
+      {
+        source_ref: ".factory/profile.yaml#/architecture_policies",
+        rule: "Apply the repository ADR, TDD, reliability, and failure-semantics policies.",
+      },
+    ],
+    "architecture_guidance_refs",
+  );
+  const planningContractTask = canonicalTask.deliverables.includes("product/plans/**");
+  const publishablePackageTask = canonicalTask.scope.allowedPaths.includes(".changeset/**");
+  assertSame(
+    packet.changelog_intent,
+    {
+      impact: planningContractTask || publishablePackageTask ? "required" : "not_required",
+      section: planningContractTask || publishablePackageTask ? "Added" : "Unreleased",
+      draft_entry: planningContractTask
+        ? "Made compiled Vetryn task packets runner-ready for Factory task-executor."
+        : publishablePackageTask
+          ? "Add a Changeset for every new or changed public package and CLI surface in this task."
+          : "No changelog edit is authorized unless the task scope explicitly includes CHANGELOG.md.",
+      semver_marker: publishablePackageTask ? "minor" : "none",
+    },
+    "changelog_intent",
+  );
+  assertSame(
+    packet.versioning_impact,
+    publishablePackageTask
+      ? "Record a minor Changeset for each new or changed publishable package; publication remains a separate release operation."
+      : "No package version change or release is authorized by this task packet.",
+    "versioning_impact",
+  );
+  assertSame(
+    packet.migration_impact,
+    planningContractTask
+      ? "Packet consumers must accept the additive runner-ready fields; existing Vetryn packet fields remain available."
+      : "No migration work is authorized by this task packet.",
+    "migration_impact",
+  );
+  const expectedDocsSyncRefs = planningContractTask
+    ? [
+        {
+          path: "docs/implementation/oss-v1-execution.md",
+          reason: "Document the runner-ready packet and executor/lifecycle evidence split.",
+        },
+        {
+          path: "docs/adr/0003-bind-task-execution-and-review-evidence.md",
+          reason: "Record the additive public task-packet contract decision.",
+        },
+        {
+          path: "docs/adr/0010-require-local-and-domain-review-evidence.md",
+          reason: "Record the local and domain review security boundary and compatibility impact.",
+        },
+        {
+          path: "product/plans/oss-v1/README.md",
+          reason: "Keep plan consumer instructions aligned with compiled packet behavior.",
+        },
+        {
+          path: ".factory/README.md",
+          reason: "Keep the portable Factory adapter description aligned with the packet surface.",
+        },
+      ]
+    : publishablePackageTask
+      ? publishableDocumentationRefs(canonicalTask)
+      : [
+          {
+            path: plan.productContract,
+            reason:
+              "Product-facing documentation changes require explicit task scope and contract alignment.",
+          },
+        ];
+  assertSame(packet.docs_sync_refs, expectedDocsSyncRefs, "docs_sync_refs");
+  assertSame(
     packet.execution,
     {
       implementSkill: "vetryn-implement-task",
@@ -604,6 +762,11 @@ async function validatePacket(packet) {
     "execution",
   );
   const expectedStatePath = `product/plans/oss-v1/state/${packet.task_id}.json`;
+  assertSame(packet.source.repository, plan.baseline.repository, "source.repository");
+  assertSame(packet.source.baselineCommit, plan.baseline.commit, "source.baselineCommit");
+  assertSame(packet.source.productContract, plan.productContract, "source.productContract");
+  assertSame(packet.source.planPath, sourcePaths.plan, "source.planPath");
+  assertSame(packet.source.ledgerPath, sourcePaths.ledger, "source.ledgerPath");
   assert(
     packet.source.statePath === expectedStatePath,
     `source.statePath must equal ${expectedStatePath}`,
@@ -637,6 +800,11 @@ async function validatePacket(packet) {
     "pnpm-lock.yaml",
   ];
   assertSame(Object.keys(packet.source.digests), expectedSourceFiles, "source.digests keys");
+  assertSame(
+    packet.source.productContractDigest,
+    packet.source.digests[plan.productContract],
+    "source.productContractDigest",
+  );
   for (const sourceFile of [plan.productContract, sourcePaths.plan, "pnpm-lock.yaml"])
     assert(
       packet.source.digests[sourceFile] === (await digest(sourceFile)),

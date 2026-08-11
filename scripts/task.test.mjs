@@ -911,6 +911,43 @@ describe("task packet compiler", () => {
       "acceptance_result_requirements does not match canonical plan",
     );
 
+    const rewrittenAcceptance = globalThis.structuredClone(packet);
+    rewrittenAcceptance.acceptanceItems[0].waivable = true;
+    rewrittenAcceptance.acceptanceItems[0].verification.gateId = "QG-PLAN-CHECK";
+    await writeFixtureJson(root, "rewritten-acceptance.json", rewrittenAcceptance);
+    const rewrittenAcceptanceValidation = runTask(root, "validate", "rewritten-acceptance.json");
+    expect(rewrittenAcceptanceValidation.status).toBe(1);
+    expect(rewrittenAcceptanceValidation.stderr).toContain(
+      "acceptanceItems policy does not match canonical plan",
+    );
+
+    const disabledScanner = globalThis.structuredClone(packet);
+    disabledScanner.security_scanner_gates.required = false;
+    disabledScanner.security_scanner_gates.command_refs = ["echo skipped"];
+    await writeFixtureJson(root, "disabled-scanner.json", disabledScanner);
+    const disabledScannerValidation = runTask(root, "validate", "disabled-scanner.json");
+    expect(disabledScannerValidation.status).toBe(1);
+    expect(disabledScannerValidation.stderr).toContain(
+      "security_scanner_gates does not match canonical plan",
+    );
+
+    const omittedReleaseIntent = globalThis.structuredClone(packet);
+    omittedReleaseIntent.changelog_intent.impact = "not_required";
+    omittedReleaseIntent.changelog_intent.section = "Unreleased";
+    omittedReleaseIntent.changelog_intent.semver_marker = "none";
+    omittedReleaseIntent.docs_sync_refs = [
+      {
+        path: "docs/oss-v1.md",
+        reason: "Unrelated documentation replacement.",
+      },
+    ];
+    await writeFixtureJson(root, "omitted-release-intent.json", omittedReleaseIntent);
+    const omittedReleaseValidation = runTask(root, "validate", "omitted-release-intent.json");
+    expect(omittedReleaseValidation.status).toBe(1);
+    expect(omittedReleaseValidation.stderr).toContain(
+      "changelog_intent does not match canonical plan",
+    );
+
     const stalePlanPacket = globalThis.structuredClone(packet);
     stalePlanPacket.source.digests["product/plans/oss-v1/plan.json"] = "0".repeat(64);
     await writeFixtureJson(root, "stale-plan-packet.json", stalePlanPacket);

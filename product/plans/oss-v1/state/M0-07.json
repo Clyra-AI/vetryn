@@ -2,31 +2,27 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "M0-07",
-  "revision": 11,
-  "state": "accepted",
+  "revision": 12,
+  "state": "in_progress",
   "attempt": 3,
-  "candidate": {
-    "baseCommit": "08c3ef067e6be834142b6bd6cb3a17c406e4ea3b",
-    "commit": "bcc3cb1da7e57fd884863b7181fdf10e504a3f4d",
-    "executor": "implementation-agent"
-  },
+  "candidate": null,
   "criteria": [
     {
       "criterionId": "PROCESS-008",
-      "status": "pass",
-      "evidenceRefs": ["ev-m0-07-repo-check-bcc3cb1"]
+      "status": "pending",
+      "evidenceRefs": []
     }
   ],
   "gates": [
     {
       "gateId": "QG-PLAN-CHECK",
-      "status": "pass",
-      "evidenceRefs": ["ev-m0-07-plan-check-bcc3cb1"]
+      "status": "pending",
+      "evidenceRefs": []
     },
     {
       "gateId": "QG-REPO-CHECK",
-      "status": "pass",
-      "evidenceRefs": ["ev-m0-07-repo-check-bcc3cb1"]
+      "status": "pending",
+      "evidenceRefs": []
     }
   ],
   "reviews": [],
@@ -115,6 +111,13 @@
       "at": "2026-08-11T18:09:56Z",
       "actor": "davidahmann",
       "reason": "Maintainer accepted the full-surface authentication candidate after deterministic executor-evidence, acceptance-closure, policy-downgrade, stale-plan, promotion-tail, and binding tests passed."
+    },
+    {
+      "from": "accepted",
+      "to": "in_progress",
+      "at": "2026-08-11T18:17:04Z",
+      "actor": "implementation-agent",
+      "reason": "Continued the same third review-correction attempt to authenticate all remaining policy-bearing packet fields rather than extending a manual partial allowlist."
     }
   ]
 }
