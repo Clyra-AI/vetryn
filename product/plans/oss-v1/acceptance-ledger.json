@@ -163,6 +163,15 @@
       "evidenceRefs": ["ev-m0-07-repo-check-3b1aaef"]
     },
     {
+      "id": "PROCESS-009",
+      "taskId": "M0-08",
+      "statement": "V1-05 may change only the two temporary planning-test fixture files needed to reset V1-05 through V1-10 lifecycle state without changing product or safety semantics.",
+      "verification": { "method": "test", "testLevel": "contract", "gateId": "QG-REPO-CHECK" },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
       "id": "CONTRACT-001",
       "taskId": "V1-01",
       "statement": "Every V1 artifact has a versioned strict schema and canonical serializer.",
