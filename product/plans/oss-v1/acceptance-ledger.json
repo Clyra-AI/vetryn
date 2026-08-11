@@ -221,8 +221,8 @@
         "gateId": "QG-SCANNER-CORPUS"
       },
       "waivable": false,
-      "status": "planned",
-      "evidenceRefs": []
+      "status": "verification_pending",
+      "evidenceRefs": ["ev-v1-03-scanner-corpus-1b0d95d"]
     },
     {
       "id": "SCAN-002",
@@ -234,8 +234,8 @@
         "gateId": "QG-SCANNER-CORPUS"
       },
       "waivable": false,
-      "status": "planned",
-      "evidenceRefs": []
+      "status": "verification_pending",
+      "evidenceRefs": ["ev-v1-03-scanner-corpus-1b0d95d"]
     },
     {
       "id": "SCAN-003",
@@ -247,8 +247,8 @@
         "gateId": "QG-SCANNER-CORPUS"
       },
       "waivable": false,
-      "status": "planned",
-      "evidenceRefs": []
+      "status": "verification_pending",
+      "evidenceRefs": ["ev-v1-03-scanner-corpus-1b0d95d"]
     },
     {
       "id": "SCAN-004",
@@ -256,8 +256,8 @@
       "statement": "Dynamic and ambiguous wrappers are reported without a patchable target or invented semantic ID.",
       "verification": { "method": "test", "testLevel": "adversarial", "gateId": "QG-TRUST-REVIEW" },
       "waivable": false,
-      "status": "planned",
-      "evidenceRefs": []
+      "status": "verification_pending",
+      "evidenceRefs": ["ev-v1-03-scanner-corpus-1b0d95d"]
     },
     {
       "id": "MANIFEST-001",
