@@ -2,42 +2,46 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "V1-02",
-  "revision": 2,
-  "state": "in_progress",
+  "revision": 3,
+  "state": "accepted",
   "attempt": 3,
-  "candidate": null,
+  "candidate": {
+    "baseCommit": "2e174bf0f6bb0bf517c69c9293c73f1aff4b392b",
+    "commit": "14e27cfb11591a937a16577952bb5b4ac4b5ac32",
+    "executor": "davidahmann"
+  },
   "criteria": [
     {
       "criterionId": "GOLDEN-001",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-02-scenarios-14e27cf"]
     },
     {
       "criterionId": "GOLDEN-002",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-02-scenarios-14e27cf"]
     },
     {
       "criterionId": "GOLDEN-003",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-02-scenarios-14e27cf"]
     },
     {
       "criterionId": "GOLDEN-004",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-02-scenarios-14e27cf"]
     }
   ],
   "gates": [
     {
       "gateId": "QG-REPO-CHECK",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-02-repo-check-14e27cf"]
     },
     {
       "gateId": "QG-SCENARIOS",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-02-scenarios-14e27cf"]
     },
     {
       "gateId": "QG-INDEPENDENT-VERIFY",
@@ -91,6 +95,13 @@
       "at": "2026-08-11T02:41:40Z",
       "actor": "davidahmann",
       "reason": "Maintainer started the single M0-03-authorized final implementation attempt before creating a new candidate."
+    },
+    {
+      "from": "in_progress",
+      "to": "accepted",
+      "at": "2026-08-11T02:45:01Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer accepted the exact deterministic golden-repository candidate after both active command gates passed; named review records remain advisory under ADR 0009."
     }
   ]
 }

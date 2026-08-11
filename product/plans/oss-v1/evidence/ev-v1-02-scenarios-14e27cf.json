@@ -1,0 +1,35 @@
+{
+  "$schema": "../../schemas/evidence.schema.json",
+  "schemaVersion": "1.0.0",
+  "id": "ev-v1-02-scenarios-14e27cf",
+  "taskId": "V1-02",
+  "type": "command-run",
+  "actor": "davidahmann",
+  "commit": "14e27cfb11591a937a16577952bb5b4ac4b5ac32",
+  "createdAt": "2026-08-11T02:45:01Z",
+  "result": {
+    "status": "pass",
+    "checks": [
+      {
+        "name": "pnpm test:scenarios",
+        "status": "pass",
+        "summary": "Seven deterministic offline scenario tests passed: reviewed fixture binding, pinned catalog and clock replay, stale-source refusal, provider success and failure modes, OpenAI-compatible application replay, transport budget propagation, redaction, and semantic artifact assertions."
+      }
+    ]
+  },
+  "inputs": {
+    "planDigest": "sha256:96090a1ac8812076063809870a9c53f54d1d0b053210f58b481974ea5c0c4b75",
+    "lockfileDigest": "sha256:b6ea1c788e4f17af516bdf10745fcb27f4f49c29065fc4616c374334f88ac2ae"
+  },
+  "gateBinding": {
+    "gateId": "QG-SCENARIOS",
+    "kind": "command",
+    "command": "pnpm test:scenarios"
+  },
+  "review": null,
+  "redaction": {
+    "status": "verified",
+    "containsRawModelOutput": false,
+    "containsSecrets": false
+  }
+}
