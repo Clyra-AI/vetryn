@@ -87,8 +87,9 @@ shipping. `lifecycle_evidence_required` names the outputs produced later by `val
 `commit-push`, and Vetryn's specialized promote role: validation, high-risk structured review, shipping,
 pull-request lifecycle, post-merge, and canonical promotion evidence. Factoryd-only scope-closure artifacts are
 not required while Factoryd remains deferred. `lifecycle_evidence_refs` maps every required output to one
-deterministic JSON path under `product/plans/oss-v1/evidence/lifecycle/<task-id>/`; those artifacts are
-lifecycle-owned and remain outside the executor's allowed paths. An
+deterministic JSON path under `product/plans/oss-v1/evidence/lifecycle/<task-id>/<candidate-commit>/`; an initial
+packet uses `unbound` and cannot supply lifecycle evidence until the candidate is frozen and the packet is
+recompiled. Those artifacts are lifecycle-owned and remain outside the executor's allowed paths. An
 executor may report an acceptance item as implemented, partial, missing, or blocked, but that result does not
 change the ledger or accept the task. Any source drift requires recompilation; plan and lockfile digests in
 already-passing evidence remain immutable historical provenance.

@@ -550,7 +550,7 @@
     "repoRef": { "type": "string", "minLength": 1, "pattern": "^(?!/)(?!.*\\.\\.).+$" },
     "lifecycleArtifactRef": {
       "type": "string",
-      "pattern": "^product/plans/oss-v1/evidence/lifecycle/(M0|V1)-[0-9]{2}/[a-z_]+\\.json$"
+      "pattern": "^product/plans/oss-v1/evidence/lifecycle/(M0|V1)-[0-9]{2}/(?:unbound|[0-9a-f]{40})/[a-z_]+\\.json$"
     },
     "nonempty": { "type": "string", "minLength": 1 },
     "nonemptyUniqueStrings": {

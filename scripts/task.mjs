@@ -46,13 +46,32 @@ function lifecycleEvidenceForTask(task, trustReviewRequired) {
   ];
 }
 
-function lifecycleEvidenceRefsForTask(taskId, requiredEvidence) {
+function lifecycleEvidenceRefsForTask(taskId, candidateCommit, requiredEvidence) {
   return Object.fromEntries(
     requiredEvidence.map((artifact) => [
       artifact,
-      `product/plans/oss-v1/evidence/lifecycle/${taskId}/${artifact}.json`,
+      `product/plans/oss-v1/evidence/lifecycle/${taskId}/${candidateCommit ?? "unbound"}/${artifact}.json`,
     ]),
   );
+}
+
+function publishableDocumentationRefs(task) {
+  const refs = task.deliverables
+    .map((deliverable) => deliverable.match(/^packages\/([^/]+)\/\*\*$/)?.[1])
+    .filter(Boolean)
+    .map((packageName) => ({
+      path: `packages/${packageName}/README.md`,
+      reason: `Document the ${packageName} package's public contract for this task.`,
+    }));
+
+  if (task.scope.allowedPaths.includes("examples/openrouter-typescript/**"))
+    refs.push({
+      path: "examples/openrouter-typescript/README.md",
+      reason:
+        "Keep the golden repository commands aligned with this task's public package surface.",
+    });
+
+  return refs;
 }
 
 const runtimePins = {
@@ -250,12 +269,17 @@ async function compile(taskId) {
     evidence_required: workerEvidenceRequired,
     worker_evidence_required: workerEvidenceRequired,
     lifecycle_evidence_required: lifecycleEvidenceRequired,
-    lifecycle_evidence_refs: lifecycleEvidenceRefsForTask(task.id, lifecycleEvidenceRequired),
+    lifecycle_evidence_refs: lifecycleEvidenceRefsForTask(
+      task.id,
+      state.candidate?.commit,
+      lifecycleEvidenceRequired,
+    ),
     stop_conditions: [
       ...task.stopConditions,
       "A changed path is outside allowed_paths or matches forbidden_paths.",
       "A required validation command fails.",
       "The compiled packet or its source digests drift before handoff.",
+      "A lifecycle artifact is used while its ref is unbound or does not contain the exact candidate commit.",
       ...(highRiskTask
         ? [
             "The candidate reaches promotion or push without a candidate-bound passing review_report.",
@@ -370,18 +394,7 @@ async function compile(taskId) {
           },
         ]
       : publishablePackageTask
-        ? [
-            {
-              path: "packages/openrouter/README.md",
-              reason:
-                "Document the staged provider package's public offline and live-refresh contract.",
-            },
-            {
-              path: "examples/openrouter-typescript/README.md",
-              reason:
-                "Keep the golden repository commands aligned with the new package and CLI surface.",
-            },
-          ]
+        ? publishableDocumentationRefs(task)
         : [
             {
               path: plan.productContract,

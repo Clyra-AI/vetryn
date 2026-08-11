@@ -563,7 +563,8 @@
       "semanticInvariants": [
         "The correction authorizes only root files mechanically required to add and publish the V1-05 workspace package: .changeset/**, knip.json, package.json, pnpm-lock.yaml, and vitest.config.ts.",
         "A publishable-package task declares required release metadata, a minor Changeset marker, and package/example documentation sync in its compiled packet.",
-        "Every lifecycle evidence name has one deterministic repo-relative ref beneath the trusted Factory artifact namespace, and high-risk V1-05 names its review_report ref explicitly.",
+        "Every lifecycle evidence name has one immutable candidate-specific repo-relative ref beneath the trusted Factory artifact namespace, and high-risk V1-05 names its review_report ref explicitly.",
+        "Publishable-package documentation refs derive from the task's package deliverables and authorized example paths rather than from one provider-specific hard-coded list.",
         "V1-05 retains its existing product acceptance criteria, provider capability, high-risk review gates, retry limit, deterministic ranking policy, and fail-closed semantics.",
         "The process task changes no product source, fixture, dependency version, workflow, credential, provider call, or completed-task acceptance record."
       ],
@@ -583,7 +584,7 @@
         "provider": false,
         "githubWrite": false
       },
-      "maxAttempts": 1,
+      "maxAttempts": 2,
       "stopConditions": [
         "The correction authorizes a root path beyond .changeset/**, knip.json, package.json, pnpm-lock.yaml, or vitest.config.ts for V1-05.",
         "The correction changes V1-05 product behavior, acceptance criteria, capabilities, high-risk gates, attempt limit, or provider policy.",

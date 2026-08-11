@@ -19,8 +19,11 @@ local green result that fails in CI or silently disappears from a release.
 - Compiled packets with `.changeset/**` scope require a minor Changeset marker, package versioning intent, and
   package plus golden-example documentation sync.
 - Every compiled lifecycle evidence name maps one-to-one to a deterministic repository-relative JSON ref beneath
-  `product/plans/oss-v1/evidence/lifecycle/<task-id>/`. This makes high-risk `review_report` preflight executable
-  while keeping lifecycle-owned artifacts outside executor write scope.
+  `product/plans/oss-v1/evidence/lifecycle/<task-id>/<candidate-commit>/`. An unbound pre-candidate packet cannot
+  supply lifecycle evidence. This makes high-risk `review_report` preflight immutable and executable while keeping
+  lifecycle-owned artifacts outside executor write scope.
+- Publishable package documentation refs derive from the task's package deliverables and authorized example paths;
+  they are never hard-coded to an unrelated provider package.
 - The lockfile delta is limited to the new workspace importer, internal workspace links, and the already pinned
   toolchain. New third-party dependency versions require a separate reviewed scope change.
 

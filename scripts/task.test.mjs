@@ -634,7 +634,7 @@ describe("task packet compiler", () => {
     expect(packet.lifecycle_evidence_required).not.toContain("scope_closure_report");
     expect(Object.keys(packet.lifecycle_evidence_refs)).toEqual(packet.lifecycle_evidence_required);
     expect(packet.lifecycle_evidence_refs.trust_review_report).toBe(
-      "product/plans/oss-v1/evidence/lifecycle/V1-00/trust_review_report.json",
+      "product/plans/oss-v1/evidence/lifecycle/V1-00/unbound/trust_review_report.json",
     );
     expect(
       Object.values(packet.lifecycle_evidence_refs).every((artifactRef) =>
@@ -694,7 +694,7 @@ describe("task packet compiler", () => {
     });
     expect(packet.lifecycle_evidence_required).toContain("review_report");
     expect(packet.lifecycle_evidence_refs.review_report).toBe(
-      "product/plans/oss-v1/evidence/lifecycle/V1-00/review_report.json",
+      "product/plans/oss-v1/evidence/lifecycle/V1-00/unbound/review_report.json",
     );
     expect(packet.stop_conditions).toEqual(
       expect.arrayContaining([
@@ -751,10 +751,14 @@ describe("task packet compiler", () => {
     const statePath = "product/plans/oss-v1/state/V1-05.json";
     const state = await readFixtureJson(root, statePath);
     Object.assign(state, {
-      revision: 1,
-      state: "in_progress",
+      revision: 2,
+      state: "verification_pending",
       attempt: 1,
-      candidate: null,
+      candidate: {
+        baseCommit: "2222222222222222222222222222222222222222",
+        commit: "1111111111111111111111111111111111111111",
+        executor: "task-test-fixture",
+      },
       history: [
         ...state.history,
         {
@@ -763,6 +767,13 @@ describe("task packet compiler", () => {
           at: "2026-08-10T01:00:00Z",
           actor: "task-test-fixture",
           reason: "Exercise the actual V1-05 executable packet.",
+        },
+        {
+          from: "in_progress",
+          to: "verification_pending",
+          at: "2026-08-10T01:01:00Z",
+          actor: "task-test-fixture",
+          reason: "Bind lifecycle refs to the frozen fixture candidate.",
         },
       ],
     });
@@ -789,12 +800,31 @@ describe("task packet compiler", () => {
     expect(packet.versioning_impact).toContain("minor Changeset");
     expect(packet.docs_sync_refs.map(({ path: docPath }) => docPath)).toEqual([
       "packages/openrouter/README.md",
+      "packages/cli/README.md",
       "examples/openrouter-typescript/README.md",
     ]);
     expect(packet.lifecycle_evidence_refs.review_report).toBe(
-      "product/plans/oss-v1/evidence/lifecycle/V1-05/review_report.json",
+      "product/plans/oss-v1/evidence/lifecycle/V1-05/1111111111111111111111111111111111111111/review_report.json",
     );
     expect(Object.keys(packet.lifecycle_evidence_refs)).toEqual(packet.lifecycle_evidence_required);
+
+    task.deliverables = ["packages/typescript/**", "packages/cli/**"];
+    task.scope.allowedPaths = task.scope.allowedPaths.map((allowedPath) =>
+      allowedPath === "packages/openrouter/**" ? "packages/typescript/**" : allowedPath,
+    );
+    task.scope.forbiddenPaths = ["packages/openrouter/**", "action.yml"];
+    await writeFixtureJson(root, planPath, plan);
+    expect(runPlan(root, "write").status).toBe(0);
+
+    const alternateResult = runTask(root, "compile", "V1-05");
+    expect(alternateResult.status, alternateResult.stderr).toBe(0);
+    expect(
+      JSON.parse(alternateResult.stdout).docs_sync_refs.map(({ path: docPath }) => docPath),
+    ).toEqual([
+      "packages/typescript/README.md",
+      "packages/cli/README.md",
+      "examples/openrouter-typescript/README.md",
+    ]);
   }, 10_000);
 
   it("routes the actual V1-06 trust gate through the domain review skill", async () => {
