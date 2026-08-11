@@ -214,7 +214,7 @@ function scanOpenAIChatCompletion({
     });
   }
 
-  if (hasComputedPropertyAfter(options, modelProperty)) {
+  if (hasModelOverrideAfter(options, modelProperty)) {
     return createFinding({
       ...base,
       confidence: "ambiguous",
@@ -415,15 +415,18 @@ function hasSymbol(
   return symbol !== undefined && symbols.has(symbol);
 }
 
-function hasComputedPropertyAfter(
+function hasModelOverrideAfter(
   options: ts.ObjectLiteralExpression,
   modelProperty: ts.ObjectLiteralElementLike,
 ): boolean {
   const modelPropertyIndex = options.properties.indexOf(modelProperty);
   return options.properties.slice(modelPropertyIndex + 1).some((property) => {
-    if (ts.isSpreadAssignment(property) || !ts.isComputedPropertyName(property.name)) return false;
-    const computedName = staticPropertyName(property.name);
-    return computedName === undefined || computedName === "model";
+    if (ts.isSpreadAssignment(property)) return true;
+    if (ts.isComputedPropertyName(property.name)) {
+      const computedName = staticPropertyName(property.name);
+      return computedName === undefined || computedName === "model";
+    }
+    return propertyName(property.name) === "model";
   });
 }
 
