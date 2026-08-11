@@ -2,27 +2,31 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "M0-07",
-  "revision": 28,
-  "state": "in_progress",
+  "revision": 29,
+  "state": "accepted",
   "attempt": 3,
-  "candidate": null,
+  "candidate": {
+    "baseCommit": "08c3ef067e6be834142b6bd6cb3a17c406e4ea3b",
+    "commit": "b2d9198f09a4524d4e62bafbc1f91db82f1878f0",
+    "executor": "implementation-agent"
+  },
   "criteria": [
     {
       "criterionId": "PROCESS-008",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-07-repo-check-b2d9198"]
     }
   ],
   "gates": [
     {
       "gateId": "QG-PLAN-CHECK",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-07-plan-check-b2d9198"]
     },
     {
       "gateId": "QG-REPO-CHECK",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-07-repo-check-b2d9198"]
     }
   ],
   "reviews": [],
@@ -230,6 +234,13 @@
       "at": "2026-08-11T19:29:00Z",
       "actor": "implementation-agent",
       "reason": "Continued the same third review-correction attempt to bind recompilation to the frozen candidate's exact task and gate policy while preserving unrelated plan edits."
+    },
+    {
+      "from": "in_progress",
+      "to": "accepted",
+      "at": "2026-08-11T19:31:37Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer accepted the exact frozen-policy candidate after unrelated-plan validation and recompilation passed, relevant task-policy validation and recompilation failed, and the full repository gate passed."
     }
   ]
 }

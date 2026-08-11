@@ -1,0 +1,35 @@
+{
+  "$schema": "../../schemas/evidence.schema.json",
+  "schemaVersion": "1.0.0",
+  "id": "ev-m0-07-repo-check-b2d9198",
+  "taskId": "M0-07",
+  "type": "command-run",
+  "actor": "validation-agent",
+  "commit": "b2d9198f09a4524d4e62bafbc1f91db82f1878f0",
+  "createdAt": "2026-08-11T19:31:37Z",
+  "result": {
+    "status": "pass",
+    "checks": [
+      {
+        "name": "pnpm check",
+        "status": "pass",
+        "summary": "The exact frozen-policy candidate passed formatting, plan validation, lint, dead-code analysis, typechecking, all 142 repository tests, build, and package smoke checks, including both validation and recompilation paths for unrelated and relevant plan edits."
+      }
+    ]
+  },
+  "inputs": {
+    "planDigest": "sha256:adc02ffe5452d2b6caa6520031ff5359ba86d7896285ed2fa8e7f16ec08b841c",
+    "lockfileDigest": "sha256:0568848490d539fc4b1a4cd53c2ddd95108a15a0ad1ea37ff6c14f1b748db6ac"
+  },
+  "gateBinding": {
+    "gateId": "QG-REPO-CHECK",
+    "kind": "command",
+    "command": "pnpm check"
+  },
+  "review": null,
+  "redaction": {
+    "status": "not_applicable",
+    "containsRawModelOutput": false,
+    "containsSecrets": false
+  }
+}
