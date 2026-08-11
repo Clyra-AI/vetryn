@@ -2,27 +2,31 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "M0-02",
-  "revision": 2,
-  "state": "in_progress",
+  "revision": 3,
+  "state": "accepted",
   "attempt": 0,
-  "candidate": null,
+  "candidate": {
+    "baseCommit": "5322bdfce5304b1e178c45875d04659b93adcc78",
+    "commit": "14c7c62a7e4714ee83e285af0d2aace6d61ac234",
+    "executor": "davidahmann"
+  },
   "criteria": [
     {
       "criterionId": "PROCESS-003",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-02-repo-check-14c7c62"]
     }
   ],
   "gates": [
     {
       "gateId": "QG-PLAN-CHECK",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-02-plan-check-14c7c62"]
     },
     {
       "gateId": "QG-REPO-CHECK",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-02-repo-check-14c7c62"]
     }
   ],
   "reviews": [],
@@ -55,6 +59,13 @@
       "at": "2026-08-11T01:01:30Z",
       "actor": "davidahmann",
       "reason": "Reopened M0-02 to bind concrete Codex review repairs to a fresh exact candidate."
+    },
+    {
+      "from": "in_progress",
+      "to": "accepted",
+      "at": "2026-08-11T01:01:53Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer accepted the exact review-repair candidate after active planning and repository command gates passed."
     }
   ]
 }
