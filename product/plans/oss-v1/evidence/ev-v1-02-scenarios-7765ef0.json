@@ -1,0 +1,35 @@
+{
+  "$schema": "../../schemas/evidence.schema.json",
+  "schemaVersion": "1.0.0",
+  "id": "ev-v1-02-scenarios-7765ef0",
+  "taskId": "V1-02",
+  "type": "command-run",
+  "actor": "davidahmann",
+  "commit": "7765ef0d37b6a622f973ad70a28c0d5ace293b66",
+  "createdAt": "2026-08-11T02:04:28Z",
+  "result": {
+    "status": "pass",
+    "checks": [
+      {
+        "name": "pnpm test:scenarios",
+        "status": "pass",
+        "summary": "The exact candidate passed seven semantic offline scenarios covering a real OpenAI SDK replay through an injected compatible transport, reviewed cases, pinned replay, success and abstention outcomes, retry and budget bounds, invalid usage and unknown-outcome abstention, real source-fingerprint refusal, and runtime-marker redaction."
+      }
+    ]
+  },
+  "inputs": {
+    "planDigest": "sha256:2b2ef1a658fedbfa4fafea4c6bf8029b070ae1c1dc1a0977e8aa1236c7dd57d0",
+    "lockfileDigest": "sha256:b6ea1c788e4f17af516bdf10745fcb27f4f49c29065fc4616c374334f88ac2ae"
+  },
+  "gateBinding": {
+    "gateId": "QG-SCENARIOS",
+    "kind": "command",
+    "command": "pnpm test:scenarios"
+  },
+  "review": null,
+  "redaction": {
+    "status": "verified",
+    "containsRawModelOutput": false,
+    "containsSecrets": false
+  }
+}
