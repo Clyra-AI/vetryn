@@ -16,4 +16,5 @@ CI results or agent assertions. Named reviewer records are advisory during ADR-0
 `pnpm --silent task:compile -- TASK-ID` emits both Vetryn's canonical task/state/gate view and the explicit
 runner-ready fields required by Factory's `task-executor`. Worker-owned evidence is separated from CI, review,
 shipping, scope-closure, and post-merge lifecycle evidence; executor acceptance results never update this ledger
-or generated progress.
+or generated progress. Generic Factory workers and repository-specific domain reviews are separate packet fields;
+an active `QG-TRUST-REVIEW` requires the `vetryn-trust-review` step and its candidate-bound report.

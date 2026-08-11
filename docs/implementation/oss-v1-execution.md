@@ -73,6 +73,11 @@ task and risk, allowed and forbidden paths, scope exclusions, baseline/red-first
 chain, lifecycle gates, retry budget, runtime pins, Factory compatibility, policy references, documentation and
 release intent, and item-level acceptance-result requirements.
 
+`required_worker_chain` names generic Factory workers. `required_domain_review_chain` separately names the
+repository skill required by an active domain gate; `QG-TRUST-REVIEW` therefore emits `vetryn-trust-review`, sets
+`trust_review_required`, and requires a candidate-bound `trust_review_report`. A generic code review cannot satisfy
+that semantic gate.
+
 `evidence_required` and `worker_evidence_required` contain only evidence the executor can produce before
 shipping. `lifecycle_evidence_required` names the outputs produced later by `validation-gate`, `code-review`,
 `commit-push`, and Vetryn's specialized promote role: validation, high-risk structured review, shipping,

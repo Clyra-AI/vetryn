@@ -37,10 +37,11 @@ function factorySkillsForTask(task) {
   ];
 }
 
-function lifecycleEvidenceForTask(task) {
+function lifecycleEvidenceForTask(task, trustReviewRequired) {
   return [
     ...baseLifecycleEvidenceRequired.slice(0, 1),
     ...(task.risk.level === "high" ? ["review_report"] : []),
+    ...(trustReviewRequired ? ["trust_review_report"] : []),
     ...baseLifecycleEvidenceRequired.slice(1),
   ];
 }
@@ -190,8 +191,9 @@ async function compile(taskId) {
   });
   const planningContractTask = task.deliverables.includes("product/plans/**");
   const highRiskTask = task.risk.level === "high";
+  const trustReviewRequired = task.requiredGates.includes("QG-TRUST-REVIEW");
   const factorySkills = factorySkillsForTask(task);
-  const lifecycleEvidenceRequired = lifecycleEvidenceForTask(task);
+  const lifecycleEvidenceRequired = lifecycleEvidenceForTask(task, trustReviewRequired);
   const sourceFiles = [
     plan.productContract,
     sourcePaths.plan,
@@ -223,10 +225,12 @@ async function compile(taskId) {
     red_first_commands: ["pnpm test"],
     final_validation_commands: ["pnpm check"],
     required_worker_chain: factorySkills,
+    required_domain_review_chain: trustReviewRequired ? ["vetryn-trust-review"] : [],
     lifecycle_gates: {
       local_validation_required: true,
       ci_required: true,
       code_review_required: highRiskTask,
+      trust_review_required: trustReviewRequired,
       codex_review_required: false,
       commit_push_required: true,
       post_merge_monitor_required: true,
@@ -245,6 +249,11 @@ async function compile(taskId) {
         ? [
             "The candidate reaches promotion or push without a candidate-bound passing review_report.",
             "Product or contract-bearing candidate changes occur after local structured review without invalidating and rerunning that review.",
+          ]
+        : []),
+      ...(trustReviewRequired
+        ? [
+            "The candidate reaches promotion or push without a candidate-bound passing trust_review_report from vetryn-trust-review.",
           ]
         : []),
     ],
@@ -329,6 +338,11 @@ async function compile(taskId) {
           {
             path: "docs/adr/0003-bind-task-execution-and-review-evidence.md",
             reason: "Record the additive public task-packet contract decision.",
+          },
+          {
+            path: "docs/adr/0010-require-local-and-domain-review-evidence.md",
+            reason:
+              "Record the local and domain review security boundary and compatibility impact.",
           },
           {
             path: "product/plans/oss-v1/README.md",

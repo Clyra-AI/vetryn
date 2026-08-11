@@ -2,7 +2,7 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "M0-06",
-  "revision": 2,
+  "revision": 3,
   "state": "in_progress",
   "attempt": 1,
   "candidate": null,
@@ -48,6 +48,13 @@
       "at": "2026-08-11T18:00:00Z",
       "actor": "davidahmann",
       "reason": "Authorized the plan-test fixture path required to keep the canonical plan harness isolated after adding M0-06."
+    },
+    {
+      "from": "in_progress",
+      "to": "in_progress",
+      "at": "2026-08-11T19:00:00Z",
+      "actor": "implementation-agent",
+      "reason": "Addressed local review findings by machine-binding domain trust review, narrowing the workflow stop condition, and documenting the packet security boundary."
     }
   ]
 }

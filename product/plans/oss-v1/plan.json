@@ -240,6 +240,7 @@
           "docs/adr/0006-bootstrap-merge-governance.md",
           "docs/adr/0009-single-maintainer-v1-delivery.md",
           "docs/agent-map.md",
+          "docs/adr/0010-require-local-and-domain-review-evidence.md",
           "docs/implementation/oss-v1-execution.md",
           "package.json",
           "product/plans/**",
@@ -513,8 +514,10 @@
       "deliverables": [
         ".agents/skills/vetryn-trust-review/**",
         "scripts/task.mjs",
+        "product/plans/**",
         "product/plans/schemas/task-packet.schema.json",
-        "WORKFLOW.md"
+        "WORKFLOW.md",
+        "docs/adr/0010-require-local-and-domain-review-evidence.md"
       ],
       "requiredTestLevels": ["static", "contract", "adversarial"],
       "requiredGates": ["QG-PLAN-CHECK", "QG-REPO-CHECK"],
@@ -530,7 +533,7 @@
         "A high-risk packet can reach promotion or push without candidate-bound local review evidence.",
         "Local review replaces deterministic gates or remote latest-head Codex review.",
         "The trust-review skill gains implementation, acceptance, promotion, merge, provider, credential, or GitHub-write authority.",
-        "A product source, package, fixture, workflow, capability, or completed-task acceptance record changes."
+        "A product source, package, fixture, CI or GitHub workflow, capability, or completed-task acceptance record changes; the authorized WORKFLOW.md operating-contract edit is excluded."
       ]
     },
     {

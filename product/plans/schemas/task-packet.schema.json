@@ -21,6 +21,7 @@
     "red_first_commands",
     "final_validation_commands",
     "required_worker_chain",
+    "required_domain_review_chain",
     "lifecycle_gates",
     "evidence_required",
     "worker_evidence_required",
@@ -89,6 +90,11 @@
       },
       "contains": { "const": "task-executor" }
     },
+    "required_domain_review_chain": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "const": "vetryn-trust-review" }
+    },
     "lifecycle_gates": {
       "type": "object",
       "additionalProperties": false,
@@ -96,6 +102,7 @@
         "local_validation_required",
         "ci_required",
         "code_review_required",
+        "trust_review_required",
         "codex_review_required",
         "commit_push_required",
         "post_merge_monitor_required",
@@ -106,6 +113,7 @@
         "local_validation_required": { "type": "boolean" },
         "ci_required": { "type": "boolean" },
         "code_review_required": { "type": "boolean" },
+        "trust_review_required": { "type": "boolean" },
         "codex_review_required": { "type": "boolean" },
         "commit_push_required": { "type": "boolean" },
         "post_merge_monitor_required": { "type": "boolean" },
@@ -444,6 +452,49 @@
               }
             },
             "required": ["factorySkills"]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "gates": {
+            "type": "array",
+            "contains": {
+              "type": "object",
+              "properties": { "id": { "const": "QG-TRUST-REVIEW" } },
+              "required": ["id"]
+            }
+          }
+        },
+        "required": ["gates"]
+      },
+      "then": {
+        "properties": {
+          "required_domain_review_chain": { "const": ["vetryn-trust-review"] },
+          "lifecycle_gates": {
+            "type": "object",
+            "properties": { "trust_review_required": { "const": true } },
+            "required": ["trust_review_required"]
+          },
+          "lifecycle_evidence_required": {
+            "type": "array",
+            "contains": { "const": "trust_review_report" }
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "required_domain_review_chain": { "const": [] },
+          "lifecycle_gates": {
+            "type": "object",
+            "properties": { "trust_review_required": { "const": false } },
+            "required": ["trust_review_required"]
+          },
+          "lifecycle_evidence_required": {
+            "type": "array",
+            "not": { "contains": { "const": "trust_review_report" } }
           }
         }
       }

@@ -588,9 +588,11 @@ describe("task packet compiler", () => {
       "commit-push",
     ]);
     expect(packet.required_worker_chain).not.toContain("ship-pr");
+    expect(packet.required_domain_review_chain).toEqual(["vetryn-trust-review"]);
     expect(packet.worker_evidence_required).toEqual(packet.evidence_required);
     expect(packet.lifecycle_evidence_required).toEqual([
       "validation_report",
+      "trust_review_report",
       "github_review_evidence",
       "ship_packet",
       "pr_lifecycle_report",
@@ -600,6 +602,7 @@ describe("task packet compiler", () => {
     expect(packet.lifecycle_evidence_required).not.toContain("scope_closure_report");
     expect(packet.lifecycle_gates).toMatchObject({
       code_review_required: false,
+      trust_review_required: true,
       codex_review_required: false,
       post_merge_monitor_required: true,
       pr_lifecycle_report_required: true,
@@ -687,6 +690,58 @@ describe("task packet compiler", () => {
       ]),
     );
   });
+
+  it("routes the actual V1-06 trust gate through the domain review skill", async () => {
+    const root = await createFixture();
+    const planPath = "product/plans/oss-v1/plan.json";
+    const plan = await readFixtureJson(root, planPath);
+    plan.tasks.find((task) => task.id === "V1-06").dependsOn = [];
+    await writeFixtureJson(root, planPath, plan);
+
+    const statePath = "product/plans/oss-v1/state/V1-06.json";
+    const state = await readFixtureJson(root, statePath);
+    Object.assign(state, {
+      revision: 1,
+      state: "in_progress",
+      attempt: 1,
+      candidate: null,
+      history: [
+        ...state.history,
+        {
+          from: "planned",
+          to: "in_progress",
+          at: "2026-08-10T01:00:00Z",
+          actor: "task-test-fixture",
+          reason: "Exercise the actual V1-06 executable packet.",
+        },
+      ],
+    });
+    await writeFixtureJson(root, statePath, state);
+    const writeResult = runPlan(root, "write");
+    expect(writeResult.status, writeResult.stderr).toBe(0);
+
+    const result = runTask(root, "compile", "V1-06");
+    expect(result.status, result.stderr).toBe(0);
+    const packet = JSON.parse(result.stdout);
+    expect(packet.required_domain_review_chain).toEqual(["vetryn-trust-review"]);
+    expect(packet.lifecycle_gates.trust_review_required).toBe(true);
+    expect(packet.lifecycle_evidence_required).toContain("trust_review_report");
+    expect(packet.stop_conditions).toEqual(
+      expect.arrayContaining([expect.stringContaining("vetryn-trust-review")]),
+    );
+
+    const schema = await readFixtureJson(root, "product/plans/schemas/task-packet.schema.json");
+    const ajv = new Ajv2020({ allErrors: true, strict: true, allowUnionTypes: true });
+    addFormats(ajv);
+    const validate = ajv.compile(schema);
+    const unsafe = globalThis.structuredClone(packet);
+    unsafe.required_domain_review_chain = [];
+    unsafe.lifecycle_gates.trust_review_required = false;
+    unsafe.lifecycle_evidence_required = unsafe.lifecycle_evidence_required.filter(
+      (item) => item !== "trust_review_report",
+    );
+    expect(validate(unsafe)).toBe(false);
+  }, 10_000);
 
   it("preserves reviewed capability denials while declaring separate maintainer delivery authority", async () => {
     const root = await createFixture();
