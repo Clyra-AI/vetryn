@@ -2,42 +2,46 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "V1-02",
-  "revision": 1,
-  "state": "in_progress",
+  "revision": 2,
+  "state": "accepted",
   "attempt": 1,
-  "candidate": null,
+  "candidate": {
+    "baseCommit": "8526a1b8c4d3910190862771038e7fd68e2fc915",
+    "commit": "7112217248c123fd3f2327a4cae29efc6b3f84bb",
+    "executor": "davidahmann"
+  },
   "criteria": [
     {
       "criterionId": "GOLDEN-001",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-02-scenarios-7112217"]
     },
     {
       "criterionId": "GOLDEN-002",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-02-scenarios-7112217"]
     },
     {
       "criterionId": "GOLDEN-003",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-02-scenarios-7112217"]
     },
     {
       "criterionId": "GOLDEN-004",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-02-scenarios-7112217"]
     }
   ],
   "gates": [
     {
       "gateId": "QG-REPO-CHECK",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-02-repo-check-7112217"]
     },
     {
       "gateId": "QG-SCENARIOS",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-02-scenarios-7112217"]
     },
     {
       "gateId": "QG-INDEPENDENT-VERIFY",
@@ -77,6 +81,13 @@
       "at": "2026-08-11T01:25:35Z",
       "actor": "davidahmann",
       "reason": "Maintainer started the legal offline golden-repository task after V1-00 and M0-02 acceptance."
+    },
+    {
+      "from": "in_progress",
+      "to": "accepted",
+      "at": "2026-08-11T01:38:37Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer accepted the independently verified exact candidate after active scenario and repository command gates passed under ADR 0009 single-maintainer delivery."
     }
   ]
 }
