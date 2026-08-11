@@ -354,6 +354,48 @@
       ]
     },
     {
+      "id": "M0-03",
+      "milestone": "M0",
+      "title": "Authorize one V1-02 review-correction attempt",
+      "objective": "Record a narrowly bounded maintainer reauthorization for one fresh V1-02 candidate that addresses five exact review findings without letting V1-02 alter its own delivery boundary.",
+      "risk": { "level": "medium", "domains": ["delivery-policy", "provenance"] },
+      "dependsOn": [{ "taskId": "M0-02", "kind": "hard" }],
+      "acceptanceItemIds": ["PROCESS-004"],
+      "scope": {
+        "allowedPaths": [
+          "product/plans/oss-v1/**",
+          "scripts/plan.test.mjs",
+          "scripts/task.test.mjs"
+        ],
+        "forbiddenPaths": ["packages/**", "examples/**", "action.yml", ".github/**"]
+      },
+      "semanticInvariants": [
+        "The reauthorization is limited to exactly one additional V1-02 attempt: its canonical state records two consumed attempts, revision 1, and maxAttempts 3.",
+        "The only authorized application replay correction is r3754744063: replay the real application call through a deterministic OpenAI-compatible transport.",
+        "The only authorized unknown-outcome correction is r3754744064: reject unknown mock outcomes rather than reporting success.",
+        "The only authorized stale-source correction is r3754744067: bind refusal to the checked-in source and manifest fingerprint.",
+        "The only authorized budget correction is r3754790013: propagate provider budget exhaustion through the SDK-compatible transport.",
+        "The only authorized typecheck correction is r3754790019: run golden-fixture typechecking through the repository quality gate.",
+        "The process task does not implement product behavior, broaden V1-02 capabilities, or weaken offline, redaction, or fail-closed requirements.",
+        "V1-02 cannot begin its reauthorized attempt until this task is accepted with candidate-bound command evidence."
+      ],
+      "deliverables": ["product/plans/oss-v1/**", "scripts/plan.test.mjs", "scripts/task.test.mjs"],
+      "requiredTestLevels": ["static", "contract"],
+      "requiredGates": ["QG-PLAN-CHECK", "QG-REPO-CHECK"],
+      "requiredReviews": [],
+      "capabilities": {
+        "network": false,
+        "credentials": false,
+        "provider": false,
+        "githubWrite": false
+      },
+      "maxAttempts": 1,
+      "stopConditions": [
+        "The reauthorization expands beyond one V1-02 attempt or beyond the five recorded review findings.",
+        "A product source, package, fixture, workflow, capability, or safety requirement is changed by this process task."
+      ]
+    },
+    {
       "id": "V1-02",
       "milestone": "M1",
       "title": "Build the deterministic golden repository",
@@ -361,7 +403,8 @@
       "risk": { "level": "medium", "domains": ["fixtures", "reproducibility"] },
       "dependsOn": [
         { "taskId": "V1-00", "kind": "hard" },
-        { "taskId": "M0-02", "kind": "hard" }
+        { "taskId": "M0-02", "kind": "hard" },
+        { "taskId": "M0-03", "kind": "hard" }
       ],
       "acceptanceItemIds": ["GOLDEN-001", "GOLDEN-002", "GOLDEN-003", "GOLDEN-004"],
       "scope": {
@@ -375,7 +418,8 @@
       },
       "semanticInvariants": [
         "The golden suite runs without network access.",
-        "Fixture secrets and protected output markers never appear in logs or reports."
+        "Fixture secrets and protected output markers never appear in logs or reports.",
+        "This reauthorized attempt is limited to r3754744063 application replay, r3754744064 unknown-outcome rejection, r3754744067 stale-source binding, r3754790013 transport budget propagation, and r3754790019 golden-fixture typechecking."
       ],
       "deliverables": ["examples/openrouter-typescript/**"],
       "requiredTestLevels": ["contract", "integration", "e2e", "adversarial"],
@@ -392,10 +436,11 @@
         "provider": false,
         "githubWrite": false
       },
-      "maxAttempts": 2,
+      "maxAttempts": 3,
       "stopConditions": [
         "A scenario depends on live provider state.",
-        "Expected snapshots replace semantic assertions."
+        "Expected snapshots replace semantic assertions.",
+        "A proposed change cannot be traced to one of the five M0-03 authorization findings."
       ]
     },
     {

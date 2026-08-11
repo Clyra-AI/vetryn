@@ -2,9 +2,9 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "V1-02",
-  "revision": 0,
+  "revision": 1,
   "state": "planned",
-  "attempt": 0,
+  "attempt": 2,
   "candidate": null,
   "criteria": [
     {
@@ -70,6 +70,55 @@
       "at": "2026-08-10T00:30:00Z",
       "actor": "planning-agent",
       "reason": "Task created by the canonical OSS V1 plan."
+    },
+    {
+      "from": "planned",
+      "to": "in_progress",
+      "at": "2026-08-11T01:30:00Z",
+      "actor": "davidahmann",
+      "reason": "Started the first original implementation attempt before producing a pull-request candidate."
+    },
+    {
+      "from": "in_progress",
+      "to": "verification_pending",
+      "at": "2026-08-11T01:44:00Z",
+      "actor": "davidahmann",
+      "reason": "Submitted the first original candidate for command and review verification."
+    },
+    {
+      "from": "verification_pending",
+      "to": "changes_requested",
+      "at": "2026-08-11T01:45:20Z",
+      "actor": "davidahmann",
+      "reason": "First pull-request candidate was returned for concrete review corrections before canonical acceptance."
+    },
+    {
+      "from": "changes_requested",
+      "to": "in_progress",
+      "at": "2026-08-11T01:46:00Z",
+      "actor": "davidahmann",
+      "reason": "Started the second original implementation attempt to address the first review corrections."
+    },
+    {
+      "from": "in_progress",
+      "to": "verification_pending",
+      "at": "2026-08-11T01:56:00Z",
+      "actor": "davidahmann",
+      "reason": "Submitted the second original candidate for command and review verification."
+    },
+    {
+      "from": "verification_pending",
+      "to": "changes_requested",
+      "at": "2026-08-11T01:57:19Z",
+      "actor": "davidahmann",
+      "reason": "Second pull-request candidate exhausted the original two-attempt budget with further concrete review corrections; no V1-02 candidate was accepted."
+    },
+    {
+      "from": "changes_requested",
+      "to": "planned",
+      "at": "2026-08-11T01:57:20Z",
+      "actor": "davidahmann",
+      "reason": "Returned to planning after the original attempt budget was exhausted; any further attempt requires a separate accepted authorization task."
     }
   ]
 }

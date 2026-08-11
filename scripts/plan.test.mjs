@@ -15,7 +15,7 @@ const planScript = path.join(repositoryRoot, "scripts/plan.mjs");
 const temporaryRoots = [];
 const bootstrapCommentId = 987654321;
 const v1TaskId = "V1-00";
-const fixtureTaskIds = [v1TaskId, "M0-01", "M0-02", "V1-01"];
+const fixtureTaskIds = [v1TaskId, "M0-01", "M0-02", "M0-03", "V1-01"];
 
 function bootstrapBody(overrides = {}) {
   const values = {
@@ -70,6 +70,64 @@ function runPlan(root, command = "check", env = {}) {
     encoding: "utf8",
     env: { ...process.env, ...env, VETRYN_PLAN_REPO_ROOT: root },
   });
+}
+
+const reauthorizationFindingIds = [
+  "r3754744063",
+  "r3754744064",
+  "r3754744067",
+  "r3754790013",
+  "r3754790019",
+];
+const reauthorizationRemedyInvariants = [
+  "The only authorized application replay correction is r3754744063: replay the real application call through a deterministic OpenAI-compatible transport.",
+  "The only authorized unknown-outcome correction is r3754744064: reject unknown mock outcomes rather than reporting success.",
+  "The only authorized stale-source correction is r3754744067: bind refusal to the checked-in source and manifest fingerprint.",
+  "The only authorized budget correction is r3754790013: propagate provider budget exhaustion through the SDK-compatible transport.",
+  "The only authorized typecheck correction is r3754790019: run golden-fixture typechecking through the repository quality gate.",
+];
+const m003AuthorizedInvariantSet = [
+  "The reauthorization is limited to exactly one additional V1-02 attempt: its canonical state records two consumed attempts, revision 1, and maxAttempts 3.",
+  ...reauthorizationRemedyInvariants,
+  "The process task does not implement product behavior, broaden V1-02 capabilities, or weaken offline, redaction, or fail-closed requirements.",
+  "V1-02 cannot begin its reauthorized attempt until this task is accepted with candidate-bound command evidence.",
+];
+const v102AuthorizedInvariantSet = [
+  "The golden suite runs without network access.",
+  "Fixture secrets and protected output markers never appear in logs or reports.",
+  "This reauthorized attempt is limited to r3754744063 application replay, r3754744064 unknown-outcome rejection, r3754744067 stale-source binding, r3754790013 transport budget propagation, and r3754790019 golden-fixture typechecking.",
+];
+
+function assertV102ReauthorizationBoundary(plan, v102State, m003State) {
+  const m003Task = plan.tasks.find((task) => task.id === "M0-03");
+  const v102Task = plan.tasks.find((task) => task.id === "V1-02");
+  const m003AcceptedAt = m003State.history.find((entry) => entry.to === "accepted")?.at;
+  const priorV102History = v102State.history.filter(
+    (entry) => m003AcceptedAt !== undefined && entry.at < m003AcceptedAt,
+  );
+  const findingIds = (task) =>
+    [...task.semanticInvariants.join(" ").matchAll(/r[0-9]{10}/gu)].map(([id]) => id).sort();
+
+  expect(m003Task).toBeDefined();
+  expect(v102Task).toBeDefined();
+  if (m003Task === undefined || v102Task === undefined || m003AcceptedAt === undefined)
+    throw new Error("M0-03 and V1-02 reauthorization records must be present");
+
+  expect(m003Task.maxAttempts).toBe(1);
+  expect(v102Task.maxAttempts).toBe(3);
+  expect(v102Task.dependsOn).toContainEqual({ taskId: "M0-03", kind: "hard" });
+  expect(findingIds(m003Task)).toEqual(reauthorizationFindingIds);
+  expect(findingIds(v102Task)).toEqual(reauthorizationFindingIds);
+  expect(m003Task.semanticInvariants).toEqual(m003AuthorizedInvariantSet);
+  expect(v102Task.semanticInvariants).toEqual(v102AuthorizedInvariantSet);
+  expect(priorV102History.filter((entry) => entry.to === "in_progress")).toHaveLength(2);
+  expect(priorV102History.filter((entry) => entry.to === "verification_pending")).toHaveLength(2);
+  expect(priorV102History.filter((entry) => entry.to === "changes_requested")).toHaveLength(2);
+  if (["planned", "ready"].includes(v102State.state)) {
+    expect(v102State.attempt).toBe(2);
+  } else {
+    expect(v102State.attempt).toBe(3);
+  }
 }
 
 async function normalizeV1Fixture(root) {
@@ -169,6 +227,41 @@ async function normalizeV1Fixture(root) {
     ],
   });
   await writeFixtureJson(root, goldenScenarioSkillStatePath, goldenScenarioSkillState);
+
+  const reauthorizationStatePath = "product/plans/oss-v1/state/M0-03.json";
+  const reauthorizationState = await readFixtureJson(root, reauthorizationStatePath);
+  Object.assign(reauthorizationState, {
+    revision: 0,
+    state: "planned",
+    attempt: 0,
+    candidate: null,
+    criteria: reauthorizationState.criteria.map((criterion) => ({
+      ...criterion,
+      status: "pending",
+      evidenceRefs: [],
+    })),
+    gates: reauthorizationState.gates.map((gate) => ({
+      ...gate,
+      status: "pending",
+      evidenceRefs: [],
+    })),
+    reviews: reauthorizationState.reviews.map((review) => ({
+      ...review,
+      status: "pending",
+      evidenceRefs: [],
+    })),
+    blockers: [],
+    history: [
+      {
+        from: null,
+        to: "planned",
+        at: "2026-08-10T00:00:00Z",
+        actor: "plan-test-fixture",
+        reason: "Reset the reauthorization process task with the V1-00 fixture baseline.",
+      },
+    ],
+  });
+  await writeFixtureJson(root, reauthorizationStatePath, reauthorizationState);
 
   const dependentStatePath = "product/plans/oss-v1/state/V1-01.json";
   const dependentState = await readFixtureJson(root, dependentStatePath);
@@ -359,6 +452,54 @@ afterEach(async () => {
 });
 
 describe("implementation plan validator", () => {
+  it("locks the M0-03 one-attempt, five-finding V1-02 reauthorization boundary", async () => {
+    const planPath = "product/plans/oss-v1/plan.json";
+    const v102StatePath = "product/plans/oss-v1/state/V1-02.json";
+    const m003StatePath = "product/plans/oss-v1/state/M0-03.json";
+    const plan = await readFixtureJson(repositoryRoot, planPath);
+    const v102State = await readFixtureJson(repositoryRoot, v102StatePath);
+    const m003State = await readFixtureJson(repositoryRoot, m003StatePath);
+
+    assertV102ReauthorizationBoundary(plan, v102State, m003State);
+
+    const tooManyAttempts = JSON.parse(JSON.stringify(plan));
+    tooManyAttempts.tasks.find((task) => task.id === "V1-02").maxAttempts = 4;
+    expect(() =>
+      assertV102ReauthorizationBoundary(tooManyAttempts, v102State, m003State),
+    ).toThrow();
+
+    const missingFinding = JSON.parse(JSON.stringify(plan));
+    missingFinding.tasks.find((task) => task.id === "M0-03").semanticInvariants =
+      missingFinding.tasks
+        .find((task) => task.id === "M0-03")
+        .semanticInvariants.filter((invariant) => !invariant.includes("r3754790019"));
+    expect(() => assertV102ReauthorizationBoundary(missingFinding, v102State, m003State)).toThrow();
+
+    const alteredRemedy = JSON.parse(JSON.stringify(plan));
+    alteredRemedy.tasks.find((task) => task.id === "M0-03").semanticInvariants = alteredRemedy.tasks
+      .find((task) => task.id === "M0-03")
+      .semanticInvariants.map((invariant) =>
+        invariant.replace(
+          "reject unknown mock outcomes",
+          "report unknown mock outcomes as success",
+        ),
+      );
+    expect(() => assertV102ReauthorizationBoundary(alteredRemedy, v102State, m003State)).toThrow();
+
+    const extraCorrection = JSON.parse(JSON.stringify(plan));
+    extraCorrection.tasks
+      .find((task) => task.id === "V1-02")
+      .semanticInvariants.push("An additional authorization invariant without a review ID.");
+    expect(() =>
+      assertV102ReauthorizationBoundary(extraCorrection, v102State, m003State),
+    ).toThrow();
+
+    const staleActiveAttempt = JSON.parse(JSON.stringify(v102State));
+    staleActiveAttempt.state = "in_progress";
+    staleActiveAttempt.attempt = 2;
+    expect(() => assertV102ReauthorizationBoundary(plan, staleActiveAttempt, m003State)).toThrow();
+  });
+
   it("normalizes promoted V1-00 lifecycle data back to the isolated fixture baseline", async () => {
     const root = await createFixture();
     const evidence = await createV1Evidence(root, { id: "ev-v1-promoted-fixture" });
