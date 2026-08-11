@@ -2,27 +2,31 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "M0-05",
-  "revision": 1,
-  "state": "in_progress",
+  "revision": 2,
+  "state": "accepted",
   "attempt": 1,
-  "candidate": null,
+  "candidate": {
+    "baseCommit": "1451a4d0b68ac13cd64cf39bb4c93e54abb00185",
+    "commit": "05c6371800b9291c7155bde20686ba6effaa25b1",
+    "executor": "implementation-agent"
+  },
   "criteria": [
     {
       "criterionId": "PROCESS-006",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-05-repo-check-05c6371"]
     }
   ],
   "gates": [
     {
       "gateId": "QG-PLAN-CHECK",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-05-plan-check-05c6371"]
     },
     {
       "gateId": "QG-REPO-CHECK",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-05-repo-check-05c6371"]
     }
   ],
   "reviews": [],
@@ -41,6 +45,13 @@
       "at": "2026-08-11T13:10:00Z",
       "actor": "implementation-agent",
       "reason": "Started the single process-only authorization attempt before re-recording the existing V1-03 correction candidate."
+    },
+    {
+      "from": "in_progress",
+      "to": "accepted",
+      "at": "2026-08-11T13:19:00Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer accepted the exact M0-05 candidate after its plan and repository command gates passed."
     }
   ]
 }

@@ -133,8 +133,8 @@
       "statement": "A separate maintainer-controlled task authorizes only the still-unaccepted V1-03 third attempt to make later model accessors abstain and bind SCAN-004 to its deterministic scanner-corpus gate, while preserving V1-01 and V1-02 review boundaries.",
       "verification": { "method": "test", "testLevel": "contract", "gateId": "QG-REPO-CHECK" },
       "waivable": false,
-      "status": "planned",
-      "evidenceRefs": []
+      "status": "accepted",
+      "evidenceRefs": ["ev-m0-05-repo-check-05c6371"]
     },
     {
       "id": "CONTRACT-001",

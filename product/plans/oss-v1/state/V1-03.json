@@ -2,8 +2,8 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "V1-03",
-  "revision": 49,
-  "state": "planned",
+  "revision": 50,
+  "state": "in_progress",
   "attempt": 3,
   "candidate": null,
   "criteria": [
@@ -530,6 +530,13 @@
       "at": "2026-08-11T13:10:00Z",
       "actor": "davidahmann",
       "reason": "Maintainer reset the unmerged third V1-03 attempt pending the exact M0-05 process authorization; prior evidence remains immutable historical provenance."
+    },
+    {
+      "from": "planned",
+      "to": "in_progress",
+      "at": "2026-08-11T13:19:00Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer reactivated the same third V1-03 attempt after M0-05 accepted the exact accessor and deterministic-gate authorization."
     }
   ]
 }
