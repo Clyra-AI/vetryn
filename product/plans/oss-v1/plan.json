@@ -514,7 +514,7 @@
         "Scanner output never invents the stable semantic call-site ID.",
         "Ambiguous or dynamic calls are findings, never patch targets.",
         "Root workspace support and release metadata are limited to the staged scanner package, its tests, and the previously accepted manifest-init public APIs.",
-        "The still-unmerged final scanner-correction attempt is limited to the previously completed abstention remedies, the two current-head precision remedies, and exactly two later current-head safety remedies: ambient-only declarations do not shadow intrinsic direct eval, and a var declaration initializer that merges with a verified receiver invalidates that receiver."
+        "The still-unmerged final scanner-correction attempt is limited to the previously completed abstention remedies, the two current-head precision remedies, and the direct-eval and var-binding safety remedies: erased declarations do not shadow intrinsic direct eval, and a var declaration initializer or loop binding that merges with a verified receiver invalidates that receiver."
       ],
       "deliverables": ["packages/typescript/**", "packages/cli/**"],
       "requiredTestLevels": ["unit", "contract", "integration", "adversarial"],

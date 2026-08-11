@@ -441,18 +441,23 @@ function isVarBinding(declaration: ts.VariableDeclaration): boolean {
   );
 }
 
-function isRuntimeEvalDeclaration(declaration: ts.Declaration): boolean {
-  if (ts.isFunctionDeclaration(declaration)) return declaration.body !== undefined;
-  if (ts.isImportClause(declaration)) return !declaration.isTypeOnly;
-  if (ts.isImportSpecifier(declaration)) {
-    if (declaration.isTypeOnly) return false;
-    const namedImports = declaration.parent;
-    return (
-      !ts.isNamedImports(namedImports) ||
-      !ts.isImportClause(namedImports.parent) ||
-      !namedImports.parent.isTypeOnly
-    );
+function isErasedImportDeclaration(declaration: ts.Declaration): boolean {
+  let current: ts.Node | undefined = declaration;
+  while (current !== undefined && !ts.isSourceFile(current)) {
+    if (
+      (ts.isImportSpecifier(current) && current.isTypeOnly) ||
+      (ts.isImportClause(current) && current.isTypeOnly) ||
+      (ts.isImportEqualsDeclaration(current) && current.isTypeOnly)
+    )
+      return true;
+    current = current.parent;
   }
+  return false;
+}
+
+function isRuntimeEvalDeclaration(declaration: ts.Declaration): boolean {
+  if (isErasedImportDeclaration(declaration)) return false;
+  if (ts.isFunctionDeclaration(declaration)) return declaration.body !== undefined;
 
   let current: ts.Node | undefined = declaration;
   while (current !== undefined && !ts.isSourceFile(current)) {
@@ -608,16 +613,24 @@ function collectReassignedClientSymbols(
       isUpdateOperator(node.operator)
     ) {
       collectAssignedClientSymbols(node.operand, checker, verifiedClientSymbols, reassignedSymbols);
-    } else if (
-      (ts.isForInStatement(node) || ts.isForOfStatement(node)) &&
-      !ts.isVariableDeclarationList(node.initializer)
-    ) {
-      collectAssignedClientSymbols(
-        node.initializer,
-        checker,
-        verifiedClientSymbols,
-        reassignedSymbols,
-      );
+    } else if (ts.isForInStatement(node) || ts.isForOfStatement(node)) {
+      if (ts.isVariableDeclarationList(node.initializer)) {
+        for (const declaration of node.initializer.declarations)
+          if (isVarBinding(declaration))
+            collectAssignedClientBindingSymbols(
+              declaration.name,
+              checker,
+              verifiedClientSymbols,
+              reassignedSymbols,
+            );
+      } else {
+        collectAssignedClientSymbols(
+          node.initializer,
+          checker,
+          verifiedClientSymbols,
+          reassignedSymbols,
+        );
+      }
     }
     ts.forEachChild(node, visit);
   };

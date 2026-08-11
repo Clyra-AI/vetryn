@@ -2,51 +2,47 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "V1-03",
-  "revision": 36,
-  "state": "accepted",
+  "revision": 37,
+  "state": "in_progress",
   "attempt": 3,
-  "candidate": {
-    "baseCommit": "b19bd97c20999f944029f35b64559dfe85da2632",
-    "commit": "86229838d4f4774c76c4a7f4440be04ac9ed9463",
-    "executor": "implementation-agent"
-  },
+  "candidate": null,
   "criteria": [
     {
       "criterionId": "SCAN-001",
-      "status": "pass",
-      "evidenceRefs": ["ev-v1-03-scanner-corpus-8622983"]
+      "status": "pending",
+      "evidenceRefs": []
     },
     {
       "criterionId": "SCAN-002",
-      "status": "pass",
-      "evidenceRefs": ["ev-v1-03-scanner-corpus-8622983"]
+      "status": "pending",
+      "evidenceRefs": []
     },
     {
       "criterionId": "SCAN-003",
-      "status": "pass",
-      "evidenceRefs": ["ev-v1-03-scanner-corpus-8622983"]
+      "status": "pending",
+      "evidenceRefs": []
     },
     {
       "criterionId": "SCAN-004",
-      "status": "pass",
-      "evidenceRefs": ["ev-v1-03-scanner-corpus-8622983"]
+      "status": "pending",
+      "evidenceRefs": []
     }
   ],
   "gates": [
     {
       "gateId": "QG-REPO-CHECK",
-      "status": "pass",
-      "evidenceRefs": ["ev-v1-03-repo-check-8622983"]
+      "status": "pending",
+      "evidenceRefs": []
     },
     {
       "gateId": "QG-CONTRACTS",
-      "status": "pass",
-      "evidenceRefs": ["ev-v1-03-contracts-8622983"]
+      "status": "pending",
+      "evidenceRefs": []
     },
     {
       "gateId": "QG-SCANNER-CORPUS",
-      "status": "pass",
-      "evidenceRefs": ["ev-v1-03-scanner-corpus-8622983"]
+      "status": "pending",
+      "evidenceRefs": []
     },
     {
       "gateId": "QG-INDEPENDENT-VERIFY",
@@ -408,6 +404,20 @@
       "at": "2026-08-11T12:10:51Z",
       "actor": "davidahmann",
       "reason": "Maintainer accepted the exact scanner direct-eval boundary candidate after all active command gates passed; reviewer records remain advisory under ADR 0009."
+    },
+    {
+      "from": "accepted",
+      "to": "changes_requested",
+      "at": "2026-08-11T12:15:53Z",
+      "actor": "chatgpt-codex-connector[bot]",
+      "reason": "Current-head P1 review found var-declared loop bindings and type-only import-equals declarations as remaining unsafe receiver and direct-eval paths."
+    },
+    {
+      "from": "changes_requested",
+      "to": "in_progress",
+      "at": "2026-08-11T12:15:53Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer reopened the same unmerged final scanner attempt with a plan-embedded boundary for the final var-loop and erased-import remedies."
     }
   ]
 }
