@@ -309,12 +309,58 @@
       ]
     },
     {
+      "id": "M0-02",
+      "milestone": "M0",
+      "title": "Activate the golden-scenario execution skill",
+      "objective": "Create the narrowly scoped reusable workflow required to construct and validate the offline V1-02 golden repository.",
+      "risk": { "level": "low", "domains": ["agent-workflow", "fixtures"] },
+      "dependsOn": [],
+      "acceptanceItemIds": ["PROCESS-003"],
+      "scope": {
+        "allowedPaths": [
+          ".agents/skills/vetryn-golden-scenario/**",
+          "docs/agent-map.md",
+          "scripts/plan.test.mjs",
+          "scripts/task.test.mjs",
+          "product/plans/**"
+        ],
+        "forbiddenPaths": ["packages/**", "examples/**", "action.yml", ".github/**"]
+      },
+      "semanticInvariants": [
+        "The skill authorizes neither provider calls nor task acceptance or merge.",
+        "The skill keeps golden-scenario inputs offline, sanitized, deterministic, and semantically asserted."
+      ],
+      "deliverables": [
+        ".agents/skills/vetryn-golden-scenario/**",
+        "docs/agent-map.md",
+        "scripts/plan.test.mjs",
+        "scripts/task.test.mjs"
+      ],
+      "requiredTestLevels": ["static", "contract"],
+      "requiredGates": ["QG-PLAN-CHECK", "QG-REPO-CHECK"],
+      "requiredReviews": [],
+      "capabilities": {
+        "network": false,
+        "credentials": false,
+        "provider": false,
+        "githubWrite": false
+      },
+      "maxAttempts": 2,
+      "stopConditions": [
+        "The skill authorizes a live provider, credentials, task acceptance, or merge.",
+        "The skill duplicates product behavior or adds files outside its narrow process scope."
+      ]
+    },
+    {
       "id": "V1-02",
       "milestone": "M1",
       "title": "Build the deterministic golden repository",
       "objective": "Create the TypeScript/OpenRouter fixture, reviewed cases, pinned catalog, mock provider, expected artifacts, and offline scenario harness.",
       "risk": { "level": "medium", "domains": ["fixtures", "reproducibility"] },
-      "dependsOn": [{ "taskId": "V1-00", "kind": "hard" }],
+      "dependsOn": [
+        { "taskId": "V1-00", "kind": "hard" },
+        { "taskId": "M0-02", "kind": "hard" }
+      ],
       "acceptanceItemIds": ["GOLDEN-001", "GOLDEN-002", "GOLDEN-003", "GOLDEN-004"],
       "scope": {
         "allowedPaths": [

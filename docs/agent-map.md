@@ -56,6 +56,7 @@ process change for maintainer review.
 | Implement one ready or in-progress compiled task                                   | `vetryn-implement-task`                  | May change only packet-authorized implementation paths; cannot accept its work       |
 | Verify an exact candidate commit                                                   | `vetryn-verify-task`                     | Recommended independent check; cannot repair or promote the candidate                |
 | Promote locally validated work                                                     | `vetryn-promote-task`                    | Maintainer-controlled canonical state, ledger, evidence, and generated progress only |
+| Build or review the V1-02 offline golden repository                                | `vetryn-golden-scenario`                 | Offline synthetic fixtures and semantic assertions only; cannot accept or merge      |
 | Execute, validate, review, commit, push, or release through generic infrastructure | The corresponding external Factory skill | Factory supplies delivery automation; active command gates remain required           |
 
 An agent must not use a skill name as authority for an action the compiled packet, repository policy, or human
@@ -68,7 +69,6 @@ and prerequisites are satisfied.
 
 | Planned skill or operation          | Activation condition                                                                                                           | Required boundary                                                                                                                                                                                      |
 | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `vetryn-golden-scenario`            | Immediately before implementation of `V1-02` begins                                                                            | Own deterministic fixture and scenario construction, semantic assertions, protected markers, replay, and no-patch cases; never call a live provider                                                    |
 | `vetryn-trust-review`               | Immediately before `V1-06` evaluation work begins; reuse through recommendation and patch work                                 | Independently review evidence sufficiency, contradictory outcomes, abstention, privacy, bounded execution, recommendation eligibility, and patch safety; never implement or self-approve the candidate |
 | `vetryn-field-eval`                 | After `V1-09` is accepted and the complete offline scenario and pack gates are dependable on `main`, before `V1-10` field work | Require explicit customer consent, credentials, provider and GitHub authority, spend and timeout budgets, redaction, attribution, and stop-on-regression behavior                                      |
 | Factory `cut-release`               | After offline evidence is dependable and npm publication has an approved release task and package preflight                    | Reuse Factory's release automation; Vetryn supplies repository-specific version, changelog, pack, provenance, and post-publish checks rather than cloning the skill                                    |
@@ -77,7 +77,7 @@ and prerequisites are satisfied.
 The future `vetryn-trust-review` **skill** standardizes a semantic review once evaluation behavior exists. During
 the OSS V1 single-maintainer mode, it is advisory; the absence of the skill never blocks a command-validated task.
 
-The current `V1-02`, `V1-06`, and `V1-10` product packets do not authorize `.agents/**`. When one of these skill
+The current `V1-06` and `V1-10` product packets do not authorize `.agents/**`. When one of these skill
 triggers is reached, create or approve a narrow process task that permits the skill path before starting the
 domain task. Do not smuggle process infrastructure into product scope.
 
