@@ -168,8 +168,8 @@
       "statement": "V1-05 may change only the two temporary planning-test fixture files needed to reset V1-05 through V1-10 lifecycle state without changing product or safety semantics.",
       "verification": { "method": "test", "testLevel": "contract", "gateId": "QG-REPO-CHECK" },
       "waivable": false,
-      "status": "planned",
-      "evidenceRefs": []
+      "status": "accepted",
+      "evidenceRefs": ["ev-m0-08-repo-check-7f9e338"]
     },
     {
       "id": "CONTRACT-001",
