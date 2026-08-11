@@ -1,0 +1,35 @@
+{
+  "$schema": "../../schemas/evidence.schema.json",
+  "schemaVersion": "1.0.0",
+  "id": "ev-m0-04-plan-check-fe9515c",
+  "taskId": "M0-04",
+  "type": "command-run",
+  "actor": "implementation-agent",
+  "commit": "fe9515c03c1931998badab8b7ecf65f07dddb3f3",
+  "createdAt": "2026-08-11T03:54:09Z",
+  "result": {
+    "status": "pass",
+    "checks": [
+      {
+        "name": "pnpm plan:check",
+        "status": "pass",
+        "summary": "The two-review-finding authorization is internally consistent, bounded to the third attempt, and has current generated progress."
+      }
+    ]
+  },
+  "inputs": {
+    "planDigest": "sha256:17b53d33b9dd0cb03b7b9fb24a07a081098d4a6a37a0fb476ca7354bd86f39b0",
+    "lockfileDigest": "sha256:4a89ac1f2863dc3591fae73e1ee0474cbab8cb0725ff80dfc57b1590f42d1a88"
+  },
+  "gateBinding": {
+    "gateId": "QG-PLAN-CHECK",
+    "kind": "command",
+    "command": "pnpm plan:check"
+  },
+  "review": null,
+  "redaction": {
+    "status": "not_applicable",
+    "containsRawModelOutput": false,
+    "containsSecrets": false
+  }
+}

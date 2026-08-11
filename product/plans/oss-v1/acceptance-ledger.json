@@ -124,8 +124,8 @@
       "statement": "A separate maintainer-controlled task authorizes only the still-unaccepted third V1-02 attempt to add recursive durable-artifact redaction scanning and a separately controlled promotion.",
       "verification": { "method": "test", "testLevel": "contract", "gateId": "QG-REPO-CHECK" },
       "waivable": false,
-      "status": "planned",
-      "evidenceRefs": []
+      "status": "accepted",
+      "evidenceRefs": ["ev-m0-04-repo-check-fe9515c"]
     },
     {
       "id": "CONTRACT-001",
