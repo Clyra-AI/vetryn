@@ -343,12 +343,20 @@ export async function refreshOpenRouterCatalog(
   options: RefreshCatalogOptions,
 ): Promise<RefreshCatalogResult> {
   const { acquisition, observedAt, refreshId, store } = options;
-  const fetchImplementation = options.fetch ?? globalThis.fetch;
+  if (acquisition !== "captured-response" && acquisition !== "live-api") {
+    throw new OpenRouterCatalogError("Catalog refresh requires an explicit acquisition mode.");
+  }
+  if (acquisition === "captured-response" && options.fetch === undefined) {
+    throw new OpenRouterCatalogError(
+      "Captured-response provenance requires an injected repository capture transport.",
+    );
+  }
   if (acquisition === "live-api" && "fetch" in options && options.fetch !== undefined) {
     throw new OpenRouterCatalogError(
       "Live OpenRouter provenance cannot use an injected transport; use captured-response instead.",
     );
   }
+  const fetchImplementation = options.fetch ?? globalThis.fetch;
   refreshIdSchema.parse(refreshId);
   timestampSchema.parse(observedAt);
 

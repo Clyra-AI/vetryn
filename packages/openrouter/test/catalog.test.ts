@@ -351,6 +351,15 @@ describe("refresh evidence", () => {
     } as unknown as RefreshCatalogOptions;
 
     await expect(refreshOpenRouterCatalog(forged)).rejects.toThrow(/injected transport/i);
+
+    await expect(
+      refreshOpenRouterCatalog({
+        acquisition: "captured-response",
+        observedAt,
+        refreshId: "missing-capture",
+        store: new MemoryStore(),
+      } as unknown as RefreshCatalogOptions),
+    ).rejects.toThrow(/capture transport/i);
   });
 
   it("persists immutable content-addressed snapshots and observations", async () => {
