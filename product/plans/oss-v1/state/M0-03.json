@@ -55,17 +55,10 @@
     },
     {
       "from": "accepted",
-      "to": "changes_requested",
+      "to": "in_progress",
       "at": "2026-08-11T02:52:00Z",
       "actor": "davidahmann",
-      "reason": "Current-head Codex review identified two concrete P2 corrections to the authorization history and its contract coverage before this task merged."
-    },
-    {
-      "from": "changes_requested",
-      "to": "in_progress",
-      "at": "2026-08-11T02:52:10Z",
-      "actor": "davidahmann",
-      "reason": "Started the corrective work within the already-authorized single M0-03 attempt."
+      "reason": "Reopened the still-unmerged authorization for concrete Codex corrections within the already-authorized single M0-03 attempt."
     },
     {
       "from": "in_progress",
@@ -76,17 +69,10 @@
     },
     {
       "from": "accepted",
-      "to": "changes_requested",
+      "to": "in_progress",
       "at": "2026-08-11T02:57:40Z",
       "actor": "davidahmann",
-      "reason": "Current-head Codex review identified a gate-evidence binding correction before this task merged."
-    },
-    {
-      "from": "changes_requested",
-      "to": "in_progress",
-      "at": "2026-08-11T02:58:00Z",
-      "actor": "davidahmann",
-      "reason": "Started the final corrective work within the already-authorized single M0-03 attempt."
+      "reason": "Reopened the still-unmerged authorization for the final gate-evidence binding correction within the already-authorized single M0-03 attempt."
     },
     {
       "from": "in_progress",
