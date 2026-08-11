@@ -621,11 +621,7 @@
         "V1-05 product behavior, acceptance criteria, capabilities, provider policy, review gates, and retry limit remain unchanged.",
         "This process task changes no product source, fixture, dependency, workflow, credential, provider call, or completed-task acceptance record."
       ],
-      "deliverables": [
-        "product/plans/oss-v1/**",
-        "scripts/plan.test.mjs",
-        "scripts/task.test.mjs"
-      ],
+      "deliverables": ["product/plans/oss-v1/**", "scripts/plan.test.mjs", "scripts/task.test.mjs"],
       "requiredTestLevels": ["static", "contract"],
       "requiredGates": ["QG-PLAN-CHECK", "QG-REPO-CHECK"],
       "requiredReviews": [],
