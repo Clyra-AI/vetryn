@@ -2,47 +2,51 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "V1-03",
-  "revision": 16,
-  "state": "in_progress",
+  "revision": 17,
+  "state": "verification_pending",
   "attempt": 3,
-  "candidate": null,
+  "candidate": {
+    "baseCommit": "b19bd97c20999f944029f35b64559dfe85da2632",
+    "commit": "2e347c8ec86b78b5bd7fadab42e5bdc3745ad634",
+    "executor": "implementation-agent"
+  },
   "criteria": [
     {
       "criterionId": "SCAN-001",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-03-scanner-corpus-2e347c8"]
     },
     {
       "criterionId": "SCAN-002",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-03-scanner-corpus-2e347c8"]
     },
     {
       "criterionId": "SCAN-003",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-03-scanner-corpus-2e347c8"]
     },
     {
       "criterionId": "SCAN-004",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-03-scanner-corpus-2e347c8"]
     }
   ],
   "gates": [
     {
       "gateId": "QG-REPO-CHECK",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-03-repo-check-2e347c8"]
     },
     {
       "gateId": "QG-CONTRACTS",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-03-contracts-2e347c8"]
     },
     {
       "gateId": "QG-SCANNER-CORPUS",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-03-scanner-corpus-2e347c8"]
     },
     {
       "gateId": "QG-INDEPENDENT-VERIFY",
@@ -222,6 +226,13 @@
       "at": "2026-08-11T11:02:06Z",
       "actor": "davidahmann",
       "reason": "Maintainer reopened the same unmerged final safety attempt to make all direct receiver write targets abstain."
+    },
+    {
+      "from": "in_progress",
+      "to": "verification_pending",
+      "at": "2026-08-11T11:05:14Z",
+      "actor": "implementation-agent",
+      "reason": "Submitted the exact receiver-write-target safety repair candidate with replacement repository, contract, and scanner-corpus command evidence."
     }
   ]
 }
