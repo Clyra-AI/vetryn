@@ -31,7 +31,7 @@
     "test": "vitest run",
     "test:contracts": "pnpm test",
     "test:scanner-corpus": "vitest run packages/typescript/test/scanner-corpus.test.ts",
-    "test:scenarios": "vitest run examples/openrouter-typescript/test/scenarios.test.ts",
+    "test:scenarios": "vitest --config scripts/vitest.scenarios.config.ts run examples/openrouter-typescript/test/scenarios.test.ts",
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
     "typecheck": "pnpm --recursive typecheck",
