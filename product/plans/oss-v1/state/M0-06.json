@@ -2,27 +2,31 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "M0-06",
-  "revision": 3,
-  "state": "in_progress",
+  "revision": 4,
+  "state": "accepted",
   "attempt": 1,
-  "candidate": null,
+  "candidate": {
+    "baseCommit": "371092ba6e3b473580ec2671919cb883bd17e21f",
+    "commit": "559f3645ed7b5fa88a88a958fad5424599434331",
+    "executor": "implementation-agent"
+  },
   "criteria": [
     {
       "criterionId": "PROCESS-007",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-06-repo-check-559f364"]
     }
   ],
   "gates": [
     {
       "gateId": "QG-PLAN-CHECK",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-06-plan-check-559f364"]
     },
     {
       "gateId": "QG-REPO-CHECK",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-06-repo-check-559f364"]
     }
   ],
   "reviews": [],
@@ -31,30 +35,37 @@
     {
       "from": null,
       "to": "planned",
-      "at": "2026-08-11T17:00:00Z",
+      "at": "2026-08-11T14:30:00Z",
       "actor": "davidahmann",
       "reason": "Maintainer authorized the narrow process task for local adversarial review and V1-06 trust-review activation."
     },
     {
       "from": "planned",
       "to": "in_progress",
-      "at": "2026-08-11T17:00:00Z",
+      "at": "2026-08-11T14:31:00Z",
       "actor": "implementation-agent",
       "reason": "Started the process-only review integration without product, provider, credential, or GitHub-write scope."
     },
     {
       "from": "in_progress",
       "to": "in_progress",
-      "at": "2026-08-11T18:00:00Z",
+      "at": "2026-08-11T15:00:00Z",
       "actor": "davidahmann",
       "reason": "Authorized the plan-test fixture path required to keep the canonical plan harness isolated after adding M0-06."
     },
     {
       "from": "in_progress",
       "to": "in_progress",
-      "at": "2026-08-11T19:00:00Z",
+      "at": "2026-08-11T16:58:00Z",
       "actor": "implementation-agent",
       "reason": "Addressed local review findings by machine-binding domain trust review, narrowing the workflow stop condition, and documenting the packet security boundary."
+    },
+    {
+      "from": "in_progress",
+      "to": "accepted",
+      "at": "2026-08-11T17:04:03Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer accepted the exact repaired M0-06 candidate after both active command gates passed."
     }
   ]
 }
