@@ -514,7 +514,7 @@
         "Scanner output never invents the stable semantic call-site ID.",
         "Ambiguous or dynamic calls are findings, never patch targets.",
         "Root workspace support and release metadata are limited to the staged scanner package, its tests, and the previously accepted manifest-init public APIs.",
-        "The final safety-correction attempt may only downgrade uncertain scanner findings to abstentions; it may not expand supported call patterns or patchable output."
+        "The final safety-correction attempt is limited to exactly two abstention-only remedies: a literal model property becomes non-patchable when a later computed option key could override it, and a receiver becomes non-patchable unless it is an inline construction or immutable const binding proven to originate from the OpenAI import."
       ],
       "deliverables": ["packages/typescript/**", "packages/cli/**"],
       "requiredTestLevels": ["unit", "contract", "integration", "adversarial"],
