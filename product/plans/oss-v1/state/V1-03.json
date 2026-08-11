@@ -2,51 +2,47 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "V1-03",
-  "revision": 39,
-  "state": "accepted",
+  "revision": 40,
+  "state": "in_progress",
   "attempt": 3,
-  "candidate": {
-    "baseCommit": "b19bd97c20999f944029f35b64559dfe85da2632",
-    "commit": "c8ca57d13bebb4f4afd9e81ce43af8b11831739c",
-    "executor": "implementation-agent"
-  },
+  "candidate": null,
   "criteria": [
     {
       "criterionId": "SCAN-001",
-      "status": "pass",
-      "evidenceRefs": ["ev-v1-03-scanner-corpus-c8ca57d"]
+      "status": "pending",
+      "evidenceRefs": []
     },
     {
       "criterionId": "SCAN-002",
-      "status": "pass",
-      "evidenceRefs": ["ev-v1-03-scanner-corpus-c8ca57d"]
+      "status": "pending",
+      "evidenceRefs": []
     },
     {
       "criterionId": "SCAN-003",
-      "status": "pass",
-      "evidenceRefs": ["ev-v1-03-scanner-corpus-c8ca57d"]
+      "status": "pending",
+      "evidenceRefs": []
     },
     {
       "criterionId": "SCAN-004",
-      "status": "pass",
-      "evidenceRefs": ["ev-v1-03-scanner-corpus-c8ca57d"]
+      "status": "pending",
+      "evidenceRefs": []
     }
   ],
   "gates": [
     {
       "gateId": "QG-REPO-CHECK",
-      "status": "pass",
-      "evidenceRefs": ["ev-v1-03-repo-check-c8ca57d"]
+      "status": "pending",
+      "evidenceRefs": []
     },
     {
       "gateId": "QG-CONTRACTS",
-      "status": "pass",
-      "evidenceRefs": ["ev-v1-03-contracts-c8ca57d"]
+      "status": "pending",
+      "evidenceRefs": []
     },
     {
       "gateId": "QG-SCANNER-CORPUS",
-      "status": "pass",
-      "evidenceRefs": ["ev-v1-03-scanner-corpus-c8ca57d"]
+      "status": "pending",
+      "evidenceRefs": []
     },
     {
       "gateId": "QG-INDEPENDENT-VERIFY",
@@ -436,6 +432,20 @@
       "at": "2026-08-11T12:22:03Z",
       "actor": "davidahmann",
       "reason": "Maintainer accepted the exact scanner runtime-binding candidate after all active command gates passed; reviewer records remain advisory under ADR 0009."
+    },
+    {
+      "from": "accepted",
+      "to": "changes_requested",
+      "at": "2026-08-11T12:37:08Z",
+      "actor": "chatgpt-codex-connector[bot]",
+      "reason": "Post-merge P1 review found that a later statically named model accessor can replace a patchable literal model field at runtime."
+    },
+    {
+      "from": "changes_requested",
+      "to": "in_progress",
+      "at": "2026-08-11T12:37:08Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer reopened the existing scanner correction scope for the single post-merge accessor-abstention remedy."
     }
   ]
 }
