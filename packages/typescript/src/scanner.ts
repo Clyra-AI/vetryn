@@ -56,6 +56,7 @@ interface FindingInput {
 
 interface OpenAIClientEvidence {
   readonly importedSymbols: ReadonlySet<ts.Symbol>;
+  readonly reassignedClientSymbols: ReadonlySet<ts.Symbol>;
   readonly verifiedClientSymbols: ReadonlySet<ts.Symbol>;
 }
 
@@ -213,6 +214,15 @@ function scanOpenAIChatCompletion({
     });
   }
 
+  if (hasComputedPropertyAfter(options, modelProperty)) {
+    return createFinding({
+      ...base,
+      confidence: "ambiguous",
+      patchability: "not-patchable",
+      reasonCode: "dynamic-model",
+    });
+  }
+
   if (!ts.isStringLiteral(modelProperty.initializer)) {
     return createFinding({
       ...base,
@@ -304,6 +314,7 @@ function collectOpenAIClientEvidence(
     if (
       ts.isVariableDeclaration(node) &&
       ts.isIdentifier(node.name) &&
+      isConstBinding(node) &&
       node.initializer !== undefined &&
       isOpenAIConstruction(node.initializer, checker, importedSymbols)
     ) {
@@ -320,7 +331,15 @@ function collectOpenAIClientEvidence(
   };
   visit(sourceFile);
 
-  return { importedSymbols, verifiedClientSymbols };
+  return {
+    importedSymbols,
+    reassignedClientSymbols: collectReassignedClientSymbols(
+      sourceFile,
+      checker,
+      verifiedClientSymbols,
+    ),
+    verifiedClientSymbols,
+  };
 }
 
 function matchOpenAIChatCompletion(call: ts.CallExpression): OperationMatch | undefined {
@@ -338,10 +357,12 @@ function matchOpenAIChatCompletion(call: ts.CallExpression): OperationMatch | un
 function isVerifiedOpenAIReceiver(
   receiver: ts.Expression,
   checker: ts.TypeChecker,
-  { importedSymbols, verifiedClientSymbols }: OpenAIClientEvidence,
+  { importedSymbols, reassignedClientSymbols, verifiedClientSymbols }: OpenAIClientEvidence,
 ): boolean {
   return (
-    (ts.isIdentifier(receiver) && hasSymbol(verifiedClientSymbols, checker, receiver)) ||
+    (ts.isIdentifier(receiver) &&
+      hasSymbol(verifiedClientSymbols, checker, receiver) &&
+      !hasSymbol(reassignedClientSymbols, checker, receiver)) ||
     isOpenAIConstruction(receiver, checker, importedSymbols)
   );
 }
@@ -394,6 +415,232 @@ function hasSymbol(
   return symbol !== undefined && symbols.has(symbol);
 }
 
+function hasComputedPropertyAfter(
+  options: ts.ObjectLiteralExpression,
+  modelProperty: ts.ObjectLiteralElementLike,
+): boolean {
+  const modelPropertyIndex = options.properties.indexOf(modelProperty);
+  return options.properties.slice(modelPropertyIndex + 1).some((property) => {
+    if (ts.isSpreadAssignment(property) || !ts.isComputedPropertyName(property.name)) return false;
+    const computedName = staticPropertyName(property.name);
+    return computedName === undefined || computedName === "model";
+  });
+}
+
+function isConstBinding(declaration: ts.VariableDeclaration): boolean {
+  return (
+    ts.isVariableDeclarationList(declaration.parent) &&
+    (declaration.parent.flags & ts.NodeFlags.Const) !== 0
+  );
+}
+
+function isVarBinding(declaration: ts.VariableDeclaration): boolean {
+  return (
+    ts.isVariableDeclarationList(declaration.parent) &&
+    (declaration.parent.flags & (ts.NodeFlags.Let | ts.NodeFlags.Const)) === 0
+  );
+}
+
+function isErasedImportDeclaration(declaration: ts.Declaration): boolean {
+  let current: ts.Node | undefined = declaration;
+  while (current !== undefined && !ts.isSourceFile(current)) {
+    if (
+      (ts.isImportSpecifier(current) && current.isTypeOnly) ||
+      (ts.isImportClause(current) && current.isTypeOnly) ||
+      (ts.isImportEqualsDeclaration(current) && current.isTypeOnly)
+    )
+      return true;
+    current = current.parent;
+  }
+  return false;
+}
+
+function isRuntimeEvalDeclaration(declaration: ts.Declaration): boolean {
+  if (isErasedImportDeclaration(declaration)) return false;
+  if (ts.isFunctionDeclaration(declaration)) return declaration.body !== undefined;
+
+  let current: ts.Node | undefined = declaration;
+  while (current !== undefined && !ts.isSourceFile(current)) {
+    if (
+      ts.canHaveModifiers(current) &&
+      ts.getModifiers(current)?.some((modifier) => modifier.kind === ts.SyntaxKind.DeclareKeyword)
+    )
+      return false;
+    current = current.parent;
+  }
+  return true;
+}
+
+function isAssignmentOperator(kind: ts.SyntaxKind): boolean {
+  return kind >= ts.SyntaxKind.FirstAssignment && kind <= ts.SyntaxKind.LastAssignment;
+}
+
+function isUpdateOperator(kind: ts.SyntaxKind): boolean {
+  return kind === ts.SyntaxKind.PlusPlusToken || kind === ts.SyntaxKind.MinusMinusToken;
+}
+
+function isUnshadowedDirectEvalCall(
+  node: ts.Node,
+  checker: ts.TypeChecker,
+): node is ts.CallExpression {
+  if (!ts.isCallExpression(node)) return false;
+  if (node.questionDotToken !== undefined) return false;
+  const callee = unwrapExpression(node.expression);
+  if (!ts.isIdentifier(callee) || callee.text !== "eval") return false;
+
+  const symbol = checker.getSymbolAtLocation(callee);
+  return (
+    symbol === undefined ||
+    !symbol.declarations?.some(
+      (declaration) =>
+        declaration.getSourceFile() === node.getSourceFile() &&
+        isRuntimeEvalDeclaration(declaration),
+    )
+  );
+}
+
+function collectAssignedClientSymbols(
+  target: ts.Expression,
+  checker: ts.TypeChecker,
+  verifiedClientSymbols: ReadonlySet<ts.Symbol>,
+  reassignedSymbols: Set<ts.Symbol>,
+): void {
+  const expression = unwrapExpression(target);
+  if (ts.isIdentifier(expression)) {
+    const symbol = checker.getSymbolAtLocation(expression);
+    if (symbol !== undefined && verifiedClientSymbols.has(symbol)) reassignedSymbols.add(symbol);
+    return;
+  }
+
+  if (ts.isArrayLiteralExpression(expression)) {
+    for (const element of expression.elements) {
+      if (ts.isOmittedExpression(element)) continue;
+      collectAssignedClientSymbols(
+        ts.isSpreadElement(element) ? element.expression : element,
+        checker,
+        verifiedClientSymbols,
+        reassignedSymbols,
+      );
+    }
+    return;
+  }
+
+  if (ts.isObjectLiteralExpression(expression)) {
+    for (const property of expression.properties) {
+      if (ts.isPropertyAssignment(property)) {
+        collectAssignedClientSymbols(
+          property.initializer,
+          checker,
+          verifiedClientSymbols,
+          reassignedSymbols,
+        );
+      } else if (ts.isShorthandPropertyAssignment(property)) {
+        collectAssignedClientSymbols(
+          property.name,
+          checker,
+          verifiedClientSymbols,
+          reassignedSymbols,
+        );
+      } else if (ts.isSpreadAssignment(property)) {
+        collectAssignedClientSymbols(
+          property.expression,
+          checker,
+          verifiedClientSymbols,
+          reassignedSymbols,
+        );
+      }
+    }
+    return;
+  }
+
+  if (ts.isBinaryExpression(expression) && isAssignmentOperator(expression.operatorToken.kind)) {
+    collectAssignedClientSymbols(
+      expression.left,
+      checker,
+      verifiedClientSymbols,
+      reassignedSymbols,
+    );
+  }
+}
+
+function collectAssignedClientBindingSymbols(
+  binding: ts.BindingName,
+  checker: ts.TypeChecker,
+  verifiedClientSymbols: ReadonlySet<ts.Symbol>,
+  reassignedSymbols: Set<ts.Symbol>,
+): void {
+  if (ts.isIdentifier(binding)) {
+    collectAssignedClientSymbols(binding, checker, verifiedClientSymbols, reassignedSymbols);
+    return;
+  }
+
+  for (const element of binding.elements) {
+    if (ts.isOmittedExpression(element)) continue;
+    collectAssignedClientBindingSymbols(
+      element.name,
+      checker,
+      verifiedClientSymbols,
+      reassignedSymbols,
+    );
+  }
+}
+
+function collectReassignedClientSymbols(
+  sourceFile: ts.SourceFile,
+  checker: ts.TypeChecker,
+  verifiedClientSymbols: ReadonlySet<ts.Symbol>,
+): ReadonlySet<ts.Symbol> {
+  const reassignedSymbols = new Set<ts.Symbol>();
+  const directEvalScopes: ts.Node[] = [];
+  const visit = (node: ts.Node): void => {
+    if (isUnshadowedDirectEvalCall(node, checker)) {
+      directEvalScopes.push(lexicalScopeFor(node));
+    } else if (
+      ts.isVariableDeclaration(node) &&
+      node.initializer !== undefined &&
+      isVarBinding(node)
+    ) {
+      collectAssignedClientBindingSymbols(
+        node.name,
+        checker,
+        verifiedClientSymbols,
+        reassignedSymbols,
+      );
+    } else if (ts.isBinaryExpression(node) && isAssignmentOperator(node.operatorToken.kind)) {
+      collectAssignedClientSymbols(node.left, checker, verifiedClientSymbols, reassignedSymbols);
+    } else if (
+      (ts.isPrefixUnaryExpression(node) || ts.isPostfixUnaryExpression(node)) &&
+      isUpdateOperator(node.operator)
+    ) {
+      collectAssignedClientSymbols(node.operand, checker, verifiedClientSymbols, reassignedSymbols);
+    } else if (ts.isForInStatement(node) || ts.isForOfStatement(node)) {
+      if (ts.isVariableDeclarationList(node.initializer)) {
+        for (const declaration of node.initializer.declarations)
+          if (isVarBinding(declaration))
+            collectAssignedClientBindingSymbols(
+              declaration.name,
+              checker,
+              verifiedClientSymbols,
+              reassignedSymbols,
+            );
+      } else {
+        collectAssignedClientSymbols(
+          node.initializer,
+          checker,
+          verifiedClientSymbols,
+          reassignedSymbols,
+        );
+      }
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(sourceFile);
+  for (const symbol of verifiedClientSymbols)
+    if (directEvalScopes.some((scope) => canDirectEvalReachSymbol(scope, symbol)))
+      reassignedSymbols.add(symbol);
+  return reassignedSymbols;
+}
+
 function isModelProperty(
   property: ts.ObjectLiteralElementLike,
 ): property is ts.PropertyAssignment | ts.ShorthandPropertyAssignment {
@@ -407,6 +654,39 @@ function propertyName(name: ts.PropertyName): string | undefined {
   if (ts.isIdentifier(name) || ts.isStringLiteral(name) || ts.isNumericLiteral(name))
     return name.text;
   return undefined;
+}
+
+function staticPropertyName(name: ts.ComputedPropertyName): string | undefined {
+  const expression = unwrapExpression(name.expression);
+  if (
+    ts.isStringLiteral(expression) ||
+    ts.isNumericLiteral(expression) ||
+    ts.isNoSubstitutionTemplateLiteral(expression)
+  )
+    return expression.text;
+  return undefined;
+}
+
+function lexicalScopeFor(node: ts.Node): ts.Node {
+  let current: ts.Node | undefined = node;
+  while (current !== undefined) {
+    if (ts.isFunctionLike(current) || ts.isSourceFile(current)) return current;
+    current = current.parent;
+  }
+  return node.getSourceFile();
+}
+
+function canDirectEvalReachSymbol(directEvalScope: ts.Node, symbol: ts.Symbol): boolean {
+  const declaration = symbol.valueDeclaration;
+  if (declaration === undefined) return true;
+
+  const declarationScope = lexicalScopeFor(declaration);
+  let current: ts.Node | undefined = directEvalScope;
+  while (current !== undefined) {
+    if (current === declarationScope) return true;
+    current = current.parent;
+  }
+  return false;
 }
 
 function isCanonicalModelPin(value: string): boolean {
@@ -445,6 +725,7 @@ function unwrapExpression(expression: ts.Expression): ts.Expression {
     ts.isAsExpression(expression) ||
     ts.isNonNullExpression(expression) ||
     ts.isParenthesizedExpression(expression) ||
+    ts.isSatisfiesExpression(expression) ||
     ts.isTypeAssertionExpression(expression)
   ) {
     return unwrapExpression(expression.expression);

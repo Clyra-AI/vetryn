@@ -293,6 +293,387 @@ describe("reviewed TypeScript scanner corpus", () => {
     ]);
   });
 
+  it("abstains when a later computed option key could override a literal model pin", () => {
+    const source = `
+      import OpenAI from "openai";
+      export async function run(client: OpenAI, key: string, replacement: string) {
+        return client.chat.completions.create({
+          model: "openai/gpt-4.1-mini",
+          [key]: replacement,
+        });
+      }
+    `;
+
+    expect(scanTypeScript({ file: "src/computed-override.ts", source })).toMatchObject([
+      {
+        confidence: "ambiguous",
+        patchability: "not-patchable",
+        reasonCode: "dynamic-model",
+      },
+    ]);
+  });
+
+  it("keeps a literal model pin patchable when a later computed key is known not to override it", () => {
+    const source = `
+      import OpenAI from "openai";
+      export async function run(client: OpenAI) {
+        return client.chat.completions.create({
+          model: "openai/gpt-4.1-mini",
+          ["temperature"]: 0,
+        });
+      }
+    `;
+
+    expect(scanTypeScript({ file: "src/computed-temperature.ts", source })).toMatchObject([
+      {
+        confidence: "high",
+        modelPin: "openai/gpt-4.1-mini",
+        patchability: "patchable",
+        reasonCode: "static-model-literal",
+      },
+    ]);
+  });
+
+  it("abstains when a later computed model key overrides a literal model pin", () => {
+    const source = `
+      import OpenAI from "openai";
+      export async function run(client: OpenAI, replacement: string) {
+        return client.chat.completions.create({
+          model: "openai/gpt-4.1-mini",
+          ["model"]: replacement,
+        });
+      }
+    `;
+
+    expect(scanTypeScript({ file: "src/computed-model-override.ts", source })).toMatchObject([
+      {
+        confidence: "ambiguous",
+        patchability: "not-patchable",
+        reasonCode: "dynamic-model",
+      },
+    ]);
+  });
+
+  it("abstains when a mutable OpenAI client binding can be reassigned", () => {
+    const source = `
+      import OpenAI from "openai";
+      export async function run() {
+        let client = new OpenAI({ apiKey: "fixture-only" });
+        client = {} as OpenAI;
+        return client.chat.completions.create({ model: "openai/gpt-4.1-mini" });
+      }
+    `;
+
+    expect(scanTypeScript({ file: "src/mutable-client.ts", source })).toMatchObject([
+      {
+        confidence: "ambiguous",
+        patchability: "not-patchable",
+        reasonCode: "unverified-client",
+      },
+    ]);
+  });
+
+  it("abstains when a type-proven client is reassigned before the call", () => {
+    const source = `
+      import OpenAI from "openai";
+      export async function run(client: OpenAI) {
+        client = {} as OpenAI;
+        return client.chat.completions.create({ model: "openai/gpt-4.1-mini" });
+      }
+    `;
+
+    expect(scanTypeScript({ file: "src/reassigned-parameter.ts", source })).toMatchObject([
+      {
+        confidence: "ambiguous",
+        patchability: "not-patchable",
+        reasonCode: "unverified-client",
+      },
+    ]);
+  });
+
+  it("abstains when a merged var declaration replaces a type-proven client", () => {
+    const source = `
+      import OpenAI from "openai";
+      export async function run(client: OpenAI) {
+        var client = {} as OpenAI;
+        return client.chat.completions.create({ model: "openai/gpt-4.1-mini" });
+      }
+    `;
+
+    expect(scanTypeScript({ file: "src/merged-var-reassignment.ts", source })).toMatchObject([
+      {
+        confidence: "ambiguous",
+        patchability: "not-patchable",
+        reasonCode: "unverified-client",
+      },
+    ]);
+  });
+
+  it("abstains when a destructuring merged var declaration replaces a type-proven client", () => {
+    const source = `
+      import OpenAI from "openai";
+      export async function run(client: OpenAI) {
+        var [client] = [{} as OpenAI];
+        return client.chat.completions.create({ model: "openai/gpt-4.1-mini" });
+      }
+    `;
+
+    expect(
+      scanTypeScript({ file: "src/destructuring-merged-var-reassignment.ts", source }),
+    ).toMatchObject([
+      {
+        confidence: "ambiguous",
+        patchability: "not-patchable",
+        reasonCode: "unverified-client",
+      },
+    ]);
+  });
+
+  it("abstains when a var-declared loop receiver replaces a type-proven client", () => {
+    const source = `
+      import OpenAI from "openai";
+      export async function run(client: OpenAI) {
+        for (var client of [{} as OpenAI]) continue;
+        return client.chat.completions.create({ model: "openai/gpt-4.1-mini" });
+      }
+    `;
+
+    expect(scanTypeScript({ file: "src/var-loop-reassignment.ts", source })).toMatchObject([
+      {
+        confidence: "ambiguous",
+        patchability: "not-patchable",
+        reasonCode: "unverified-client",
+      },
+    ]);
+  });
+
+  it("abstains when a hoisted helper reassigns a type-proven client", () => {
+    const source = `
+      import OpenAI from "openai";
+      export async function run(client: OpenAI) {
+        poison();
+        return client.chat.completions.create({ model: "openai/gpt-4.1-mini" });
+        function poison() {
+          client = {} as OpenAI;
+        }
+      }
+    `;
+
+    expect(scanTypeScript({ file: "src/hoisted-reassignment.ts", source })).toMatchObject([
+      {
+        confidence: "ambiguous",
+        patchability: "not-patchable",
+        reasonCode: "unverified-client",
+      },
+    ]);
+  });
+
+  it("abstains when a compound assignment can replace a type-proven client", () => {
+    const source = `
+      import OpenAI from "openai";
+      export async function run(client: OpenAI) {
+        client &&= {} as OpenAI;
+        return client.chat.completions.create({ model: "openai/gpt-4.1-mini" });
+      }
+    `;
+
+    expect(scanTypeScript({ file: "src/compound-reassignment.ts", source })).toMatchObject([
+      {
+        confidence: "ambiguous",
+        patchability: "not-patchable",
+        reasonCode: "unverified-client",
+      },
+    ]);
+  });
+
+  it("abstains when destructuring assignment can replace a type-proven client", () => {
+    const source = `
+      import OpenAI from "openai";
+      export async function run(client: OpenAI) {
+        [client] = [{} as OpenAI];
+        return client.chat.completions.create({ model: "openai/gpt-4.1-mini" });
+      }
+    `;
+
+    expect(scanTypeScript({ file: "src/destructured-reassignment.ts", source })).toMatchObject([
+      {
+        confidence: "ambiguous",
+        patchability: "not-patchable",
+        reasonCode: "unverified-client",
+      },
+    ]);
+  });
+
+  it("abstains when a loop target can replace a type-proven client", () => {
+    const source = `
+      import OpenAI from "openai";
+      export async function run(client: OpenAI) {
+        for (client of [{} as OpenAI]) continue;
+        return client.chat.completions.create({ model: "openai/gpt-4.1-mini" });
+      }
+    `;
+
+    expect(scanTypeScript({ file: "src/loop-reassignment.ts", source })).toMatchObject([
+      {
+        confidence: "ambiguous",
+        patchability: "not-patchable",
+        reasonCode: "unverified-client",
+      },
+    ]);
+  });
+
+  it("abstains when direct eval can replace a type-proven client", () => {
+    const source = `
+      import OpenAI from "openai";
+      export async function run(client: OpenAI) {
+        eval("client = {}");
+        return client.chat.completions.create({ model: "openai/gpt-4.1-mini" });
+      }
+    `;
+
+    expect(scanTypeScript({ file: "src/eval-reassignment.ts", source })).toMatchObject([
+      {
+        confidence: "ambiguous",
+        patchability: "not-patchable",
+        reasonCode: "unverified-client",
+      },
+    ]);
+  });
+
+  it("abstains when an ambient eval declaration leaves intrinsic eval reachable", () => {
+    const source = `
+      import OpenAI from "openai";
+      declare function eval(source: string): unknown;
+      export async function run(client: OpenAI) {
+        eval("client = {}");
+        return client.chat.completions.create({ model: "openai/gpt-4.1-mini" });
+      }
+    `;
+
+    expect(scanTypeScript({ file: "src/ambient-eval.ts", source })).toMatchObject([
+      {
+        confidence: "ambiguous",
+        patchability: "not-patchable",
+        reasonCode: "unverified-client",
+      },
+    ]);
+  });
+
+  it("abstains when a type-only eval import leaves intrinsic eval reachable", () => {
+    const source = `
+      import OpenAI from "openai";
+      import type { Eval as eval } from "./types";
+      export async function run(client: OpenAI) {
+        eval("client = {}");
+        return client.chat.completions.create({ model: "openai/gpt-4.1-mini" });
+      }
+    `;
+
+    expect(scanTypeScript({ file: "src/type-only-eval.ts", source })).toMatchObject([
+      {
+        confidence: "ambiguous",
+        patchability: "not-patchable",
+        reasonCode: "unverified-client",
+      },
+    ]);
+  });
+
+  it("abstains when a type-only import-equals eval leaves intrinsic eval reachable", () => {
+    const source = `
+      import OpenAI from "openai";
+      import type eval = require("./types");
+      export async function run(client: OpenAI) {
+        eval("client = {}");
+        return client.chat.completions.create({ model: "openai/gpt-4.1-mini" });
+      }
+    `;
+
+    expect(scanTypeScript({ file: "src/type-only-import-equals-eval.ts", source })).toMatchObject([
+      {
+        confidence: "ambiguous",
+        patchability: "not-patchable",
+        reasonCode: "unverified-client",
+      },
+    ]);
+  });
+
+  it("keeps a type-proven client patchable when direct eval is in an unrelated function", () => {
+    const source = `
+      import OpenAI from "openai";
+      function unrelated() {
+        eval("void 0");
+      }
+      export async function run(client: OpenAI) {
+        return client.chat.completions.create({ model: "openai/gpt-4.1-mini" });
+      }
+    `;
+
+    expect(scanTypeScript({ file: "src/unrelated-eval.ts", source })).toMatchObject([
+      {
+        confidence: "high",
+        modelPin: "openai/gpt-4.1-mini",
+        patchability: "patchable",
+        reasonCode: "static-model-literal",
+      },
+    ]);
+  });
+
+  it("keeps a type-proven client patchable when eval is shadowed", () => {
+    const source = `
+      import OpenAI from "openai";
+      export async function run(client: OpenAI, eval: (source: string) => void) {
+        eval("client = {}");
+        return client.chat.completions.create({ model: "openai/gpt-4.1-mini" });
+      }
+    `;
+
+    expect(scanTypeScript({ file: "src/shadowed-eval.ts", source })).toMatchObject([
+      {
+        confidence: "high",
+        modelPin: "openai/gpt-4.1-mini",
+        patchability: "patchable",
+        reasonCode: "static-model-literal",
+      },
+    ]);
+  });
+
+  it("keeps a type-proven client patchable when eval is optional", () => {
+    const source = `
+      import OpenAI from "openai";
+      export async function run(client: OpenAI) {
+        eval?.("client = {}");
+        return client.chat.completions.create({ model: "openai/gpt-4.1-mini" });
+      }
+    `;
+
+    expect(scanTypeScript({ file: "src/optional-eval.ts", source })).toMatchObject([
+      {
+        confidence: "high",
+        modelPin: "openai/gpt-4.1-mini",
+        patchability: "patchable",
+        reasonCode: "static-model-literal",
+      },
+    ]);
+  });
+
+  it("abstains when a satisfies wrapper conceals a receiver write", () => {
+    const source = `
+      import OpenAI from "openai";
+      export async function run(client: OpenAI) {
+        (client satisfies OpenAI) = {} as OpenAI;
+        return client.chat.completions.create({ model: "openai/gpt-4.1-mini" });
+      }
+    `;
+
+    expect(scanTypeScript({ file: "src/satisfies-reassignment.ts", source })).toMatchObject([
+      {
+        confidence: "ambiguous",
+        patchability: "not-patchable",
+        reasonCode: "unverified-client",
+      },
+    ]);
+  });
+
   it("discovers the checked-in golden call without assigning its human-owned manifest ID", async () => {
     const fixtureRoot = path.resolve(
       import.meta.dirname,

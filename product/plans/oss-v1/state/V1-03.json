@@ -2,47 +2,51 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "V1-03",
-  "revision": 7,
-  "state": "in_progress",
+  "revision": 39,
+  "state": "accepted",
   "attempt": 3,
-  "candidate": null,
+  "candidate": {
+    "baseCommit": "b19bd97c20999f944029f35b64559dfe85da2632",
+    "commit": "c8ca57d13bebb4f4afd9e81ce43af8b11831739c",
+    "executor": "implementation-agent"
+  },
   "criteria": [
     {
       "criterionId": "SCAN-001",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-03-scanner-corpus-c8ca57d"]
     },
     {
       "criterionId": "SCAN-002",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-03-scanner-corpus-c8ca57d"]
     },
     {
       "criterionId": "SCAN-003",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-03-scanner-corpus-c8ca57d"]
     },
     {
       "criterionId": "SCAN-004",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-03-scanner-corpus-c8ca57d"]
     }
   ],
   "gates": [
     {
       "gateId": "QG-REPO-CHECK",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-03-repo-check-c8ca57d"]
     },
     {
       "gateId": "QG-CONTRACTS",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-03-contracts-c8ca57d"]
     },
     {
       "gateId": "QG-SCANNER-CORPUS",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-03-scanner-corpus-c8ca57d"]
     },
     {
       "gateId": "QG-INDEPENDENT-VERIFY",
@@ -138,6 +142,300 @@
       "at": "2026-08-11T10:23:32Z",
       "actor": "davidahmann",
       "reason": "Maintainer reopened the final safety-correction attempt under the abstention-only invariant."
+    },
+    {
+      "from": "in_progress",
+      "to": "verification_pending",
+      "at": "2026-08-11T10:37:08Z",
+      "actor": "implementation-agent",
+      "reason": "Submitted the exact computed-override and mutable-binding safety repair candidate with replacement repository, contract, and scanner-corpus command evidence."
+    },
+    {
+      "from": "verification_pending",
+      "to": "accepted",
+      "at": "2026-08-11T10:38:10Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer accepted the exact final scanner safety candidate after all active command gates passed; reviewer records remain advisory under ADR 0009."
+    },
+    {
+      "from": "accepted",
+      "to": "changes_requested",
+      "at": "2026-08-11T10:44:31Z",
+      "actor": "chatgpt-codex-connector[bot]",
+      "reason": "P1 review feedback found that source order cannot prove a receiver was not reassigned by hoisted or deferred control flow."
+    },
+    {
+      "from": "changes_requested",
+      "to": "in_progress",
+      "at": "2026-08-11T10:44:31Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer reopened the same unmerged final safety attempt to make all reassigned proven receivers abstain."
+    },
+    {
+      "from": "in_progress",
+      "to": "verification_pending",
+      "at": "2026-08-11T10:47:21Z",
+      "actor": "implementation-agent",
+      "reason": "Submitted the exact hoisted-control-flow safety repair candidate with replacement repository, contract, and scanner-corpus command evidence."
+    },
+    {
+      "from": "verification_pending",
+      "to": "accepted",
+      "at": "2026-08-11T10:49:18Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer accepted the exact scanner safety candidate after all active command gates passed; reviewer records remain advisory under ADR 0009."
+    },
+    {
+      "from": "accepted",
+      "to": "changes_requested",
+      "at": "2026-08-11T10:53:24Z",
+      "actor": "chatgpt-codex-connector[bot]",
+      "reason": "P1 review feedback found that compound receiver assignments can also replace a proven OpenAI client before a patchable call."
+    },
+    {
+      "from": "changes_requested",
+      "to": "in_progress",
+      "at": "2026-08-11T10:53:24Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer reopened the same unmerged final safety attempt to make all assignment operators on proven receivers abstain."
+    },
+    {
+      "from": "in_progress",
+      "to": "verification_pending",
+      "at": "2026-08-11T10:56:29Z",
+      "actor": "implementation-agent",
+      "reason": "Submitted the exact compound-assignment safety repair candidate with replacement repository, contract, and scanner-corpus command evidence."
+    },
+    {
+      "from": "verification_pending",
+      "to": "accepted",
+      "at": "2026-08-11T10:57:54Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer accepted the exact scanner safety candidate after all active command gates passed; reviewer records remain advisory under ADR 0009."
+    },
+    {
+      "from": "accepted",
+      "to": "changes_requested",
+      "at": "2026-08-11T11:02:06Z",
+      "actor": "chatgpt-codex-connector[bot]",
+      "reason": "P1 review feedback found that destructuring assignment targets can replace a proven OpenAI receiver before a patchable call."
+    },
+    {
+      "from": "changes_requested",
+      "to": "in_progress",
+      "at": "2026-08-11T11:02:06Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer reopened the same unmerged final safety attempt to make all direct receiver write targets abstain."
+    },
+    {
+      "from": "in_progress",
+      "to": "verification_pending",
+      "at": "2026-08-11T11:05:14Z",
+      "actor": "implementation-agent",
+      "reason": "Submitted the exact receiver-write-target safety repair candidate with replacement repository, contract, and scanner-corpus command evidence."
+    },
+    {
+      "from": "verification_pending",
+      "to": "accepted",
+      "at": "2026-08-11T11:06:33Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer accepted the exact scanner safety candidate after all active command gates passed; reviewer records remain advisory under ADR 0009."
+    },
+    {
+      "from": "accepted",
+      "to": "changes_requested",
+      "at": "2026-08-11T11:10:20Z",
+      "actor": "chatgpt-codex-connector[bot]",
+      "reason": "P1 review feedback found that direct eval can mutate a proven receiver without a statically visible write target."
+    },
+    {
+      "from": "changes_requested",
+      "to": "in_progress",
+      "at": "2026-08-11T11:10:20Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer reopened the same unmerged final safety attempt to make direct eval fail closed for proven receiver provenance."
+    },
+    {
+      "from": "in_progress",
+      "to": "verification_pending",
+      "at": "2026-08-11T11:13:42Z",
+      "actor": "implementation-agent",
+      "reason": "Submitted the exact direct-eval safety repair candidate with replacement repository, contract, and scanner-corpus command evidence."
+    },
+    {
+      "from": "verification_pending",
+      "to": "accepted",
+      "at": "2026-08-11T11:15:05Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer accepted the exact scanner safety candidate after all active command gates passed; reviewer records remain advisory under ADR 0009."
+    },
+    {
+      "from": "accepted",
+      "to": "changes_requested",
+      "at": "2026-08-11T11:20:37Z",
+      "actor": "chatgpt-codex-connector[bot]",
+      "reason": "P1 review feedback found that a satisfies wrapper can conceal a direct receiver write target."
+    },
+    {
+      "from": "changes_requested",
+      "to": "in_progress",
+      "at": "2026-08-11T11:20:37Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer reopened the same unmerged final safety attempt to unwrap satisfies expressions before receiver-write analysis."
+    },
+    {
+      "from": "in_progress",
+      "to": "verification_pending",
+      "at": "2026-08-11T11:23:20Z",
+      "actor": "implementation-agent",
+      "reason": "Submitted the exact satisfies-wrapper safety repair candidate with replacement repository, contract, and scanner-corpus command evidence."
+    },
+    {
+      "from": "verification_pending",
+      "to": "accepted",
+      "at": "2026-08-11T11:24:47Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer accepted the exact scanner safety candidate after all active command gates passed; reviewer records remain advisory under ADR 0009."
+    },
+    {
+      "from": "accepted",
+      "to": "changes_requested",
+      "at": "2026-08-11T11:32:45Z",
+      "actor": "chatgpt-codex-connector[bot]",
+      "reason": "Current-head review identified two bounded precision cases: a statically known non-model computed key and direct eval outside a receiver's reachable lexical scope."
+    },
+    {
+      "from": "changes_requested",
+      "to": "in_progress",
+      "at": "2026-08-11T11:32:45Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer reopened the same unmerged final scanner attempt with a plan-embedded boundary for exactly the two current-head precision remedies."
+    },
+    {
+      "from": "in_progress",
+      "to": "verification_pending",
+      "at": "2026-08-11T11:36:58Z",
+      "actor": "implementation-agent",
+      "reason": "Submitted the exact scanner precision candidate with replacement repository, contract, and reviewed-corpus command evidence."
+    },
+    {
+      "from": "verification_pending",
+      "to": "accepted",
+      "at": "2026-08-11T11:39:00Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer accepted the exact scanner precision candidate after all active command gates passed; reviewer records remain advisory under ADR 0009."
+    },
+    {
+      "from": "accepted",
+      "to": "changes_requested",
+      "at": "2026-08-11T11:44:12Z",
+      "actor": "chatgpt-codex-connector[bot]",
+      "reason": "Current-head P1 review identified erased ambient eval declarations and merged var declaration initializers as remaining unsafe patchability paths."
+    },
+    {
+      "from": "changes_requested",
+      "to": "in_progress",
+      "at": "2026-08-11T11:44:12Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer reopened the same unmerged final scanner attempt with a plan-embedded boundary for exactly the two current-head P1 safety remedies."
+    },
+    {
+      "from": "in_progress",
+      "to": "verification_pending",
+      "at": "2026-08-11T11:48:26Z",
+      "actor": "implementation-agent",
+      "reason": "Submitted the exact scanner patch-safety candidate with replacement repository, contract, and reviewed-corpus command evidence."
+    },
+    {
+      "from": "verification_pending",
+      "to": "accepted",
+      "at": "2026-08-11T11:49:55Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer accepted the exact scanner patch-safety candidate after all active command gates passed; reviewer records remain advisory under ADR 0009."
+    },
+    {
+      "from": "accepted",
+      "to": "changes_requested",
+      "at": "2026-08-11T11:55:17Z",
+      "actor": "chatgpt-codex-connector[bot]",
+      "reason": "Current-head P1 review found that the already-authorized merged-var remedy must also traverse destructuring binding names."
+    },
+    {
+      "from": "changes_requested",
+      "to": "in_progress",
+      "at": "2026-08-11T11:55:17Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer reopened the same unmerged final scanner attempt to complete the already-authorized merged-var invalidation remedy."
+    },
+    {
+      "from": "in_progress",
+      "to": "verification_pending",
+      "at": "2026-08-11T11:57:59Z",
+      "actor": "implementation-agent",
+      "reason": "Submitted the exact scanner merged-binding candidate with replacement repository, contract, and reviewed-corpus command evidence."
+    },
+    {
+      "from": "verification_pending",
+      "to": "accepted",
+      "at": "2026-08-11T11:59:26Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer accepted the exact scanner merged-binding candidate after all active command gates passed; reviewer records remain advisory under ADR 0009."
+    },
+    {
+      "from": "accepted",
+      "to": "changes_requested",
+      "at": "2026-08-11T12:06:15Z",
+      "actor": "chatgpt-codex-connector[bot]",
+      "reason": "Current-head review found that erased type-only imports and optional eval calls require the already-authorized direct-eval boundary to distinguish runtime direct evaluation."
+    },
+    {
+      "from": "changes_requested",
+      "to": "in_progress",
+      "at": "2026-08-11T12:06:15Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer reopened the same unmerged final scanner attempt to complete the already-authorized direct-eval safety and precision boundary."
+    },
+    {
+      "from": "in_progress",
+      "to": "verification_pending",
+      "at": "2026-08-11T12:09:25Z",
+      "actor": "implementation-agent",
+      "reason": "Submitted the exact scanner direct-eval boundary candidate with replacement repository, contract, and reviewed-corpus command evidence."
+    },
+    {
+      "from": "verification_pending",
+      "to": "accepted",
+      "at": "2026-08-11T12:10:51Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer accepted the exact scanner direct-eval boundary candidate after all active command gates passed; reviewer records remain advisory under ADR 0009."
+    },
+    {
+      "from": "accepted",
+      "to": "changes_requested",
+      "at": "2026-08-11T12:15:53Z",
+      "actor": "chatgpt-codex-connector[bot]",
+      "reason": "Current-head P1 review found var-declared loop bindings and type-only import-equals declarations as remaining unsafe receiver and direct-eval paths."
+    },
+    {
+      "from": "changes_requested",
+      "to": "in_progress",
+      "at": "2026-08-11T12:15:53Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer reopened the same unmerged final scanner attempt with a plan-embedded boundary for the final var-loop and erased-import remedies."
+    },
+    {
+      "from": "in_progress",
+      "to": "verification_pending",
+      "at": "2026-08-11T12:19:13Z",
+      "actor": "implementation-agent",
+      "reason": "Submitted the exact scanner runtime-binding candidate with replacement repository, contract, and reviewed-corpus command evidence."
+    },
+    {
+      "from": "verification_pending",
+      "to": "accepted",
+      "at": "2026-08-11T12:22:03Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer accepted the exact scanner runtime-binding candidate after all active command gates passed; reviewer records remain advisory under ADR 0009."
     }
   ]
 }
