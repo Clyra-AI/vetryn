@@ -564,7 +564,7 @@
         "The correction authorizes only root files mechanically required to add and publish the V1-05 workspace package: .changeset/**, knip.json, package.json, pnpm-lock.yaml, and vitest.config.ts.",
         "A publishable-package task declares required release metadata, a minor Changeset marker, and package/example documentation sync in its compiled packet.",
         "Every lifecycle evidence name has one immutable candidate-specific repo-relative ref beneath the trusted Factory artifact namespace, and high-risk V1-05 names its review_report ref explicitly.",
-        "The packet validator recomputes every lifecycle ref from task_id, the current candidate or unbound state, and the artifact property name; schema shape alone cannot authorize lifecycle evidence.",
+        "The packet validator authenticates current product-contract, plan, and lockfile digests; re-derives security-relevant task policy from canonical plan; binds the candidate to canonical state; and recomputes every lifecycle ref, while allowing only ledger/status promotion tails that preserve that candidate.",
         "Publishable-package documentation refs derive from the task's package deliverables and authorized example paths rather than from one provider-specific hard-coded list.",
         "V1-05 retains its existing product acceptance criteria, provider capability, high-risk review gates, retry limit, deterministic ranking policy, and fail-closed semantics.",
         "The process task changes no product source, fixture, dependency version, workflow, credential, provider call, or completed-task acceptance record."

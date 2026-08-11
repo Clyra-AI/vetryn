@@ -37,6 +37,43 @@ function factorySkillsForTask(task) {
   ];
 }
 
+function lifecycleGatesForTask(task, trustReviewRequired) {
+  return {
+    local_validation_required: true,
+    ci_required: true,
+    code_review_required: task.risk.level === "high",
+    trust_review_required: trustReviewRequired,
+    codex_review_required: false,
+    commit_push_required: true,
+    post_merge_monitor_required: true,
+    pr_lifecycle_report_required: true,
+    skip_policy: "approved_exception_required",
+  };
+}
+
+function taskView(task) {
+  return {
+    id: task.id,
+    title: task.title,
+    objective: task.objective,
+    risk: task.risk,
+    dependsOn: task.dependsOn,
+    scope: task.scope,
+    semanticInvariants: task.semanticInvariants,
+    deliverables: task.deliverables,
+    requiredTestLevels: task.requiredTestLevels,
+    capabilities: task.capabilities,
+    stopConditions: task.stopConditions,
+  };
+}
+
+function assertSame(actual, expected, field) {
+  assert(
+    JSON.stringify(actual) === JSON.stringify(expected),
+    `${field} does not match canonical plan`,
+  );
+}
+
 function lifecycleEvidenceForTask(task, trustReviewRequired) {
   return [
     ...baseLifecycleEvidenceRequired.slice(0, 1),
@@ -276,17 +313,7 @@ async function compile(taskId) {
     final_validation_commands: ["pnpm check"],
     required_worker_chain: factorySkills,
     required_domain_review_chain: trustReviewRequired ? ["vetryn-trust-review"] : [],
-    lifecycle_gates: {
-      local_validation_required: true,
-      ci_required: true,
-      code_review_required: highRiskTask,
-      trust_review_required: trustReviewRequired,
-      codex_review_required: false,
-      commit_push_required: true,
-      post_merge_monitor_required: true,
-      pr_lifecycle_report_required: true,
-      skip_policy: "approved_exception_required",
-    },
+    lifecycle_gates: lifecycleGatesForTask(task, trustReviewRequired),
     evidence_required: workerEvidenceRequired,
     worker_evidence_required: workerEvidenceRequired,
     lifecycle_evidence_required: lifecycleEvidenceRequired,
@@ -295,7 +322,7 @@ async function compile(taskId) {
       state.candidate?.commit,
       lifecycleEvidenceRequired,
     ),
-    packet_validation_command: "node scripts/task.mjs validate",
+    packet_validation_command: "node scripts/task.mjs validate {packet_path}",
     stop_conditions: [
       ...task.stopConditions,
       "A changed path is outside allowed_paths or matches forbidden_paths.",
@@ -434,19 +461,7 @@ async function compile(taskId) {
       statePath,
       digests: sourceDigests,
     },
-    task: {
-      id: task.id,
-      title: task.title,
-      objective: task.objective,
-      risk: task.risk,
-      dependsOn: task.dependsOn,
-      scope: task.scope,
-      semanticInvariants: task.semanticInvariants,
-      deliverables: task.deliverables,
-      requiredTestLevels: task.requiredTestLevels,
-      capabilities: task.capabilities,
-      stopConditions: task.stopConditions,
-    },
+    task: taskView(task),
     currentState: {
       state: state.state,
       attempt: state.attempt,
@@ -485,6 +500,56 @@ async function validatePacket(packet) {
       .join("; ")}`,
   );
   assert(packet.task_id === packet.task.id, "task_id does not match task.id");
+  const { plan, ledger } = await loadPlanContext();
+  const canonicalTask = plan.tasks.find((task) => task.id === packet.task_id);
+  assert(canonicalTask, `canonical plan does not contain task ${packet.task_id}`);
+  const canonicalGates = canonicalTask.requiredGates.map((gateId) =>
+    plan.gateCatalog.find((gate) => gate.id === gateId),
+  );
+  assert(
+    canonicalGates.every(Boolean),
+    `canonical task ${packet.task_id} references an unknown gate`,
+  );
+  const canonicalAcceptanceItems = ledger.items.filter((item) => item.taskId === packet.task_id);
+  const canonicalTrustReview = canonicalTask.requiredGates.includes("QG-TRUST-REVIEW");
+  const canonicalFactorySkills = factorySkillsForTask(canonicalTask);
+  const canonicalLifecycleEvidence = lifecycleEvidenceForTask(canonicalTask, canonicalTrustReview);
+  const canonicalValidationCommands = [
+    ...new Set([
+      ...canonicalGates.filter((gate) => gate.kind === "command").map((gate) => gate.command),
+      `pnpm --silent task:compile -- ${packet.task_id}`,
+    ]),
+  ];
+  assertSame(packet.task, taskView(canonicalTask), "task");
+  assertSame(packet.risk_class, canonicalTask.risk.level, "risk_class");
+  assertSame(packet.allowed_paths, canonicalTask.scope.allowedPaths, "allowed_paths");
+  assertSame(packet.forbidden_paths, canonicalTask.scope.forbiddenPaths, "forbidden_paths");
+  assertSame(packet.validation_commands, canonicalValidationCommands, "validation_commands");
+  assertSame(packet.acceptance_item_ids, canonicalTask.acceptanceItemIds, "acceptance_item_ids");
+  assertSame(
+    packet.acceptance_checks,
+    canonicalAcceptanceItems.map((item) => item.statement),
+    "acceptance_checks",
+  );
+  assertSame(packet.gates, canonicalGates, "gates");
+  assertSame(packet.requiredReviews, canonicalTask.requiredReviews, "requiredReviews");
+  assertSame(packet.required_worker_chain, canonicalFactorySkills, "required_worker_chain");
+  assertSame(packet.execution.factorySkills, canonicalFactorySkills, "execution.factorySkills");
+  assertSame(
+    packet.required_domain_review_chain,
+    canonicalTrustReview ? ["vetryn-trust-review"] : [],
+    "required_domain_review_chain",
+  );
+  assertSame(
+    packet.lifecycle_gates,
+    lifecycleGatesForTask(canonicalTask, canonicalTrustReview),
+    "lifecycle_gates",
+  );
+  assertSame(
+    packet.lifecycle_evidence_required,
+    canonicalLifecycleEvidence,
+    "lifecycle_evidence_required",
+  );
   const expectedStatePath = `product/plans/oss-v1/state/${packet.task_id}.json`;
   assert(
     packet.source.statePath === expectedStatePath,
@@ -496,6 +561,19 @@ async function validatePacket(packet) {
     JSON.stringify(canonicalState.candidate) === JSON.stringify(packet.currentState.candidate),
     "currentState.candidate does not match canonical task state",
   );
+  const expectedSourceFiles = [
+    plan.productContract,
+    sourcePaths.plan,
+    sourcePaths.ledger,
+    expectedStatePath,
+    "pnpm-lock.yaml",
+  ];
+  assertSame(Object.keys(packet.source.digests), expectedSourceFiles, "source.digests keys");
+  for (const sourceFile of [plan.productContract, sourcePaths.plan, "pnpm-lock.yaml"])
+    assert(
+      packet.source.digests[sourceFile] === (await digest(sourceFile)),
+      `source digest is stale for ${sourceFile}`,
+    );
   assertLifecycleEvidenceBindings(packet);
 }
 

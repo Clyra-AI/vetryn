@@ -94,10 +94,12 @@ executor may report an acceptance item as implemented, partial, missing, or bloc
 change the ledger or accept the task. Any source drift requires recompilation; plan and lockfile digests in
 already-passing evidence remain immutable historical provenance.
 
-Before consuming lifecycle evidence from a stored packet, run
-`node scripts/task.mjs validate <packet-path>`. The command applies the public JSON Schema and then recomputes each
-lifecycle ref from the packet's task, candidate state, and artifact key, rejecting cross-task, stale-candidate,
-unbound-candidate, and swapped-artifact refs.
+Before consuming lifecycle evidence from a stored packet, replace `{packet_path}` in the packet's declared command
+and run `node scripts/task.mjs validate <packet-path>`. The command applies the public JSON Schema, authenticates
+the current product-contract, plan, and lockfile inputs, re-derives task risk and lifecycle gates from canonical
+policy, binds the candidate to canonical state, and then recomputes each lifecycle ref. It rejects policy
+downgrade, cross-task, stale-candidate, unbound-candidate, swapped-artifact, and security-input drift while
+allowing ledger/status-only promotion tails that preserve the frozen candidate.
 
 ## Quality lanes
 

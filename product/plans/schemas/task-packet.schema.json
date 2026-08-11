@@ -149,7 +149,9 @@
       },
       "additionalProperties": false
     },
-    "packet_validation_command": { "const": "node scripts/task.mjs validate" },
+    "packet_validation_command": {
+      "const": "node scripts/task.mjs validate {packet_path}"
+    },
     "stop_conditions": { "$ref": "#/$defs/nonemptyUniqueStrings" },
     "retry_budget": {
       "type": "object",

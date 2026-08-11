@@ -807,8 +807,20 @@ describe("task packet compiler", () => {
       "product/plans/oss-v1/evidence/lifecycle/V1-05/1111111111111111111111111111111111111111/review_report.json",
     );
     expect(Object.keys(packet.lifecycle_evidence_refs)).toEqual(packet.lifecycle_evidence_required);
-    expect(packet.packet_validation_command).toBe("node scripts/task.mjs validate");
+    expect(packet.packet_validation_command).toBe("node scripts/task.mjs validate {packet_path}");
     await writeFixtureJson(root, "candidate-packet.json", packet);
+    expect(runTask(root, "validate", "candidate-packet.json").status).toBe(0);
+
+    state.state = "review_pending";
+    state.history.push({
+      from: "verification_pending",
+      to: "review_pending",
+      at: "2026-08-10T01:02:00Z",
+      actor: "task-test-fixture",
+      reason: "Prove lifecycle-only state movement preserves the frozen candidate packet.",
+    });
+    await writeFixtureJson(root, statePath, state);
+    expect(runPlan(root, "write").status).toBe(0);
     expect(runTask(root, "validate", "candidate-packet.json").status).toBe(0);
 
     const invalidBindings = [
@@ -855,6 +867,32 @@ describe("task packet compiler", () => {
     expect(forgedCandidateValidation.status).toBe(1);
     expect(forgedCandidateValidation.stderr).toContain(
       "currentState.candidate does not match canonical task state",
+    );
+
+    const downgradedPolicyPacket = globalThis.structuredClone(packet);
+    downgradedPolicyPacket.risk_class = "medium";
+    downgradedPolicyPacket.required_worker_chain =
+      downgradedPolicyPacket.required_worker_chain.filter((worker) => worker !== "code-review");
+    downgradedPolicyPacket.execution.factorySkills =
+      downgradedPolicyPacket.execution.factorySkills.filter((worker) => worker !== "code-review");
+    downgradedPolicyPacket.lifecycle_gates.code_review_required = false;
+    downgradedPolicyPacket.lifecycle_evidence_required =
+      downgradedPolicyPacket.lifecycle_evidence_required.filter(
+        (artifact) => artifact !== "review_report",
+      );
+    delete downgradedPolicyPacket.lifecycle_evidence_refs.review_report;
+    await writeFixtureJson(root, "downgraded-policy-packet.json", downgradedPolicyPacket);
+    const downgradedPolicyValidation = runTask(root, "validate", "downgraded-policy-packet.json");
+    expect(downgradedPolicyValidation.status).toBe(1);
+    expect(downgradedPolicyValidation.stderr).toContain("risk_class does not match canonical plan");
+
+    const stalePlanPacket = globalThis.structuredClone(packet);
+    stalePlanPacket.source.digests["product/plans/oss-v1/plan.json"] = "0".repeat(64);
+    await writeFixtureJson(root, "stale-plan-packet.json", stalePlanPacket);
+    const stalePlanValidation = runTask(root, "validate", "stale-plan-packet.json");
+    expect(stalePlanValidation.status).toBe(1);
+    expect(stalePlanValidation.stderr).toContain(
+      "source digest is stale for product/plans/oss-v1/plan.json",
     );
 
     task.deliverables = ["packages/typescript/**", "packages/cli/**"];

@@ -36,6 +36,8 @@
   than hard-coding OpenRouter documentation for unrelated packages.
 - Added cross-field packet validation that rejects lifecycle refs bound to the wrong task, candidate, unbound
   state, or artifact key even when their JSON shape is otherwise valid.
+- Authenticated stored task packets against current canonical plan policy and source digests, and made the
+  machine-readable validation command's `{packet_path}` substitution explicit.
 
 ### Changed
 
