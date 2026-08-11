@@ -2,51 +2,47 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "V1-03",
-  "revision": 42,
-  "state": "verification_pending",
+  "revision": 43,
+  "state": "changes_requested",
   "attempt": 3,
-  "candidate": {
-    "baseCommit": "3a91ea3652dee363654fe07cd8b191fd65d55c48",
-    "commit": "fb67799756618b5b53b1efe63a38dbfcb5e30591",
-    "executor": "implementation-agent"
-  },
+  "candidate": null,
   "criteria": [
     {
       "criterionId": "SCAN-001",
-      "status": "pass",
-      "evidenceRefs": ["ev-v1-03-scanner-corpus-fb67799"]
+      "status": "pending",
+      "evidenceRefs": []
     },
     {
       "criterionId": "SCAN-002",
-      "status": "pass",
-      "evidenceRefs": ["ev-v1-03-scanner-corpus-fb67799"]
+      "status": "pending",
+      "evidenceRefs": []
     },
     {
       "criterionId": "SCAN-003",
-      "status": "pass",
-      "evidenceRefs": ["ev-v1-03-scanner-corpus-fb67799"]
+      "status": "pending",
+      "evidenceRefs": []
     },
     {
       "criterionId": "SCAN-004",
-      "status": "pass",
-      "evidenceRefs": ["ev-v1-03-scanner-corpus-fb67799"]
+      "status": "pending",
+      "evidenceRefs": []
     }
   ],
   "gates": [
     {
       "gateId": "QG-REPO-CHECK",
-      "status": "pass",
-      "evidenceRefs": ["ev-v1-03-repo-check-fb67799"]
+      "status": "pending",
+      "evidenceRefs": []
     },
     {
       "gateId": "QG-CONTRACTS",
-      "status": "pass",
-      "evidenceRefs": ["ev-v1-03-contracts-fb67799"]
+      "status": "pending",
+      "evidenceRefs": []
     },
     {
       "gateId": "QG-SCANNER-CORPUS",
-      "status": "pass",
-      "evidenceRefs": ["ev-v1-03-scanner-corpus-fb67799"]
+      "status": "pending",
+      "evidenceRefs": []
     },
     {
       "gateId": "QG-INDEPENDENT-VERIFY",
@@ -464,6 +460,13 @@
       "at": "2026-08-11T13:45:00Z",
       "actor": "implementation-agent",
       "reason": "Submitted the fresh scanner candidate created after M0-05 merged, with replacement repository, contract, and reviewed-corpus command evidence for maintainer promotion."
+    },
+    {
+      "from": "verification_pending",
+      "to": "changes_requested",
+      "at": "2026-08-11T13:46:00Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer reopened the same authorized third attempt to replace the overly narrow active-state regression assertion before final candidate promotion."
     }
   ]
 }

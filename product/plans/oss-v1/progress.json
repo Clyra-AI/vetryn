@@ -4,8 +4,8 @@
   "planId": "oss-v1",
   "taskCounts": {
     "accepted": 10,
-    "planned": 6,
-    "verification_pending": 1
+    "changes_requested": 1,
+    "planned": 6
   },
   "acceptanceCounts": {
     "accepted": 24,
@@ -70,7 +70,7 @@
     },
     {
       "taskId": "V1-03",
-      "state": "verification_pending",
+      "state": "changes_requested",
       "acceptedCriteria": 0,
       "totalCriteria": 4
     },
