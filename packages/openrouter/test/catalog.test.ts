@@ -235,6 +235,7 @@ describe("candidate resolution", () => {
     expect(shortlist.exclusions).toEqual(
       expect.arrayContaining([
         { modelId: "mock/baseline", reason: "baseline-model" },
+        { modelId: "mock/too-small", reason: "context-window-insufficient" },
         { modelId: "mock/retired", reason: "retired" },
         { modelId: "other/blocked", reason: "provider-blocked" },
       ]),
@@ -341,6 +342,33 @@ describe("refresh evidence", () => {
     expect(store.snapshots.size).toBe(1);
   });
 
+  it("stops streaming an oversized catalog before buffering the full response", async () => {
+    const store = new MemoryStore();
+    const cancel = vi.fn();
+    const body = new ReadableStream<Uint8Array>({
+      cancel,
+      start(controller) {
+        controller.enqueue(new Uint8Array(20_000_001));
+      },
+    });
+
+    const result = await refreshOpenRouterCatalog({
+      acquisition: "captured-response",
+      fetch: async () => new Response(body),
+      observedAt,
+      refreshId: "refresh-oversized-stream",
+      store,
+    });
+
+    expect(result).toMatchObject({
+      observation: { errorCode: "invalid-catalog", status: "failure" },
+      snapshot: null,
+      status: "failure",
+    });
+    expect(cancel).toHaveBeenCalledOnce();
+    expect(store.snapshots.size).toBe(0);
+  });
+
   it("refuses to label injected transport data as a live OpenRouter acquisition", async () => {
     const forged = {
       acquisition: "live-api",
@@ -397,6 +425,7 @@ function createRankingSnapshot(): CatalogSnapshot {
     catalogModel("mock/echo", "1.2", "1", 131_072),
     catalogModel("mock/foxtrot", "0.2", "10.2", 131_072),
     catalogModel("mock/golf", "2", "0.1", 131_072),
+    catalogModel("mock/too-small", "0", "0", 9),
     catalogModel("mock/retired", "0", "0", 1_000_000, { retired: true }),
     catalogModel("other/blocked", "0", "0", 1_000_000, { provider: "other" }),
   ];

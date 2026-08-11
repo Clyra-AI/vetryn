@@ -137,7 +137,12 @@ export type RefreshCatalogResult =
 
 export interface CandidateExclusion {
   readonly modelId: string;
-  readonly reason: "baseline-model" | "capability-incompatible" | "provider-blocked" | "retired";
+  readonly reason:
+    | "baseline-model"
+    | "capability-incompatible"
+    | "context-window-insufficient"
+    | "provider-blocked"
+    | "retired";
 }
 
 export interface RankedCandidate {
@@ -373,10 +378,11 @@ export async function refreshOpenRouterCatalog(
     if (declaredLength !== null && Number(declaredLength) > MAX_CATALOG_BYTES) {
       return recordRefreshFailure(store, refreshId, observedAt, acquisition, "invalid-catalog");
     }
-    body = await response.text();
-    if (Buffer.byteLength(body, "utf8") > MAX_CATALOG_BYTES) {
+    const boundedBody = await readResponseBody(response, MAX_CATALOG_BYTES);
+    if (boundedBody === undefined) {
       return recordRefreshFailure(store, refreshId, observedAt, acquisition, "invalid-catalog");
     }
+    body = boundedBody;
   } catch {
     return recordRefreshFailure(store, refreshId, observedAt, acquisition, "fetch-failed");
   }
@@ -509,6 +515,12 @@ function exclusionReason(
   if (model.retired) return "retired";
   if (!callSite.providerPolicy.allowedProviders.includes(model.provider)) return "provider-blocked";
   if (
+    model.contextWindowTokens <
+    callSite.representativeUsage.promptTokens + callSite.representativeUsage.completionTokens
+  ) {
+    return "context-window-insufficient";
+  }
+  if (
     !model.capabilities.textGeneration ||
     (callSite.requiredCapabilities.structuredOutput && !model.capabilities.structuredOutput) ||
     (callSite.requiredCapabilities.toolCalls && !model.capabilities.toolCalls)
@@ -536,12 +548,38 @@ function assertRepresentativeUsage(callSite: CallSite): void {
     !Number.isSafeInteger(completionTokens) ||
     promptTokens < 0 ||
     completionTokens < 0 ||
+    !Number.isSafeInteger(promptTokens + completionTokens) ||
     promptTokens + completionTokens === 0
   ) {
     throw new OpenRouterCatalogError(
       "Candidate resolution requires a reviewed, provenance-bound representative usage profile with non-negative integer token weights.",
     );
   }
+}
+
+async function readResponseBody(
+  response: Response,
+  maximumBytes: number,
+): Promise<string | undefined> {
+  if (response.body === null) return "";
+  const reader = response.body.getReader();
+  const chunks: Buffer[] = [];
+  let byteLength = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      byteLength += value.byteLength;
+      if (byteLength > maximumBytes) {
+        await reader.cancel().catch(() => undefined);
+        return undefined;
+      }
+      chunks.push(Buffer.from(value.buffer, value.byteOffset, value.byteLength));
+    }
+  } finally {
+    reader.releaseLock();
+  }
+  return Buffer.concat(chunks, byteLength).toString("utf8");
 }
 
 function parsePerTokenPrice(value: unknown): string | undefined {
