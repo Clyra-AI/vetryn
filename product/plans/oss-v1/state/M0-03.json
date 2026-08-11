@@ -2,8 +2,8 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "M0-03",
-  "revision": 4,
-  "state": "accepted",
+  "revision": 5,
+  "state": "changes_requested",
   "attempt": 1,
   "candidate": {
     "baseCommit": "ebb19dd41abeb97934d6b147f7292eb01cf3de96",
@@ -13,20 +13,20 @@
   "criteria": [
     {
       "criterionId": "PROCESS-004",
-      "status": "pass",
-      "evidenceRefs": ["ev-m0-03-plan-check-3eb46d2"]
+      "status": "pending",
+      "evidenceRefs": []
     }
   ],
   "gates": [
     {
       "gateId": "QG-PLAN-CHECK",
-      "status": "pass",
-      "evidenceRefs": ["ev-m0-03-plan-check-3eb46d2"]
+      "status": "pending",
+      "evidenceRefs": []
     },
     {
       "gateId": "QG-REPO-CHECK",
-      "status": "pass",
-      "evidenceRefs": ["ev-m0-03-repo-check-3eb46d2"]
+      "status": "pending",
+      "evidenceRefs": []
     }
   ],
   "reviews": [],
@@ -63,7 +63,7 @@
     {
       "from": "changes_requested",
       "to": "in_progress",
-      "at": "2026-08-11T02:51:00Z",
+      "at": "2026-08-11T02:52:10Z",
       "actor": "davidahmann",
       "reason": "Started the corrective work within the already-authorized single M0-03 attempt."
     },
@@ -73,6 +73,13 @@
       "at": "2026-08-11T02:52:35Z",
       "actor": "davidahmann",
       "reason": "Maintainer accepted the corrected exact M0-03 candidate after both active command gates passed."
+    },
+    {
+      "from": "accepted",
+      "to": "changes_requested",
+      "at": "2026-08-11T02:57:40Z",
+      "actor": "davidahmann",
+      "reason": "Current-head Codex review identified a gate-evidence binding correction before this task merged."
     }
   ]
 }
