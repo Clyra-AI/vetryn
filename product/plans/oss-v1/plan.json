@@ -594,6 +594,51 @@
       ]
     },
     {
+      "id": "M0-08",
+      "milestone": "M0",
+      "title": "Authorize future-task fixture isolation",
+      "objective": "Authorize only the plan and task test-fixture paths required to keep the V1-00 harness isolated when V1-05 and later tasks are promoted.",
+      "risk": { "level": "low", "domains": ["delivery-policy", "test-isolation"] },
+      "dependsOn": [{ "taskId": "M0-07", "kind": "hard" }],
+      "acceptanceItemIds": ["PROCESS-009"],
+      "scope": {
+        "allowedPaths": [
+          "product/plans/oss-v1/plan.json",
+          "product/plans/oss-v1/progress.json",
+          "product/plans/oss-v1/acceptance-ledger.json",
+          "product/plans/oss-v1/state/M0-08.json",
+          "product/plans/oss-v1/state/V1-05.json",
+          "product/plans/oss-v1/evidence/**",
+          "scripts/plan.test.mjs",
+          "scripts/task.test.mjs"
+        ],
+        "forbiddenPaths": ["packages/**", "examples/**", "action.yml", ".github/**"]
+      },
+      "semanticInvariants": [
+        "The authorization adds only scripts/plan.test.mjs and scripts/task.test.mjs to V1-05 implementation scope.",
+        "The M0-08 fixture records itself as planned inside the existing temporary V1-00 harness so the process task can pass repository validation without changing canonical state.",
+        "The future-task reset is confined to temporary V1-00 plan and task test fixtures and covers V1-05 through V1-10.",
+        "V1-05 product behavior, acceptance criteria, capabilities, provider policy, review gates, and retry limit remain unchanged.",
+        "This process task changes no product source, fixture, dependency, workflow, credential, provider call, or completed-task acceptance record."
+      ],
+      "deliverables": ["product/plans/oss-v1/**", "scripts/plan.test.mjs", "scripts/task.test.mjs"],
+      "requiredTestLevels": ["static", "contract"],
+      "requiredGates": ["QG-PLAN-CHECK", "QG-REPO-CHECK"],
+      "requiredReviews": [],
+      "capabilities": {
+        "network": false,
+        "credentials": false,
+        "provider": false,
+        "githubWrite": false
+      },
+      "maxAttempts": 1,
+      "stopConditions": [
+        "V1-05 gains any implementation path other than scripts/plan.test.mjs and scripts/task.test.mjs.",
+        "The correction changes V1-05 product or safety semantics.",
+        "A product, fixture, dependency, workflow, credential, provider call, or completed-task acceptance record changes."
+      ]
+    },
+    {
       "id": "V1-02",
       "milestone": "M1",
       "title": "Build the deterministic golden repository",
@@ -753,7 +798,8 @@
         { "taskId": "V1-01", "kind": "hard" },
         { "taskId": "V1-02", "kind": "hard" },
         { "taskId": "M0-06", "kind": "hard" },
-        { "taskId": "M0-07", "kind": "hard" }
+        { "taskId": "M0-07", "kind": "hard" },
+        { "taskId": "M0-08", "kind": "hard" }
       ],
       "acceptanceItemIds": [
         "CATALOG-001",
@@ -772,6 +818,8 @@
           "packages/core/**",
           "packages/cli/**",
           "examples/openrouter-typescript/**",
+          "scripts/plan.test.mjs",
+          "scripts/task.test.mjs",
           "vitest.config.ts"
         ],
         "forbiddenPaths": ["packages/typescript/**", "action.yml"]
@@ -784,7 +832,8 @@
         "Candidate ranking uses projected workload cost ascending, context limit descending, and canonical model ID ascending.",
         "Every successful live refresh records immutable freshness evidence even when its content-addressed snapshot is reused.",
         "A failed live refresh cannot silently relabel an older snapshot as current.",
-        "Workspace and release metadata changes are limited to the staged OpenRouter package, its CLI integration, deterministic test resolution, dead-code analysis, frozen lockfile importer, and required Changeset."
+        "Workspace and release metadata changes are limited to the staged OpenRouter package, its CLI integration, deterministic test resolution, dead-code analysis, frozen lockfile importer, and required Changeset.",
+        "Plan and task fixtures reset V1-05 and later task lifecycle state so advancing the canonical backlog cannot invalidate isolated V1-00 contract tests."
       ],
       "deliverables": [
         ".changeset/**",
@@ -792,6 +841,8 @@
         "pnpm-lock.yaml",
         "packages/openrouter/**",
         "packages/cli/**",
+        "scripts/plan.test.mjs",
+        "scripts/task.test.mjs",
         "vitest.config.ts"
       ],
       "requiredTestLevels": ["unit", "contract", "integration", "adversarial"],

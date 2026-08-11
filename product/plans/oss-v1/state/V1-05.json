@@ -2,7 +2,7 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "V1-05",
-  "revision": 6,
+  "revision": 7,
   "state": "planned",
   "attempt": 0,
   "candidate": null,
@@ -112,6 +112,13 @@
       "at": "2026-08-10T13:32:52Z",
       "actor": "planning-agent",
       "reason": "Proved compatibility and policy filters run before shortlist truncation."
+    },
+    {
+      "from": "planned",
+      "to": "planned",
+      "at": "2026-08-11T21:36:00Z",
+      "actor": "davidahmann",
+      "reason": "M0-08 separately authorized only the two temporary planning-test fixture paths needed to keep future V1 promotions isolated."
     }
   ]
 }

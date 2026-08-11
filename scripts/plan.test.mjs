@@ -24,6 +24,7 @@ const fixtureTaskIds = [
   "M0-05",
   "M0-06",
   "M0-07",
+  "M0-08",
   "V1-01",
   "V1-02",
   "V1-03",
@@ -575,6 +576,37 @@ async function normalizeV1Fixture(root) {
     ],
   });
   await writeFixtureJson(root, manifestStatePath, manifestState);
+
+  const fixtureScopeStatePath = "product/plans/oss-v1/state/M0-08.json";
+  const fixtureScopeState = await readFixtureJson(root, fixtureScopeStatePath);
+  Object.assign(fixtureScopeState, {
+    revision: 0,
+    state: "planned",
+    attempt: 0,
+    candidate: null,
+    criteria: fixtureScopeState.criteria.map((criterion) => ({
+      ...criterion,
+      status: "pending",
+      evidenceRefs: [],
+    })),
+    gates: fixtureScopeState.gates.map((gate) => ({
+      ...gate,
+      status: "pending",
+      evidenceRefs: [],
+    })),
+    reviews: [],
+    blockers: [],
+    history: [
+      {
+        from: null,
+        to: "planned",
+        at: "2026-08-11T21:35:00Z",
+        actor: "plan-test-fixture",
+        reason: "Reset M0-08 with the V1-00 fixture baseline.",
+      },
+    ],
+  });
+  await writeFixtureJson(root, fixtureScopeStatePath, fixtureScopeState);
 
   const dependentStatePath = "product/plans/oss-v1/state/V1-01.json";
   const dependentState = await readFixtureJson(root, dependentStatePath);

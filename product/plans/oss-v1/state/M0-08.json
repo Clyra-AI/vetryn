@@ -1,0 +1,57 @@
+{
+  "$schema": "../../schemas/task-state.schema.json",
+  "schemaVersion": "1.0.0",
+  "taskId": "M0-08",
+  "revision": 2,
+  "state": "accepted",
+  "attempt": 1,
+  "candidate": {
+    "baseCommit": "f04241099285898db50da055dd0c13422b42fc97",
+    "commit": "7f9e3389081bff412b3144ee6855f260ba481ec5",
+    "executor": "implementation-agent"
+  },
+  "criteria": [
+    {
+      "criterionId": "PROCESS-009",
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-08-repo-check-7f9e338"]
+    }
+  ],
+  "gates": [
+    {
+      "gateId": "QG-PLAN-CHECK",
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-08-plan-check-7f9e338"]
+    },
+    {
+      "gateId": "QG-REPO-CHECK",
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-08-repo-check-7f9e338"]
+    }
+  ],
+  "reviews": [],
+  "blockers": [],
+  "history": [
+    {
+      "from": null,
+      "to": "planned",
+      "at": "2026-08-11T21:35:00Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer authorized a separate process task for the exact two future-task fixture paths requested by current-head review."
+    },
+    {
+      "from": "planned",
+      "to": "in_progress",
+      "at": "2026-08-11T21:36:00Z",
+      "actor": "implementation-agent",
+      "reason": "Applied the process-only V1-05 scope authorization before recompiling or changing the V1-05 candidate."
+    },
+    {
+      "from": "in_progress",
+      "to": "accepted",
+      "at": "2026-08-11T21:38:10Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer accepted the exact process candidate after both active command gates passed and no product or safety scope changed."
+    }
+  ]
+}
