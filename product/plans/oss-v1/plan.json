@@ -772,6 +772,11 @@
           "packages/core/**",
           "packages/cli/**",
           "examples/openrouter-typescript/**",
+          "product/plans/oss-v1/plan.json",
+          "product/plans/oss-v1/progress.json",
+          "product/plans/oss-v1/state/V1-05.json",
+          "scripts/plan.test.mjs",
+          "scripts/task.test.mjs",
           "vitest.config.ts"
         ],
         "forbiddenPaths": ["packages/typescript/**", "action.yml"]
@@ -784,7 +789,8 @@
         "Candidate ranking uses projected workload cost ascending, context limit descending, and canonical model ID ascending.",
         "Every successful live refresh records immutable freshness evidence even when its content-addressed snapshot is reused.",
         "A failed live refresh cannot silently relabel an older snapshot as current.",
-        "Workspace and release metadata changes are limited to the staged OpenRouter package, its CLI integration, deterministic test resolution, dead-code analysis, frozen lockfile importer, and required Changeset."
+        "Workspace and release metadata changes are limited to the staged OpenRouter package, its CLI integration, deterministic test resolution, dead-code analysis, frozen lockfile importer, and required Changeset.",
+        "Plan and task fixtures reset V1-05 and later task lifecycle state so advancing the canonical backlog cannot invalidate isolated V1-00 contract tests."
       ],
       "deliverables": [
         ".changeset/**",
@@ -792,6 +798,11 @@
         "pnpm-lock.yaml",
         "packages/openrouter/**",
         "packages/cli/**",
+        "product/plans/oss-v1/plan.json",
+        "product/plans/oss-v1/progress.json",
+        "product/plans/oss-v1/state/V1-05.json",
+        "scripts/plan.test.mjs",
+        "scripts/task.test.mjs",
         "vitest.config.ts"
       ],
       "requiredTestLevels": ["unit", "contract", "integration", "adversarial"],

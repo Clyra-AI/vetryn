@@ -15,6 +15,7 @@ const planScript = path.join(repositoryRoot, "scripts/plan.mjs");
 const temporaryRoots = [];
 const bootstrapCommentId = 987654321;
 const v1TaskId = "V1-00";
+const downstreamV1TaskIds = ["V1-05", "V1-06", "V1-07", "V1-08", "V1-09", "V1-10"];
 const fixtureTaskIds = [
   v1TaskId,
   "M0-01",
@@ -28,6 +29,7 @@ const fixtureTaskIds = [
   "V1-02",
   "V1-03",
   "V1-04",
+  ...downstreamV1TaskIds,
 ];
 
 function bootstrapBody(overrides = {}) {
@@ -575,6 +577,39 @@ async function normalizeV1Fixture(root) {
     ],
   });
   await writeFixtureJson(root, manifestStatePath, manifestState);
+
+  for (const taskId of downstreamV1TaskIds) {
+    const statePath = `product/plans/oss-v1/state/${taskId}.json`;
+    const state = await readFixtureJson(root, statePath);
+    Object.assign(state, {
+      revision: 0,
+      state: "planned",
+      attempt: 0,
+      candidate: null,
+      criteria: state.criteria.map((criterion) => ({
+        ...criterion,
+        status: "pending",
+        evidenceRefs: [],
+      })),
+      gates: state.gates.map((gate) => ({ ...gate, status: "pending", evidenceRefs: [] })),
+      reviews: state.reviews.map((review) => ({
+        ...review,
+        status: "pending",
+        evidenceRefs: [],
+      })),
+      blockers: [],
+      history: [
+        {
+          from: null,
+          to: "planned",
+          at: "2026-08-10T00:00:00Z",
+          actor: "plan-test-fixture",
+          reason: `Reset ${taskId} lifecycle data with the V1-00 fixture baseline.`,
+        },
+      ],
+    });
+    await writeFixtureJson(root, statePath, state);
+  }
 
   const dependentStatePath = "product/plans/oss-v1/state/V1-01.json";
   const dependentState = await readFixtureJson(root, dependentStatePath);
