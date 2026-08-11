@@ -2,8 +2,8 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "V1-02",
-  "revision": 8,
-  "state": "verification_pending",
+  "revision": 9,
+  "state": "accepted",
   "attempt": 3,
   "candidate": {
     "baseCommit": "223d4b7eed73272ff883b235daa2e3b8580695a7",
@@ -40,8 +40,8 @@
     },
     {
       "gateId": "QG-SCENARIOS",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-02-scenarios-b51c341"]
     },
     {
       "gateId": "QG-INDEPENDENT-VERIFY",
@@ -172,6 +172,13 @@
       "at": "2026-08-11T04:05:00Z",
       "actor": "implementation-agent",
       "reason": "Submitted the M0-04-authorized candidate with exact offline scenario and repository-gate evidence for separate maintainer promotion."
+    },
+    {
+      "from": "verification_pending",
+      "to": "accepted",
+      "at": "2026-08-11T04:12:41Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer accepted the exact M0-04-authorized candidate after the active offline scenario and repository command gates passed; named reviewer records remain advisory under ADR 0009."
     }
   ]
 }
