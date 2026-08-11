@@ -1,0 +1,110 @@
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
+
+import { afterEach, describe, expect, it } from "vitest";
+
+import { createCatalogShortlistFile, refreshCatalogFile } from "../src/index.js";
+
+const temporaryRoots: string[] = [];
+
+afterEach(async () => {
+  await Promise.all(
+    temporaryRoots.splice(0).map((root) => rm(root, { force: true, recursive: true })),
+  );
+});
+
+describe("catalog CLI operations", () => {
+  it("imports local provider metadata, persists evidence, and replays an offline shortlist", async () => {
+    const root = await mkdtemp(path.join(tmpdir(), "vetryn-catalog-cli-"));
+    temporaryRoots.push(root);
+    const catalogPath = path.join(root, "catalog.json");
+    const manifestPath = path.join(root, "manifest.json");
+    await writeFile(
+      catalogPath,
+      JSON.stringify({
+        data: [
+          rawModel("openai/baseline", "0.000001", "0.000002", 128_000),
+          rawModel("openai/candidate", "0.0000001", "0.0000002", 64_000),
+        ],
+      }),
+    );
+    await writeFile(manifestPath, JSON.stringify(manifest));
+
+    const refresh = await refreshCatalogFile({
+      catalogFile: catalogPath,
+      observedAt: "2026-08-11T12:00:00.000Z",
+      refreshId: "cli-refresh",
+      storePath: path.join(root, "store"),
+    });
+    expect(refresh.status).toBe("success");
+    if (refresh.status !== "success") throw new Error("unexpected refresh failure");
+    const snapshotPath = path.join(
+      root,
+      "store",
+      "snapshots",
+      `${refresh.snapshot.contentDigest.slice(7)}.json`,
+    );
+    const shortlist = await createCatalogShortlistFile({
+      callSiteId: "support-classification",
+      manifestPath,
+      snapshotPath,
+    });
+
+    expect(shortlist).toMatchObject({
+      baselineModel: "openai/baseline",
+      candidates: [{ modelId: "openai/candidate", projectedCostUsd: "1.1" }],
+      catalogSnapshotId: refresh.snapshot.id,
+      limit: 5,
+    });
+    expect(JSON.parse(await readFile(snapshotPath, "utf8"))).toEqual(refresh.snapshot);
+  });
+});
+
+const rawModel = (id: string, prompt: string, completion: string, context: number) => ({
+  architecture: { output_modalities: ["text"] },
+  context_length: context,
+  id,
+  pricing: { completion, prompt },
+  supported_parameters: ["response_format"],
+});
+
+const manifest = {
+  artifactType: "call-site-manifest",
+  callSites: [
+    {
+      currentModel: "openai/baseline",
+      evalSuiteId: "eval-suite:support-classification",
+      gates: {
+        maxQualityRegression: 0,
+        minCases: 30,
+        minPassRate: 0.98,
+        minRecommendationConfidence: 0.8,
+        minSavingsPercent: 20,
+      },
+      id: "support-classification",
+      name: "Support classification",
+      owner: "support-platform",
+      providerPolicy: { allowedProviders: ["openai"] },
+      representativeUsage: {
+        completionTokens: 1,
+        promptTokens: 9,
+        provenanceRef: "reviewed-fixture:2026-08-10",
+        reviewed: true,
+      },
+      requiredCapabilities: {
+        structuredOutput: true,
+        textGeneration: true,
+        toolCalls: false,
+      },
+      sourceBinding: {
+        adapter: "openai.chat.completions.create",
+        file: "src/support-classification.ts",
+        sourceFingerprint: `sha256:${"a".repeat(64)}`,
+        symbol: "classifySupportTicket",
+      },
+    },
+  ],
+  id: "call-site-manifest:openrouter-cli-test",
+  schemaVersion: "1.0.0",
+};

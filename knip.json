@@ -8,6 +8,10 @@
     "packages/cli": {
       "entry": ["src/index.ts"],
       "project": ["src/**/*.ts", "test/**/*.ts"]
+    },
+    "packages/openrouter": {
+      "entry": ["src/index.ts"],
+      "project": ["src/**/*.ts", "test/**/*.ts"]
     }
   }
 }

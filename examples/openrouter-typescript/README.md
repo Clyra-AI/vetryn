@@ -30,6 +30,21 @@ To inspect the scanner output without executing the fixture source, run:
 node packages/cli/dist/index.js scan --root examples/openrouter-typescript src --json
 ```
 
+Catalog inputs are provider data and remain untrusted. Capture or fetch them through `catalog refresh`,
+then use only the persisted content-addressed snapshot for evaluation. This offline example already pins
+its reviewed snapshot at `fixtures/catalog-snapshot.json`:
+
+```sh
+node packages/cli/dist/index.js catalog shortlist \
+  --manifest examples/openrouter-typescript/fixtures/manifest.json \
+  --call-site support-classification \
+  --snapshot examples/openrouter-typescript/fixtures/catalog-snapshot.json
+```
+
+The shortlist excludes the baseline, retired entries, blocked providers, and incompatible capabilities
+before applying the five-candidate bound. Its ordering uses the manifest's reviewed prompt/completion
+weights and is reproducible even if OpenRouter's live catalog later changes.
+
 The golden pipeline is:
 
 1. scan the fixture and compare discovered fingerprints with reviewed expectations;

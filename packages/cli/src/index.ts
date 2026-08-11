@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import { randomUUID } from "node:crypto";
 import { lstat, mkdir, readFile, readdir, rename, rmdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
@@ -10,8 +11,17 @@ import {
   canonicalizeArtifact,
   initializeCallSiteManifest,
   parseCallSite,
+  parseCallSiteManifest,
+  parseCatalogSnapshot,
   type CallSiteManifest,
 } from "@vetryn/core";
+import {
+  FileCatalogStore,
+  refreshOpenRouterCatalog,
+  resolveCandidates,
+  type CandidateShortlist,
+  type RefreshCatalogResult,
+} from "@vetryn/openrouter";
 
 export const VERSION = "0.0.0";
 const ignoredPathNames = new Set([".artifacts", ".git", "coverage", "dist", "node_modules"]);
@@ -45,6 +55,60 @@ export interface ScanRepositoryOptions {
 export interface ScanRepositoryResult {
   readonly files: readonly string[];
   readonly findings: readonly ScanFinding[];
+}
+
+export interface CatalogRefreshFileOptions {
+  readonly catalogFile?: string;
+  readonly observedAt?: string;
+  readonly refreshId?: string;
+  readonly storePath: string;
+}
+
+export interface CatalogShortlistFileOptions {
+  readonly callSiteId: string;
+  readonly limit?: number;
+  readonly manifestPath: string;
+  readonly snapshotPath: string;
+}
+
+export async function refreshCatalogFile({
+  catalogFile,
+  observedAt = new Date().toISOString(),
+  refreshId = randomUUID(),
+  storePath,
+}: CatalogRefreshFileOptions): Promise<RefreshCatalogResult> {
+  const fetch =
+    catalogFile === undefined
+      ? undefined
+      : async (): Promise<Response> =>
+          new Response(await readFile(catalogFile, "utf8"), {
+            headers: { "content-type": "application/json" },
+            status: 200,
+          });
+  return refreshOpenRouterCatalog({
+    ...(fetch === undefined ? {} : { fetch }),
+    observedAt,
+    refreshId,
+    store: new FileCatalogStore(path.resolve(storePath)),
+  });
+}
+
+export async function createCatalogShortlistFile({
+  callSiteId,
+  limit,
+  manifestPath,
+  snapshotPath,
+}: CatalogShortlistFileOptions): Promise<CandidateShortlist> {
+  const manifest = parseCallSiteManifest(await readJsonFile(manifestPath));
+  const callSite = manifest.callSites.find(({ id }) => id === callSiteId);
+  if (callSite === undefined) {
+    throw new Error(`Call site ${callSiteId} is not present in ${manifestPath}.`);
+  }
+  return resolveCandidates({
+    callSite,
+    ...(limit === undefined ? {} : { limit }),
+    snapshot: parseCatalogSnapshot(await readJsonFile(snapshotPath)),
+  });
 }
 
 export async function initializeManifestFile({
@@ -321,6 +385,59 @@ export function createProgram(): Command {
             ? "Would update"
             : "Validated";
         process.stdout.write(`${outcome} ${summary.manifestId} for ${summary.callSiteId}.\n`);
+      },
+    );
+
+  const catalog = program
+    .command("catalog")
+    .description("Refresh immutable OpenRouter snapshots and resolve offline shortlists.");
+
+  catalog
+    .command("refresh")
+    .description("Fetch or import OpenRouter metadata and record immutable refresh evidence.")
+    .requiredOption("--store <path>", "Directory for immutable catalog evidence.")
+    .option(
+      "--catalog-file <path>",
+      "Import a local OpenRouter response instead of using the network.",
+    )
+    .option("--observed-at <timestamp>", "Offset-aware observation timestamp.")
+    .option("--refresh-id <id>", "Unique immutable observation ID.")
+    .action(
+      async (options: {
+        catalogFile?: string;
+        observedAt?: string;
+        refreshId?: string;
+        store: string;
+      }) => {
+        const result = await refreshCatalogFile({
+          ...(options.catalogFile === undefined ? {} : { catalogFile: options.catalogFile }),
+          ...(options.observedAt === undefined ? {} : { observedAt: options.observedAt }),
+          ...(options.refreshId === undefined ? {} : { refreshId: options.refreshId }),
+          storePath: options.store,
+        });
+        process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+        if (result.status === "failure") process.exitCode = 1;
+      },
+    );
+
+  catalog
+    .command("shortlist")
+    .description("Resolve candidates from a reviewed manifest and a pinned snapshot.")
+    .requiredOption("--manifest <path>", "Path to a reviewed call-site manifest.")
+    .requiredOption("--call-site <id>", "Human-owned call-site ID.")
+    .requiredOption("--snapshot <path>", "Path to an immutable catalog snapshot.")
+    .option("--limit <count>", "Repository candidate bound, from one to five.", (value) =>
+      Number(value),
+    )
+    .action(
+      async (options: { callSite: string; limit?: number; manifest: string; snapshot: string }) => {
+        const shortlist = await createCatalogShortlistFile({
+          callSiteId: options.callSite,
+          ...(options.limit === undefined ? {} : { limit: options.limit }),
+          manifestPath: options.manifest,
+          snapshotPath: options.snapshot,
+        });
+        process.stdout.write(`${JSON.stringify(shortlist, null, 2)}\n`);
       },
     );
 

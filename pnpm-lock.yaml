@@ -56,6 +56,9 @@ importers:
       '@vetryn/core':
         specifier: workspace:*
         version: link:../core
+      '@vetryn/openrouter':
+        specifier: workspace:*
+        version: link:../openrouter
       '@vetryn/typescript':
         specifier: workspace:*
         version: link:../typescript
@@ -82,6 +85,25 @@ importers:
       fast-check:
         specifier: 4.9.0
         version: 4.9.0
+      tsup:
+        specifier: 8.5.1
+        version: 8.5.1(jiti@2.7.0)(postcss@8.5.26)(typescript@6.0.3)(yaml@2.9.0)
+      typescript:
+        specifier: 6.0.3
+        version: 6.0.3
+
+  packages/openrouter:
+    dependencies:
+      '@vetryn/core':
+        specifier: workspace:*
+        version: link:../core
+      zod:
+        specifier: 4.4.3
+        version: 4.4.3
+    devDependencies:
+      '@types/node':
+        specifier: 26.2.0
+        version: 26.2.0
       tsup:
         specifier: 8.5.1
         version: 8.5.1(jiti@2.7.0)(postcss@8.5.26)(typescript@6.0.3)(yaml@2.9.0)

@@ -7,7 +7,15 @@ import { describe, expect, it, vi } from "vitest";
 import {
   createCatalogContentDigest,
   parseVetrynArtifact,
+  type CatalogSnapshot as CoreCatalogSnapshot,
 } from "../../../packages/core/src/index.js";
+import {
+  normalizeOpenRouterCatalog,
+  refreshOpenRouterCatalog,
+  resolveCandidates,
+  type CatalogStore,
+  type RefreshObservation,
+} from "../../../packages/openrouter/src/index.js";
 import {
   createOpenAICompatibleMockTransport,
   createMockProvider,
@@ -508,3 +516,208 @@ describe("OpenRouter TypeScript golden scenario", () => {
     });
   });
 });
+
+describe("OpenRouter catalog evidence and shortlist replay", () => {
+  it("fails closed on incomplete metadata and replays the locked ranking from a pinned snapshot", () => {
+    const incomplete = normalizeOpenRouterCatalog(
+      {
+        data: [
+          rawCatalogModel("mock/valid", "0.000001", "0.000002", 65_536),
+          {
+            ...rawCatalogModel("mock/missing-price", "0.000001", "0.000002", 65_536),
+            pricing: { prompt: "0.000001" },
+          },
+          {
+            ...rawCatalogModel("mock/missing-capabilities", "0.000001", "0.000002", 65_536),
+            supported_parameters: undefined,
+          },
+        ],
+      },
+      "2026-08-10T00:00:00.000Z",
+    );
+    expect(incomplete.snapshot.models.map(({ id }) => id)).toEqual(["mock/valid"]);
+    expect(incomplete.exclusions).toEqual(
+      expect.arrayContaining([
+        { modelId: "mock/missing-price", reason: "invalid-pricing" },
+        { modelId: "mock/missing-capabilities", reason: "invalid-capabilities" },
+      ]),
+    );
+
+    const snapshot = rankedCatalogSnapshot();
+    const beforeLiveChange = resolveCandidates({ callSite: mockCallSite, snapshot });
+    normalizeOpenRouterCatalog(
+      { data: [rawCatalogModel("mock/new-live-model", "0", "0", 2_000_000)] },
+      "2026-08-11T00:00:00.000Z",
+    );
+    const afterLiveChange = resolveCandidates({ callSite: mockCallSite, snapshot });
+
+    expect(afterLiveChange).toEqual(beforeLiveChange);
+    expect(beforeLiveChange.candidates).toEqual([
+      expect.objectContaining({ modelId: "mock/alpha", projectedCostUsd: "10.9" }),
+      expect.objectContaining({ modelId: "mock/bravo", projectedCostUsd: "11" }),
+      expect.objectContaining({ modelId: "mock/charlie", projectedCostUsd: "11" }),
+      expect.objectContaining({ modelId: "mock/delta", projectedCostUsd: "11" }),
+      expect.objectContaining({ modelId: "mock/echo", projectedCostUsd: "11.8" }),
+    ]);
+    expect(
+      resolveCandidates({ callSite: mockCallSite, limit: 2, snapshot }).candidates.map(
+        ({ modelId }) => modelId,
+      ),
+    ).toEqual(["mock/alpha", "mock/bravo"]);
+    expect(() => resolveCandidates({ callSite: mockCallSite, limit: 6, snapshot })).toThrow(
+      /limit/i,
+    );
+    expect(() =>
+      resolveCandidates({
+        callSite: {
+          ...mockCallSite,
+          representativeUsage: { ...mockCallSite.representativeUsage, reviewed: false },
+        },
+        snapshot,
+      }),
+    ).toThrow();
+  });
+
+  it("records unchanged refreshes separately and never presents stale data after failure", async () => {
+    const store = new ScenarioCatalogStore();
+    const fetch = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({
+            data: [rawCatalogModel("mock/alpha", "0.0000001", "0.00001", 32_768)],
+          }),
+        ),
+    );
+    const first = await refreshOpenRouterCatalog({
+      fetch,
+      observedAt: "2026-08-10T00:00:00.000Z",
+      refreshId: "scenario-refresh-1",
+      store,
+    });
+    const second = await refreshOpenRouterCatalog({
+      fetch,
+      observedAt: "2026-08-11T00:00:00.000Z",
+      refreshId: "scenario-refresh-2",
+      store,
+    });
+    const failure = await refreshOpenRouterCatalog({
+      fetch: async () => new Response("unavailable", { status: 503 }),
+      observedAt: "2026-08-12T00:00:00.000Z",
+      refreshId: "scenario-refresh-failure",
+      store,
+    });
+
+    expect(first.status).toBe("success");
+    expect(second.status).toBe("success");
+    if (first.status !== "success" || second.status !== "success") throw new Error("unexpected");
+    expect(second.snapshot).toEqual(first.snapshot);
+    expect(second.observation.reusedSnapshot).toBe(true);
+    expect(store.snapshots.size).toBe(1);
+    expect(store.observations).toHaveLength(3);
+    expect(failure).toMatchObject({
+      observation: { contentDigest: null, snapshotId: null, status: "failure" },
+      snapshot: null,
+      status: "failure",
+    });
+  });
+});
+
+const rawCatalogModel = (id: string, prompt: string, completion: string, context: number) => ({
+  architecture: { output_modalities: ["text"] },
+  context_length: context,
+  id,
+  pricing: { completion, prompt },
+  supported_parameters: ["response_format"],
+});
+
+const mockCatalogModel = (
+  id: string,
+  inputPricePerMillionUsd: string,
+  outputPricePerMillionUsd: string,
+  contextWindowTokens: number,
+  options: { readonly provider?: string; readonly retired?: boolean } = {},
+) => ({
+  capabilities: { structuredOutput: true, textGeneration: true, toolCalls: false },
+  contextWindowTokens,
+  id,
+  inputPricePerMillionUsd,
+  outputPricePerMillionUsd,
+  provider: options.provider ?? id.slice(0, id.indexOf("/")),
+  retired: options.retired ?? false,
+});
+
+const mockCallSite = {
+  currentModel: "mock/baseline",
+  evalSuiteId: "eval-suite:support-classification",
+  gates: {
+    maxQualityRegression: 0,
+    minCases: 30,
+    minPassRate: 0.98,
+    minRecommendationConfidence: 0.8,
+    minSavingsPercent: 20,
+  },
+  id: "support-classification",
+  name: "Support classification",
+  owner: "support-platform",
+  providerPolicy: { allowedProviders: ["mock"] },
+  representativeUsage: {
+    completionTokens: 1,
+    promptTokens: 9,
+    provenanceRef: "reviewed-fixture:2026-08-10",
+    reviewed: true,
+  },
+  requiredCapabilities: { structuredOutput: true, textGeneration: true, toolCalls: false },
+  sourceBinding: {
+    adapter: "openai.chat.completions.create",
+    file: "src/support-classification.ts",
+    sourceFingerprint: `sha256:${"a".repeat(64)}`,
+    symbol: "classifySupportTicket",
+  },
+};
+
+const rankedCatalogSnapshot = (): CoreCatalogSnapshot => {
+  const models = [
+    mockCatalogModel("mock/baseline", "9", "9", 10_000),
+    mockCatalogModel("mock/alpha", "0.1", "10", 32_768),
+    mockCatalogModel("mock/bravo", "1", "2", 65_536),
+    mockCatalogModel("mock/charlie", "1", "2", 65_536),
+    mockCatalogModel("mock/delta", "1", "2", 32_768),
+    mockCatalogModel("mock/echo", "1.2", "1", 131_072),
+    mockCatalogModel("mock/foxtrot", "0.2", "10.2", 131_072),
+    mockCatalogModel("mock/golf", "2", "0.1", 131_072),
+    mockCatalogModel("mock/retired", "0", "0", 2_000_000, { retired: true }),
+    mockCatalogModel("other/blocked", "0", "0", 2_000_000, { provider: "other" }),
+  ];
+  const contentDigest = createCatalogContentDigest(models);
+  return parseVetrynArtifact({
+    artifactType: "catalog-snapshot",
+    contentDigest,
+    id: `catalog-snapshot:openrouter--sha256-${contentDigest.slice(7)}`,
+    models,
+    observedAt: "2026-08-10T00:00:00.000Z",
+    schemaVersion: "1.0.0",
+    source: "openrouter",
+  }) as CoreCatalogSnapshot;
+};
+
+class ScenarioCatalogStore implements CatalogStore {
+  readonly observations: RefreshObservation[] = [];
+  readonly snapshots = new Map<string, CoreCatalogSnapshot>();
+
+  async hasSnapshot(contentDigest: string): Promise<boolean> {
+    return this.snapshots.has(contentDigest);
+  }
+
+  async putObservation(observation: RefreshObservation): Promise<void> {
+    this.observations.push(observation);
+  }
+
+  async putSnapshot(
+    snapshot: CoreCatalogSnapshot,
+  ): Promise<{ readonly reused: boolean; readonly snapshot: CoreCatalogSnapshot }> {
+    const existing = this.snapshots.get(snapshot.contentDigest);
+    if (existing !== undefined) return { reused: true, snapshot: existing };
+    this.snapshots.set(snapshot.contentDigest, snapshot);
+    return { reused: false, snapshot };
+  }
+}
