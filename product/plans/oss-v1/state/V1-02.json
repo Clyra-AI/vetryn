@@ -2,8 +2,8 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "V1-02",
-  "revision": 6,
-  "state": "changes_requested",
+  "revision": 7,
+  "state": "in_progress",
   "attempt": 3,
   "candidate": null,
   "criteria": [
@@ -154,6 +154,13 @@
       "at": "2026-08-11T03:49:07Z",
       "actor": "implementation-agent",
       "reason": "Paused the corrective candidate until a separate narrow process task authorizes the additional review finding."
+    },
+    {
+      "from": "changes_requested",
+      "to": "in_progress",
+      "at": "2026-08-11T04:10:00Z",
+      "actor": "implementation-agent",
+      "reason": "Started the M0-04-authorized continuation of the still-unaccepted third attempt."
     }
   ]
 }

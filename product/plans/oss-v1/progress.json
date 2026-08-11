@@ -4,7 +4,7 @@
   "planId": "oss-v1",
   "taskCounts": {
     "accepted": 7,
-    "changes_requested": 1,
+    "in_progress": 1,
     "planned": 8
   },
   "acceptanceCounts": {
@@ -58,7 +58,7 @@
     },
     {
       "taskId": "V1-02",
-      "state": "changes_requested",
+      "state": "in_progress",
       "acceptedCriteria": 0,
       "totalCriteria": 4
     },
