@@ -15,7 +15,7 @@ const planScript = path.join(repositoryRoot, "scripts/plan.mjs");
 const temporaryRoots = [];
 const bootstrapCommentId = 987654321;
 const v1TaskId = "V1-00";
-const fixtureTaskIds = [v1TaskId, "M0-01", "M0-02", "M0-03", "V1-01", "V1-02"];
+const fixtureTaskIds = [v1TaskId, "M0-01", "M0-02", "M0-03", "M0-04", "V1-01", "V1-02"];
 
 function bootstrapBody(overrides = {}) {
   const values = {
@@ -92,14 +92,24 @@ const m003AuthorizedInvariantSet = [
   "The process task does not implement product behavior, broaden V1-02 capabilities, or weaken offline, redaction, or fail-closed requirements.",
   "V1-02 cannot begin its reauthorized attempt until this task is accepted with candidate-bound command evidence.",
 ];
+const m004FindingIds = ["r3755066013", "r3755066020"];
+const m004AuthorizedInvariantSet = [
+  "The reauthorization amends only the still-unaccepted third V1-02 attempt; it does not add a fourth attempt or broaden capabilities.",
+  "The only authorized acceptance-separation correction is r3755066013: keep V1-02 pending until a maintainer promotes its exact candidate separately from the executor.",
+  "The only authorized redaction correction is r3755066020: recursively scan every durable fixture and expected artifact for credential and protected-output markers.",
+  "The process task does not implement product behavior, expand fixture scope, or weaken offline, redaction, or fail-closed requirements.",
+  "V1-02 cannot submit this corrective candidate for verification until this task is accepted with candidate-bound command evidence.",
+];
 const v102AuthorizedInvariantSet = [
   "The golden suite runs without network access.",
   "Fixture secrets and protected output markers never appear in logs or reports.",
   "This reauthorized attempt is limited to r3754744063 application replay, r3754744064 unknown-outcome rejection, r3754744067 stale-source binding, r3754790013 transport budget propagation, and r3754790019 golden-fixture typechecking.",
+  "The M0-04 amendment is limited to r3755066013 separate maintainer promotion and r3755066020 recursive durable-artifact redaction scanning.",
 ];
 
 function assertV102ReauthorizationBoundary(plan, v102State, m003State) {
   const m003Task = plan.tasks.find((task) => task.id === "M0-03");
+  const m004Task = plan.tasks.find((task) => task.id === "M0-04");
   const v102Task = plan.tasks.find((task) => task.id === "V1-02");
   const m003AcceptedAt = m003State.history.find((entry) => entry.to === "accepted")?.at;
   const priorV102History = v102State.history.filter(
@@ -109,16 +119,26 @@ function assertV102ReauthorizationBoundary(plan, v102State, m003State) {
     [...task.semanticInvariants.join(" ").matchAll(/r[0-9]{10}/gu)].map(([id]) => id).sort();
 
   expect(m003Task).toBeDefined();
+  expect(m004Task).toBeDefined();
   expect(v102Task).toBeDefined();
-  if (m003Task === undefined || v102Task === undefined || m003AcceptedAt === undefined)
-    throw new Error("M0-03 and V1-02 reauthorization records must be present");
+  if (
+    m003Task === undefined ||
+    m004Task === undefined ||
+    v102Task === undefined ||
+    m003AcceptedAt === undefined
+  )
+    throw new Error("M0-03, M0-04, and V1-02 reauthorization records must be present");
 
   expect(m003Task.maxAttempts).toBe(1);
+  expect(m004Task.maxAttempts).toBe(1);
   expect(v102Task.maxAttempts).toBe(3);
   expect(v102Task.dependsOn).toContainEqual({ taskId: "M0-03", kind: "hard" });
+  expect(v102Task.dependsOn).toContainEqual({ taskId: "M0-04", kind: "hard" });
   expect(findingIds(m003Task)).toEqual(reauthorizationFindingIds);
-  expect(findingIds(v102Task)).toEqual(reauthorizationFindingIds);
+  expect(findingIds(m004Task)).toEqual(m004FindingIds);
+  expect(findingIds(v102Task)).toEqual([...reauthorizationFindingIds, ...m004FindingIds].sort());
   expect(m003Task.semanticInvariants).toEqual(m003AuthorizedInvariantSet);
+  expect(m004Task.semanticInvariants).toEqual(m004AuthorizedInvariantSet);
   expect(v102Task.semanticInvariants).toEqual(v102AuthorizedInvariantSet);
   expect(priorV102History.filter((entry) => entry.to === "in_progress")).toHaveLength(2);
   expect(priorV102History.filter((entry) => entry.to === "verification_pending")).toHaveLength(2);
@@ -262,6 +282,44 @@ async function normalizeV1Fixture(root) {
     ],
   });
   await writeFixtureJson(root, reauthorizationStatePath, reauthorizationState);
+
+  const postReviewAuthorizationStatePath = "product/plans/oss-v1/state/M0-04.json";
+  const postReviewAuthorizationState = await readFixtureJson(
+    root,
+    postReviewAuthorizationStatePath,
+  );
+  Object.assign(postReviewAuthorizationState, {
+    revision: 0,
+    state: "planned",
+    attempt: 0,
+    candidate: null,
+    criteria: postReviewAuthorizationState.criteria.map((criterion) => ({
+      ...criterion,
+      status: "pending",
+      evidenceRefs: [],
+    })),
+    gates: postReviewAuthorizationState.gates.map((gate) => ({
+      ...gate,
+      status: "pending",
+      evidenceRefs: [],
+    })),
+    reviews: postReviewAuthorizationState.reviews.map((review) => ({
+      ...review,
+      status: "pending",
+      evidenceRefs: [],
+    })),
+    blockers: [],
+    history: [
+      {
+        from: null,
+        to: "planned",
+        at: "2026-08-10T00:00:00Z",
+        actor: "plan-test-fixture",
+        reason: "Reset the post-review authorization process task with the V1-00 fixture baseline.",
+      },
+    ],
+  });
+  await writeFixtureJson(root, postReviewAuthorizationStatePath, postReviewAuthorizationState);
 
   const goldenRepositoryStatePath = "product/plans/oss-v1/state/V1-02.json";
   const goldenRepositoryState = await readFixtureJson(root, goldenRepositoryStatePath);
@@ -487,7 +545,7 @@ afterEach(async () => {
 });
 
 describe("implementation plan validator", () => {
-  it("locks the M0-03 one-attempt, five-finding V1-02 reauthorization boundary", async () => {
+  it("locks the M0-03 and M0-04 bounded V1-02 reauthorization boundaries", async () => {
     const planPath = "product/plans/oss-v1/plan.json";
     const v102StatePath = "product/plans/oss-v1/state/V1-02.json";
     const m003StatePath = "product/plans/oss-v1/state/M0-03.json";
@@ -527,6 +585,14 @@ describe("implementation plan validator", () => {
       .semanticInvariants.push("An additional authorization invariant without a review ID.");
     expect(() =>
       assertV102ReauthorizationBoundary(extraCorrection, v102State, m003State),
+    ).toThrow();
+
+    const extraM004Correction = JSON.parse(JSON.stringify(plan));
+    extraM004Correction.tasks
+      .find((task) => task.id === "M0-04")
+      .semanticInvariants.push("An additional post-review correction without a review ID.");
+    expect(() =>
+      assertV102ReauthorizationBoundary(extraM004Correction, v102State, m003State),
     ).toThrow();
 
     const staleActiveAttempt = JSON.parse(JSON.stringify(v102State));

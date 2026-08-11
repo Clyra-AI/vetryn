@@ -396,6 +396,45 @@
       ]
     },
     {
+      "id": "M0-04",
+      "milestone": "M0",
+      "title": "Authorize the V1-02 redaction correction and separate promotion",
+      "objective": "Authorize the two post-review V1-02 corrections without adding a fourth attempt, product capability, or unrelated fixture behavior.",
+      "risk": { "level": "medium", "domains": ["delivery-policy", "privacy", "provenance"] },
+      "dependsOn": [{ "taskId": "M0-03", "kind": "hard" }],
+      "acceptanceItemIds": ["PROCESS-005"],
+      "scope": {
+        "allowedPaths": [
+          "product/plans/oss-v1/**",
+          "scripts/plan.test.mjs",
+          "scripts/task.test.mjs"
+        ],
+        "forbiddenPaths": ["packages/**", "examples/**", "action.yml", ".github/**"]
+      },
+      "semanticInvariants": [
+        "The reauthorization amends only the still-unaccepted third V1-02 attempt; it does not add a fourth attempt or broaden capabilities.",
+        "The only authorized acceptance-separation correction is r3755066013: keep V1-02 pending until a maintainer promotes its exact candidate separately from the executor.",
+        "The only authorized redaction correction is r3755066020: recursively scan every durable fixture and expected artifact for credential and protected-output markers.",
+        "The process task does not implement product behavior, expand fixture scope, or weaken offline, redaction, or fail-closed requirements.",
+        "V1-02 cannot submit this corrective candidate for verification until this task is accepted with candidate-bound command evidence."
+      ],
+      "deliverables": ["product/plans/oss-v1/**", "scripts/plan.test.mjs", "scripts/task.test.mjs"],
+      "requiredTestLevels": ["static", "contract"],
+      "requiredGates": ["QG-PLAN-CHECK", "QG-REPO-CHECK"],
+      "requiredReviews": [],
+      "capabilities": {
+        "network": false,
+        "credentials": false,
+        "provider": false,
+        "githubWrite": false
+      },
+      "maxAttempts": 1,
+      "stopConditions": [
+        "The reauthorization adds a fourth V1-02 attempt, product capability, live provider access, or any finding beyond the two recorded review IDs.",
+        "A product source, package, fixture, workflow, capability, or safety requirement is changed by this process task."
+      ]
+    },
+    {
       "id": "V1-02",
       "milestone": "M1",
       "title": "Build the deterministic golden repository",
@@ -404,7 +443,8 @@
       "dependsOn": [
         { "taskId": "V1-00", "kind": "hard" },
         { "taskId": "M0-02", "kind": "hard" },
-        { "taskId": "M0-03", "kind": "hard" }
+        { "taskId": "M0-03", "kind": "hard" },
+        { "taskId": "M0-04", "kind": "hard" }
       ],
       "acceptanceItemIds": ["GOLDEN-001", "GOLDEN-002", "GOLDEN-003", "GOLDEN-004"],
       "scope": {
@@ -419,7 +459,8 @@
       "semanticInvariants": [
         "The golden suite runs without network access.",
         "Fixture secrets and protected output markers never appear in logs or reports.",
-        "This reauthorized attempt is limited to r3754744063 application replay, r3754744064 unknown-outcome rejection, r3754744067 stale-source binding, r3754790013 transport budget propagation, and r3754790019 golden-fixture typechecking."
+        "This reauthorized attempt is limited to r3754744063 application replay, r3754744064 unknown-outcome rejection, r3754744067 stale-source binding, r3754790013 transport budget propagation, and r3754790019 golden-fixture typechecking.",
+        "The M0-04 amendment is limited to r3755066013 separate maintainer promotion and r3755066020 recursive durable-artifact redaction scanning."
       ],
       "deliverables": ["examples/openrouter-typescript/**"],
       "requiredTestLevels": ["contract", "integration", "e2e", "adversarial"],
@@ -440,7 +481,7 @@
       "stopConditions": [
         "A scenario depends on live provider state.",
         "Expected snapshots replace semantic assertions.",
-        "A proposed change cannot be traced to one of the five M0-03 authorization findings."
+        "A proposed change cannot be traced to one of the five M0-03 authorization findings or the two M0-04 authorization findings."
       ]
     },
     {
