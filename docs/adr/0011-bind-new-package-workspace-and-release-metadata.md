@@ -27,7 +27,9 @@ local green result that fails in CI or silently disappears from a release.
   current product-contract, plan, and lockfile digests; re-derives security-relevant fields from canonical plan;
   binds the candidate to canonical state; and recomputes every ref from `task_id`, the candidate (or `unbound` only
   when null), and the artifact key. Ledger/status-only promotion tails may advance without invalidating the frozen
-  candidate. JSON Schema shape and packet self-consistency are necessary but insufficient for this boundary.
+  candidate. Canonical comparison covers executor evidence requirements, acceptance closure, commands, scope
+  exclusions, stop conditions, retry/runtime pins, Factory compatibility, execution permissions, and lifecycle
+  policy. JSON Schema shape and packet self-consistency are necessary but insufficient for this boundary.
 - Publishable package documentation refs derive from the task's package deliverables and authorized example paths;
   they are never hard-coded to an unrelated provider package.
 - The lockfile delta is limited to the new workspace importer, internal workspace links, and the already pinned

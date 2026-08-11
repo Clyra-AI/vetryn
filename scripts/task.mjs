@@ -67,6 +67,52 @@ function taskView(task) {
   };
 }
 
+function acceptanceResultRequirementsForItems(items) {
+  return items.map((item) => {
+    const manualReview = new Set(["review", "inspection"]).has(item.verification.method);
+    return {
+      acceptance_item_id: item.id,
+      allowed_statuses: ["implemented", "partial", "missing", "blocked"],
+      evidence_mode: manualReview ? "manual_review" : "automated",
+      closure_evidence: manualReview ? "acceptance_evidence_record" : "validation_ref",
+      evidence_required: workerEvidenceRequired,
+      worker_evidence_required: workerEvidenceRequired,
+      lifecycle_evidence_required: manualReview
+        ? ["github_review_evidence", "canonical_promotion"]
+        : ["validation_report", "canonical_promotion"],
+    };
+  });
+}
+
+function scopeExclusionsForTask(task) {
+  return [
+    ...task.scope.forbiddenPaths.map((pattern) => `Do not change ${pattern}.`),
+    "Do not change paths outside allowed_paths.",
+    "Do not accept, promote, merge, or edit generated progress from the executor role.",
+  ];
+}
+
+function stopConditionsForTask(task, highRiskTask, trustReviewRequired) {
+  return [
+    ...task.stopConditions,
+    "A changed path is outside allowed_paths or matches forbidden_paths.",
+    "A required validation command fails.",
+    "The compiled packet or its source digests drift before handoff.",
+    "A lifecycle artifact is used while its ref is unbound or does not contain the exact candidate commit.",
+    ...(highRiskTask
+      ? [
+          "The candidate reaches promotion or push without a candidate-bound passing review_report.",
+          "Product or contract-bearing candidate changes occur after local structured review without invalidating and rerunning that review.",
+        ]
+      : []),
+    ...(trustReviewRequired
+      ? [
+          "The candidate reaches promotion or push without a candidate-bound passing trust_review_report from vetryn-trust-review.",
+        ]
+      : []),
+  ];
+}
+
 function assertSame(actual, expected, field) {
   assert(
     JSON.stringify(actual) === JSON.stringify(expected),
@@ -261,20 +307,7 @@ async function compile(taskId) {
       `pnpm --silent task:compile -- ${taskId}`,
     ]),
   ];
-  const acceptanceResultRequirements = acceptanceItems.map((item) => {
-    const manualReview = new Set(["review", "inspection"]).has(item.verification.method);
-    return {
-      acceptance_item_id: item.id,
-      allowed_statuses: ["implemented", "partial", "missing", "blocked"],
-      evidence_mode: manualReview ? "manual_review" : "automated",
-      closure_evidence: manualReview ? "acceptance_evidence_record" : "validation_ref",
-      evidence_required: workerEvidenceRequired,
-      worker_evidence_required: workerEvidenceRequired,
-      lifecycle_evidence_required: manualReview
-        ? ["github_review_evidence", "canonical_promotion"]
-        : ["validation_report", "canonical_promotion"],
-    };
-  });
+  const acceptanceResultRequirements = acceptanceResultRequirementsForItems(acceptanceItems);
   const planningContractTask = task.deliverables.includes("product/plans/**");
   const publishablePackageTask = task.scope.allowedPaths.includes(".changeset/**");
   const highRiskTask = task.risk.level === "high";
@@ -301,11 +334,7 @@ async function compile(taskId) {
     worker_type: "task-executor",
     allowed_paths: task.scope.allowedPaths,
     forbidden_paths: task.scope.forbiddenPaths,
-    scope_exclusions: [
-      ...task.scope.forbiddenPaths.map((pattern) => `Do not change ${pattern}.`),
-      "Do not change paths outside allowed_paths.",
-      "Do not accept, promote, merge, or edit generated progress from the executor role.",
-    ],
+    scope_exclusions: scopeExclusionsForTask(task),
     acceptance_checks: acceptanceItems.map((item) => item.statement),
     validation_commands: validationCommands,
     baseline_commands: ["pnpm format:check", "pnpm plan:check"],
@@ -323,24 +352,7 @@ async function compile(taskId) {
       lifecycleEvidenceRequired,
     ),
     packet_validation_command: "node scripts/task.mjs validate {packet_path}",
-    stop_conditions: [
-      ...task.stopConditions,
-      "A changed path is outside allowed_paths or matches forbidden_paths.",
-      "A required validation command fails.",
-      "The compiled packet or its source digests drift before handoff.",
-      "A lifecycle artifact is used while its ref is unbound or does not contain the exact candidate commit.",
-      ...(highRiskTask
-        ? [
-            "The candidate reaches promotion or push without a candidate-bound passing review_report.",
-            "Product or contract-bearing candidate changes occur after local structured review without invalidating and rerunning that review.",
-          ]
-        : []),
-      ...(trustReviewRequired
-        ? [
-            "The candidate reaches promotion or push without a candidate-bound passing trust_review_report from vetryn-trust-review.",
-          ]
-        : []),
-    ],
+    stop_conditions: stopConditionsForTask(task, highRiskTask, trustReviewRequired),
     retry_budget: {
       max_attempts: task.maxAttempts,
       current_attempt: state.attempt,
@@ -500,7 +512,10 @@ async function validatePacket(packet) {
       .join("; ")}`,
   );
   assert(packet.task_id === packet.task.id, "task_id does not match task.id");
-  const { plan, ledger } = await loadPlanContext();
+  const [plan, ledger] = await Promise.all([
+    readJson(sourcePaths.plan),
+    readJson(sourcePaths.ledger),
+  ]);
   const canonicalTask = plan.tasks.find((task) => task.id === packet.task_id);
   assert(canonicalTask, `canonical plan does not contain task ${packet.task_id}`);
   const canonicalGates = canonicalTask.requiredGates.map((gateId) =>
@@ -550,6 +565,44 @@ async function validatePacket(packet) {
     canonicalLifecycleEvidence,
     "lifecycle_evidence_required",
   );
+  assertSame(packet.evidence_required, workerEvidenceRequired, "evidence_required");
+  assertSame(packet.worker_evidence_required, workerEvidenceRequired, "worker_evidence_required");
+  assertSame(
+    packet.acceptance_result_requirements,
+    acceptanceResultRequirementsForItems(canonicalAcceptanceItems),
+    "acceptance_result_requirements",
+  );
+  assertSame(packet.scope_exclusions, scopeExclusionsForTask(canonicalTask), "scope_exclusions");
+  assertSame(
+    packet.baseline_commands,
+    ["pnpm format:check", "pnpm plan:check"],
+    "baseline_commands",
+  );
+  assertSame(packet.red_first_commands, ["pnpm test"], "red_first_commands");
+  assertSame(packet.final_validation_commands, ["pnpm check"], "final_validation_commands");
+  assertSame(
+    packet.stop_conditions,
+    stopConditionsForTask(canonicalTask, canonicalTask.risk.level === "high", canonicalTrustReview),
+    "stop_conditions",
+  );
+  assertSame(packet.runtime_pins, runtimePins, "runtime_pins");
+  assertSame(packet.factory_compatibility, factoryCompatibility, "factory_compatibility");
+  assertSame(packet.acceptance_ledger_ref, sourcePaths.ledger, "acceptance_ledger_ref");
+  assertSame(
+    packet.execution,
+    {
+      implementSkill: "vetryn-implement-task",
+      verifySkill: "vetryn-verify-task",
+      promoteSkill: "vetryn-promote-task",
+      factorySkills: canonicalFactorySkills,
+      executorMayAccept: false,
+      verifierMustDifferFromExecutor: false,
+      maintainerApprovalRequired: true,
+      progressIsGenerated: true,
+      deliveryPermissions: maintainerDeliveryPermissions,
+    },
+    "execution",
+  );
   const expectedStatePath = `product/plans/oss-v1/state/${packet.task_id}.json`;
   assert(
     packet.source.statePath === expectedStatePath,
@@ -557,6 +610,21 @@ async function validatePacket(packet) {
   );
   const canonicalState = await readJson(expectedStatePath);
   assert(canonicalState.taskId === packet.task_id, "canonical state task does not match task_id");
+  assertSame(packet.currentState.attempt, canonicalState.attempt, "currentState.attempt");
+  assertSame(
+    packet.currentState.maxAttempts,
+    canonicalTask.maxAttempts,
+    "currentState.maxAttempts",
+  );
+  assertSame(
+    packet.retry_budget,
+    {
+      max_attempts: canonicalTask.maxAttempts,
+      current_attempt: canonicalState.attempt,
+      remaining_attempts: Math.max(canonicalTask.maxAttempts - canonicalState.attempt, 0),
+    },
+    "retry_budget",
+  );
   assert(
     JSON.stringify(canonicalState.candidate) === JSON.stringify(packet.currentState.candidate),
     "currentState.candidate does not match canonical task state",

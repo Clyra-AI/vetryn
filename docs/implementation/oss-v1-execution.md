@@ -99,7 +99,9 @@ and run `node scripts/task.mjs validate <packet-path>`. The command applies the 
 the current product-contract, plan, and lockfile inputs, re-derives task risk and lifecycle gates from canonical
 policy, binds the candidate to canonical state, and then recomputes each lifecycle ref. It rejects policy
 downgrade, cross-task, stale-candidate, unbound-candidate, swapped-artifact, and security-input drift while
-allowing ledger/status-only promotion tails that preserve the frozen candidate.
+allowing ledger/status-only promotion tails that preserve the frozen candidate. The canonical comparison includes
+executor evidence, item-level acceptance closure, commands, scope exclusions, stop conditions, retry/runtime pins,
+Factory compatibility, execution permissions, and lifecycle policy.
 
 ## Quality lanes
 

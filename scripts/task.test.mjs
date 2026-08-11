@@ -886,6 +886,31 @@ describe("task packet compiler", () => {
     expect(downgradedPolicyValidation.status).toBe(1);
     expect(downgradedPolicyValidation.stderr).toContain("risk_class does not match canonical plan");
 
+    const downgradedExecutorEvidence = globalThis.structuredClone(packet);
+    downgradedExecutorEvidence.evidence_required = ["arbitrary_evidence"];
+    downgradedExecutorEvidence.worker_evidence_required = ["arbitrary_evidence"];
+    await writeFixtureJson(root, "downgraded-executor-evidence.json", downgradedExecutorEvidence);
+    const downgradedExecutorValidation = runTask(
+      root,
+      "validate",
+      "downgraded-executor-evidence.json",
+    );
+    expect(downgradedExecutorValidation.status).toBe(1);
+    expect(downgradedExecutorValidation.stderr).toContain(
+      "evidence_required does not match canonical plan",
+    );
+
+    const downgradedClosure = globalThis.structuredClone(packet);
+    downgradedClosure.acceptance_result_requirements[0].evidence_mode = "manual_review";
+    downgradedClosure.acceptance_result_requirements[0].closure_evidence =
+      "acceptance_evidence_record";
+    await writeFixtureJson(root, "downgraded-closure.json", downgradedClosure);
+    const downgradedClosureValidation = runTask(root, "validate", "downgraded-closure.json");
+    expect(downgradedClosureValidation.status).toBe(1);
+    expect(downgradedClosureValidation.stderr).toContain(
+      "acceptance_result_requirements does not match canonical plan",
+    );
+
     const stalePlanPacket = globalThis.structuredClone(packet);
     stalePlanPacket.source.digests["product/plans/oss-v1/plan.json"] = "0".repeat(64);
     await writeFixtureJson(root, "stale-plan-packet.json", stalePlanPacket);

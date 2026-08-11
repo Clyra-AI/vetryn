@@ -38,6 +38,8 @@
   state, or artifact key even when their JSON shape is otherwise valid.
 - Authenticated stored task packets against current canonical plan policy and source digests, and made the
   machine-readable validation command's `{packet_path}` substitution explicit.
+- Extended stored-packet authentication across all runner-consumed executor evidence and item-level acceptance
+  closure fields, plus commands, scope, retry/runtime, compatibility, execution, and lifecycle policy.
 
 ### Changed
 
