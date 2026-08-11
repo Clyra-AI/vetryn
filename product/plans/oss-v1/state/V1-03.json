@@ -2,8 +2,8 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "V1-03",
-  "revision": 41,
-  "state": "verification_pending",
+  "revision": 42,
+  "state": "accepted",
   "attempt": 3,
   "candidate": {
     "baseCommit": "c8165c57fc2d871c5012a0fe9c0e2f87467b7712",
@@ -457,6 +457,13 @@
       "at": "2026-08-11T12:39:53Z",
       "actor": "implementation-agent",
       "reason": "Submitted the exact post-merge accessor-abstention candidate with replacement repository, contract, and reviewed-corpus command evidence."
+    },
+    {
+      "from": "verification_pending",
+      "to": "accepted",
+      "at": "2026-08-11T12:40:58Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer accepted the exact post-merge accessor-abstention candidate after all active command gates passed; reviewer records remain advisory under ADR 0009."
     }
   ]
 }
