@@ -40,9 +40,11 @@ local green result that fails in CI or silently disappears from a release.
   named canonical inputs but are not represented by unauthenticated raw hashes because their lifecycle tails
   legitimately change. Preflight validates their current schemas and semantics, permits only an exact acceptance
   tail or the empty `planned` tail frozen before promotion, and rejects fabricated status or evidence claims.
-- Once a candidate is frozen, compilation reads each immutable input from that Git commit. Preflight requires the
-  packet digest to match both the candidate blob and current checkout, so a later contract, plan, or lockfile
-  change requires a new candidate and fresh lifecycle review.
+- Once a candidate is frozen, compilation reads each immutable input from that Git commit. Product-contract and
+  lockfile bytes must still match the current checkout. The plan digest remains historical candidate provenance,
+  while preflight re-derives this task's complete policy from the valid current plan; unrelated task edits do not
+  invalidate evidence, but relevant policy drift fails comparison. Halted canonical task states and active
+  blockers always stop preflight.
 - Publishable package documentation refs derive from the task's package deliverables and authorized example paths;
   they are never hard-coded to an unrelated provider package.
 - The lockfile delta is limited to the new workspace importer, internal workspace links, and the already pinned

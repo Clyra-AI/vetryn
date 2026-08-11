@@ -818,6 +818,11 @@ async function validatePacket(packet, { requireBoundCandidate }) {
   );
   const canonicalState = await readJson(expectedStatePath);
   assert(canonicalState.taskId === packet.task_id, "canonical state task does not match task_id");
+  assert(
+    !new Set(["blocked", "failed", "superseded"]).has(canonicalState.state) &&
+      canonicalState.blockers.length === 0,
+    "canonical task state is halted",
+  );
   assertSame(packet.currentState.attempt, canonicalState.attempt, "currentState.attempt");
   assertSame(
     packet.currentState.maxAttempts,
@@ -855,10 +860,11 @@ async function validatePacket(packet, { requireBoundCandidate }) {
           digestAtCommit(packet.currentState.candidate.commit, sourceFile),
         `source digest is not bound to candidate for ${sourceFile}`,
       );
-    assert(
-      packet.source.digests[sourceFile] === (await digest(sourceFile)),
-      `source digest is stale for ${sourceFile}`,
-    );
+    if (sourceFile !== sourcePaths.plan)
+      assert(
+        packet.source.digests[sourceFile] === (await digest(sourceFile)),
+        `source digest is stale for ${sourceFile}`,
+      );
   }
   if (requireBoundCandidate)
     assert(packet.currentState.candidate?.commit, "lifecycle preflight requires a bound candidate");

@@ -112,9 +112,11 @@ The packet's immutable digest map contains only the product contract, plan, and 
 paths remain explicit canonical inputs whose current contracts are validated directly. An acceptance item may
 carry either the exact current ledger tail or an empty `planned` tail frozen before promotion; invented status or
 evidence references fail preflight.
-For a frozen candidate, immutable inputs are read from the candidate's Git tree and must also equal the current
-checkout. Any product-contract, plan, or lockfile drift therefore invalidates compilation and preflight instead of
-borrowing review evidence from the older commit.
+For a frozen candidate, immutable inputs are read from the candidate's Git tree. Product-contract and lockfile
+bytes must also equal the current checkout. The plan digest remains bound to the candidate while the validator
+re-derives this task's complete policy from the valid current plan, so unrelated planning edits preserve historical
+evidence but relevant task-policy drift fails closed. A blocked, failed, or superseded canonical state—or any
+active blocker—halts preflight regardless of the packet's historical state label.
 
 ## Quality lanes
 

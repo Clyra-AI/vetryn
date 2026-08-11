@@ -882,6 +882,21 @@ describe("task packet compiler", () => {
     const reorderedValidation = runTask(root, "validate", "reordered-packet.json");
     expect(reorderedValidation.status, reorderedValidation.stderr).toBe(0);
 
+    const unrelatedPlan = await readFixtureJson(root, planPath);
+    unrelatedPlan.tasks.find((candidate) => candidate.id === "V1-06").objective +=
+      " Unrelated planning clarification.";
+    await writeFixtureJson(root, planPath, unrelatedPlan);
+    expect(runTask(root, "validate", "candidate-packet.json").status).toBe(0);
+
+    const relevantPlan = globalThis.structuredClone(unrelatedPlan);
+    relevantPlan.tasks.find((candidate) => candidate.id === "V1-05").objective +=
+      " Unreviewed task-policy change.";
+    await writeFixtureJson(root, planPath, relevantPlan);
+    const relevantPlanValidation = runTask(root, "validate", "candidate-packet.json");
+    expect(relevantPlanValidation.status).toBe(1);
+    expect(relevantPlanValidation.stderr).toContain("task does not match canonical plan");
+    await writeFixtureJson(root, planPath, plan);
+
     const productContractPath = path.join(root, "docs/oss-v1.md");
     const productContract = await readFile(productContractPath, "utf8");
     await writeFile(productContractPath, `${productContract}\nCandidate-external drift.\n`);
@@ -910,6 +925,33 @@ describe("task packet compiler", () => {
     await writeFixtureJson(root, statePath, state);
     expect(runPlan(root, "write").status).toBe(0);
     expect(runTask(root, "validate", "candidate-packet.json").status).toBe(0);
+
+    state.state = "blocked";
+    state.blockers = [{ id: "BLOCK-001", summary: "Fixture lifecycle halt." }];
+    state.history.push({
+      from: "review_pending",
+      to: "blocked",
+      at: "2026-08-10T01:03:00Z",
+      actor: "task-test-fixture",
+      reason: "Prove canonical lifecycle halts invalidate stored packet preflight.",
+    });
+    await writeFixtureJson(root, statePath, state);
+    expect(runPlan(root, "write").status).toBe(0);
+    const haltedValidation = runTask(root, "validate", "candidate-packet.json");
+    expect(haltedValidation.status).toBe(1);
+    expect(haltedValidation.stderr).toContain("canonical task state is halted");
+
+    state.state = "review_pending";
+    state.blockers = [];
+    state.history.push({
+      from: "blocked",
+      to: "review_pending",
+      at: "2026-08-10T01:04:00Z",
+      actor: "task-test-fixture",
+      reason: "Restore the fixture after the halted-state assertion.",
+    });
+    await writeFixtureJson(root, statePath, state);
+    expect(runPlan(root, "write").status).toBe(0);
 
     const invalidBindings = [
       packet.lifecycle_evidence_refs.review_report.replace("/V1-05/", "/V1-06/"),
