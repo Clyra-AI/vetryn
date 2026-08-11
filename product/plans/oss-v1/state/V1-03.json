@@ -2,51 +2,47 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "V1-03",
-  "revision": 21,
-  "state": "accepted",
+  "revision": 22,
+  "state": "in_progress",
   "attempt": 3,
-  "candidate": {
-    "baseCommit": "b19bd97c20999f944029f35b64559dfe85da2632",
-    "commit": "1b0d95d459b6e66eb4bd0d28812ba380aa8fa682",
-    "executor": "implementation-agent"
-  },
+  "candidate": null,
   "criteria": [
     {
       "criterionId": "SCAN-001",
-      "status": "pass",
-      "evidenceRefs": ["ev-v1-03-scanner-corpus-1b0d95d"]
+      "status": "pending",
+      "evidenceRefs": []
     },
     {
       "criterionId": "SCAN-002",
-      "status": "pass",
-      "evidenceRefs": ["ev-v1-03-scanner-corpus-1b0d95d"]
+      "status": "pending",
+      "evidenceRefs": []
     },
     {
       "criterionId": "SCAN-003",
-      "status": "pass",
-      "evidenceRefs": ["ev-v1-03-scanner-corpus-1b0d95d"]
+      "status": "pending",
+      "evidenceRefs": []
     },
     {
       "criterionId": "SCAN-004",
-      "status": "pass",
-      "evidenceRefs": ["ev-v1-03-scanner-corpus-1b0d95d"]
+      "status": "pending",
+      "evidenceRefs": []
     }
   ],
   "gates": [
     {
       "gateId": "QG-REPO-CHECK",
-      "status": "pass",
-      "evidenceRefs": ["ev-v1-03-repo-check-1b0d95d"]
+      "status": "pending",
+      "evidenceRefs": []
     },
     {
       "gateId": "QG-CONTRACTS",
-      "status": "pass",
-      "evidenceRefs": ["ev-v1-03-contracts-1b0d95d"]
+      "status": "pending",
+      "evidenceRefs": []
     },
     {
       "gateId": "QG-SCANNER-CORPUS",
-      "status": "pass",
-      "evidenceRefs": ["ev-v1-03-scanner-corpus-1b0d95d"]
+      "status": "pending",
+      "evidenceRefs": []
     },
     {
       "gateId": "QG-INDEPENDENT-VERIFY",
@@ -268,6 +264,20 @@
       "at": "2026-08-11T11:15:05Z",
       "actor": "davidahmann",
       "reason": "Maintainer accepted the exact scanner safety candidate after all active command gates passed; reviewer records remain advisory under ADR 0009."
+    },
+    {
+      "from": "accepted",
+      "to": "changes_requested",
+      "at": "2026-08-11T11:20:37Z",
+      "actor": "chatgpt-codex-connector[bot]",
+      "reason": "P1 review feedback found that a satisfies wrapper can conceal a direct receiver write target."
+    },
+    {
+      "from": "changes_requested",
+      "to": "in_progress",
+      "at": "2026-08-11T11:20:37Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer reopened the same unmerged final safety attempt to unwrap satisfies expressions before receiver-write analysis."
     }
   ]
 }

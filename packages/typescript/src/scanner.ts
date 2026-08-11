@@ -600,6 +600,7 @@ function unwrapExpression(expression: ts.Expression): ts.Expression {
     ts.isAsExpression(expression) ||
     ts.isNonNullExpression(expression) ||
     ts.isParenthesizedExpression(expression) ||
+    ts.isSatisfiesExpression(expression) ||
     ts.isTypeAssertionExpression(expression)
   ) {
     return unwrapExpression(expression.expression);

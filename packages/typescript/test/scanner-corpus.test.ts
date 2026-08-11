@@ -443,6 +443,24 @@ describe("reviewed TypeScript scanner corpus", () => {
     ]);
   });
 
+  it("abstains when a satisfies wrapper conceals a receiver write", () => {
+    const source = `
+      import OpenAI from "openai";
+      export async function run(client: OpenAI) {
+        (client satisfies OpenAI) = {} as OpenAI;
+        return client.chat.completions.create({ model: "openai/gpt-4.1-mini" });
+      }
+    `;
+
+    expect(scanTypeScript({ file: "src/satisfies-reassignment.ts", source })).toMatchObject([
+      {
+        confidence: "ambiguous",
+        patchability: "not-patchable",
+        reasonCode: "unverified-client",
+      },
+    ]);
+  });
+
   it("discovers the checked-in golden call without assigning its human-owned manifest ID", async () => {
     const fixtureRoot = path.resolve(
       import.meta.dirname,
