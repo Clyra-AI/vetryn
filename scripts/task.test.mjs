@@ -611,7 +611,11 @@ describe("task packet compiler", () => {
     expect(packet.source.productContractDigest).toBe(
       packet.source.digests[packet.source.productContract],
     );
-    expect(Object.keys(packet.source.digests)).toHaveLength(5);
+    expect(Object.keys(packet.source.digests)).toEqual([
+      "docs/oss-v1.md",
+      "product/plans/oss-v1/plan.json",
+      "pnpm-lock.yaml",
+    ]);
     expect(packet.allowed_paths).toContain("vitest.config.ts");
     expect(packet.required_worker_chain).toEqual(packet.execution.factorySkills);
     expect(packet.required_worker_chain).toEqual([
@@ -831,6 +835,9 @@ describe("task packet compiler", () => {
     reorderedPacket.task.risk = Object.fromEntries(
       Object.entries(reorderedPacket.task.risk).reverse(),
     );
+    reorderedPacket.source.digests = Object.fromEntries(
+      Object.entries(reorderedPacket.source.digests).reverse(),
+    );
     await writeFixtureJson(root, "reordered-packet.json", reorderedPacket);
     const reorderedValidation = runTask(root, "validate", "reordered-packet.json");
     expect(reorderedValidation.status, reorderedValidation.stderr).toBe(0);
@@ -952,6 +959,29 @@ describe("task packet compiler", () => {
     expect(rewrittenAcceptanceValidation.status).toBe(1);
     expect(rewrittenAcceptanceValidation.stderr).toContain(
       "acceptanceItems policy does not match canonical plan",
+    );
+
+    const fabricatedAcceptanceTail = globalThis.structuredClone(packet);
+    fabricatedAcceptanceTail.acceptanceItems[0].status = "accepted";
+    fabricatedAcceptanceTail.acceptanceItems[0].evidenceRefs = ["ev-fabricated"];
+    await writeFixtureJson(root, "fabricated-acceptance-tail.json", fabricatedAcceptanceTail);
+    const fabricatedAcceptanceValidation = runTask(
+      root,
+      "validate",
+      "fabricated-acceptance-tail.json",
+    );
+    expect(fabricatedAcceptanceValidation.status).toBe(1);
+    expect(fabricatedAcceptanceValidation.stderr).toContain("has an invalid promotion tail");
+
+    const forgedMutableDigest = globalThis.structuredClone(packet);
+    forgedMutableDigest.source.digests["product/plans/oss-v1/acceptance-ledger.json"] = "0".repeat(
+      64,
+    );
+    await writeFixtureJson(root, "forged-mutable-digest.json", forgedMutableDigest);
+    const forgedMutableDigestValidation = runTask(root, "validate", "forged-mutable-digest.json");
+    expect(forgedMutableDigestValidation.status).toBe(1);
+    expect(forgedMutableDigestValidation.stderr).toContain(
+      "source.digests keys does not match canonical plan",
     );
 
     const disabledScanner = globalThis.structuredClone(packet);

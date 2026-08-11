@@ -92,6 +92,29 @@ function acceptancePolicyView(item) {
   return policy;
 }
 
+function assertAcceptancePromotionTails(packetItems, canonicalItems) {
+  const canonicalById = new Map(canonicalItems.map((item) => [item.id, item]));
+  for (const item of packetItems) {
+    const canonical = canonicalById.get(item.id);
+    assert(canonical, `acceptance item ${item.id} is not canonical`);
+    const packetTail = { status: item.status, evidenceRefs: item.evidenceRefs };
+    const canonicalTail = {
+      status: canonical.status,
+      evidenceRefs: canonical.evidenceRefs,
+    };
+    const exactCurrentTail = isDeepStrictEqual(packetTail, canonicalTail);
+    const frozenPrePromotionTail =
+      canonical.status !== "planned" &&
+      item.status === "planned" &&
+      Array.isArray(item.evidenceRefs) &&
+      item.evidenceRefs.length === 0;
+    assert(
+      exactCurrentTail || frozenPrePromotionTail,
+      `acceptance item ${item.id} has an invalid promotion tail`,
+    );
+  }
+}
+
 function scopeExclusionsForTask(task) {
   return [
     ...task.scope.forbiddenPaths.map((pattern) => `Do not change ${pattern}.`),
@@ -323,13 +346,7 @@ async function compile(taskId) {
   const trustReviewRequired = task.requiredGates.includes("QG-TRUST-REVIEW");
   const factorySkills = factorySkillsForTask(task);
   const lifecycleEvidenceRequired = lifecycleEvidenceForTask(task, trustReviewRequired);
-  const sourceFiles = [
-    plan.productContract,
-    sourcePaths.plan,
-    sourcePaths.ledger,
-    statePath,
-    "pnpm-lock.yaml",
-  ];
+  const sourceFiles = [plan.productContract, sourcePaths.plan, "pnpm-lock.yaml"];
   const sourceDigests = Object.fromEntries(
     await Promise.all(sourceFiles.map(async (file) => [file, await digest(file)])),
   );
@@ -605,6 +622,7 @@ async function validatePacket(packet, { requireBoundCandidate }) {
   assertSame(packet.runtime_pins, runtimePins, "runtime_pins");
   assertSame(packet.factory_compatibility, factoryCompatibility, "factory_compatibility");
   assertSame(packet.acceptance_ledger_ref, sourcePaths.ledger, "acceptance_ledger_ref");
+  assertAcceptancePromotionTails(packet.acceptanceItems, canonicalAcceptanceItems);
   assertSame(
     packet.acceptanceItems.map(acceptancePolicyView),
     canonicalAcceptanceItems.map(acceptancePolicyView),
@@ -801,14 +819,12 @@ async function validatePacket(packet, { requireBoundCandidate }) {
     isDeepStrictEqual(canonicalState.candidate, packet.currentState.candidate),
     "currentState.candidate does not match canonical task state",
   );
-  const expectedSourceFiles = [
-    plan.productContract,
-    sourcePaths.plan,
-    sourcePaths.ledger,
-    expectedStatePath,
-    "pnpm-lock.yaml",
-  ];
-  assertSame(Object.keys(packet.source.digests), expectedSourceFiles, "source.digests keys");
+  const expectedSourceFiles = [plan.productContract, sourcePaths.plan, "pnpm-lock.yaml"];
+  assertSame(
+    Object.keys(packet.source.digests).toSorted(),
+    expectedSourceFiles.toSorted(),
+    "source.digests keys",
+  );
   assertSame(
     packet.source.productContractDigest,
     packet.source.digests[plan.productContract],

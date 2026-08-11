@@ -46,6 +46,8 @@
   task, and compare JSON objects structurally without treating member order as policy drift.
 - Made stored-packet preflight validate the canonical repository plan and ledger before deriving any trusted
   lifecycle policy from them.
+- Restricted immutable packet digests to the product contract, plan, and lockfile; lifecycle-mutable ledger and
+  state are validated canonically, and acceptance promotion tails now fail closed unless exact or pre-promotion.
 
 ### Changed
 

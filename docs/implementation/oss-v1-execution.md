@@ -108,6 +108,10 @@ release/documentation intent, and source metadata. Only packet revision, lifecyc
 status-evidence bytes may differ as a promotion tail while the candidate remains exact.
 Canonical objects use structural equality: object member order is irrelevant, but array order remains part of the
 contract.
+The packet's immutable digest map contains only the product contract, plan, and lockfile. Ledger and task-state
+paths remain explicit canonical inputs whose current contracts are validated directly. An acceptance item may
+carry either the exact current ledger tail or an empty `planned` tail frozen before promotion; invented status or
+evidence references fail preflight.
 
 ## Quality lanes
 

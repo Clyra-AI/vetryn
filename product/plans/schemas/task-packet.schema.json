@@ -312,7 +312,7 @@
         "statePath": { "$ref": "#/$defs/repoPath" },
         "digests": {
           "type": "object",
-          "minProperties": 5,
+          "minProperties": 3,
           "additionalProperties": { "$ref": "#/$defs/digest" }
         }
       }
@@ -381,7 +381,56 @@
         }
       }
     },
-    "acceptanceItems": { "type": "array", "minItems": 1, "items": { "type": "object" } },
+    "acceptanceItems": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "taskId",
+          "statement",
+          "verification",
+          "waivable",
+          "status",
+          "evidenceRefs"
+        ],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[A-Z][A-Z0-9-]+$" },
+          "taskId": { "$ref": "#/$defs/taskId" },
+          "statement": { "$ref": "#/$defs/nonempty" },
+          "verification": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["method"],
+            "properties": {
+              "method": { "enum": ["command", "test", "inspection", "review", "field"] },
+              "testLevel": {
+                "enum": ["static", "unit", "contract", "integration", "e2e", "adversarial", "field"]
+              },
+              "gateId": { "type": "string", "pattern": "^[A-Z][A-Z0-9-]+$" }
+            }
+          },
+          "waivable": { "type": "boolean" },
+          "status": {
+            "enum": [
+              "planned",
+              "verification_pending",
+              "accepted",
+              "blocked",
+              "deferred_with_approval",
+              "not_applicable"
+            ]
+          },
+          "evidenceRefs": {
+            "type": "array",
+            "items": { "type": "string", "pattern": "^[a-z][a-z0-9-]+$" },
+            "uniqueItems": true
+          }
+        }
+      }
+    },
     "gates": { "type": "array", "minItems": 1, "items": { "type": "object" } },
     "requiredReviews": { "type": "array", "items": { "$ref": "#/$defs/nonempty" } },
     "execution": {

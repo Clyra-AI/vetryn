@@ -36,6 +36,10 @@ local green result that fails in CI or silently disappears from a release.
   Only packet revision, lifecycle state label, and ledger/state status-evidence tails may differ while preserving
   the exact candidate. JSON object member order is ignored while array order remains significant. JSON Schema
   shape and packet self-consistency are necessary but insufficient.
+- Immutable source digests cover only the product contract, plan, and lockfile. The ledger and task state remain
+  named canonical inputs but are not represented by unauthenticated raw hashes because their lifecycle tails
+  legitimately change. Preflight validates their current schemas and semantics, permits only an exact acceptance
+  tail or the empty `planned` tail frozen before promotion, and rejects fabricated status or evidence claims.
 - Publishable package documentation refs derive from the task's package deliverables and authorized example paths;
   they are never hard-coded to an unrelated provider package.
 - The lockfile delta is limited to the new workspace importer, internal workspace links, and the already pinned
