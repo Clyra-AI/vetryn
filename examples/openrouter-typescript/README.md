@@ -13,6 +13,17 @@ eval cases, a pinned model-catalog snapshot, a fixed clock, expected redacted ar
 OpenAI-compatible mock provider. The scenario matrix in [`fixtures/scenarios.json`](fixtures/scenarios.json)
 defines both the happy path and the required abstention/refusal behavior.
 
+To initialize the checked-in manifest from a reviewed call-site record, use the offline CLI command below. The
+command requires the stable manifest ID only on first creation; rerunning it with the same record is a no-op, and
+it refuses to overwrite a different record with the same human-owned call-site ID.
+
+```sh
+pnpm --filter vetryn build
+node packages/cli/dist/index.js manifest init \
+  --manifest examples/openrouter-typescript/fixtures/manifest.json \
+  --call-site examples/openrouter-typescript/fixtures/manifest-input.json
+```
+
 The golden pipeline is:
 
 1. scan the fixture and compare discovered fingerprints with reviewed expectations;

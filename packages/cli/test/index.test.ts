@@ -12,10 +12,11 @@ describe("getDiagnostics", () => {
 });
 
 describe("createProgram", () => {
-  it("exposes the project name and doctor command", () => {
+  it("exposes the project name, diagnostics, and manifest initialization commands", () => {
     const program = createProgram();
 
     expect(program.name()).toBe("vetryn");
     expect(program.commands.map((command) => command.name())).toContain("doctor");
+    expect(program.commands.map((command) => command.name())).toContain("manifest");
   });
 });

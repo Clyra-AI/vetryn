@@ -113,9 +113,10 @@ const parseJsonLines = (value: string): EvalCase[] =>
 
 describe("OpenRouter TypeScript golden scenario", () => {
   it("binds a scanner-friendly source call to a human-reviewed manifest and 30 reviewed synthetic cases", async () => {
-    const [application, manifest, evalSuite, evalCaseText] = await Promise.all([
+    const [application, manifest, manifestInput, evalSuite, evalCaseText] = await Promise.all([
       readFile(fixtureFile("src/support-classification.ts"), "utf8"),
       readJson<CallSiteManifest>("fixtures/manifest.json"),
+      readJson<unknown>("fixtures/manifest-input.json"),
       readJson<EvalSuite>("fixtures/eval-suite.json"),
       readFile(fixtureFile("fixtures/support-classification.evals.jsonl"), "utf8"),
     ]);
@@ -126,6 +127,8 @@ describe("OpenRouter TypeScript golden scenario", () => {
     if (callSite === undefined) {
       throw new Error("golden manifest must declare the support-classification call site");
     }
+
+    expect(manifestInput).toEqual(callSite);
 
     expect(callSite).toMatchObject({
       currentModel: "openai/gpt-4.1-mini",

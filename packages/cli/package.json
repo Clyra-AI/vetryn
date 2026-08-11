@@ -37,6 +37,7 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
+    "@vetryn/core": "workspace:*",
     "commander": "15.0.0"
   },
   "devDependencies": {
