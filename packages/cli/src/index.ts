@@ -7,6 +7,7 @@ import { Command } from "commander";
 import {
   canonicalizeArtifact,
   initializeCallSiteManifest,
+  parseCallSite,
   type CallSiteManifest,
 } from "@vetryn/core";
 
@@ -27,8 +28,10 @@ export interface ManifestInitOptions {
 }
 
 export interface ManifestInitResult {
+  readonly callSiteId: string;
   readonly changed: boolean;
   readonly manifest: CallSiteManifest;
+  readonly wouldChange: boolean;
 }
 
 export async function initializeManifestFile({
@@ -37,7 +40,7 @@ export async function initializeManifestFile({
   manifestId,
   manifestPath,
 }: ManifestInitOptions): Promise<ManifestInitResult> {
-  const callSite = await readJsonFile(callSitePath);
+  const callSite = parseCallSite(await readJsonFile(callSitePath));
   const existingManifest = await readOptionalJsonFile(manifestPath);
   const manifest = initializeCallSiteManifest({
     callSite,
@@ -48,12 +51,13 @@ export async function initializeManifestFile({
   const currentContents =
     existingManifest === undefined ? undefined : `${canonicalizeArtifact(existingManifest)}\n`;
 
-  if (nextContents === currentContents || dryRun) {
-    return { changed: nextContents !== currentContents, manifest };
+  const wouldChange = nextContents !== currentContents;
+  if (!wouldChange || dryRun) {
+    return { callSiteId: callSite.id, changed: false, manifest, wouldChange };
   }
 
   await writeFileAtomically(manifestPath, nextContents);
-  return { changed: true, manifest };
+  return { callSiteId: callSite.id, changed: true, manifest, wouldChange: true };
 }
 
 async function readJsonFile(filePath: string): Promise<unknown> {
@@ -152,8 +156,9 @@ export function createProgram(): Command {
         });
         const summary = {
           changed: result.changed,
-          callSiteId: result.manifest.callSites.at(-1)?.id,
+          callSiteId: result.callSiteId,
           manifestId: result.manifest.id,
+          wouldChange: result.wouldChange,
         };
 
         if (options.json === true) {
@@ -161,9 +166,12 @@ export function createProgram(): Command {
           return;
         }
 
-        process.stdout.write(
-          `${result.changed ? "Updated" : "Validated"} ${summary.manifestId} for ${summary.callSiteId}.\n`,
-        );
+        const outcome = result.changed
+          ? "Updated"
+          : result.wouldChange
+            ? "Would update"
+            : "Validated";
+        process.stdout.write(`${outcome} ${summary.manifestId} for ${summary.callSiteId}.\n`);
       },
     );
 

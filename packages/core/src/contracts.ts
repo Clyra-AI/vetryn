@@ -201,6 +201,10 @@ export const callSiteSchema = z
 
 export type CallSite = z.infer<typeof callSiteSchema>;
 
+export function parseCallSite(value: unknown): CallSite {
+  return parseWithDiagnostics(callSiteSchema, "call site", value);
+}
+
 export const callSiteManifestSchema = z
   .object({
     artifactType: z.literal("call-site-manifest"),
@@ -231,7 +235,7 @@ export function initializeCallSiteManifest({
   existingManifest,
   manifestId,
 }: InitializeCallSiteManifestOptions): CallSiteManifest {
-  const callSite = callSiteSchema.parse(callSiteInput);
+  const callSite = parseCallSite(callSiteInput);
   const existing =
     existingManifest === undefined ? undefined : parseCallSiteManifest(existingManifest);
 

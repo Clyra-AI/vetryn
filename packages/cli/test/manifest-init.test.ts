@@ -66,11 +66,17 @@ describe("initializeManifestFile", () => {
         manifestId: "call-site-manifest:sample-app",
         manifestPath,
       }),
-    ).resolves.toMatchObject({ changed: true });
+    ).resolves.toMatchObject({
+      callSiteId: "support-classification",
+      changed: true,
+      wouldChange: true,
+    });
     const initialContents = await readFile(manifestPath, "utf8");
 
     await expect(initializeManifestFile({ callSitePath, manifestPath })).resolves.toMatchObject({
+      callSiteId: "support-classification",
       changed: false,
+      wouldChange: false,
     });
     await expect(readFile(manifestPath, "utf8")).resolves.toBe(initialContents);
   });
@@ -104,5 +110,44 @@ describe("initializeManifestFile", () => {
       }),
     ).rejects.toThrow(/lowercase kebab-case/i);
     await expect(readFile(untouchedPath, "utf8")).rejects.toMatchObject({ code: "ENOENT" });
+  });
+
+  it("reports the requested call site and makes dry-run writes explicit", async () => {
+    const { callSitePath, manifestPath } = await createFixture();
+    await initializeManifestFile({
+      callSitePath,
+      manifestId: "call-site-manifest:sample-app",
+      manifestPath,
+    });
+
+    await writeFile(
+      callSitePath,
+      `${JSON.stringify({
+        ...callSite,
+        evalSuiteId: "eval-suite:account-classification",
+        id: "account-classification",
+        name: "Account classification",
+      })}\n`,
+    );
+    await expect(initializeManifestFile({ callSitePath, manifestPath })).resolves.toMatchObject({
+      callSiteId: "account-classification",
+      changed: true,
+      wouldChange: true,
+    });
+
+    const dryRunPath = path.join(path.dirname(manifestPath), "dry-run-manifest.json");
+    await expect(
+      initializeManifestFile({
+        callSitePath,
+        dryRun: true,
+        manifestId: "call-site-manifest:dry-run",
+        manifestPath: dryRunPath,
+      }),
+    ).resolves.toMatchObject({
+      callSiteId: "account-classification",
+      changed: false,
+      wouldChange: true,
+    });
+    await expect(readFile(dryRunPath, "utf8")).rejects.toMatchObject({ code: "ENOENT" });
   });
 });
