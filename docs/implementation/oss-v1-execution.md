@@ -78,14 +78,49 @@ repository skill required by an active domain gate; `QG-TRUST-REVIEW` therefore 
 `trust_review_required`, and requires a candidate-bound `trust_review_report`. A generic code review cannot satisfy
 that semantic gate.
 
+Tasks that add or change publishable workspace packages must explicitly include `.changeset/**` and every root
+workspace file they need. Their compiled packets require release metadata, a semver marker, and package-facing
+documentation sync; package-local scope alone is not sufficient evidence for a clean frozen install or release.
+
 `evidence_required` and `worker_evidence_required` contain only evidence the executor can produce before
 shipping. `lifecycle_evidence_required` names the outputs produced later by `validation-gate`, `code-review`,
 `commit-push`, and Vetryn's specialized promote role: validation, high-risk structured review, shipping,
 pull-request lifecycle, post-merge, and canonical promotion evidence. Factoryd-only scope-closure artifacts are
-not required while Factoryd remains deferred. An
+not required while Factoryd remains deferred. `lifecycle_evidence_refs` maps every required output to one
+deterministic JSON path under `product/plans/oss-v1/evidence/lifecycle/<task-id>/<candidate-commit>/`; an initial
+packet uses `unbound` and cannot supply lifecycle evidence until the candidate is frozen and the packet is
+recompiled. Those artifacts are lifecycle-owned and remain outside the executor's allowed paths. An
 executor may report an acceptance item as implemented, partial, missing, or blocked, but that result does not
 change the ledger or accept the task. Any source drift requires recompilation; plan and lockfile digests in
 already-passing evidence remain immutable historical provenance.
+
+Before consuming lifecycle evidence from a stored packet, replace `{packet_path}` in the packet's declared command
+and run `node scripts/task.mjs validate <packet-path>`. The command applies the public JSON Schema, validates the
+canonical repository plan and ledger before using them, authenticates the current product-contract, plan, and
+lockfile inputs, re-derives task risk and lifecycle gates from canonical
+policy, binds the candidate to canonical state, and then recomputes each lifecycle ref. It rejects policy
+downgrade, cross-plan or cross-task packet identity, stale-candidate, unbound-candidate, swapped-artifact, and
+security-input drift while
+allowing ledger/status-only promotion tails that preserve the frozen candidate. The canonical comparison includes
+executor evidence, item-level acceptance closure, commands, scope exclusions, stop conditions, retry/runtime pins,
+Factory compatibility, execution permissions, lifecycle policy, acceptance-item policy, scanner/CI gates,
+release/documentation intent, and source metadata. Only packet revision, lifecycle state label, and ledger/state
+status-evidence bytes may differ as a promotion tail while the candidate remains exact.
+Canonical objects use structural equality: object member order is irrelevant, but array order remains part of the
+contract.
+The packet's immutable digest map contains only the product contract, plan, and lockfile. Ledger and task-state
+paths remain explicit canonical inputs whose current contracts are validated directly. An acceptance item may
+carry either the exact current ledger tail or an empty `planned` tail frozen before a canonical `accepted`
+promotion; invented status or evidence references and blocked or deferred canonical outcomes hidden behind a stale
+planned tail fail preflight.
+For a frozen candidate, immutable inputs are read from the candidate's Git tree. Product-contract and lockfile
+bytes must also equal the current checkout. The plan digest remains bound to the candidate while the validator
+compares packet-bearing plan identity, baseline repository and commit, and product-contract path with the candidate
+plan; re-derives this task's complete policy from the valid current plan; and compares the current task and gate
+definitions with the candidate plan and policy-bearing acceptance fields with the candidate ledger before packet
+emission. Unrelated task edits preserve historical evidence, but relevant source metadata, plan, or
+acceptance-policy drift fails validation and recompilation. A blocked, failed, or superseded canonical state—or any
+active blocker—halts preflight regardless of the packet's historical state label.
 
 ## Quality lanes
 

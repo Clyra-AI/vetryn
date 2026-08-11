@@ -1,0 +1,35 @@
+{
+  "$schema": "../../schemas/evidence.schema.json",
+  "schemaVersion": "1.0.0",
+  "id": "ev-m0-07-plan-check-3b1aaef",
+  "taskId": "M0-07",
+  "type": "command-run",
+  "actor": "validation-agent",
+  "commit": "3b1aaef18bc5e7f9e20d7dbf3d2e2ef8f547f6da",
+  "createdAt": "2026-08-11T20:04:24Z",
+  "result": {
+    "status": "pass",
+    "checks": [
+      {
+        "name": "pnpm plan:check",
+        "status": "pass",
+        "summary": "The exact acceptance-tail candidate preserves a valid canonical plan while allowing a frozen empty planned tail only for a canonical accepted promotion."
+      }
+    ]
+  },
+  "inputs": {
+    "planDigest": "sha256:667534872f4f6bb2f8580d5e554736f2140cbd8c12616b0ad9c3f20b4ba9a086",
+    "lockfileDigest": "sha256:0568848490d539fc4b1a4cd53c2ddd95108a15a0ad1ea37ff6c14f1b748db6ac"
+  },
+  "gateBinding": {
+    "gateId": "QG-PLAN-CHECK",
+    "kind": "command",
+    "command": "pnpm plan:check"
+  },
+  "review": null,
+  "redaction": {
+    "status": "not_applicable",
+    "containsRawModelOutput": false,
+    "containsSecrets": false
+  }
+}

@@ -28,6 +28,38 @@
 - Uses built-in HTTPS for GitHub evidence authentication so repository binaries cannot shadow the collector.
 - Added frozen-candidate local adversarial review for high-risk tasks and a machine-required, candidate-bound
   Vetryn trust-review step for evaluation, recommendation, and patch semantics before V1-06 begins.
+- Bound new publishable-package tasks to explicit frozen-lockfile, test-resolution, dead-code-analysis, Changeset,
+  semver, and documentation intent so clean CI and future releases cannot omit a staged package.
+- Bound every required lifecycle artifact to an immutable candidate-specific trusted-namespace path so Factory can
+  validate a frozen high-risk candidate's local review before promotion or push.
+- Derived publishable-package documentation requirements from each task's deliverables and example scope rather
+  than hard-coding OpenRouter documentation for unrelated packages.
+- Added cross-field packet validation that rejects lifecycle refs bound to the wrong task, candidate, unbound
+  state, or artifact key even when their JSON shape is otherwise valid.
+- Authenticated stored task packets against current canonical plan policy and source digests, and made the
+  machine-readable validation command's `{packet_path}` substitution explicit.
+- Extended stored-packet authentication across all runner-consumed executor evidence and item-level acceptance
+  closure fields, plus commands, scope, retry/runtime, compatibility, execution, and lifecycle policy.
+- Completed stored-packet authentication for acceptance-item policy, scanner and CI gates, release/documentation
+  intent, and source metadata, with only exact-candidate promotion-tail state explicitly mutable.
+- Made lifecycle preflight reject unbound packets, authenticate packet identity against the canonical plan and
+  task, and compare JSON objects structurally without treating member order as policy drift.
+- Made stored-packet preflight validate the canonical repository plan and ledger before deriving any trusted
+  lifecycle policy from them.
+- Restricted immutable packet digests to the product contract, plan, and lockfile; lifecycle-mutable ledger and
+  state are validated canonically, and acceptance promotion tails now fail closed unless exact or pre-promotion.
+- Bound immutable packet inputs to both the frozen candidate commit and current checkout so post-review product
+  contract, plan, or lockfile drift cannot reuse earlier lifecycle review evidence.
+- Preserved candidate-bound plan provenance across unrelated current plan edits while continuing to re-derive the
+  active task policy, and made lifecycle preflight reject halted task states or active blockers.
+- Bound recompilation to the frozen candidate's exact task and gate policy so relevant plan drift cannot reuse
+  earlier candidate-specific lifecycle evidence while unrelated task edits remain valid.
+- Bound acceptance-policy recompilation to the frozen candidate ledger while continuing to allow authenticated
+  status/evidence promotion tails and unrelated task acceptance edits.
+- Bound packet-bearing plan identity, baseline repository and commit, and product-contract path to the frozen
+  candidate so source provenance cannot be rewritten while reusing candidate-specific lifecycle evidence.
+- Restricted frozen empty acceptance tails to canonical `accepted` promotion only, so `blocked`, deferred, or
+  otherwise non-promoted ledger states cannot be hidden during lifecycle preflight.
 
 ### Changed
 

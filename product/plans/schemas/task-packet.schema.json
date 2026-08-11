@@ -26,6 +26,8 @@
     "evidence_required",
     "worker_evidence_required",
     "lifecycle_evidence_required",
+    "lifecycle_evidence_refs",
+    "packet_validation_command",
     "stop_conditions",
     "retry_budget",
     "runtime_pins",
@@ -124,6 +126,32 @@
     "evidence_required": { "$ref": "#/$defs/nonemptyUniqueStrings" },
     "worker_evidence_required": { "$ref": "#/$defs/nonemptyUniqueStrings" },
     "lifecycle_evidence_required": { "$ref": "#/$defs/nonemptyUniqueStrings" },
+    "lifecycle_evidence_refs": {
+      "type": "object",
+      "minProperties": 1,
+      "required": [
+        "validation_report",
+        "github_review_evidence",
+        "ship_packet",
+        "pr_lifecycle_report",
+        "post_merge_report",
+        "canonical_promotion"
+      ],
+      "properties": {
+        "validation_report": { "$ref": "#/$defs/lifecycleArtifactRef" },
+        "review_report": { "$ref": "#/$defs/lifecycleArtifactRef" },
+        "trust_review_report": { "$ref": "#/$defs/lifecycleArtifactRef" },
+        "github_review_evidence": { "$ref": "#/$defs/lifecycleArtifactRef" },
+        "ship_packet": { "$ref": "#/$defs/lifecycleArtifactRef" },
+        "pr_lifecycle_report": { "$ref": "#/$defs/lifecycleArtifactRef" },
+        "post_merge_report": { "$ref": "#/$defs/lifecycleArtifactRef" },
+        "canonical_promotion": { "$ref": "#/$defs/lifecycleArtifactRef" }
+      },
+      "additionalProperties": false
+    },
+    "packet_validation_command": {
+      "const": "node scripts/task.mjs validate {packet_path}"
+    },
     "stop_conditions": { "$ref": "#/$defs/nonemptyUniqueStrings" },
     "retry_budget": {
       "type": "object",
@@ -284,7 +312,7 @@
         "statePath": { "$ref": "#/$defs/repoPath" },
         "digests": {
           "type": "object",
-          "minProperties": 5,
+          "minProperties": 3,
           "additionalProperties": { "$ref": "#/$defs/digest" }
         }
       }
@@ -353,7 +381,56 @@
         }
       }
     },
-    "acceptanceItems": { "type": "array", "minItems": 1, "items": { "type": "object" } },
+    "acceptanceItems": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "taskId",
+          "statement",
+          "verification",
+          "waivable",
+          "status",
+          "evidenceRefs"
+        ],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[A-Z][A-Z0-9-]+$" },
+          "taskId": { "$ref": "#/$defs/taskId" },
+          "statement": { "$ref": "#/$defs/nonempty" },
+          "verification": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["method"],
+            "properties": {
+              "method": { "enum": ["command", "test", "inspection", "review", "field"] },
+              "testLevel": {
+                "enum": ["static", "unit", "contract", "integration", "e2e", "adversarial", "field"]
+              },
+              "gateId": { "type": "string", "pattern": "^[A-Z][A-Z0-9-]+$" }
+            }
+          },
+          "waivable": { "type": "boolean" },
+          "status": {
+            "enum": [
+              "planned",
+              "verification_pending",
+              "accepted",
+              "blocked",
+              "deferred_with_approval",
+              "not_applicable"
+            ]
+          },
+          "evidenceRefs": {
+            "type": "array",
+            "items": { "type": "string", "pattern": "^[a-z][a-z0-9-]+$" },
+            "uniqueItems": true
+          }
+        }
+      }
+    },
     "gates": { "type": "array", "minItems": 1, "items": { "type": "object" } },
     "requiredReviews": { "type": "array", "items": { "$ref": "#/$defs/nonempty" } },
     "execution": {
@@ -419,6 +496,11 @@
             "type": "array",
             "contains": { "const": "review_report" }
           },
+          "lifecycle_evidence_refs": {
+            "type": "object",
+            "properties": { "review_report": {} },
+            "required": ["review_report"]
+          },
           "execution": {
             "type": "object",
             "properties": {
@@ -443,6 +525,10 @@
           "lifecycle_evidence_required": {
             "type": "array",
             "not": { "contains": { "const": "review_report" } }
+          },
+          "lifecycle_evidence_refs": {
+            "type": "object",
+            "propertyNames": { "not": { "const": "review_report" } }
           },
           "execution": {
             "type": "object",
@@ -481,6 +567,11 @@
           "lifecycle_evidence_required": {
             "type": "array",
             "contains": { "const": "trust_review_report" }
+          },
+          "lifecycle_evidence_refs": {
+            "type": "object",
+            "properties": { "trust_review_report": {} },
+            "required": ["trust_review_report"]
           }
         }
       },
@@ -495,6 +586,10 @@
           "lifecycle_evidence_required": {
             "type": "array",
             "not": { "contains": { "const": "trust_review_report" } }
+          },
+          "lifecycle_evidence_refs": {
+            "type": "object",
+            "propertyNames": { "not": { "const": "trust_review_report" } }
           }
         }
       }
@@ -506,6 +601,10 @@
     "taskId": { "type": "string", "pattern": "^(M0|V1)-[0-9]{2}$" },
     "repoPath": { "type": "string", "minLength": 1, "pattern": "^(?!/)(?!.*\\.\\.).+$" },
     "repoRef": { "type": "string", "minLength": 1, "pattern": "^(?!/)(?!.*\\.\\.).+$" },
+    "lifecycleArtifactRef": {
+      "type": "string",
+      "pattern": "^product/plans/oss-v1/evidence/lifecycle/(M0|V1)-[0-9]{2}/(?:unbound|[0-9a-f]{40})/[a-z_]+\\.json$"
+    },
     "nonempty": { "type": "string", "minLength": 1 },
     "nonemptyUniqueStrings": {
       "type": "array",

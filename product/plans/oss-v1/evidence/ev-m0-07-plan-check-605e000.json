@@ -1,0 +1,35 @@
+{
+  "$schema": "../../schemas/evidence.schema.json",
+  "schemaVersion": "1.0.0",
+  "id": "ev-m0-07-plan-check-605e000",
+  "taskId": "M0-07",
+  "type": "command-run",
+  "actor": "validation-agent",
+  "commit": "605e0007f22bf82f7c0e5d11eaa2ea9c87749866",
+  "createdAt": "2026-08-11T19:52:59Z",
+  "result": {
+    "status": "pass",
+    "checks": [
+      {
+        "name": "pnpm plan:check",
+        "status": "pass",
+        "summary": "The exact source-metadata candidate preserves a valid canonical plan while binding packet-bearing plan identity, baseline, and product-contract metadata to the frozen candidate."
+      }
+    ]
+  },
+  "inputs": {
+    "planDigest": "sha256:02864e2fd4c0f24cd7d58160c6bae6a5a2f3fd7a6657e32db209ffd2e69c8526",
+    "lockfileDigest": "sha256:0568848490d539fc4b1a4cd53c2ddd95108a15a0ad1ea37ff6c14f1b748db6ac"
+  },
+  "gateBinding": {
+    "gateId": "QG-PLAN-CHECK",
+    "kind": "command",
+    "command": "pnpm plan:check"
+  },
+  "review": null,
+  "redaction": {
+    "status": "not_applicable",
+    "containsRawModelOutput": false,
+    "containsSecrets": false
+  }
+}

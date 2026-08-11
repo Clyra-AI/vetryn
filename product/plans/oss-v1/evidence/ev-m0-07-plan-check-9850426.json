@@ -1,0 +1,35 @@
+{
+  "$schema": "../../schemas/evidence.schema.json",
+  "schemaVersion": "1.0.0",
+  "id": "ev-m0-07-plan-check-9850426",
+  "taskId": "M0-07",
+  "type": "command-run",
+  "actor": "validation-agent",
+  "commit": "985042605af78137d8fb20dfae25da75ed487a97",
+  "createdAt": "2026-08-11T19:40:32Z",
+  "result": {
+    "status": "pass",
+    "checks": [
+      {
+        "name": "pnpm plan:check",
+        "status": "pass",
+        "summary": "The exact frozen-acceptance candidate compares policy-bearing current acceptance items with the candidate ledger while preserving unrelated task edits and authenticated promotion tails."
+      }
+    ]
+  },
+  "inputs": {
+    "planDigest": "sha256:a90496b9e8101c18ecef7c39a702a32130e48f3287dd42f2c9a370d6bdd81e0b",
+    "lockfileDigest": "sha256:0568848490d539fc4b1a4cd53c2ddd95108a15a0ad1ea37ff6c14f1b748db6ac"
+  },
+  "gateBinding": {
+    "gateId": "QG-PLAN-CHECK",
+    "kind": "command",
+    "command": "pnpm plan:check"
+  },
+  "review": null,
+  "redaction": {
+    "status": "not_applicable",
+    "containsRawModelOutput": false,
+    "containsSecrets": false
+  }
+}

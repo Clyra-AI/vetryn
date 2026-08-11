@@ -23,6 +23,7 @@ const fixtureTaskIds = [
   "M0-04",
   "M0-05",
   "M0-06",
+  "M0-07",
   "V1-01",
   "V1-02",
   "V1-03",
@@ -446,6 +447,37 @@ async function normalizeV1Fixture(root) {
     ],
   });
   await writeFixtureJson(root, localReviewStatePath, localReviewState);
+
+  const packageScopeStatePath = "product/plans/oss-v1/state/M0-07.json";
+  const packageScopeState = await readFixtureJson(root, packageScopeStatePath);
+  Object.assign(packageScopeState, {
+    revision: 0,
+    state: "planned",
+    attempt: 0,
+    candidate: null,
+    criteria: packageScopeState.criteria.map((criterion) => ({
+      ...criterion,
+      status: "pending",
+      evidenceRefs: [],
+    })),
+    gates: packageScopeState.gates.map((gate) => ({
+      ...gate,
+      status: "pending",
+      evidenceRefs: [],
+    })),
+    reviews: [],
+    blockers: [],
+    history: [
+      {
+        from: null,
+        to: "planned",
+        at: "2026-08-10T00:00:00Z",
+        actor: "plan-test-fixture",
+        reason: "Reset the V1-05 package-scope process task with the V1-00 fixture baseline.",
+      },
+    ],
+  });
+  await writeFixtureJson(root, packageScopeStatePath, packageScopeState);
 
   const goldenRepositoryStatePath = "product/plans/oss-v1/state/V1-02.json";
   const goldenRepositoryState = await readFixtureJson(root, goldenRepositoryStatePath);

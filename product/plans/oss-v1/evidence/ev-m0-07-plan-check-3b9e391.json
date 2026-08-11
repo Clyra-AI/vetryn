@@ -1,0 +1,35 @@
+{
+  "$schema": "../../schemas/evidence.schema.json",
+  "schemaVersion": "1.0.0",
+  "id": "ev-m0-07-plan-check-3b9e391",
+  "taskId": "M0-07",
+  "type": "command-run",
+  "actor": "validation-agent",
+  "commit": "3b9e3919b9fb34335f2b5b41ceffbdb25154ebad",
+  "createdAt": "2026-08-11T18:00:20Z",
+  "result": {
+    "status": "pass",
+    "checks": [
+      {
+        "name": "pnpm plan:check",
+        "status": "pass",
+        "summary": "The final stored-packet contract is current, authenticates canonical task policy and immutable security inputs, and explicitly declares packet-path substitution."
+      }
+    ]
+  },
+  "inputs": {
+    "planDigest": "sha256:d68860fb6429533e1db5e3fc323c99754d9ced6c849e14b2a0c5a2380e255980",
+    "lockfileDigest": "sha256:0568848490d539fc4b1a4cd53c2ddd95108a15a0ad1ea37ff6c14f1b748db6ac"
+  },
+  "gateBinding": {
+    "gateId": "QG-PLAN-CHECK",
+    "kind": "command",
+    "command": "pnpm plan:check"
+  },
+  "review": null,
+  "redaction": {
+    "status": "not_applicable",
+    "containsRawModelOutput": false,
+    "containsSecrets": false
+  }
+}

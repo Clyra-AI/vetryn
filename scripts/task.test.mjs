@@ -21,6 +21,7 @@ const fixtureTaskIds = [
   "M0-04",
   "M0-05",
   "M0-06",
+  "M0-07",
   "V1-01",
   "V1-02",
   "V1-03",
@@ -64,6 +65,22 @@ function runPlan(root, command) {
     encoding: "utf8",
     env: { ...process.env, VETRYN_PLAN_REPO_ROOT: root },
   });
+}
+
+function createGitCandidate(root) {
+  for (const arguments_ of [
+    ["init", "--quiet"],
+    ["config", "user.name", "Vetryn test fixture"],
+    ["config", "user.email", "fixture@vetryn.invalid"],
+    ["add", "docs", "product", "pnpm-lock.yaml"],
+    ["commit", "--quiet", "-m", "fixture candidate"],
+  ]) {
+    const result = spawnSync("git", ["-C", root, ...arguments_], { encoding: "utf8" });
+    expect(result.status, result.stderr).toBe(0);
+  }
+  const result = spawnSync("git", ["-C", root, "rev-parse", "HEAD"], { encoding: "utf8" });
+  expect(result.status, result.stderr).toBe(0);
+  return result.stdout.trim();
 }
 
 async function normalizeV1Fixture(root) {
@@ -312,6 +329,37 @@ async function normalizeV1Fixture(root) {
     ],
   });
   await writeFixtureJson(root, localReviewAuthorizationStatePath, localReviewAuthorizationState);
+
+  const packageScopeStatePath = "product/plans/oss-v1/state/M0-07.json";
+  const packageScopeState = await readFixtureJson(root, packageScopeStatePath);
+  Object.assign(packageScopeState, {
+    revision: 0,
+    state: "planned",
+    attempt: 0,
+    candidate: null,
+    criteria: packageScopeState.criteria.map((criterion) => ({
+      ...criterion,
+      status: "pending",
+      evidenceRefs: [],
+    })),
+    gates: packageScopeState.gates.map((gate) => ({
+      ...gate,
+      status: "pending",
+      evidenceRefs: [],
+    })),
+    reviews: [],
+    blockers: [],
+    history: [
+      {
+        from: null,
+        to: "planned",
+        at: "2026-08-10T00:00:00Z",
+        actor: "task-test-fixture",
+        reason: "Reset the V1-05 package-scope process task with the V1-00 fixture baseline.",
+      },
+    ],
+  });
+  await writeFixtureJson(root, packageScopeStatePath, packageScopeState);
 
   const goldenRepositoryStatePath = "product/plans/oss-v1/state/V1-02.json";
   const goldenRepositoryState = await readFixtureJson(root, goldenRepositoryStatePath);
@@ -579,7 +627,11 @@ describe("task packet compiler", () => {
     expect(packet.source.productContractDigest).toBe(
       packet.source.digests[packet.source.productContract],
     );
-    expect(Object.keys(packet.source.digests)).toHaveLength(5);
+    expect(Object.keys(packet.source.digests)).toEqual([
+      "docs/oss-v1.md",
+      "product/plans/oss-v1/plan.json",
+      "pnpm-lock.yaml",
+    ]);
     expect(packet.allowed_paths).toContain("vitest.config.ts");
     expect(packet.required_worker_chain).toEqual(packet.execution.factorySkills);
     expect(packet.required_worker_chain).toEqual([
@@ -600,6 +652,15 @@ describe("task packet compiler", () => {
       "canonical_promotion",
     ]);
     expect(packet.lifecycle_evidence_required).not.toContain("scope_closure_report");
+    expect(Object.keys(packet.lifecycle_evidence_refs)).toEqual(packet.lifecycle_evidence_required);
+    expect(packet.lifecycle_evidence_refs.trust_review_report).toBe(
+      "product/plans/oss-v1/evidence/lifecycle/V1-00/unbound/trust_review_report.json",
+    );
+    expect(
+      Object.values(packet.lifecycle_evidence_refs).every((artifactRef) =>
+        artifactRef.includes(`/V1-00/`),
+      ),
+    ).toBe(true);
     expect(packet.lifecycle_gates).toMatchObject({
       code_review_required: false,
       trust_review_required: true,
@@ -627,6 +688,10 @@ describe("task packet compiler", () => {
       "PLAN-003",
       "PLAN-004",
     ]);
+    await writeFixtureJson(root, "unbound-packet.json", packet);
+    const unboundValidation = runTask(root, "validate", "unbound-packet.json");
+    expect(unboundValidation.status).toBe(1);
+    expect(unboundValidation.stderr).toContain("lifecycle preflight requires a bound candidate");
   });
 
   it("requires frozen-candidate structured review evidence for high-risk tasks", async () => {
@@ -652,6 +717,9 @@ describe("task packet compiler", () => {
       codex_review_required: false,
     });
     expect(packet.lifecycle_evidence_required).toContain("review_report");
+    expect(packet.lifecycle_evidence_refs.review_report).toBe(
+      "product/plans/oss-v1/evidence/lifecycle/V1-00/unbound/review_report.json",
+    );
     expect(packet.stop_conditions).toEqual(
       expect.arrayContaining([
         expect.stringContaining("review_report"),
@@ -674,6 +742,7 @@ describe("task packet compiler", () => {
     unsafe.lifecycle_evidence_required = unsafe.lifecycle_evidence_required.filter(
       (item) => item !== "review_report",
     );
+    delete unsafe.lifecycle_evidence_refs.review_report;
 
     expect(validate(unsafe)).toBe(false);
     expect(validate.errors).toEqual(
@@ -687,9 +756,420 @@ describe("task packet compiler", () => {
           instancePath: "/lifecycle_evidence_required",
           keyword: "contains",
         }),
+        expect.objectContaining({
+          instancePath: "/lifecycle_evidence_refs",
+          keyword: "required",
+        }),
       ]),
     );
   });
+
+  it("compiles the actual V1-05 package and release scope for clean installs", async () => {
+    const root = await createFixture();
+    const planPath = "product/plans/oss-v1/plan.json";
+    const plan = await readFixtureJson(root, planPath);
+    await writeFile(path.join(root, "docs/candidate-contract.md"), "Candidate contract.\n");
+    const task = plan.tasks.find((candidate) => candidate.id === "V1-05");
+    task.dependsOn = [];
+    await writeFixtureJson(root, planPath, plan);
+    expect(runPlan(root, "write").status).toBe(0);
+
+    const originalTask = globalThis.structuredClone(task);
+    task.deliverables = ["packages/typescript/**", "packages/cli/**"];
+    task.scope.allowedPaths = task.scope.allowedPaths.map((allowedPath) =>
+      allowedPath === "packages/openrouter/**" ? "packages/typescript/**" : allowedPath,
+    );
+    task.scope.forbiddenPaths = ["packages/openrouter/**", "action.yml"];
+    await writeFixtureJson(root, planPath, plan);
+    expect(runPlan(root, "write").status).toBe(0);
+    const alternateResult = runTask(root, "compile", "V1-05");
+    expect(alternateResult.status, alternateResult.stderr).toBe(0);
+    expect(
+      JSON.parse(alternateResult.stdout).docs_sync_refs.map(({ path: docPath }) => docPath),
+    ).toEqual([
+      "packages/typescript/README.md",
+      "packages/cli/README.md",
+      "examples/openrouter-typescript/README.md",
+    ]);
+
+    plan.tasks[plan.tasks.findIndex((candidate) => candidate.id === "V1-05")] = originalTask;
+    await writeFixtureJson(root, planPath, plan);
+    expect(runPlan(root, "write").status).toBe(0);
+    const candidateCommit = createGitCandidate(root);
+
+    const statePath = "product/plans/oss-v1/state/V1-05.json";
+    const state = await readFixtureJson(root, statePath);
+    Object.assign(state, {
+      revision: 2,
+      state: "verification_pending",
+      attempt: 1,
+      candidate: {
+        baseCommit: "2222222222222222222222222222222222222222",
+        commit: candidateCommit,
+        executor: "task-test-fixture",
+      },
+      history: [
+        ...state.history,
+        {
+          from: "planned",
+          to: "in_progress",
+          at: "2026-08-10T01:00:00Z",
+          actor: "task-test-fixture",
+          reason: "Exercise the actual V1-05 executable packet.",
+        },
+        {
+          from: "in_progress",
+          to: "verification_pending",
+          at: "2026-08-10T01:01:00Z",
+          actor: "task-test-fixture",
+          reason: "Bind lifecycle refs to the frozen fixture candidate.",
+        },
+      ],
+    });
+    await writeFixtureJson(root, statePath, state);
+    const writeResult = runPlan(root, "write");
+    expect(writeResult.status, writeResult.stderr).toBe(0);
+
+    const result = runTask(root, "compile", "V1-05");
+    expect(result.status, result.stderr).toBe(0);
+    const packet = JSON.parse(result.stdout);
+    expect(packet.allowed_paths).toEqual(
+      expect.arrayContaining([
+        ".changeset/**",
+        "knip.json",
+        "package.json",
+        "pnpm-lock.yaml",
+        "vitest.config.ts",
+      ]),
+    );
+    expect(packet.changelog_intent).toMatchObject({
+      impact: "required",
+      semver_marker: "minor",
+    });
+    expect(packet.versioning_impact).toContain("minor Changeset");
+    expect(packet.docs_sync_refs.map(({ path: docPath }) => docPath)).toEqual([
+      "packages/openrouter/README.md",
+      "packages/cli/README.md",
+      "examples/openrouter-typescript/README.md",
+    ]);
+    expect(packet.lifecycle_evidence_refs.review_report).toBe(
+      `product/plans/oss-v1/evidence/lifecycle/V1-05/${candidateCommit}/review_report.json`,
+    );
+    expect(Object.keys(packet.lifecycle_evidence_refs)).toEqual(packet.lifecycle_evidence_required);
+    expect(packet.packet_validation_command).toBe("node scripts/task.mjs validate {packet_path}");
+    await writeFixtureJson(root, "candidate-packet.json", packet);
+    expect(runTask(root, "validate", "candidate-packet.json").status).toBe(0);
+
+    const rewrittenPacketId = globalThis.structuredClone(packet);
+    rewrittenPacketId.packetId = "other-plan:V1-06:r999";
+    await writeFixtureJson(root, "rewritten-packet-id.json", rewrittenPacketId);
+    const rewrittenPacketIdValidation = runTask(root, "validate", "rewritten-packet-id.json");
+    expect(rewrittenPacketIdValidation.status).toBe(1);
+    expect(rewrittenPacketIdValidation.stderr).toContain(
+      "packetId does not match canonical plan and task",
+    );
+
+    const reorderedPacket = globalThis.structuredClone(packet);
+    reorderedPacket.lifecycle_gates = Object.fromEntries(
+      Object.entries(reorderedPacket.lifecycle_gates).reverse(),
+    );
+    reorderedPacket.task.risk = Object.fromEntries(
+      Object.entries(reorderedPacket.task.risk).reverse(),
+    );
+    reorderedPacket.source.digests = Object.fromEntries(
+      Object.entries(reorderedPacket.source.digests).reverse(),
+    );
+    await writeFixtureJson(root, "reordered-packet.json", reorderedPacket);
+    const reorderedValidation = runTask(root, "validate", "reordered-packet.json");
+    expect(reorderedValidation.status, reorderedValidation.stderr).toBe(0);
+
+    const unrelatedPlan = await readFixtureJson(root, planPath);
+    unrelatedPlan.tasks.find((candidate) => candidate.id === "V1-06").objective +=
+      " Unrelated planning clarification.";
+    await writeFixtureJson(root, planPath, unrelatedPlan);
+    expect(runTask(root, "validate", "candidate-packet.json").status).toBe(0);
+    expect(runTask(root, "compile", "V1-05").status).toBe(0);
+
+    const relevantPlan = globalThis.structuredClone(unrelatedPlan);
+    relevantPlan.tasks.find((candidate) => candidate.id === "V1-05").objective +=
+      " Unreviewed task-policy change.";
+    await writeFixtureJson(root, planPath, relevantPlan);
+    const relevantPlanValidation = runTask(root, "validate", "candidate-packet.json");
+    expect(relevantPlanValidation.status).toBe(1);
+    expect(relevantPlanValidation.stderr).toContain("task does not match canonical plan");
+    const relevantPlanCompile = runTask(root, "compile", "V1-05");
+    expect(relevantPlanCompile.status).toBe(1);
+    expect(relevantPlanCompile.stderr).toContain(
+      "canonical task policy has drifted from candidate",
+    );
+    await writeFixtureJson(root, planPath, plan);
+
+    const metadataPlan = globalThis.structuredClone(plan);
+    metadataPlan.baseline.repository = "https://github.com/Clyra-AI/other-repository";
+    await writeFixtureJson(root, planPath, metadataPlan);
+    const repositoryMetadataCompile = runTask(root, "compile", "V1-05");
+    expect(repositoryMetadataCompile.status).toBe(1);
+    expect(repositoryMetadataCompile.stderr).toContain(
+      "canonical plan source metadata has drifted from candidate",
+    );
+
+    metadataPlan.baseline.repository = plan.baseline.repository;
+    metadataPlan.baseline.commit = "3".repeat(40);
+    await writeFixtureJson(root, planPath, metadataPlan);
+    const baselineMetadataCompile = runTask(root, "compile", "V1-05");
+    expect(baselineMetadataCompile.status).toBe(1);
+    expect(baselineMetadataCompile.stderr).toContain(
+      "canonical plan source metadata has drifted from candidate",
+    );
+
+    metadataPlan.baseline.commit = plan.baseline.commit;
+    metadataPlan.productContract = "docs/candidate-contract.md";
+    await writeFixtureJson(root, planPath, metadataPlan);
+    const contractMetadataCompile = runTask(root, "compile", "V1-05");
+    expect(contractMetadataCompile.status).toBe(1);
+    expect(contractMetadataCompile.stderr).toContain(
+      "canonical plan source metadata has drifted from candidate",
+    );
+    await writeFixtureJson(root, planPath, plan);
+
+    const ledgerPath = "product/plans/oss-v1/acceptance-ledger.json";
+    const canonicalLedger = await readFixtureJson(root, ledgerPath);
+    const unrelatedLedger = globalThis.structuredClone(canonicalLedger);
+    unrelatedLedger.items.find((item) => item.taskId === "V1-06").statement +=
+      " Unrelated acceptance clarification.";
+    await writeFixtureJson(root, ledgerPath, unrelatedLedger);
+    expect(runTask(root, "validate", "candidate-packet.json").status).toBe(0);
+    expect(runTask(root, "compile", "V1-05").status).toBe(0);
+
+    const relevantLedger = globalThis.structuredClone(unrelatedLedger);
+    relevantLedger.items.find((item) => item.taskId === "V1-05").waivable = true;
+    await writeFixtureJson(root, ledgerPath, relevantLedger);
+    const relevantLedgerCompile = runTask(root, "compile", "V1-05");
+    expect(relevantLedgerCompile.status).toBe(1);
+    expect(relevantLedgerCompile.stderr).toContain(
+      "canonical acceptance policy has drifted from candidate",
+    );
+    await writeFixtureJson(root, ledgerPath, canonicalLedger);
+
+    const productContractPath = path.join(root, "docs/oss-v1.md");
+    const productContract = await readFile(productContractPath, "utf8");
+    await writeFile(productContractPath, `${productContract}\nCandidate-external drift.\n`);
+    const driftedCandidateCompile = runTask(root, "compile", "V1-05");
+    expect(driftedCandidateCompile.status).toBe(1);
+    expect(driftedCandidateCompile.stderr).toContain("source digest is stale for docs/oss-v1.md");
+    await writeFile(productContractPath, productContract);
+
+    const canonicalPlan = await readFixtureJson(root, planPath);
+    const malformedPlan = globalThis.structuredClone(canonicalPlan);
+    malformedPlan.tasks.push(globalThis.structuredClone(malformedPlan.tasks[0]));
+    await writeFixtureJson(root, planPath, malformedPlan);
+    const malformedCanonicalValidation = runTask(root, "validate", "candidate-packet.json");
+    expect(malformedCanonicalValidation.status).toBe(1);
+    expect(malformedCanonicalValidation.stderr).toContain("canonical plan is invalid");
+    await writeFixtureJson(root, planPath, canonicalPlan);
+
+    state.state = "review_pending";
+    state.history.push({
+      from: "verification_pending",
+      to: "review_pending",
+      at: "2026-08-10T01:02:00Z",
+      actor: "task-test-fixture",
+      reason: "Prove lifecycle-only state movement preserves the frozen candidate packet.",
+    });
+    await writeFixtureJson(root, statePath, state);
+    expect(runPlan(root, "write").status).toBe(0);
+    expect(runTask(root, "validate", "candidate-packet.json").status).toBe(0);
+
+    state.state = "blocked";
+    state.blockers = [{ id: "BLOCK-001", summary: "Fixture lifecycle halt." }];
+    state.history.push({
+      from: "review_pending",
+      to: "blocked",
+      at: "2026-08-10T01:03:00Z",
+      actor: "task-test-fixture",
+      reason: "Prove canonical lifecycle halts invalidate stored packet preflight.",
+    });
+    await writeFixtureJson(root, statePath, state);
+    expect(runPlan(root, "write").status).toBe(0);
+    const haltedValidation = runTask(root, "validate", "candidate-packet.json");
+    expect(haltedValidation.status).toBe(1);
+    expect(haltedValidation.stderr).toContain("canonical task state is halted");
+
+    state.state = "review_pending";
+    state.blockers = [];
+    state.history.push({
+      from: "blocked",
+      to: "review_pending",
+      at: "2026-08-10T01:04:00Z",
+      actor: "task-test-fixture",
+      reason: "Restore the fixture after the halted-state assertion.",
+    });
+    await writeFixtureJson(root, statePath, state);
+    expect(runPlan(root, "write").status).toBe(0);
+
+    const blockedLedger = globalThis.structuredClone(canonicalLedger);
+    const blockedAcceptance = blockedLedger.items.find((item) => item.taskId === "V1-05");
+    blockedAcceptance.status = "blocked";
+    blockedAcceptance.evidenceRefs = [];
+    await writeFixtureJson(root, ledgerPath, blockedLedger);
+    expect(runPlan(root, "write").status).toBe(0);
+    const blockedAcceptanceValidation = runTask(root, "validate", "candidate-packet.json");
+    expect(blockedAcceptanceValidation.status).toBe(1);
+    expect(blockedAcceptanceValidation.stderr).toContain("has an invalid promotion tail");
+    await writeFixtureJson(root, ledgerPath, canonicalLedger);
+    expect(runPlan(root, "write").status).toBe(0);
+
+    const invalidBindings = [
+      packet.lifecycle_evidence_refs.review_report.replace("/V1-05/", "/V1-06/"),
+      packet.lifecycle_evidence_refs.review_report.replace(
+        `/${candidateCommit}/`,
+        "/3333333333333333333333333333333333333333/",
+      ),
+      packet.lifecycle_evidence_refs.review_report.replace(`/${candidateCommit}/`, "/unbound/"),
+      packet.lifecycle_evidence_refs.review_report.replace(
+        "/review_report.json",
+        "/validation_report.json",
+      ),
+    ];
+    for (const [index, invalidRef] of invalidBindings.entries()) {
+      const invalidPacket = globalThis.structuredClone(packet);
+      invalidPacket.lifecycle_evidence_refs.review_report = invalidRef;
+      const packetPath = `invalid-candidate-packet-${index}.json`;
+      await writeFixtureJson(root, packetPath, invalidPacket);
+      const validation = runTask(root, "validate", packetPath);
+      expect(validation.status).toBe(1);
+      expect(validation.stderr).toContain("lifecycle evidence ref review_report must equal");
+    }
+
+    const forgedCandidatePacket = globalThis.structuredClone(packet);
+    forgedCandidatePacket.currentState.candidate.commit =
+      "3333333333333333333333333333333333333333";
+    forgedCandidatePacket.lifecycle_evidence_refs = Object.fromEntries(
+      Object.entries(forgedCandidatePacket.lifecycle_evidence_refs).map(
+        ([artifact, artifactRef]) => [
+          artifact,
+          artifactRef.replace(`/${candidateCommit}/`, "/3333333333333333333333333333333333333333/"),
+        ],
+      ),
+    );
+    await writeFixtureJson(root, "forged-candidate-packet.json", forgedCandidatePacket);
+    const forgedCandidateValidation = runTask(root, "validate", "forged-candidate-packet.json");
+    expect(forgedCandidateValidation.status).toBe(1);
+    expect(forgedCandidateValidation.stderr).toContain(
+      "currentState.candidate does not match canonical task state",
+    );
+
+    const downgradedPolicyPacket = globalThis.structuredClone(packet);
+    downgradedPolicyPacket.risk_class = "medium";
+    downgradedPolicyPacket.required_worker_chain =
+      downgradedPolicyPacket.required_worker_chain.filter((worker) => worker !== "code-review");
+    downgradedPolicyPacket.execution.factorySkills =
+      downgradedPolicyPacket.execution.factorySkills.filter((worker) => worker !== "code-review");
+    downgradedPolicyPacket.lifecycle_gates.code_review_required = false;
+    downgradedPolicyPacket.lifecycle_evidence_required =
+      downgradedPolicyPacket.lifecycle_evidence_required.filter(
+        (artifact) => artifact !== "review_report",
+      );
+    delete downgradedPolicyPacket.lifecycle_evidence_refs.review_report;
+    await writeFixtureJson(root, "downgraded-policy-packet.json", downgradedPolicyPacket);
+    const downgradedPolicyValidation = runTask(root, "validate", "downgraded-policy-packet.json");
+    expect(downgradedPolicyValidation.status).toBe(1);
+    expect(downgradedPolicyValidation.stderr).toContain("risk_class does not match canonical plan");
+
+    const downgradedExecutorEvidence = globalThis.structuredClone(packet);
+    downgradedExecutorEvidence.evidence_required = ["arbitrary_evidence"];
+    downgradedExecutorEvidence.worker_evidence_required = ["arbitrary_evidence"];
+    await writeFixtureJson(root, "downgraded-executor-evidence.json", downgradedExecutorEvidence);
+    const downgradedExecutorValidation = runTask(
+      root,
+      "validate",
+      "downgraded-executor-evidence.json",
+    );
+    expect(downgradedExecutorValidation.status).toBe(1);
+    expect(downgradedExecutorValidation.stderr).toContain(
+      "evidence_required does not match canonical plan",
+    );
+
+    const downgradedClosure = globalThis.structuredClone(packet);
+    downgradedClosure.acceptance_result_requirements[0].evidence_mode = "manual_review";
+    downgradedClosure.acceptance_result_requirements[0].closure_evidence =
+      "acceptance_evidence_record";
+    await writeFixtureJson(root, "downgraded-closure.json", downgradedClosure);
+    const downgradedClosureValidation = runTask(root, "validate", "downgraded-closure.json");
+    expect(downgradedClosureValidation.status).toBe(1);
+    expect(downgradedClosureValidation.stderr).toContain(
+      "acceptance_result_requirements does not match canonical plan",
+    );
+
+    const rewrittenAcceptance = globalThis.structuredClone(packet);
+    rewrittenAcceptance.acceptanceItems[0].waivable = true;
+    rewrittenAcceptance.acceptanceItems[0].verification.gateId = "QG-PLAN-CHECK";
+    await writeFixtureJson(root, "rewritten-acceptance.json", rewrittenAcceptance);
+    const rewrittenAcceptanceValidation = runTask(root, "validate", "rewritten-acceptance.json");
+    expect(rewrittenAcceptanceValidation.status).toBe(1);
+    expect(rewrittenAcceptanceValidation.stderr).toContain(
+      "acceptanceItems policy does not match canonical plan",
+    );
+
+    const fabricatedAcceptanceTail = globalThis.structuredClone(packet);
+    fabricatedAcceptanceTail.acceptanceItems[0].status = "accepted";
+    fabricatedAcceptanceTail.acceptanceItems[0].evidenceRefs = ["ev-fabricated"];
+    await writeFixtureJson(root, "fabricated-acceptance-tail.json", fabricatedAcceptanceTail);
+    const fabricatedAcceptanceValidation = runTask(
+      root,
+      "validate",
+      "fabricated-acceptance-tail.json",
+    );
+    expect(fabricatedAcceptanceValidation.status).toBe(1);
+    expect(fabricatedAcceptanceValidation.stderr).toContain("has an invalid promotion tail");
+
+    const forgedMutableDigest = globalThis.structuredClone(packet);
+    forgedMutableDigest.source.digests["product/plans/oss-v1/acceptance-ledger.json"] = "0".repeat(
+      64,
+    );
+    await writeFixtureJson(root, "forged-mutable-digest.json", forgedMutableDigest);
+    const forgedMutableDigestValidation = runTask(root, "validate", "forged-mutable-digest.json");
+    expect(forgedMutableDigestValidation.status).toBe(1);
+    expect(forgedMutableDigestValidation.stderr).toContain(
+      "source.digests keys does not match canonical plan",
+    );
+
+    const disabledScanner = globalThis.structuredClone(packet);
+    disabledScanner.security_scanner_gates.required = false;
+    disabledScanner.security_scanner_gates.command_refs = ["echo skipped"];
+    await writeFixtureJson(root, "disabled-scanner.json", disabledScanner);
+    const disabledScannerValidation = runTask(root, "validate", "disabled-scanner.json");
+    expect(disabledScannerValidation.status).toBe(1);
+    expect(disabledScannerValidation.stderr).toContain(
+      "security_scanner_gates does not match canonical plan",
+    );
+
+    const omittedReleaseIntent = globalThis.structuredClone(packet);
+    omittedReleaseIntent.changelog_intent.impact = "not_required";
+    omittedReleaseIntent.changelog_intent.section = "Unreleased";
+    omittedReleaseIntent.changelog_intent.semver_marker = "none";
+    omittedReleaseIntent.docs_sync_refs = [
+      {
+        path: "docs/oss-v1.md",
+        reason: "Unrelated documentation replacement.",
+      },
+    ];
+    await writeFixtureJson(root, "omitted-release-intent.json", omittedReleaseIntent);
+    const omittedReleaseValidation = runTask(root, "validate", "omitted-release-intent.json");
+    expect(omittedReleaseValidation.status).toBe(1);
+    expect(omittedReleaseValidation.stderr).toContain(
+      "changelog_intent does not match canonical plan",
+    );
+
+    const stalePlanPacket = globalThis.structuredClone(packet);
+    stalePlanPacket.source.digests["product/plans/oss-v1/plan.json"] = "0".repeat(64);
+    await writeFixtureJson(root, "stale-plan-packet.json", stalePlanPacket);
+    const stalePlanValidation = runTask(root, "validate", "stale-plan-packet.json");
+    expect(stalePlanValidation.status).toBe(1);
+    expect(stalePlanValidation.stderr).toContain(
+      "source digest is not bound to candidate for product/plans/oss-v1/plan.json",
+    );
+  }, 45_000);
 
   it("routes the actual V1-06 trust gate through the domain review skill", async () => {
     const root = await createFixture();

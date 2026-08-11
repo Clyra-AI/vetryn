@@ -1,0 +1,302 @@
+{
+  "$schema": "../../schemas/task-state.schema.json",
+  "schemaVersion": "1.0.0",
+  "taskId": "M0-07",
+  "revision": 37,
+  "state": "accepted",
+  "attempt": 3,
+  "candidate": {
+    "baseCommit": "08c3ef067e6be834142b6bd6cb3a17c406e4ea3b",
+    "commit": "3b1aaef18bc5e7f9e20d7dbf3d2e2ef8f547f6da",
+    "executor": "implementation-agent"
+  },
+  "criteria": [
+    {
+      "criterionId": "PROCESS-008",
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-07-repo-check-3b1aaef"]
+    }
+  ],
+  "gates": [
+    {
+      "gateId": "QG-PLAN-CHECK",
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-07-plan-check-3b1aaef"]
+    },
+    {
+      "gateId": "QG-REPO-CHECK",
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-07-repo-check-3b1aaef"]
+    }
+  ],
+  "reviews": [],
+  "blockers": [],
+  "history": [
+    {
+      "from": null,
+      "to": "planned",
+      "at": "2026-08-11T17:30:00Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer authorized the narrow process correction required for a clean V1-05 workspace package and release record."
+    },
+    {
+      "from": "planned",
+      "to": "in_progress",
+      "at": "2026-08-11T17:31:00Z",
+      "actor": "implementation-agent",
+      "reason": "Started the process-only correction before adding any V1-05 product code."
+    },
+    {
+      "from": "in_progress",
+      "to": "in_progress",
+      "at": "2026-08-11T17:32:00Z",
+      "actor": "implementation-agent",
+      "reason": "Added the missing deterministic lifecycle artifact refs required by Factory's frozen-candidate review preflight."
+    },
+    {
+      "from": "in_progress",
+      "to": "accepted",
+      "at": "2026-08-11T17:34:45Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer accepted the exact M0-07 candidate after both active command gates passed and the correction remained process-only."
+    },
+    {
+      "from": "accepted",
+      "to": "in_progress",
+      "at": "2026-08-11T17:41:00Z",
+      "actor": "implementation-agent",
+      "reason": "Reopened the still-unmerged process task to address current-head Codex findings about immutable candidate refs and task-derived package documentation."
+    },
+    {
+      "from": "in_progress",
+      "to": "accepted",
+      "at": "2026-08-11T17:43:26Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer accepted the exact repaired candidate after both current-head review findings were covered by deterministic tests and all active gates passed."
+    },
+    {
+      "from": "accepted",
+      "to": "in_progress",
+      "at": "2026-08-11T17:49:44Z",
+      "actor": "implementation-agent",
+      "reason": "Reopened the still-unmerged task for cross-field packet validation after current-head review showed schema shape alone could not bind lifecycle refs."
+    },
+    {
+      "from": "in_progress",
+      "to": "accepted",
+      "at": "2026-08-11T17:51:47Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer accepted the exact final candidate after adversarial cross-field validation covered wrong-task, stale-candidate, unbound, swapped-artifact, and forged-candidate cases."
+    },
+    {
+      "from": "accepted",
+      "to": "in_progress",
+      "at": "2026-08-11T17:57:07Z",
+      "actor": "implementation-agent",
+      "reason": "Continued the third still-unmerged correction attempt to authenticate stored packets against canonical plan policy and make packet-path substitution machine-readable."
+    },
+    {
+      "from": "in_progress",
+      "to": "accepted",
+      "at": "2026-08-11T18:00:20Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer accepted the exact canonical-authentication candidate after deterministic policy-downgrade, stale-plan, promotion-tail, candidate, task, and artifact-binding tests passed."
+    },
+    {
+      "from": "accepted",
+      "to": "in_progress",
+      "at": "2026-08-11T18:06:32Z",
+      "actor": "implementation-agent",
+      "reason": "Continued the same third review-correction attempt to authenticate every runner-consumed executor evidence and acceptance-closure field."
+    },
+    {
+      "from": "in_progress",
+      "to": "accepted",
+      "at": "2026-08-11T18:09:56Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer accepted the full-surface authentication candidate after deterministic executor-evidence, acceptance-closure, policy-downgrade, stale-plan, promotion-tail, and binding tests passed."
+    },
+    {
+      "from": "accepted",
+      "to": "in_progress",
+      "at": "2026-08-11T18:17:04Z",
+      "actor": "implementation-agent",
+      "reason": "Continued the same third review-correction attempt to authenticate all remaining policy-bearing packet fields rather than extending a manual partial allowlist."
+    },
+    {
+      "from": "in_progress",
+      "to": "accepted",
+      "at": "2026-08-11T18:20:40Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer accepted the exact complete-policy-authentication candidate after adversarial acceptance, scanner, CI, release, documentation, source-metadata, stale-input, and lifecycle-binding tests and both active command gates passed."
+    },
+    {
+      "from": "accepted",
+      "to": "in_progress",
+      "at": "2026-08-11T18:27:00Z",
+      "actor": "implementation-agent",
+      "reason": "Continued the same third review-correction attempt to reject unbound lifecycle preflight, authenticate packet identity, and make canonical object comparison insensitive to JSON member order."
+    },
+    {
+      "from": "in_progress",
+      "to": "accepted",
+      "at": "2026-08-11T18:29:40Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer accepted the exact lifecycle-preflight boundary candidate after bound/unbound, packet-identity, order-insensitive structural comparison, policy-authentication, and full repository gates passed."
+    },
+    {
+      "from": "accepted",
+      "to": "in_progress",
+      "at": "2026-08-11T18:36:30Z",
+      "actor": "implementation-agent",
+      "reason": "Continued the same third review-correction attempt so lifecycle preflight validates canonical plan and ledger inputs before deriving trusted packet policy."
+    },
+    {
+      "from": "in_progress",
+      "to": "accepted",
+      "at": "2026-08-11T18:38:09Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer accepted the exact canonical-input-validation candidate after malformed-plan, bound/unbound, packet-identity, structural-comparison, and full repository gates passed."
+    },
+    {
+      "from": "accepted",
+      "to": "in_progress",
+      "at": "2026-08-11T18:41:30Z",
+      "actor": "implementation-agent",
+      "reason": "Continued the same third review-correction attempt to give the expanded adversarial packet test a bounded Linux CI timeout matching its measured subprocess workload."
+    },
+    {
+      "from": "in_progress",
+      "to": "accepted",
+      "at": "2026-08-11T18:42:06Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer accepted the exact bounded-timeout candidate after the focused suite and full repository gate completed within the new explicit test budget."
+    },
+    {
+      "from": "accepted",
+      "to": "in_progress",
+      "at": "2026-08-11T18:48:00Z",
+      "actor": "implementation-agent",
+      "reason": "Continued the same third review-correction attempt to authenticate acceptance promotion tails, remove unauthenticated lifecycle-mutable digest claims, and compare digest keys without member-order sensitivity."
+    },
+    {
+      "from": "in_progress",
+      "to": "accepted",
+      "at": "2026-08-11T18:50:59Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer accepted the exact promotion-provenance candidate after fabricated-tail, forged-mutable-digest, reordered-digest-map, canonical-input, and full repository gates passed."
+    },
+    {
+      "from": "accepted",
+      "to": "in_progress",
+      "at": "2026-08-11T18:56:30Z",
+      "actor": "implementation-agent",
+      "reason": "Continued the same third review-correction attempt to bind immutable source digests to both the frozen Git candidate and current checkout."
+    },
+    {
+      "from": "in_progress",
+      "to": "accepted",
+      "at": "2026-08-11T19:01:13Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer accepted the exact candidate-bound-input candidate after real-Git candidate replay, post-freeze contract drift, candidate-digest forgery, and full repository gates passed."
+    },
+    {
+      "from": "accepted",
+      "to": "in_progress",
+      "at": "2026-08-11T19:07:00Z",
+      "actor": "implementation-agent",
+      "reason": "Continued the same third review-correction attempt to preserve historical plan provenance across unrelated task edits and reject halted canonical lifecycle state."
+    },
+    {
+      "from": "in_progress",
+      "to": "accepted",
+      "at": "2026-08-11T19:09:29Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer accepted the exact lifecycle-state candidate after unrelated-plan preservation, relevant-policy drift, blocked-state, active-blocker, and full repository gates passed."
+    },
+    {
+      "from": "accepted",
+      "to": "in_progress",
+      "at": "2026-08-11T19:12:30Z",
+      "actor": "implementation-agent",
+      "reason": "Continued the same third review-correction attempt to give the real-Git lifecycle adversarial test a bounded timeout that covers measured Linux CI runtime."
+    },
+    {
+      "from": "in_progress",
+      "to": "accepted",
+      "at": "2026-08-11T19:13:15Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer accepted the exact bounded-CI-budget candidate after the targeted real-Git lifecycle test and full repository gate completed within the explicit budget."
+    },
+    {
+      "from": "accepted",
+      "to": "in_progress",
+      "at": "2026-08-11T19:29:00Z",
+      "actor": "implementation-agent",
+      "reason": "Continued the same third review-correction attempt to bind recompilation to the frozen candidate's exact task and gate policy while preserving unrelated plan edits."
+    },
+    {
+      "from": "in_progress",
+      "to": "accepted",
+      "at": "2026-08-11T19:31:37Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer accepted the exact frozen-policy candidate after unrelated-plan validation and recompilation passed, relevant task-policy validation and recompilation failed, and the full repository gate passed."
+    },
+    {
+      "from": "accepted",
+      "to": "in_progress",
+      "at": "2026-08-11T19:39:00Z",
+      "actor": "implementation-agent",
+      "reason": "Continued the same third review-correction attempt to bind policy-bearing acceptance fields to the frozen candidate ledger while preserving unrelated task edits and authenticated promotion tails."
+    },
+    {
+      "from": "in_progress",
+      "to": "accepted",
+      "at": "2026-08-11T19:40:32Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer accepted the exact frozen-acceptance candidate after unrelated-ledger validation and recompilation passed, relevant acceptance-policy recompilation failed, and the full repository gate passed."
+    },
+    {
+      "from": "accepted",
+      "to": "in_progress",
+      "at": "2026-08-11T19:49:30Z",
+      "actor": "implementation-agent",
+      "reason": "Continued the same third review-correction attempt to bind packet-bearing plan identity, baseline, and product-contract metadata to the frozen candidate."
+    },
+    {
+      "from": "in_progress",
+      "to": "verification_pending",
+      "at": "2026-08-11T19:52:59Z",
+      "actor": "validation-agent",
+      "reason": "Bound the exact source-metadata candidate after repository, baseline-commit, product-contract-path, focused, and full repository gates passed."
+    },
+    {
+      "from": "verification_pending",
+      "to": "accepted",
+      "at": "2026-08-11T19:54:20Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer accepted the exact source-metadata candidate after candidate-bound packet validation and all command evidence passed."
+    },
+    {
+      "from": "accepted",
+      "to": "in_progress",
+      "at": "2026-08-11T20:02:08Z",
+      "actor": "implementation-agent",
+      "reason": "Continued the same third review-correction attempt to reject stale planned packet tails when canonical acceptance is blocked or otherwise not promoted."
+    },
+    {
+      "from": "in_progress",
+      "to": "verification_pending",
+      "at": "2026-08-11T20:04:24Z",
+      "actor": "validation-agent",
+      "reason": "Bound the exact acceptance-tail candidate after the blocked-ledger regression, focused tests, and full repository gate passed."
+    },
+    {
+      "from": "verification_pending",
+      "to": "accepted",
+      "at": "2026-08-11T20:05:00Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer accepted the exact acceptance-tail candidate after candidate-bound packet validation and all command evidence passed."
+    }
+  ]
+}
