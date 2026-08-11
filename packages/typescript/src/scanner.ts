@@ -55,8 +55,8 @@ interface FindingInput {
 }
 
 interface OpenAIClientEvidence {
-  readonly importedNames: ReadonlySet<string>;
-  readonly verifiedClientNames: ReadonlySet<string>;
+  readonly importedSymbols: ReadonlySet<ts.Symbol>;
+  readonly verifiedClientSymbols: ReadonlySet<ts.Symbol>;
 }
 
 interface OperationMatch {
@@ -97,7 +97,8 @@ export function scanTypeScript({ file, source }: ScanSource): readonly ScanFindi
     ];
   }
 
-  const clientEvidence = collectOpenAIClientEvidence(sourceFile);
+  const checker = createTypeChecker(sourceFile);
+  const clientEvidence = collectOpenAIClientEvidence(sourceFile, checker);
   const findings: ScanFinding[] = [];
 
   const visit = (node: ts.Node): void => {
@@ -107,6 +108,7 @@ export function scanTypeScript({ file, source }: ScanSource): readonly ScanFindi
         findings.push(
           scanOpenAIChatCompletion({
             call: node,
+            checker,
             clientEvidence,
             file,
             operation,
@@ -129,6 +131,7 @@ export function scanTypeScript({ file, source }: ScanSource): readonly ScanFindi
 
 interface ScanOpenAIChatCompletionOptions {
   readonly call: ts.CallExpression;
+  readonly checker: ts.TypeChecker;
   readonly clientEvidence: OpenAIClientEvidence;
   readonly file: string;
   readonly operation: OperationMatch;
@@ -138,6 +141,7 @@ interface ScanOpenAIChatCompletionOptions {
 
 function scanOpenAIChatCompletion({
   call,
+  checker,
   clientEvidence,
   file,
   operation,
@@ -152,7 +156,7 @@ function scanOpenAIChatCompletion({
     sourceSymbol: sourceSymbolFor(call),
   } as const;
 
-  if (!isVerifiedOpenAIReceiver(operation.receiver, clientEvidence)) {
+  if (!isVerifiedOpenAIReceiver(operation.receiver, checker, clientEvidence)) {
     return createFinding({
       ...base,
       confidence: "ambiguous",
@@ -255,8 +259,27 @@ function createFinding(input: FindingInput): ScanFinding {
   };
 }
 
-function collectOpenAIClientEvidence(sourceFile: ts.SourceFile): OpenAIClientEvidence {
-  const importedNames = new Set<string>();
+function createTypeChecker(sourceFile: ts.SourceFile): ts.TypeChecker {
+  const options: ts.CompilerOptions = {
+    noLib: true,
+    noResolve: true,
+    target: ts.ScriptTarget.ES2023,
+  };
+  const host = ts.createCompilerHost(options, true);
+
+  host.fileExists = (fileName) => fileName === sourceFile.fileName;
+  host.readFile = (fileName) => (fileName === sourceFile.fileName ? sourceFile.text : undefined);
+  host.getSourceFile = (fileName) => (fileName === sourceFile.fileName ? sourceFile : undefined);
+  host.getDefaultLibFileName = () => "";
+
+  return ts.createProgram([sourceFile.fileName], options, host).getTypeChecker();
+}
+
+function collectOpenAIClientEvidence(
+  sourceFile: ts.SourceFile,
+  checker: ts.TypeChecker,
+): OpenAIClientEvidence {
+  const importedSymbols = new Set<ts.Symbol>();
   for (const statement of sourceFile.statements) {
     if (
       !ts.isImportDeclaration(statement) ||
@@ -266,38 +289,38 @@ function collectOpenAIClientEvidence(sourceFile: ts.SourceFile): OpenAIClientEvi
       continue;
     }
     const importClause = statement.importClause;
-    if (importClause?.name !== undefined) importedNames.add(importClause.name.text);
+    if (importClause?.name !== undefined) addSymbol(importedSymbols, checker, importClause.name);
     const bindings = importClause?.namedBindings;
     if (bindings === undefined || !ts.isNamedImports(bindings)) continue;
     for (const element of bindings.elements) {
       if (element.propertyName?.text === "OpenAI" || element.name.text === "OpenAI") {
-        importedNames.add(element.name.text);
+        addSymbol(importedSymbols, checker, element.name);
       }
     }
   }
 
-  const verifiedClientNames = new Set<string>();
+  const verifiedClientSymbols = new Set<ts.Symbol>();
   const visit = (node: ts.Node): void => {
     if (
       ts.isVariableDeclaration(node) &&
       ts.isIdentifier(node.name) &&
       node.initializer !== undefined &&
-      isOpenAIConstruction(node.initializer, importedNames)
+      isOpenAIConstruction(node.initializer, checker, importedSymbols)
     ) {
-      verifiedClientNames.add(node.name.text);
+      addSymbol(verifiedClientSymbols, checker, node.name);
     }
     if (
       ts.isParameter(node) &&
       ts.isIdentifier(node.name) &&
-      isOpenAIType(node.type, importedNames)
+      isOpenAIType(node.type, checker, importedSymbols)
     ) {
-      verifiedClientNames.add(node.name.text);
+      addSymbol(verifiedClientSymbols, checker, node.name);
     }
     ts.forEachChild(node, visit);
   };
   visit(sourceFile);
 
-  return { importedNames, verifiedClientNames };
+  return { importedSymbols, verifiedClientSymbols };
 }
 
 function matchOpenAIChatCompletion(call: ts.CallExpression): OperationMatch | undefined {
@@ -314,22 +337,24 @@ function matchOpenAIChatCompletion(call: ts.CallExpression): OperationMatch | un
 
 function isVerifiedOpenAIReceiver(
   receiver: ts.Expression,
-  { importedNames, verifiedClientNames }: OpenAIClientEvidence,
+  checker: ts.TypeChecker,
+  { importedSymbols, verifiedClientSymbols }: OpenAIClientEvidence,
 ): boolean {
   return (
-    (ts.isIdentifier(receiver) && verifiedClientNames.has(receiver.text)) ||
-    isOpenAIConstruction(receiver, importedNames)
+    (ts.isIdentifier(receiver) && hasSymbol(verifiedClientSymbols, checker, receiver)) ||
+    isOpenAIConstruction(receiver, checker, importedSymbols)
   );
 }
 
 function isOpenAIConstruction(
   expression: ts.Expression,
-  importedNames: ReadonlySet<string>,
+  checker: ts.TypeChecker,
+  importedSymbols: ReadonlySet<ts.Symbol>,
 ): boolean {
   const unwrapped = unwrapExpression(expression);
   if (!ts.isNewExpression(unwrapped)) return false;
   const constructor = unwrapExpression(unwrapped.expression);
-  return ts.isIdentifier(constructor) && importedNames.has(constructor.text);
+  return ts.isIdentifier(constructor) && hasSymbol(importedSymbols, checker, constructor);
 }
 
 function hasParseErrors(source: string, file: string): boolean {
@@ -342,13 +367,31 @@ function hasParseErrors(source: string, file: string): boolean {
   ).some(({ category }) => category === ts.DiagnosticCategory.Error);
 }
 
-function isOpenAIType(type: ts.TypeNode | undefined, importedNames: ReadonlySet<string>): boolean {
+function isOpenAIType(
+  type: ts.TypeNode | undefined,
+  checker: ts.TypeChecker,
+  importedSymbols: ReadonlySet<ts.Symbol>,
+): boolean {
   return (
     type !== undefined &&
     ts.isTypeReferenceNode(type) &&
     ts.isIdentifier(type.typeName) &&
-    importedNames.has(type.typeName.text)
+    hasSymbol(importedSymbols, checker, type.typeName)
   );
+}
+
+function addSymbol(symbols: Set<ts.Symbol>, checker: ts.TypeChecker, node: ts.Node): void {
+  const symbol = checker.getSymbolAtLocation(node);
+  if (symbol !== undefined) symbols.add(symbol);
+}
+
+function hasSymbol(
+  symbols: ReadonlySet<ts.Symbol>,
+  checker: ts.TypeChecker,
+  node: ts.Node,
+): boolean {
+  const symbol = checker.getSymbolAtLocation(node);
+  return symbol !== undefined && symbols.has(symbol);
 }
 
 function isModelProperty(

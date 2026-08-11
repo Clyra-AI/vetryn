@@ -267,6 +267,32 @@ describe("reviewed TypeScript scanner corpus", () => {
     ]);
   });
 
+  it("binds verified clients lexically instead of trusting a reused identifier name", () => {
+    const source = `
+      import OpenAI from "openai";
+      export async function supported(client: OpenAI) {
+        return client.chat.completions.create({ model: "openai/gpt-4.1-mini" });
+      }
+      export async function lookalike(client: { chat: { completions: { create: Function } } }) {
+        return client.chat.completions.create({ model: "openai/gpt-4.1-mini" });
+      }
+    `;
+
+    expect(scanTypeScript({ file: "src/reused-client.ts", source })).toMatchObject([
+      {
+        confidence: "high",
+        patchability: "patchable",
+        sourceSymbol: "supported",
+      },
+      {
+        confidence: "ambiguous",
+        patchability: "not-patchable",
+        reasonCode: "unverified-client",
+        sourceSymbol: "lookalike",
+      },
+    ]);
+  });
+
   it("discovers the checked-in golden call without assigning its human-owned manifest ID", async () => {
     const fixtureRoot = path.resolve(
       import.meta.dirname,
