@@ -6,3 +6,5 @@ clock are pinned. Snapshots are evidence, not the sole assertion mechanism.
 
 No expected recommendation is checked in yet because the scanner, catalog adapter, and evaluator do
 not exist. Creating plausible-looking output before those contracts are implemented would hide drift.
+These are shape-only, redacted expected artifacts. Scenario tests assert their semantic fields; they are not used
+as snapshots of model output.

@@ -13,7 +13,7 @@ const taskScript = path.join(repositoryRoot, "scripts/task.mjs");
 const planScript = path.join(repositoryRoot, "scripts/plan.mjs");
 const temporaryRoots = [];
 const v1TaskId = "V1-00";
-const fixtureTaskIds = [v1TaskId, "M0-01", "M0-02", "M0-03", "V1-01"];
+const fixtureTaskIds = [v1TaskId, "M0-01", "M0-02", "M0-03", "V1-01", "V1-02"];
 const v1FixtureRevision = 5;
 
 async function createFixture() {
@@ -186,6 +186,41 @@ async function normalizeV1Fixture(root) {
     ],
   });
   await writeFixtureJson(root, reauthorizationStatePath, reauthorizationState);
+
+  const goldenRepositoryStatePath = "product/plans/oss-v1/state/V1-02.json";
+  const goldenRepositoryState = await readFixtureJson(root, goldenRepositoryStatePath);
+  Object.assign(goldenRepositoryState, {
+    revision: 0,
+    state: "planned",
+    attempt: 0,
+    candidate: null,
+    criteria: goldenRepositoryState.criteria.map((criterion) => ({
+      ...criterion,
+      status: "pending",
+      evidenceRefs: [],
+    })),
+    gates: goldenRepositoryState.gates.map((gate) => ({
+      ...gate,
+      status: "pending",
+      evidenceRefs: [],
+    })),
+    reviews: goldenRepositoryState.reviews.map((review) => ({
+      ...review,
+      status: "pending",
+      evidenceRefs: [],
+    })),
+    blockers: [],
+    history: [
+      {
+        from: null,
+        to: "planned",
+        at: "2026-08-10T00:00:00Z",
+        actor: "task-test-fixture",
+        reason: "Reset the golden-repository task with the V1-00 fixture baseline.",
+      },
+    ],
+  });
+  await writeFixtureJson(root, goldenRepositoryStatePath, goldenRepositoryState);
 
   const dependentStatePath = "product/plans/oss-v1/state/V1-01.json";
   const dependentState = await readFixtureJson(root, dependentStatePath);

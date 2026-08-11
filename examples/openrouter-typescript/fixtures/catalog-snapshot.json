@@ -1,0 +1,37 @@
+{
+  "artifactType": "catalog-snapshot",
+  "contentDigest": "sha256:d436f3d8b9981bf44431927803abb1d248c4fd1d7a60850467a44cda2bc8f70c",
+  "id": "catalog-snapshot:openrouter-golden-2026-08-10",
+  "models": [
+    {
+      "capabilities": { "structuredOutput": true, "textGeneration": true, "toolCalls": false },
+      "contextWindowTokens": 200000,
+      "id": "anthropic/claude-3-5-haiku",
+      "inputPricePerMillionUsd": "0.80",
+      "outputPricePerMillionUsd": "4.00",
+      "provider": "anthropic",
+      "retired": false
+    },
+    {
+      "capabilities": { "structuredOutput": true, "textGeneration": true, "toolCalls": false },
+      "contextWindowTokens": 1047576,
+      "id": "openai/gpt-4.1-mini",
+      "inputPricePerMillionUsd": "0.40",
+      "outputPricePerMillionUsd": "1.60",
+      "provider": "openai",
+      "retired": false
+    },
+    {
+      "capabilities": { "structuredOutput": true, "textGeneration": true, "toolCalls": false },
+      "contextWindowTokens": 128000,
+      "id": "openai/gpt-4o-mini",
+      "inputPricePerMillionUsd": "0.15",
+      "outputPricePerMillionUsd": "0.60",
+      "provider": "openai",
+      "retired": false
+    }
+  ],
+  "observedAt": "2026-08-10T00:00:00.000Z",
+  "schemaVersion": "1.0.0",
+  "source": "openrouter"
+}

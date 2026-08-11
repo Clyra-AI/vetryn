@@ -1,0 +1,18 @@
+{
+  "artifactType": "golden-scenario-summary",
+  "baselineModel": "openai/gpt-4.1-mini",
+  "callSiteId": "support-classification",
+  "candidateModel": "openai/gpt-4o-mini",
+  "disposition": "recommend",
+  "expectedPatch": {
+    "file": "src/support-classification.ts",
+    "from": "openai/gpt-4.1-mini",
+    "operation": "replace-model-literal",
+    "to": "openai/gpt-4o-mini"
+  },
+  "redaction": {
+    "rawInputs": false,
+    "rawOutputs": false
+  },
+  "schemaVersion": "1.0.0"
+}

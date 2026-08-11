@@ -1,0 +1,11 @@
+{
+  "artifactType": "eval-suite",
+  "callSiteId": "support-classification",
+  "caseCount": 30,
+  "fixtureDigest": "sha256:f5c462ccdfd749f1316c332ce0b4e85e2fbf27e2e67d637928f4cdcf74bca3a7",
+  "fixturePath": "fixtures/support-classification.evals.jsonl",
+  "id": "eval-suite:support-classification",
+  "redactionMode": "no-raw-inputs-or-outputs",
+  "reviewed": true,
+  "schemaVersion": "1.0.0"
+}

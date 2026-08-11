@@ -31,10 +31,10 @@
     "test": "vitest run",
     "test:contracts": "pnpm test",
     "test:scanner-corpus": "vitest run packages/typescript/test/scanner-corpus.test.ts",
-    "test:scenarios": "vitest run examples/openrouter-typescript/test/scenarios.test.ts",
+    "test:scenarios": "vitest --config scripts/vitest.scenarios.config.ts run examples/openrouter-typescript/test/scenarios.test.ts",
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
-    "typecheck": "pnpm --recursive typecheck",
+    "typecheck": "pnpm --recursive typecheck && tsc --noEmit --project examples/openrouter-typescript/tsconfig.json",
     "version-packages": "changeset version"
   },
   "devDependencies": {
@@ -46,6 +46,7 @@
     "ajv-formats": "3.0.1",
     "eslint": "10.8.1",
     "knip": "6.32.0",
+    "openai": "7.4.0",
     "prettier": "3.9.6",
     "typescript": "6.0.3",
     "typescript-eslint": "8.66.0",
