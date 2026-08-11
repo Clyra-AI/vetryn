@@ -1,0 +1,46 @@
+{
+  "$schema": "../../schemas/task-state.schema.json",
+  "schemaVersion": "1.0.0",
+  "taskId": "M0-03",
+  "revision": 1,
+  "state": "in_progress",
+  "attempt": 1,
+  "candidate": null,
+  "criteria": [
+    {
+      "criterionId": "PROCESS-004",
+      "status": "pending",
+      "evidenceRefs": []
+    }
+  ],
+  "gates": [
+    {
+      "gateId": "QG-PLAN-CHECK",
+      "status": "pending",
+      "evidenceRefs": []
+    },
+    {
+      "gateId": "QG-REPO-CHECK",
+      "status": "pending",
+      "evidenceRefs": []
+    }
+  ],
+  "reviews": [],
+  "blockers": [],
+  "history": [
+    {
+      "from": null,
+      "to": "planned",
+      "at": "2026-08-11T02:15:00Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer created the separate process task required to reauthorize the unresolved V1-02 review-correction attempt."
+    },
+    {
+      "from": "planned",
+      "to": "in_progress",
+      "at": "2026-08-11T02:15:00Z",
+      "actor": "davidahmann",
+      "reason": "Started the plan-only reauthorization before any fresh V1-02 candidate is created."
+    }
+  ]
+}

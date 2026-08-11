@@ -2,9 +2,9 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "V1-02",
-  "revision": 0,
+  "revision": 1,
   "state": "planned",
-  "attempt": 0,
+  "attempt": 2,
   "candidate": null,
   "criteria": [
     {
@@ -70,6 +70,20 @@
       "at": "2026-08-10T00:30:00Z",
       "actor": "planning-agent",
       "reason": "Task created by the canonical OSS V1 plan."
+    },
+    {
+      "from": "planned",
+      "to": "changes_requested",
+      "at": "2026-08-11T01:45:20Z",
+      "actor": "davidahmann",
+      "reason": "First pull-request candidate was returned for concrete review corrections before canonical acceptance."
+    },
+    {
+      "from": "changes_requested",
+      "to": "planned",
+      "at": "2026-08-11T01:57:19Z",
+      "actor": "davidahmann",
+      "reason": "Second pull-request candidate exhausted the original two-attempt budget with further concrete review corrections; no V1-02 candidate was accepted."
     }
   ]
 }
