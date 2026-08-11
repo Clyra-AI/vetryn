@@ -497,16 +497,23 @@
       "acceptanceItemIds": ["SCAN-001", "SCAN-002", "SCAN-003", "SCAN-004"],
       "scope": {
         "allowedPaths": [
+          ".changeset/**",
+          "package.json",
+          "pnpm-lock.yaml",
           "packages/typescript/**",
           "packages/cli/**",
           "packages/core/**",
-          "examples/openrouter-typescript/**"
+          "examples/openrouter-typescript/**",
+          "scripts/plan.test.mjs",
+          "scripts/task.test.mjs",
+          "vitest.config.ts"
         ],
         "forbiddenPaths": ["packages/openrouter/**", "action.yml"]
       },
       "semanticInvariants": [
         "Scanner output never invents the stable semantic call-site ID.",
-        "Ambiguous or dynamic calls are findings, never patch targets."
+        "Ambiguous or dynamic calls are findings, never patch targets.",
+        "Root workspace support and release metadata are limited to the staged scanner package, its tests, and the previously accepted manifest-init public APIs."
       ],
       "deliverables": ["packages/typescript/**", "packages/cli/**"],
       "requiredTestLevels": ["unit", "contract", "integration", "adversarial"],
