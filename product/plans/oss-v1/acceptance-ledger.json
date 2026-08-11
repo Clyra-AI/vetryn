@@ -115,8 +115,8 @@
       "statement": "A separate maintainer-controlled task authorizes exactly one additional V1-02 attempt for the three concrete current-head pull-request review findings, with no product-scope or capability expansion.",
       "verification": { "method": "test", "testLevel": "contract", "gateId": "QG-PLAN-CHECK" },
       "waivable": false,
-      "status": "planned",
-      "evidenceRefs": []
+      "status": "accepted",
+      "evidenceRefs": ["ev-m0-03-plan-check-4d847fb"]
     },
     {
       "id": "CONTRACT-001",
