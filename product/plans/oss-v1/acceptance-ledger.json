@@ -265,7 +265,7 @@
       "statement": "Manifest initialization requires explicit human-owned stable call-site IDs, ownership metadata, and a human-reviewed representative prompt/completion token-weight profile with provenance.",
       "verification": { "method": "test", "testLevel": "contract", "gateId": "QG-CONTRACTS" },
       "waivable": false,
-      "status": "verification_pending",
+      "status": "accepted",
       "evidenceRefs": ["ev-v1-04-contracts-f044a08"]
     },
     {
@@ -274,7 +274,7 @@
       "statement": "Re-scanning and re-initializing an unchanged call site is idempotent.",
       "verification": { "method": "test", "testLevel": "integration", "gateId": "QG-REPO-CHECK" },
       "waivable": false,
-      "status": "verification_pending",
+      "status": "accepted",
       "evidenceRefs": ["ev-v1-04-repo-check-f044a08"]
     },
     {
@@ -283,7 +283,7 @@
       "statement": "Invalid or colliding stable IDs are rejected without partially updating the manifest.",
       "verification": { "method": "test", "testLevel": "adversarial", "gateId": "QG-CONTRACTS" },
       "waivable": false,
-      "status": "verification_pending",
+      "status": "accepted",
       "evidenceRefs": ["ev-v1-04-contracts-f044a08"]
     },
     {
