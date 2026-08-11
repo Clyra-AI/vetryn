@@ -2,51 +2,47 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "V1-03",
-  "revision": 48,
-  "state": "accepted",
+  "revision": 49,
+  "state": "planned",
   "attempt": 3,
-  "candidate": {
-    "baseCommit": "c8165c57fc2d871c5012a0fe9c0e2f87467b7712",
-    "commit": "96cff25acc8f76d5073da3547d46908446a32490",
-    "executor": "implementation-agent"
-  },
+  "candidate": null,
   "criteria": [
     {
       "criterionId": "SCAN-001",
-      "status": "pass",
-      "evidenceRefs": ["ev-v1-03-scanner-corpus-96cff25"]
+      "status": "pending",
+      "evidenceRefs": []
     },
     {
       "criterionId": "SCAN-002",
-      "status": "pass",
-      "evidenceRefs": ["ev-v1-03-scanner-corpus-96cff25"]
+      "status": "pending",
+      "evidenceRefs": []
     },
     {
       "criterionId": "SCAN-003",
-      "status": "pass",
-      "evidenceRefs": ["ev-v1-03-scanner-corpus-96cff25"]
+      "status": "pending",
+      "evidenceRefs": []
     },
     {
       "criterionId": "SCAN-004",
-      "status": "pass",
-      "evidenceRefs": ["ev-v1-03-scanner-corpus-96cff25"]
+      "status": "pending",
+      "evidenceRefs": []
     }
   ],
   "gates": [
     {
       "gateId": "QG-REPO-CHECK",
-      "status": "pass",
-      "evidenceRefs": ["ev-v1-03-repo-check-96cff25"]
+      "status": "pending",
+      "evidenceRefs": []
     },
     {
       "gateId": "QG-CONTRACTS",
-      "status": "pass",
-      "evidenceRefs": ["ev-v1-03-contracts-96cff25"]
+      "status": "pending",
+      "evidenceRefs": []
     },
     {
       "gateId": "QG-SCANNER-CORPUS",
-      "status": "pass",
-      "evidenceRefs": ["ev-v1-03-scanner-corpus-96cff25"]
+      "status": "pending",
+      "evidenceRefs": []
     },
     {
       "gateId": "QG-INDEPENDENT-VERIFY",
@@ -520,6 +516,20 @@
       "at": "2026-08-11T13:01:21Z",
       "actor": "davidahmann",
       "reason": "Maintainer accepted the exact narrowed scanner candidate after all active command gates passed; reviewer records remain advisory under ADR 0009."
+    },
+    {
+      "from": "accepted",
+      "to": "changes_requested",
+      "at": "2026-08-11T13:06:17Z",
+      "actor": "chatgpt-codex-connector[bot]",
+      "reason": "Current-head P1 review required both the accessor correction and the SCAN-004 gate migration to be authorized by a separate planning task before V1-03 proceeds."
+    },
+    {
+      "from": "changes_requested",
+      "to": "planned",
+      "at": "2026-08-11T13:10:00Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer reset the unmerged third V1-03 attempt pending the exact M0-05 process authorization; prior evidence remains immutable historical provenance."
     }
   ]
 }

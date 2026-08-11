@@ -435,6 +435,45 @@
       ]
     },
     {
+      "id": "M0-05",
+      "milestone": "M0",
+      "title": "Authorize the bounded V1-03 accessor and gate correction",
+      "objective": "Authorize exactly two post-review V1-03 corrections without self-expanding scanner scope, changing another task's review boundary, or adding an attempt.",
+      "risk": { "level": "medium", "domains": ["delivery-policy", "provenance", "patch-safety"] },
+      "dependsOn": [{ "taskId": "M0-04", "kind": "hard" }],
+      "acceptanceItemIds": ["PROCESS-006"],
+      "scope": {
+        "allowedPaths": [
+          "product/plans/oss-v1/**",
+          "scripts/plan.test.mjs",
+          "scripts/task.test.mjs"
+        ],
+        "forbiddenPaths": ["packages/**", "examples/**", "action.yml", ".github/**"]
+      },
+      "semanticInvariants": [
+        "The authorization is limited to the still-unaccepted V1-03 correction; it retains V1-03 attempt 3 and maxAttempts 3, and never creates a fourth attempt.",
+        "The only authorized accessor correction is r3758194562: a later statically named model accessor makes the earlier literal model field ambiguous and therefore not patchable.",
+        "The only authorized criterion correction is r3758194569: after preserving the reviewed V1-01 and V1-02 privacy gates, bind V1-03 SCAN-004 to QG-SCANNER-CORPUS, the deterministic gate that exercises its adversarial assertion.",
+        "The process task does not implement product behavior, broaden V1-03 capabilities, rewrite another task's acceptance criteria, or weaken privacy, abstention, or fail-closed requirements.",
+        "V1-03 cannot begin or submit this corrective candidate until this task is accepted with candidate-bound command evidence."
+      ],
+      "deliverables": ["product/plans/oss-v1/**", "scripts/plan.test.mjs", "scripts/task.test.mjs"],
+      "requiredTestLevels": ["static", "contract"],
+      "requiredGates": ["QG-PLAN-CHECK", "QG-REPO-CHECK"],
+      "requiredReviews": [],
+      "capabilities": {
+        "network": false,
+        "credentials": false,
+        "provider": false,
+        "githubWrite": false
+      },
+      "maxAttempts": 1,
+      "stopConditions": [
+        "The authorization adds a fourth V1-03 attempt, product capability, live provider access, or any finding beyond r3758194562 and r3758194569.",
+        "A product source, package, fixture, workflow, capability, or safety requirement is changed by this process task."
+      ]
+    },
+    {
       "id": "V1-02",
       "milestone": "M1",
       "title": "Build the deterministic golden repository",
@@ -492,7 +531,8 @@
       "risk": { "level": "high", "domains": ["static-analysis", "patch-safety"] },
       "dependsOn": [
         { "taskId": "V1-01", "kind": "hard" },
-        { "taskId": "V1-02", "kind": "hard" }
+        { "taskId": "V1-02", "kind": "hard" },
+        { "taskId": "M0-05", "kind": "hard" }
       ],
       "acceptanceItemIds": ["SCAN-001", "SCAN-002", "SCAN-003", "SCAN-004"],
       "scope": {
@@ -515,7 +555,7 @@
         "Ambiguous or dynamic calls are findings, never patch targets.",
         "Root workspace support and release metadata are limited to the staged scanner package, its tests, and the previously accepted manifest-init public APIs.",
         "The completed pre-merge scanner-correction attempt was limited to the prior abstention, precision, direct-eval, and var-binding remedies: erased declarations do not shadow intrinsic direct eval, and a var declaration initializer or loop binding that merges with a verified receiver invalidates that receiver.",
-        "The post-merge scanner correction is limited to making a call abstain when a later statically named object accessor overrides its literal model field; it does not broaden discovery or permit source patching."
+        "The M0-05 authorization is limited to r3758194562 accessor abstention and r3758194569 binding SCAN-004 to QG-SCANNER-CORPUS; it does not broaden discovery or permit source patching."
       ],
       "deliverables": ["packages/typescript/**", "packages/cli/**"],
       "requiredTestLevels": ["unit", "contract", "integration", "adversarial"],

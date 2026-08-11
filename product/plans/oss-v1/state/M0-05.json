@@ -1,0 +1,46 @@
+{
+  "$schema": "../../schemas/task-state.schema.json",
+  "schemaVersion": "1.0.0",
+  "taskId": "M0-05",
+  "revision": 1,
+  "state": "in_progress",
+  "attempt": 1,
+  "candidate": null,
+  "criteria": [
+    {
+      "criterionId": "PROCESS-006",
+      "status": "pending",
+      "evidenceRefs": []
+    }
+  ],
+  "gates": [
+    {
+      "gateId": "QG-PLAN-CHECK",
+      "status": "pending",
+      "evidenceRefs": []
+    },
+    {
+      "gateId": "QG-REPO-CHECK",
+      "status": "pending",
+      "evidenceRefs": []
+    }
+  ],
+  "reviews": [],
+  "blockers": [],
+  "history": [
+    {
+      "from": null,
+      "to": "planned",
+      "at": "2026-08-11T13:10:00Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer created the narrow process task required to authorize the two current-head V1-03 corrections."
+    },
+    {
+      "from": "planned",
+      "to": "in_progress",
+      "at": "2026-08-11T13:10:00Z",
+      "actor": "implementation-agent",
+      "reason": "Started the single process-only authorization attempt before re-recording the existing V1-03 correction candidate."
+    }
+  ]
+}
