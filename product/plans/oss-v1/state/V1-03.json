@@ -2,51 +2,47 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "V1-03",
-  "revision": 42,
-  "state": "accepted",
+  "revision": 43,
+  "state": "in_progress",
   "attempt": 3,
-  "candidate": {
-    "baseCommit": "c8165c57fc2d871c5012a0fe9c0e2f87467b7712",
-    "commit": "287c3b5a25b85c7b85fa5418ce9a0401b3ae43df",
-    "executor": "implementation-agent"
-  },
+  "candidate": null,
   "criteria": [
     {
       "criterionId": "SCAN-001",
-      "status": "pass",
-      "evidenceRefs": ["ev-v1-03-scanner-corpus-287c3b5"]
+      "status": "pending",
+      "evidenceRefs": []
     },
     {
       "criterionId": "SCAN-002",
-      "status": "pass",
-      "evidenceRefs": ["ev-v1-03-scanner-corpus-287c3b5"]
+      "status": "pending",
+      "evidenceRefs": []
     },
     {
       "criterionId": "SCAN-003",
-      "status": "pass",
-      "evidenceRefs": ["ev-v1-03-scanner-corpus-287c3b5"]
+      "status": "pending",
+      "evidenceRefs": []
     },
     {
       "criterionId": "SCAN-004",
-      "status": "pass",
-      "evidenceRefs": ["ev-v1-03-scanner-corpus-287c3b5"]
+      "status": "pending",
+      "evidenceRefs": []
     }
   ],
   "gates": [
     {
       "gateId": "QG-REPO-CHECK",
-      "status": "pass",
-      "evidenceRefs": ["ev-v1-03-repo-check-287c3b5"]
+      "status": "pending",
+      "evidenceRefs": []
     },
     {
       "gateId": "QG-CONTRACTS",
-      "status": "pass",
-      "evidenceRefs": ["ev-v1-03-contracts-287c3b5"]
+      "status": "pending",
+      "evidenceRefs": []
     },
     {
       "gateId": "QG-SCANNER-CORPUS",
-      "status": "pass",
-      "evidenceRefs": ["ev-v1-03-scanner-corpus-287c3b5"]
+      "status": "pending",
+      "evidenceRefs": []
     },
     {
       "gateId": "QG-INDEPENDENT-VERIFY",
@@ -464,6 +460,20 @@
       "at": "2026-08-11T12:40:58Z",
       "actor": "davidahmann",
       "reason": "Maintainer accepted the exact post-merge accessor-abstention candidate after all active command gates passed; reviewer records remain advisory under ADR 0009."
+    },
+    {
+      "from": "accepted",
+      "to": "changes_requested",
+      "at": "2026-08-11T12:47:44Z",
+      "actor": "chatgpt-codex-connector[bot]",
+      "reason": "Current-head P1 review found that SCAN-004 cited command evidence for a declared trust-review gate rather than the deterministic scanner-corpus gate that exercised it."
+    },
+    {
+      "from": "changes_requested",
+      "to": "in_progress",
+      "at": "2026-08-11T12:47:44Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer reopened the same unmerged correction to align adversarial criterion gates with their deterministic evidence and enforce that binding."
     }
   ]
 }
