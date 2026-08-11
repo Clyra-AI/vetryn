@@ -1,0 +1,35 @@
+{
+  "$schema": "../../schemas/evidence.schema.json",
+  "schemaVersion": "1.0.0",
+  "id": "ev-m0-07-plan-check-fd5da6d",
+  "taskId": "M0-07",
+  "type": "command-run",
+  "actor": "validation-agent",
+  "commit": "fd5da6d91e070255eee10048433b69f55dbc0cb6",
+  "createdAt": "2026-08-11T17:34:45Z",
+  "result": {
+    "status": "pass",
+    "checks": [
+      {
+        "name": "pnpm plan:check",
+        "status": "pass",
+        "summary": "The M0-07 packet is current, keeps the process correction within scope, and binds every required lifecycle artifact to its deterministic trusted-namespace path."
+      }
+    ]
+  },
+  "inputs": {
+    "planDigest": "sha256:022399df2ebc16af56dfad44563e15aba89e72e314b9f9e4a5abdc78b9c48333",
+    "lockfileDigest": "sha256:0568848490d539fc4b1a4cd53c2ddd95108a15a0ad1ea37ff6c14f1b748db6ac"
+  },
+  "gateBinding": {
+    "gateId": "QG-PLAN-CHECK",
+    "kind": "command",
+    "command": "pnpm plan:check"
+  },
+  "review": null,
+  "redaction": {
+    "status": "not_applicable",
+    "containsRawModelOutput": false,
+    "containsSecrets": false
+  }
+}
