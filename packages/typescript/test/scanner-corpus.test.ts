@@ -354,6 +354,47 @@ describe("reviewed TypeScript scanner corpus", () => {
     ]);
   });
 
+  it("abstains when a later model accessor overrides a literal model pin", () => {
+    const source = `
+      import OpenAI from "openai";
+      export async function run(client: OpenAI) {
+        return client.chat.completions.create({
+          model: "openai/gpt-4.1-mini",
+          get model() { return "anthropic/claude-3.7-sonnet"; },
+        });
+      }
+    `;
+
+    expect(scanTypeScript({ file: "src/accessor-model-override.ts", source })).toMatchObject([
+      {
+        confidence: "ambiguous",
+        patchability: "not-patchable",
+        reasonCode: "dynamic-model",
+      },
+    ]);
+  });
+
+  it("keeps a literal model pin patchable when a later accessor has another name", () => {
+    const source = `
+      import OpenAI from "openai";
+      export async function run(client: OpenAI) {
+        return client.chat.completions.create({
+          model: "openai/gpt-4.1-mini",
+          get temperature() { return 0; },
+        });
+      }
+    `;
+
+    expect(scanTypeScript({ file: "src/accessor-temperature.ts", source })).toMatchObject([
+      {
+        confidence: "high",
+        modelPin: "openai/gpt-4.1-mini",
+        patchability: "patchable",
+        reasonCode: "static-model-literal",
+      },
+    ]);
+  });
+
   it("abstains when a mutable OpenAI client binding can be reassigned", () => {
     const source = `
       import OpenAI from "openai";

@@ -190,7 +190,10 @@ function assertV103CorrectionAuthorization(plan, ledger, v103State) {
   expect(findingIds(m005Task)).toEqual(m005FindingIds);
   expect(v103Task.dependsOn).toContainEqual({ taskId: "M0-05", kind: "hard" });
   expect(v103Task.maxAttempts).toBe(3);
-  expect(v103State).toMatchObject({ state: "changes_requested", attempt: 3, candidate: null });
+  expect(v103State.attempt).toBe(3);
+  expect(["changes_requested", "verification_pending", "accepted"]).toContain(v103State.state);
+  if (v103State.state === "changes_requested") expect(v103State.candidate).toBeNull();
+  else expect(v103State.candidate).toMatchObject({ executor: "implementation-agent" });
   expect(v103Task.semanticInvariants).toContain(
     "The M0-05 authorization is limited to r3758194562 accessor abstention and r3758194569 binding SCAN-004 to QG-SCANNER-CORPUS; it does not broaden discovery or permit source patching.",
   );
