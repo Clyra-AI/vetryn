@@ -87,9 +87,11 @@ incompatible states fail closed. A complete candidate run records both baseline 
 for the same cases, explicit outcomes for the quality, cost, latency, context, and privacy hard gates, and compact
 reproducibility provenance: evaluator version and build, deterministic scorer configuration digest, sampling and
 seed, attempts, timestamps, and aggregate variance. Each call site has an explicit minimum recommendation
-confidence (0.8 by default); the run and recommendation preserve that policy and a recommendation must meet it.
-Each call site also declares its approved provider allowlist; recommendation validation derives the privacy gate
-from the candidate's catalog provider rather than trusting a producer label.
+confidence (0.8 by default); the run and recommendation preserve that policy, and a recommendation cannot exceed
+the candidate evidence's variance-adjusted quality lower bound, using only a representation-safe exact-boundary
+comparison. Each call site also declares its approved provider
+allowlist; catalog model metadata must agree with the provider segment of its canonical model ID, and recommendation
+validation derives the privacy gate from that bound catalog identity rather than trusting a producer label.
 Reason codes are finite and status-compatible. A recommendation can cite only matching, complete runs whose hard
 gates all pass. The core derives quality, cost, and latency outcomes from the bound call-site policy and paired
 metrics rather than trusting producer labels, and proves that a recommended model is present, active, satisfies the

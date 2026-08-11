@@ -1,0 +1,27 @@
+{
+  "$schema": "../../schemas/evidence.schema.json",
+  "schemaVersion": "1.0.0",
+  "id": "ev-v1-01-contracts-d85e4d1",
+  "taskId": "V1-01",
+  "type": "command-run",
+  "actor": "davidahmann",
+  "commit": "d85e4d1e433c7df36d367d5a8df963bc3c51f479",
+  "createdAt": "2026-08-11T00:29:40Z",
+  "result": {
+    "status": "pass",
+    "checks": [
+      {
+        "name": "pnpm test:contracts",
+        "status": "pass",
+        "summary": "The exact candidate passed all 93 deterministic tests, including variance-bound recommendation confidence and canonical model-provider identity validation."
+      }
+    ]
+  },
+  "inputs": {
+    "planDigest": "sha256:4a0d546996fd6dea239ed5b06cc2e957aede454949940ea2db3e1546e02c2f3d",
+    "lockfileDigest": "sha256:4a89ac1f2863dc3591fae73e1ee0474cbab8cb0725ff80dfc57b1590f42d1a88"
+  },
+  "gateBinding": { "gateId": "QG-CONTRACTS", "kind": "command", "command": "pnpm test:contracts" },
+  "review": null,
+  "redaction": { "status": "verified", "containsRawModelOutput": false, "containsSecrets": false }
+}

@@ -2,46 +2,46 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "V1-01",
-  "revision": 22,
+  "revision": 26,
   "state": "accepted",
   "attempt": 2,
   "candidate": {
-    "baseCommit": "e4e896e9e8341a9ac7b437ea3346a5a1bf4e510c",
-    "commit": "23e6cd6e83ef269e5860ea0ef47ddd30a1282f69",
+    "baseCommit": "fddb89cd65ee3de127181df042e954b12e8d51f7",
+    "commit": "e682a614cd29f0934d0946e96d532fd2c96baf68",
     "executor": "davidahmann"
   },
   "criteria": [
     {
       "criterionId": "CONTRACT-001",
       "status": "pass",
-      "evidenceRefs": ["ev-v1-01-contracts-23e6cd6"]
+      "evidenceRefs": ["ev-v1-01-contracts-e682a61"]
     },
     {
       "criterionId": "CONTRACT-002",
       "status": "pass",
-      "evidenceRefs": ["ev-v1-01-contracts-23e6cd6"]
+      "evidenceRefs": ["ev-v1-01-contracts-e682a61"]
     },
     {
       "criterionId": "CONTRACT-003",
       "status": "pass",
-      "evidenceRefs": ["ev-v1-01-repo-check-23e6cd6"]
+      "evidenceRefs": ["ev-v1-01-repo-check-e682a61"]
     },
     {
       "criterionId": "CONTRACT-004",
       "status": "pass",
-      "evidenceRefs": ["ev-v1-01-contracts-23e6cd6"]
+      "evidenceRefs": ["ev-v1-01-contracts-e682a61"]
     }
   ],
   "gates": [
     {
       "gateId": "QG-REPO-CHECK",
       "status": "pass",
-      "evidenceRefs": ["ev-v1-01-repo-check-23e6cd6"]
+      "evidenceRefs": ["ev-v1-01-repo-check-e682a61"]
     },
     {
       "gateId": "QG-CONTRACTS",
       "status": "pass",
-      "evidenceRefs": ["ev-v1-01-contracts-23e6cd6"]
+      "evidenceRefs": ["ev-v1-01-contracts-e682a61"]
     },
     {
       "gateId": "QG-INDEPENDENT-VERIFY",
@@ -242,6 +242,34 @@
       "at": "2026-08-10T18:44:59Z",
       "actor": "davidahmann",
       "reason": "Maintainer accepted the reviewed exact candidate after the active contract and repository command gates passed under ADR 0009 single-maintainer delivery."
+    },
+    {
+      "from": "accepted",
+      "to": "in_progress",
+      "at": "2026-08-11T00:24:28Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer reopened the core-contract task to address two current-head P1 findings: candidate-evidence confidence binding and canonical model-provider identity binding."
+    },
+    {
+      "from": "in_progress",
+      "to": "accepted",
+      "at": "2026-08-11T00:29:40Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer accepted the exact repaired candidate after active contract and repository command gates passed under ADR 0009 single-maintainer delivery."
+    },
+    {
+      "from": "accepted",
+      "to": "in_progress",
+      "at": "2026-08-11T00:35:02Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer reopened the core-contract task to correct the current-head confidence-bound floating-point boundary case."
+    },
+    {
+      "from": "in_progress",
+      "to": "accepted",
+      "at": "2026-08-11T00:37:11Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer accepted the exact boundary-corrected candidate after active contract and repository command gates passed under ADR 0009 single-maintainer delivery."
     }
   ]
 }

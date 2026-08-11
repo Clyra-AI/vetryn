@@ -308,6 +308,16 @@ describe("V1 artifact contracts", () => {
         models: [...catalogSnapshot.models].reverse(),
       }).contentDigest,
     ).toBe(catalogSnapshot.contentDigest);
+    const catalogWithMismatchedProvider = catalogSnapshot.models.map((model) =>
+      model.id === "openai/gpt-4o" ? { ...model, provider: "other-provider" } : model,
+    );
+    expect(() =>
+      catalogSnapshotSchema.parse({
+        ...catalogSnapshot,
+        contentDigest: createCatalogContentDigest(catalogWithMismatchedProvider),
+        models: catalogWithMismatchedProvider,
+      }),
+    ).toThrow(/provider segment/i);
     expect(() => parseVetrynArtifact({ ...candidateRun, gateOutcomes: undefined })).toThrow(
       /hard-gate outcomes/i,
     );
@@ -442,6 +452,65 @@ describe("V1 artifact contracts", () => {
         ...candidateRun,
         ...overrides,
       });
+
+    const variableQualityRun = candidateRunWith({
+      provenance: {
+        ...candidateRun.provenance,
+        variance: { ...candidateRun.provenance.variance, passRateStdDev: 0.02 },
+      },
+    });
+    expect(() =>
+      assertRecommendationEvidence(
+        parsedRecommendation,
+        [variableQualityRun],
+        candidateRun.evaluationInputDigest,
+        parsedCallSite,
+        parsedEvalSuite,
+        parsedCatalogSnapshot,
+      ),
+    ).toThrow(/evidence-bound quality lower bound/i);
+    expect(
+      assertRecommendationEvidence(
+        parseRecommendation({ ...recommendation, confidence: 0.98 }),
+        [variableQualityRun],
+        candidateRun.evaluationInputDigest,
+        parsedCallSite,
+        parsedEvalSuite,
+        parsedCatalogSnapshot,
+      ),
+    ).toMatchObject({ confidence: 0.98 });
+
+    const boundaryCallSite = callSiteSchema.parse({
+      ...callSite,
+      gates: {
+        ...callSite.gates,
+        maxQualityRegression: 0.8,
+        minPassRate: 0,
+        minRecommendationConfidence: 0.1,
+      },
+    });
+    const boundaryRun = candidateRunWith({
+      confidenceFloor: 0.1,
+      metrics: {
+        ...candidateRun.metrics,
+        failedCaseIds: Array.from({ length: 21 }, (_, index) => `case-${index + 1}`),
+        passedCases: 9,
+      },
+      provenance: {
+        ...candidateRun.provenance,
+        variance: { ...candidateRun.provenance.variance, passRateStdDev: 0.2 },
+      },
+    });
+    expect(
+      assertRecommendationEvidence(
+        parseRecommendation({ ...recommendation, confidence: 0.1, confidenceFloor: 0.1 }),
+        [boundaryRun],
+        candidateRun.evaluationInputDigest,
+        boundaryCallSite,
+        parsedEvalSuite,
+        parsedCatalogSnapshot,
+      ),
+    ).toMatchObject({ confidence: 0.1 });
 
     expect(() =>
       assertRecommendationEvidence(
@@ -607,13 +676,27 @@ describe("V1 artifact contracts", () => {
         }),
       ),
     ).toThrow(/retired/i);
-    const candidateFromUnapprovedProvider = catalogSnapshot.models.map((model) =>
-      model.id === candidateRun.candidateModel ? { ...model, provider: "other-provider" } : model,
+    const approvedCandidate = catalogSnapshot.models.find(
+      (model) => model.id === candidateRun.candidateModel,
     );
+    if (approvedCandidate === undefined) throw new Error("Missing candidate test fixture.");
+    const unapprovedCandidate = {
+      ...approvedCandidate,
+      id: "other-provider/gpt-4o",
+      provider: "other-provider",
+    };
+    const candidateFromUnapprovedProvider = catalogSnapshot.models.map((model) =>
+      model.id === candidateRun.candidateModel ? unapprovedCandidate : model,
+    );
+    const unapprovedRun = candidateRunWith({ candidateModel: unapprovedCandidate.id });
+    const unapprovedRecommendation = parseRecommendation({
+      ...recommendation,
+      recommendedModel: unapprovedCandidate.id,
+    });
     expect(() =>
       assertRecommendationEvidence(
-        parsedRecommendation,
-        [parsedRun],
+        unapprovedRecommendation,
+        [unapprovedRun],
         candidateRun.evaluationInputDigest,
         parsedCallSite,
         parsedEvalSuite,
