@@ -2,8 +2,8 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "V1-03",
-  "revision": 14,
-  "state": "verification_pending",
+  "revision": 15,
+  "state": "accepted",
   "attempt": 3,
   "candidate": {
     "baseCommit": "b19bd97c20999f944029f35b64559dfe85da2632",
@@ -205,6 +205,13 @@
       "at": "2026-08-11T10:56:29Z",
       "actor": "implementation-agent",
       "reason": "Submitted the exact compound-assignment safety repair candidate with replacement repository, contract, and scanner-corpus command evidence."
+    },
+    {
+      "from": "verification_pending",
+      "to": "accepted",
+      "at": "2026-08-11T10:57:54Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer accepted the exact scanner safety candidate after all active command gates passed; reviewer records remain advisory under ADR 0009."
     }
   ]
 }
