@@ -26,8 +26,8 @@
   binding, and post-execution packet compilation.
 - Rejects superseded approvals, stale pull-request heads, and passing evidence for planned gates.
 - Uses built-in HTTPS for GitHub evidence authentication so repository binaries cannot shadow the collector.
-- Added frozen-candidate local adversarial review for high-risk tasks and a bounded Vetryn trust-review skill for
-  evaluation, recommendation, and patch semantics before V1-06 begins.
+- Added frozen-candidate local adversarial review for high-risk tasks and a machine-required, candidate-bound
+  Vetryn trust-review step for evaluation, recommendation, and patch semantics before V1-06 begins.
 
 ### Changed
 

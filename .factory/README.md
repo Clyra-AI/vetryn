@@ -21,4 +21,5 @@ not make Factory a Vetryn runtime dependency.
 
 Compiled packets expose Factory's runner-ready task, scope, validation, worker-chain, lifecycle, evidence,
 runtime, compatibility, and acceptance-result fields directly. The executor still cannot fabricate lifecycle
-artifacts, accept the task, edit generated progress, or broaden canonical scope.
+artifacts, accept the task, edit generated progress, or broaden canonical scope. Repository-specific domain
+reviews use `required_domain_review_chain`; they are not aliases for Factory's generic `code-review` worker.
