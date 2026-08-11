@@ -434,6 +434,10 @@ function isConstBinding(declaration: ts.VariableDeclaration): boolean {
   );
 }
 
+function isAssignmentOperator(kind: ts.SyntaxKind): boolean {
+  return kind >= ts.SyntaxKind.FirstAssignment && kind <= ts.SyntaxKind.LastAssignment;
+}
+
 function collectReassignedClientSymbols(
   sourceFile: ts.SourceFile,
   checker: ts.TypeChecker,
@@ -443,7 +447,7 @@ function collectReassignedClientSymbols(
   const visit = (node: ts.Node): void => {
     if (
       ts.isBinaryExpression(node) &&
-      node.operatorToken.kind === ts.SyntaxKind.EqualsToken &&
+      isAssignmentOperator(node.operatorToken.kind) &&
       ts.isIdentifier(unwrapExpression(node.left))
     ) {
       const target = unwrapExpression(node.left);
