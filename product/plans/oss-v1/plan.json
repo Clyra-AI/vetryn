@@ -347,7 +347,7 @@
         "provider": false,
         "githubWrite": false
       },
-      "maxAttempts": 2,
+      "maxAttempts": 3,
       "stopConditions": [
         "The skill authorizes a live provider, credentials, task acceptance, or merge.",
         "The skill duplicates product behavior or adds files outside its narrow process scope."

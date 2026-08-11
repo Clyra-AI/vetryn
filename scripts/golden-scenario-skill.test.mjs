@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 const repositoryRoot = path.resolve(import.meta.dirname, "..");
 const skillPath = path.join(repositoryRoot, ".agents/skills/vetryn-golden-scenario/SKILL.md");
 const planPath = path.join(repositoryRoot, "product/plans/oss-v1/plan.json");
+const taskStatePath = path.join(repositoryRoot, "product/plans/oss-v1/state/M0-02.json");
 
 function assertGoldenScenarioSkillContract(source) {
   const compileInstruction = "Run the active plan check and compile the `V1-02` task packet.";
@@ -50,7 +51,11 @@ describe("golden-scenario skill contract", () => {
   it("keeps the skill task behind the accepted V1-00 foundation", async () => {
     const plan = JSON.parse(await readFile(planPath, "utf8"));
     const task = plan.tasks.find((candidate) => candidate.id === "M0-02");
+    const state = JSON.parse(await readFile(taskStatePath, "utf8"));
 
     expect(task.dependsOn).toContainEqual({ taskId: "V1-00", kind: "hard" });
+    expect(task.maxAttempts).toBe(3);
+    expect(state.attempt).toBe(3);
+    expect(state.history.filter((entry) => entry.to === "in_progress")).toHaveLength(3);
   });
 });

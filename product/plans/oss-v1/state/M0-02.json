@@ -2,9 +2,9 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "M0-02",
-  "revision": 5,
+  "revision": 6,
   "state": "accepted",
-  "attempt": 2,
+  "attempt": 3,
   "candidate": {
     "baseCommit": "5322bdfce5304b1e178c45875d04659b93adcc78",
     "commit": "35e330b3238c019495be2a448fcfa354e2293801",
