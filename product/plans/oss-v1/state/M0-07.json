@@ -2,27 +2,31 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "M0-07",
-  "revision": 35,
-  "state": "in_progress",
+  "revision": 37,
+  "state": "accepted",
   "attempt": 3,
-  "candidate": null,
+  "candidate": {
+    "baseCommit": "08c3ef067e6be834142b6bd6cb3a17c406e4ea3b",
+    "commit": "3b1aaef18bc5e7f9e20d7dbf3d2e2ef8f547f6da",
+    "executor": "implementation-agent"
+  },
   "criteria": [
     {
       "criterionId": "PROCESS-008",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-07-repo-check-3b1aaef"]
     }
   ],
   "gates": [
     {
       "gateId": "QG-PLAN-CHECK",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-07-plan-check-3b1aaef"]
     },
     {
       "gateId": "QG-REPO-CHECK",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-07-repo-check-3b1aaef"]
     }
   ],
   "reviews": [],
@@ -279,6 +283,20 @@
       "at": "2026-08-11T20:02:08Z",
       "actor": "implementation-agent",
       "reason": "Continued the same third review-correction attempt to reject stale planned packet tails when canonical acceptance is blocked or otherwise not promoted."
+    },
+    {
+      "from": "in_progress",
+      "to": "verification_pending",
+      "at": "2026-08-11T20:04:24Z",
+      "actor": "validation-agent",
+      "reason": "Bound the exact acceptance-tail candidate after the blocked-ledger regression, focused tests, and full repository gate passed."
+    },
+    {
+      "from": "verification_pending",
+      "to": "accepted",
+      "at": "2026-08-11T20:05:00Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer accepted the exact acceptance-tail candidate after candidate-bound packet validation and all command evidence passed."
     }
   ]
 }
