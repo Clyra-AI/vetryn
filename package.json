@@ -34,7 +34,7 @@
     "test:scenarios": "vitest --config scripts/vitest.scenarios.config.ts run examples/openrouter-typescript/test/scenarios.test.ts",
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
-    "typecheck": "pnpm --filter @vetryn/core build && pnpm --recursive typecheck && tsc --noEmit --project examples/openrouter-typescript/tsconfig.json",
+    "typecheck": "pnpm --filter @vetryn/core build && pnpm --filter @vetryn/typescript build && pnpm --recursive typecheck && tsc --noEmit --project examples/openrouter-typescript/tsconfig.json",
     "version-packages": "changeset version"
   },
   "devDependencies": {

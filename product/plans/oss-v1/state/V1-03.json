@@ -2,47 +2,51 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "V1-03",
-  "revision": 0,
-  "state": "planned",
-  "attempt": 0,
-  "candidate": null,
+  "revision": 6,
+  "state": "accepted",
+  "attempt": 2,
+  "candidate": {
+    "baseCommit": "c330acb50e885c735e2ab5914d68b32a03aa88a3",
+    "commit": "4e1432be670491e3d9440f0807b612abab02eb6f",
+    "executor": "implementation-agent"
+  },
   "criteria": [
     {
       "criterionId": "SCAN-001",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-03-scanner-corpus-4e1432b"]
     },
     {
       "criterionId": "SCAN-002",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-03-scanner-corpus-4e1432b"]
     },
     {
       "criterionId": "SCAN-003",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-03-scanner-corpus-4e1432b"]
     },
     {
       "criterionId": "SCAN-004",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-03-scanner-corpus-4e1432b"]
     }
   ],
   "gates": [
     {
       "gateId": "QG-REPO-CHECK",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-03-repo-check-4e1432b"]
     },
     {
       "gateId": "QG-CONTRACTS",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-03-contracts-4e1432b"]
     },
     {
       "gateId": "QG-SCANNER-CORPUS",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-03-scanner-corpus-4e1432b"]
     },
     {
       "gateId": "QG-INDEPENDENT-VERIFY",
@@ -75,6 +79,55 @@
       "at": "2026-08-10T00:30:00Z",
       "actor": "planning-agent",
       "reason": "Task created by the canonical OSS V1 plan."
+    },
+    {
+      "from": "planned",
+      "to": "in_progress",
+      "at": "2026-08-11T05:00:00Z",
+      "actor": "implementation-agent",
+      "reason": "Started the first high-confidence TypeScript scanner attempt with a narrow workspace, manifest-concurrency, and release-metadata scope amendment."
+    },
+    {
+      "from": "in_progress",
+      "to": "verification_pending",
+      "at": "2026-08-11T09:47:56Z",
+      "actor": "implementation-agent",
+      "reason": "Submitted the exact scanner candidate with repository, contract, and reviewed-corpus command evidence for maintainer promotion."
+    },
+    {
+      "from": "verification_pending",
+      "to": "accepted",
+      "at": "2026-08-11T09:49:00Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer accepted the exact scanner candidate after all active command gates passed; named review records remain advisory under ADR 0009."
+    },
+    {
+      "from": "accepted",
+      "to": "changes_requested",
+      "at": "2026-08-11T10:03:43Z",
+      "actor": "chatgpt-codex-connector[bot]",
+      "reason": "P1 review feedback found that same-text identifiers could bypass verified OpenAI client provenance; the scope authorization was separately merged in PR #17."
+    },
+    {
+      "from": "changes_requested",
+      "to": "in_progress",
+      "at": "2026-08-11T10:03:43Z",
+      "actor": "implementation-agent",
+      "reason": "Started the permitted second attempt to bind client provenance to lexical declaration symbols."
+    },
+    {
+      "from": "in_progress",
+      "to": "verification_pending",
+      "at": "2026-08-11T10:06:03Z",
+      "actor": "implementation-agent",
+      "reason": "Submitted the exact lexical-binding repair candidate with replacement repository, contract, and scanner-corpus command evidence."
+    },
+    {
+      "from": "verification_pending",
+      "to": "accepted",
+      "at": "2026-08-11T10:07:12Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer accepted the exact repaired scanner candidate after all active command gates passed; reviewer records remain advisory under ADR 0009."
     }
   ]
 }
