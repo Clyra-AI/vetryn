@@ -1,5 +1,6 @@
+import { randomUUID } from "node:crypto";
 import { createReadStream } from "node:fs";
-import { lstat, mkdir, realpath, unlink, writeFile } from "node:fs/promises";
+import { link, lstat, mkdir, realpath, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 import {
@@ -218,23 +219,34 @@ export class FileCatalogStore implements CatalogStore {
     const target = this.snapshotPath(snapshot.contentDigest);
     await this.assertSafeTarget(target, true);
     const contents = `${stableJson(snapshot)}\n`;
+    const temporary = path.join(
+      path.dirname(target),
+      `.${path.basename(target)}.${randomUUID()}.tmp`,
+    );
 
     try {
-      await writeFile(target, contents, { encoding: "utf8", flag: "wx" });
-      return { reused: false, snapshot };
-    } catch (error: unknown) {
-      if (!isExistingFileError(error)) throw error;
-      const existing = await readBoundedCatalogFile(target);
-      if (existing !== contents) {
-        const storedSnapshot = parseCatalogSnapshot(JSON.parse(existing) as unknown);
-        if (!isReusableOpenRouterSnapshot(storedSnapshot, snapshot)) {
-          throw new OpenRouterCatalogError(
-            `Snapshot collision or invalid provenance for immutable digest ${snapshot.contentDigest}.`,
-          );
+      await writeFile(temporary, contents, { encoding: "utf8", flag: "wx" });
+      try {
+        await link(temporary, target);
+        return { reused: false, snapshot };
+      } catch (error: unknown) {
+        if (!isExistingFileError(error)) throw error;
+        const existing = await readBoundedCatalogFile(target);
+        if (existing !== contents) {
+          const storedSnapshot = parseCatalogSnapshot(JSON.parse(existing) as unknown);
+          if (!isReusableOpenRouterSnapshot(storedSnapshot, snapshot)) {
+            throw new OpenRouterCatalogError(
+              `Snapshot collision or invalid provenance for immutable digest ${snapshot.contentDigest}.`,
+            );
+          }
+          return { reused: true, snapshot: storedSnapshot };
         }
-        return { reused: true, snapshot: storedSnapshot };
+        return { reused: true, snapshot };
       }
-      return { reused: true, snapshot };
+    } finally {
+      await unlink(temporary).catch((error: unknown) => {
+        if (!isMissingFileError(error)) throw error;
+      });
     }
   }
 

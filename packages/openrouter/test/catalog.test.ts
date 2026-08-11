@@ -580,6 +580,9 @@ describe("refresh evidence", () => {
     if (result.status !== "success") throw new Error("unexpected refresh failure");
     const snapshotPath = `${root}/snapshots/${result.snapshot.contentDigest.slice(7)}.json`;
     expect(JSON.parse(await readFile(snapshotPath, "utf8"))).toEqual(result.snapshot);
+    expect(await readdir(`${root}/snapshots`)).toEqual([
+      `${result.snapshot.contentDigest.slice(7)}.json`,
+    ]);
     expect(JSON.parse(await readFile(`${root}/observations/refresh-file.json`, "utf8"))).toEqual(
       result.observation,
     );
