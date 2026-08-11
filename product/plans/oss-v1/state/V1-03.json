@@ -2,51 +2,47 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "V1-03",
-  "revision": 27,
-  "state": "accepted",
+  "revision": 28,
+  "state": "in_progress",
   "attempt": 3,
-  "candidate": {
-    "baseCommit": "b19bd97c20999f944029f35b64559dfe85da2632",
-    "commit": "e1964dda1ff4e6db0e3e2427ea7d7e78a10067f1",
-    "executor": "implementation-agent"
-  },
+  "candidate": null,
   "criteria": [
     {
       "criterionId": "SCAN-001",
-      "status": "pass",
-      "evidenceRefs": ["ev-v1-03-scanner-corpus-e1964dd"]
+      "status": "pending",
+      "evidenceRefs": []
     },
     {
       "criterionId": "SCAN-002",
-      "status": "pass",
-      "evidenceRefs": ["ev-v1-03-scanner-corpus-e1964dd"]
+      "status": "pending",
+      "evidenceRefs": []
     },
     {
       "criterionId": "SCAN-003",
-      "status": "pass",
-      "evidenceRefs": ["ev-v1-03-scanner-corpus-e1964dd"]
+      "status": "pending",
+      "evidenceRefs": []
     },
     {
       "criterionId": "SCAN-004",
-      "status": "pass",
-      "evidenceRefs": ["ev-v1-03-scanner-corpus-e1964dd"]
+      "status": "pending",
+      "evidenceRefs": []
     }
   ],
   "gates": [
     {
       "gateId": "QG-REPO-CHECK",
-      "status": "pass",
-      "evidenceRefs": ["ev-v1-03-repo-check-e1964dd"]
+      "status": "pending",
+      "evidenceRefs": []
     },
     {
       "gateId": "QG-CONTRACTS",
-      "status": "pass",
-      "evidenceRefs": ["ev-v1-03-contracts-e1964dd"]
+      "status": "pending",
+      "evidenceRefs": []
     },
     {
       "gateId": "QG-SCANNER-CORPUS",
-      "status": "pass",
-      "evidenceRefs": ["ev-v1-03-scanner-corpus-e1964dd"]
+      "status": "pending",
+      "evidenceRefs": []
     },
     {
       "gateId": "QG-INDEPENDENT-VERIFY",
@@ -324,6 +320,20 @@
       "at": "2026-08-11T11:39:00Z",
       "actor": "davidahmann",
       "reason": "Maintainer accepted the exact scanner precision candidate after all active command gates passed; reviewer records remain advisory under ADR 0009."
+    },
+    {
+      "from": "accepted",
+      "to": "changes_requested",
+      "at": "2026-08-11T11:44:12Z",
+      "actor": "chatgpt-codex-connector[bot]",
+      "reason": "Current-head P1 review identified erased ambient eval declarations and merged var declaration initializers as remaining unsafe patchability paths."
+    },
+    {
+      "from": "changes_requested",
+      "to": "in_progress",
+      "at": "2026-08-11T11:44:12Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer reopened the same unmerged final scanner attempt with a plan-embedded boundary for exactly the two current-head P1 safety remedies."
     }
   ]
 }

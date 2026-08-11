@@ -391,6 +391,24 @@ describe("reviewed TypeScript scanner corpus", () => {
     ]);
   });
 
+  it("abstains when a merged var declaration replaces a type-proven client", () => {
+    const source = `
+      import OpenAI from "openai";
+      export async function run(client: OpenAI) {
+        var client = {} as OpenAI;
+        return client.chat.completions.create({ model: "openai/gpt-4.1-mini" });
+      }
+    `;
+
+    expect(scanTypeScript({ file: "src/merged-var-reassignment.ts", source })).toMatchObject([
+      {
+        confidence: "ambiguous",
+        patchability: "not-patchable",
+        reasonCode: "unverified-client",
+      },
+    ]);
+  });
+
   it("abstains when a hoisted helper reassigns a type-proven client", () => {
     const source = `
       import OpenAI from "openai";
@@ -476,6 +494,25 @@ describe("reviewed TypeScript scanner corpus", () => {
     `;
 
     expect(scanTypeScript({ file: "src/eval-reassignment.ts", source })).toMatchObject([
+      {
+        confidence: "ambiguous",
+        patchability: "not-patchable",
+        reasonCode: "unverified-client",
+      },
+    ]);
+  });
+
+  it("abstains when an ambient eval declaration leaves intrinsic eval reachable", () => {
+    const source = `
+      import OpenAI from "openai";
+      declare function eval(source: string): unknown;
+      export async function run(client: OpenAI) {
+        eval("client = {}");
+        return client.chat.completions.create({ model: "openai/gpt-4.1-mini" });
+      }
+    `;
+
+    expect(scanTypeScript({ file: "src/ambient-eval.ts", source })).toMatchObject([
       {
         confidence: "ambiguous",
         patchability: "not-patchable",

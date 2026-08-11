@@ -434,6 +434,28 @@ function isConstBinding(declaration: ts.VariableDeclaration): boolean {
   );
 }
 
+function isVarBinding(declaration: ts.VariableDeclaration): boolean {
+  return (
+    ts.isVariableDeclarationList(declaration.parent) &&
+    (declaration.parent.flags & (ts.NodeFlags.Let | ts.NodeFlags.Const)) === 0
+  );
+}
+
+function isRuntimeEvalDeclaration(declaration: ts.Declaration): boolean {
+  if (ts.isFunctionDeclaration(declaration)) return declaration.body !== undefined;
+
+  let current: ts.Node | undefined = declaration;
+  while (current !== undefined && !ts.isSourceFile(current)) {
+    if (
+      ts.canHaveModifiers(current) &&
+      ts.getModifiers(current)?.some((modifier) => modifier.kind === ts.SyntaxKind.DeclareKeyword)
+    )
+      return false;
+    current = current.parent;
+  }
+  return true;
+}
+
 function isAssignmentOperator(kind: ts.SyntaxKind): boolean {
   return kind >= ts.SyntaxKind.FirstAssignment && kind <= ts.SyntaxKind.LastAssignment;
 }
@@ -454,7 +476,9 @@ function isUnshadowedDirectEvalCall(
   return (
     symbol === undefined ||
     !symbol.declarations?.some(
-      (declaration) => declaration.getSourceFile() === node.getSourceFile(),
+      (declaration) =>
+        declaration.getSourceFile() === node.getSourceFile() &&
+        isRuntimeEvalDeclaration(declaration),
     )
   );
 }
@@ -533,6 +557,13 @@ function collectReassignedClientSymbols(
   const visit = (node: ts.Node): void => {
     if (isUnshadowedDirectEvalCall(node, checker)) {
       directEvalScopes.push(lexicalScopeFor(node));
+    } else if (
+      ts.isVariableDeclaration(node) &&
+      ts.isIdentifier(node.name) &&
+      node.initializer !== undefined &&
+      isVarBinding(node)
+    ) {
+      collectAssignedClientSymbols(node.name, checker, verifiedClientSymbols, reassignedSymbols);
     } else if (ts.isBinaryExpression(node) && isAssignmentOperator(node.operatorToken.kind)) {
       collectAssignedClientSymbols(node.left, checker, verifiedClientSymbols, reassignedSymbols);
     } else if (
