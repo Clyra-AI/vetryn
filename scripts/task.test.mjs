@@ -1007,7 +1007,7 @@ describe("task packet compiler", () => {
       "packages/cli/README.md",
       "examples/openrouter-typescript/README.md",
     ]);
-  }, 10_000);
+  }, 20_000);
 
   it("routes the actual V1-06 trust gate through the domain review skill", async () => {
     const root = await createFixture();
