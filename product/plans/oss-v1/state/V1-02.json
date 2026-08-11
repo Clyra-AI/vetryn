@@ -2,9 +2,9 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "V1-02",
-  "revision": 1,
-  "state": "planned",
-  "attempt": 2,
+  "revision": 2,
+  "state": "in_progress",
+  "attempt": 3,
   "candidate": null,
   "criteria": [
     {
@@ -84,6 +84,13 @@
       "at": "2026-08-11T01:57:19Z",
       "actor": "davidahmann",
       "reason": "Second pull-request candidate exhausted the original two-attempt budget with further concrete review corrections; no V1-02 candidate was accepted."
+    },
+    {
+      "from": "planned",
+      "to": "in_progress",
+      "at": "2026-08-11T02:41:40Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer started the single M0-03-authorized final implementation attempt before creating a new candidate."
     }
   ]
 }
