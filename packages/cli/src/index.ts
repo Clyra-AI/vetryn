@@ -85,12 +85,16 @@ export async function refreshCatalogFile({
             headers: { "content-type": "application/json" },
             status: 200,
           });
-  return refreshOpenRouterCatalog({
-    ...(fetch === undefined ? {} : { fetch }),
-    observedAt,
-    refreshId,
-    store: new FileCatalogStore(path.resolve(storePath)),
-  });
+  const store = new FileCatalogStore(path.resolve(storePath));
+  return catalogFile === undefined
+    ? refreshOpenRouterCatalog({ acquisition: "live-api", observedAt, refreshId, store })
+    : refreshOpenRouterCatalog({
+        acquisition: "captured-response",
+        fetch: fetch as typeof globalThis.fetch,
+        observedAt,
+        refreshId,
+        store,
+      });
 }
 
 export async function createCatalogShortlistFile({

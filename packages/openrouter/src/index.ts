@@ -26,22 +26,11 @@ const timestampSchema = z.string().datetime({ offset: true });
 
 const rawModelSchema = z
   .object({
-    architecture: z
-      .object({
-        output_modalities: z.array(z.string().max(100)).max(20).optional(),
-      })
-      .passthrough()
-      .optional(),
-    context_length: z.number().int().positive().optional(),
-    id: z.string().max(500),
-    pricing: z
-      .object({
-        completion: z.string().max(100).optional(),
-        prompt: z.string().max(100).optional(),
-      })
-      .passthrough()
-      .optional(),
-    supported_parameters: z.array(z.string().max(100)).max(200).optional(),
+    architecture: z.unknown().optional(),
+    context_length: z.unknown().optional(),
+    id: z.unknown(),
+    pricing: z.unknown().optional(),
+    supported_parameters: z.unknown().optional(),
   })
   .passthrough();
 
@@ -54,6 +43,7 @@ const rawCatalogSchema = z
 const refreshObservationSchema = z
   .object({
     artifactType: z.literal("openrouter-catalog-refresh-observation"),
+    acquisition: z.enum(["captured-response", "live-api"]),
     contentDigest: digestSchema.nullable(),
     errorCode: z.enum(["fetch-failed", "http-error", "invalid-catalog"]).nullable(),
     id: refreshIdSchema,
@@ -63,10 +53,22 @@ const refreshObservationSchema = z
     schemaVersion: z.literal("1.0.0"),
     snapshotId: z.string().nullable(),
     source: z.literal("openrouter"),
+    sourceRef: z.enum(["openrouter-models-api", "repository-captured-response"]),
     status: z.enum(["success", "failure"]),
   })
   .strict()
   .superRefine((observation, context) => {
+    if (
+      (observation.acquisition === "live-api" &&
+        observation.sourceRef !== "openrouter-models-api") ||
+      (observation.acquisition === "captured-response" &&
+        observation.sourceRef !== "repository-captured-response")
+    ) {
+      context.addIssue({
+        code: "custom",
+        message: "Refresh acquisition mode must match its source reference.",
+      });
+    }
     if (observation.status === "success") {
       if (
         observation.contentDigest === null ||
@@ -109,13 +111,17 @@ export interface CatalogStore {
   ): Promise<{ readonly reused: boolean; readonly snapshot: CatalogSnapshot }>;
 }
 
-export interface RefreshCatalogOptions {
-  readonly fetch?: typeof globalThis.fetch;
+interface RefreshCatalogBaseOptions {
   readonly observedAt: string;
   readonly refreshId: string;
   readonly store: CatalogStore;
-  readonly url?: string;
 }
+
+export type RefreshCatalogOptions = RefreshCatalogBaseOptions &
+  (
+    | { readonly acquisition: "captured-response"; readonly fetch: typeof globalThis.fetch }
+    | { readonly acquisition: "live-api"; readonly fetch?: never }
+  );
 
 export type RefreshCatalogResult =
   | {
@@ -249,22 +255,33 @@ export function normalizeOpenRouterCatalog(
   for (const value of catalog.data.data) {
     const raw = rawModelSchema.safeParse(value);
     const rawId = raw.success && typeof raw.data.id === "string" ? raw.data.id : "unknown";
-    if (!raw.success || !modelIdSchema.safeParse(raw.data.id).success) {
+    if (
+      !raw.success ||
+      typeof raw.data.id !== "string" ||
+      raw.data.id.length > 500 ||
+      !modelIdSchema.safeParse(raw.data.id).success
+    ) {
       exclusions.push({ modelId: rawId, reason: "invalid-model-id" });
       continue;
     }
-    if (raw.data.context_length === undefined) {
+    if (
+      typeof raw.data.context_length !== "number" ||
+      !Number.isSafeInteger(raw.data.context_length) ||
+      raw.data.context_length <= 0
+    ) {
       exclusions.push({ modelId: raw.data.id, reason: "invalid-context-window" });
       continue;
     }
-    const prompt = parsePerTokenPrice(raw.data.pricing?.prompt);
-    const completion = parsePerTokenPrice(raw.data.pricing?.completion);
+    const pricing = isRecord(raw.data.pricing) ? raw.data.pricing : undefined;
+    const prompt = parsePerTokenPrice(pricing?.prompt);
+    const completion = parsePerTokenPrice(pricing?.completion);
     if (prompt === undefined || completion === undefined) {
       exclusions.push({ modelId: raw.data.id, reason: "invalid-pricing" });
       continue;
     }
-    const parameters = raw.data.supported_parameters;
-    const outputModalities = raw.data.architecture?.output_modalities;
+    const architecture = isRecord(raw.data.architecture) ? raw.data.architecture : undefined;
+    const parameters = parseBoundedStringArray(raw.data.supported_parameters, 200);
+    const outputModalities = parseBoundedStringArray(architecture?.output_modalities, 20);
     if (parameters === undefined || outputModalities === undefined) {
       exclusions.push({ modelId: raw.data.id, reason: "invalid-capabilities" });
       continue;
@@ -316,55 +333,59 @@ export function normalizeOpenRouterCatalog(
   return { exclusions, snapshot };
 }
 
-export async function refreshOpenRouterCatalog({
-  fetch: fetchImplementation = globalThis.fetch,
-  observedAt,
-  refreshId,
-  store,
-  url = OPENROUTER_CATALOG_URL,
-}: RefreshCatalogOptions): Promise<RefreshCatalogResult> {
+export async function refreshOpenRouterCatalog(
+  options: RefreshCatalogOptions,
+): Promise<RefreshCatalogResult> {
+  const { acquisition, observedAt, refreshId, store } = options;
+  const fetchImplementation = options.fetch ?? globalThis.fetch;
+  if (acquisition === "live-api" && "fetch" in options && options.fetch !== undefined) {
+    throw new OpenRouterCatalogError(
+      "Live OpenRouter provenance cannot use an injected transport; use captured-response instead.",
+    );
+  }
   refreshIdSchema.parse(refreshId);
   timestampSchema.parse(observedAt);
 
   let body: string;
   try {
-    const response = await fetchImplementation(url, {
+    const response = await fetchImplementation(OPENROUTER_CATALOG_URL, {
       headers: { accept: "application/json" },
       method: "GET",
     });
     if (!response.ok) {
-      return recordRefreshFailure(store, refreshId, observedAt, "http-error");
+      return recordRefreshFailure(store, refreshId, observedAt, acquisition, "http-error");
     }
     const declaredLength = response.headers.get("content-length");
     if (declaredLength !== null && Number(declaredLength) > MAX_CATALOG_BYTES) {
-      return recordRefreshFailure(store, refreshId, observedAt, "invalid-catalog");
+      return recordRefreshFailure(store, refreshId, observedAt, acquisition, "invalid-catalog");
     }
     body = await response.text();
     if (Buffer.byteLength(body, "utf8") > MAX_CATALOG_BYTES) {
-      return recordRefreshFailure(store, refreshId, observedAt, "invalid-catalog");
+      return recordRefreshFailure(store, refreshId, observedAt, acquisition, "invalid-catalog");
     }
   } catch {
-    return recordRefreshFailure(store, refreshId, observedAt, "fetch-failed");
+    return recordRefreshFailure(store, refreshId, observedAt, acquisition, "fetch-failed");
   }
 
   let input: unknown;
   try {
     input = JSON.parse(body) as unknown;
   } catch {
-    return recordRefreshFailure(store, refreshId, observedAt, "invalid-catalog");
+    return recordRefreshFailure(store, refreshId, observedAt, acquisition, "invalid-catalog");
   }
 
   let normalizedSnapshot: CatalogSnapshot;
   try {
     normalizedSnapshot = normalizeOpenRouterCatalog(input, observedAt).snapshot;
   } catch {
-    return recordRefreshFailure(store, refreshId, observedAt, "invalid-catalog");
+    return recordRefreshFailure(store, refreshId, observedAt, acquisition, "invalid-catalog");
   }
 
   const stored = await store.putSnapshot(normalizedSnapshot);
   const snapshot = stored.snapshot;
   const observation = refreshObservationSchema.parse({
     artifactType: "openrouter-catalog-refresh-observation",
+    acquisition,
     contentDigest: snapshot.contentDigest,
     errorCode: null,
     id: refreshId,
@@ -374,6 +395,8 @@ export async function refreshOpenRouterCatalog({
     schemaVersion: "1.0.0",
     snapshotId: snapshot.id,
     source: "openrouter",
+    sourceRef:
+      acquisition === "live-api" ? "openrouter-models-api" : "repository-captured-response",
     status: "success",
   });
   await store.putObservation(observation);
@@ -441,10 +464,12 @@ async function recordRefreshFailure(
   store: CatalogStore,
   refreshId: string,
   observedAt: string,
+  acquisition: "captured-response" | "live-api",
   errorCode: "fetch-failed" | "http-error" | "invalid-catalog",
 ): Promise<Extract<RefreshCatalogResult, { status: "failure" }>> {
   const observation = refreshObservationSchema.parse({
     artifactType: "openrouter-catalog-refresh-observation",
+    acquisition,
     contentDigest: null,
     errorCode,
     id: refreshId,
@@ -454,6 +479,8 @@ async function recordRefreshFailure(
     schemaVersion: "1.0.0",
     snapshotId: null,
     source: "openrouter",
+    sourceRef:
+      acquisition === "live-api" ? "openrouter-models-api" : "repository-captured-response",
     status: "failure",
   });
   await store.putObservation(observation);
@@ -503,10 +530,24 @@ function assertRepresentativeUsage(callSite: CallSite): void {
   }
 }
 
-function parsePerTokenPrice(value: string | undefined): string | undefined {
-  if (value === undefined || value.length > 100 || !/^(?:0|[1-9][0-9]*)(?:\.[0-9]+)?$/.test(value))
+function parsePerTokenPrice(value: unknown): string | undefined {
+  if (
+    typeof value !== "string" ||
+    value.length > 100 ||
+    !/^(?:0|[1-9][0-9]*)(?:\.[0-9]+)?$/.test(value)
+  )
     return undefined;
   return normalizeDecimal(value);
+}
+
+function parseBoundedStringArray(value: unknown, maximumLength: number): string[] | undefined {
+  if (!Array.isArray(value) || value.length > maximumLength) return undefined;
+  if (value.some((entry) => typeof entry !== "string" || entry.length > 100)) return undefined;
+  return value as string[];
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function multiplyDecimalByInteger(value: string, multiplier: number): string {

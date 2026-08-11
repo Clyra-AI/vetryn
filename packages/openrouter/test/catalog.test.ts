@@ -14,6 +14,7 @@ import {
   refreshOpenRouterCatalog,
   resolveCandidates,
   type CatalogStore,
+  type RefreshCatalogOptions,
   type RefreshObservation,
 } from "../src/index.js";
 
@@ -183,6 +184,14 @@ describe("OpenRouter catalog normalization", () => {
           { ...rawModel("mock/no-capabilities"), supported_parameters: undefined },
           { ...rawModel("mock/no-modalities"), architecture: {} },
           { ...rawModel("mock/no-context"), context_length: undefined },
+          {
+            ...rawModel("mock/oversized-price"),
+            pricing: { completion: `0.${"1".repeat(101)}`, prompt: "0" },
+          },
+          {
+            ...rawModel("mock/oversized-capabilities"),
+            supported_parameters: Array.from({ length: 201 }, () => "tools"),
+          },
           rawModel("INVALID MODEL"),
         ],
       },
@@ -197,6 +206,8 @@ describe("OpenRouter catalog normalization", () => {
         { modelId: "mock/no-capabilities", reason: "invalid-capabilities" },
         { modelId: "mock/no-modalities", reason: "invalid-capabilities" },
         { modelId: "mock/no-context", reason: "invalid-context-window" },
+        { modelId: "mock/oversized-price", reason: "invalid-pricing" },
+        { modelId: "mock/oversized-capabilities", reason: "invalid-capabilities" },
         { modelId: "INVALID MODEL", reason: "invalid-model-id" },
       ]),
     );
@@ -256,16 +267,19 @@ describe("refresh evidence", () => {
   it("reuses unchanged content while recording every successful observation", async () => {
     const store = new MemoryStore();
     const fetch = vi.fn(
-      async () => new Response(JSON.stringify({ data: [rawModel("mock/alpha")] })),
+      async (_input: string | URL | Request) =>
+        new Response(JSON.stringify({ data: [rawModel("mock/alpha")] })),
     );
 
     const first = await refreshOpenRouterCatalog({
+      acquisition: "captured-response",
       fetch,
       observedAt,
       refreshId: "refresh-1",
       store,
     });
     const second = await refreshOpenRouterCatalog({
+      acquisition: "captured-response",
       fetch,
       observedAt: "2026-08-11T13:00:00.000Z",
       refreshId: "refresh-2",
@@ -278,6 +292,14 @@ describe("refresh evidence", () => {
     expect(second.snapshot).toEqual(first.snapshot);
     expect(first.observation.reusedSnapshot).toBe(false);
     expect(second.observation.reusedSnapshot).toBe(true);
+    expect(first.observation).toMatchObject({
+      acquisition: "captured-response",
+      source: "openrouter",
+      sourceRef: "repository-captured-response",
+    });
+    expect(fetch.mock.calls.every(([url]) => url === "https://openrouter.ai/api/v1/models")).toBe(
+      true,
+    );
     expect(store.snapshots.size).toBe(1);
     expect(store.observations.map(({ id }) => id)).toEqual(["refresh-1", "refresh-2"]);
   });
@@ -285,12 +307,14 @@ describe("refresh evidence", () => {
   it("records failure without presenting an older snapshot as current", async () => {
     const store = new MemoryStore();
     await refreshOpenRouterCatalog({
+      acquisition: "captured-response",
       fetch: async () => new Response(JSON.stringify({ data: [rawModel("mock/old")] })),
       observedAt,
       refreshId: "refresh-old",
       store,
     });
     const failure = await refreshOpenRouterCatalog({
+      acquisition: "captured-response",
       fetch: async () => new Response("unavailable", { status: 503 }),
       observedAt: "2026-08-11T14:00:00.000Z",
       refreshId: "refresh-failed",
@@ -299,16 +323,30 @@ describe("refresh evidence", () => {
 
     expect(failure).toMatchObject({
       observation: {
+        acquisition: "captured-response",
         contentDigest: null,
         errorCode: "http-error",
         reusedSnapshot: false,
         snapshotId: null,
+        sourceRef: "repository-captured-response",
         status: "failure",
       },
       snapshot: null,
       status: "failure",
     });
     expect(store.snapshots.size).toBe(1);
+  });
+
+  it("refuses to label injected transport data as a live OpenRouter acquisition", async () => {
+    const forged = {
+      acquisition: "live-api",
+      fetch: async () => new Response(JSON.stringify({ data: [rawModel("attacker/model")] })),
+      observedAt,
+      refreshId: "forged-live",
+      store: new MemoryStore(),
+    } as unknown as RefreshCatalogOptions;
+
+    await expect(refreshOpenRouterCatalog(forged)).rejects.toThrow(/injected transport/i);
   });
 
   it("persists immutable content-addressed snapshots and observations", async () => {
@@ -318,6 +356,7 @@ describe("refresh evidence", () => {
     temporaryDirectories.push(root);
     const store = new FileCatalogStore(root);
     const result = await refreshOpenRouterCatalog({
+      acquisition: "captured-response",
       fetch: async () => new Response(JSON.stringify({ data: [rawModel("mock/alpha")] })),
       observedAt,
       refreshId: "refresh-file",

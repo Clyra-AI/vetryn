@@ -589,18 +589,21 @@ describe("OpenRouter catalog evidence and shortlist replay", () => {
         ),
     );
     const first = await refreshOpenRouterCatalog({
+      acquisition: "captured-response",
       fetch,
       observedAt: "2026-08-10T00:00:00.000Z",
       refreshId: "scenario-refresh-1",
       store,
     });
     const second = await refreshOpenRouterCatalog({
+      acquisition: "captured-response",
       fetch,
       observedAt: "2026-08-11T00:00:00.000Z",
       refreshId: "scenario-refresh-2",
       store,
     });
     const failure = await refreshOpenRouterCatalog({
+      acquisition: "captured-response",
       fetch: async () => new Response("unavailable", { status: 503 }),
       observedAt: "2026-08-12T00:00:00.000Z",
       refreshId: "scenario-refresh-failure",

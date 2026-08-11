@@ -13,9 +13,10 @@ vetryn catalog refresh \
   --refresh-id scheduled-2026-08-11
 ```
 
-Omit `--catalog-file` to perform an explicit live refresh against OpenRouter's public model endpoint.
-Every attempt needs a unique observation ID; the CLI generates one when omitted. Failures return a
-non-zero exit code and never select a previous snapshot as current.
+Omit `--catalog-file` to perform an explicit live refresh against OpenRouter's fixed public model endpoint.
+The immutable observation distinguishes that live acquisition from a repository-captured response. Every
+attempt needs a unique observation ID; the CLI generates one when omitted. Failures return a non-zero exit
+code and never select a previous snapshot as current.
 
 Resolve a shortlist entirely from checked-in evidence:
 
