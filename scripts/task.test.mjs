@@ -835,6 +835,15 @@ describe("task packet compiler", () => {
     const reorderedValidation = runTask(root, "validate", "reordered-packet.json");
     expect(reorderedValidation.status, reorderedValidation.stderr).toBe(0);
 
+    const canonicalPlan = await readFixtureJson(root, planPath);
+    const malformedPlan = globalThis.structuredClone(canonicalPlan);
+    malformedPlan.tasks.push(globalThis.structuredClone(malformedPlan.tasks[0]));
+    await writeFixtureJson(root, planPath, malformedPlan);
+    const malformedCanonicalValidation = runTask(root, "validate", "candidate-packet.json");
+    expect(malformedCanonicalValidation.status).toBe(1);
+    expect(malformedCanonicalValidation.stderr).toContain("canonical plan is invalid");
+    await writeFixtureJson(root, planPath, canonicalPlan);
+
     state.state = "review_pending";
     state.history.push({
       from: "verification_pending",

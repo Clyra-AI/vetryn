@@ -23,8 +23,9 @@ local green result that fails in CI or silently disappears from a release.
   supply lifecycle evidence. This makes high-risk `review_report` preflight immutable and executable while keeping
   lifecycle-owned artifacts outside executor write scope.
 - Consumers replace the declared `{packet_path}` token and run
-  `node scripts/task.mjs validate <packet-path>` before using lifecycle evidence. That validator authenticates the
-  current product-contract, plan, and lockfile digests; re-derives security-relevant fields from canonical plan;
+  `node scripts/task.mjs validate <packet-path>` before using lifecycle evidence. That validator validates the
+  canonical plan and ledger contract before trusting their contents; authenticates the current product-contract,
+  plan, and lockfile digests; re-derives security-relevant fields from canonical plan;
   authenticates the packet identity against the canonical plan and task; requires a candidate bound to canonical
   state; and recomputes every ref from `task_id`, the candidate, and the artifact key. Compile-time packets may use
   `unbound`, but stored-packet lifecycle preflight rejects them. Ledger/status-only promotion tails may advance

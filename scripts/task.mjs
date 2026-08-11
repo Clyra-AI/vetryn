@@ -510,6 +510,7 @@ async function compile(taskId) {
 }
 
 async function validatePacket(packet, { requireBoundCandidate }) {
+  validateCanonicalPlan();
   const schema = await readJson("product/plans/schemas/task-packet.schema.json");
   const ajv = new Ajv2020({ allErrors: true, strict: true, allowUnionTypes: true });
   addFormats(ajv);

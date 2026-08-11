@@ -44,6 +44,8 @@
   intent, and source metadata, with only exact-candidate promotion-tail state explicitly mutable.
 - Made lifecycle preflight reject unbound packets, authenticate packet identity against the canonical plan and
   task, and compare JSON objects structurally without treating member order as policy drift.
+- Made stored-packet preflight validate the canonical repository plan and ledger before deriving any trusted
+  lifecycle policy from them.
 
 ### Changed
 

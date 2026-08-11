@@ -95,8 +95,9 @@ change the ledger or accept the task. Any source drift requires recompilation; p
 already-passing evidence remain immutable historical provenance.
 
 Before consuming lifecycle evidence from a stored packet, replace `{packet_path}` in the packet's declared command
-and run `node scripts/task.mjs validate <packet-path>`. The command applies the public JSON Schema, authenticates
-the current product-contract, plan, and lockfile inputs, re-derives task risk and lifecycle gates from canonical
+and run `node scripts/task.mjs validate <packet-path>`. The command applies the public JSON Schema, validates the
+canonical repository plan and ledger before using them, authenticates the current product-contract, plan, and
+lockfile inputs, re-derives task risk and lifecycle gates from canonical
 policy, binds the candidate to canonical state, and then recomputes each lifecycle ref. It rejects policy
 downgrade, cross-plan or cross-task packet identity, stale-candidate, unbound-candidate, swapped-artifact, and
 security-input drift while
