@@ -79,6 +79,15 @@ const reauthorizationFindingIds = [
   "r3754790013",
   "r3754790019",
 ];
+const reauthorizationRemedyInvariants = [
+  "The only authorized application replay correction is r3754744063: replay the real application call through a deterministic OpenAI-compatible transport.",
+  "The only authorized unknown-outcome correction is r3754744064: reject unknown mock outcomes rather than reporting success.",
+  "The only authorized stale-source correction is r3754744067: bind refusal to the checked-in source and manifest fingerprint.",
+  "The only authorized budget correction is r3754790013: propagate provider budget exhaustion through the SDK-compatible transport.",
+  "The only authorized typecheck correction is r3754790019: run golden-fixture typechecking through the repository quality gate.",
+];
+const v102ReauthorizationInvariant =
+  "This reauthorized attempt is limited to r3754744063 application replay, r3754744064 unknown-outcome rejection, r3754744067 stale-source binding, r3754790013 transport budget propagation, and r3754790019 golden-fixture typechecking.";
 
 function assertV102ReauthorizationBoundary(plan, v102State, m003State) {
   const m003Task = plan.tasks.find((task) => task.id === "M0-03");
@@ -100,6 +109,10 @@ function assertV102ReauthorizationBoundary(plan, v102State, m003State) {
   expect(v102Task.dependsOn).toContainEqual({ taskId: "M0-03", kind: "hard" });
   expect(findingIds(m003Task)).toEqual(reauthorizationFindingIds);
   expect(findingIds(v102Task)).toEqual(reauthorizationFindingIds);
+  expect(m003Task.semanticInvariants).toEqual(
+    expect.arrayContaining(reauthorizationRemedyInvariants),
+  );
+  expect(v102Task.semanticInvariants).toContain(v102ReauthorizationInvariant);
   expect(priorV102History.filter((entry) => entry.to === "in_progress")).toHaveLength(2);
   expect(priorV102History.filter((entry) => entry.to === "verification_pending")).toHaveLength(2);
   expect(priorV102History.filter((entry) => entry.to === "changes_requested")).toHaveLength(2);
@@ -450,6 +463,17 @@ describe("implementation plan validator", () => {
         .find((task) => task.id === "M0-03")
         .semanticInvariants.filter((invariant) => !invariant.includes("r3754790019"));
     expect(() => assertV102ReauthorizationBoundary(missingFinding, v102State, m003State)).toThrow();
+
+    const alteredRemedy = JSON.parse(JSON.stringify(plan));
+    alteredRemedy.tasks.find((task) => task.id === "M0-03").semanticInvariants = alteredRemedy.tasks
+      .find((task) => task.id === "M0-03")
+      .semanticInvariants.map((invariant) =>
+        invariant.replace(
+          "reject unknown mock outcomes",
+          "report unknown mock outcomes as success",
+        ),
+      );
+    expect(() => assertV102ReauthorizationBoundary(alteredRemedy, v102State, m003State)).toThrow();
   });
 
   it("normalizes promoted V1-00 lifecycle data back to the isolated fixture baseline", async () => {
