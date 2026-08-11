@@ -266,6 +266,14 @@ export function normalizeOpenRouterCatalog(
   const exclusions: CatalogExclusion[] = [];
   const models = new Map<string, CatalogModel>();
   const ambiguousModelIds = new Set<string>();
+  const rawModelIdCounts = new Map<string, number>();
+
+  for (const value of catalog.data.data) {
+    const raw = rawModelSchema.safeParse(value);
+    if (raw.success && typeof raw.data.id === "string") {
+      rawModelIdCounts.set(raw.data.id, (rawModelIdCounts.get(raw.data.id) ?? 0) + 1);
+    }
+  }
 
   for (const value of catalog.data.data) {
     const raw = rawModelSchema.safeParse(value);
@@ -279,43 +287,56 @@ export function normalizeOpenRouterCatalog(
       exclusions.push({ modelId: rawId, reason: "invalid-model-id" });
       continue;
     }
-    const provider = raw.data.id.slice(0, raw.data.id.indexOf("/"));
+    const modelId = raw.data.id;
+    const provider = modelId.slice(0, modelId.indexOf("/"));
     if (!/^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/.test(provider)) {
-      exclusions.push({ modelId: raw.data.id, reason: "invalid-model-id" });
+      exclusions.push({ modelId, reason: "invalid-model-id" });
       continue;
     }
+    const exclude = (reason: CatalogExclusion["reason"]): void => {
+      if ((rawModelIdCounts.get(modelId) ?? 0) > 1) {
+        models.delete(modelId);
+        if (!ambiguousModelIds.has(modelId)) {
+          ambiguousModelIds.add(modelId);
+          exclusions.push({ modelId, reason: "ambiguous-model-id" });
+        }
+      } else {
+        exclusions.push({ modelId, reason });
+      }
+    };
+    if (ambiguousModelIds.has(modelId)) continue;
     if (
       typeof raw.data.context_length !== "number" ||
       !Number.isSafeInteger(raw.data.context_length) ||
       raw.data.context_length <= 0
     ) {
-      exclusions.push({ modelId: raw.data.id, reason: "invalid-context-window" });
+      exclude("invalid-context-window");
       continue;
     }
     const pricing = isRecord(raw.data.pricing) ? raw.data.pricing : undefined;
     const prompt = parsePerTokenPrice(pricing?.prompt);
     const completion = parsePerTokenPrice(pricing?.completion);
     if (prompt === undefined || completion === undefined) {
-      exclusions.push({ modelId: raw.data.id, reason: "invalid-pricing" });
+      exclude("invalid-pricing");
       continue;
     }
     const inputPricePerMillionUsd = multiplyDecimalByInteger(prompt, 1_000_000);
     const outputPricePerMillionUsd = multiplyDecimalByInteger(completion, 1_000_000);
     if (!isCoreDecimal(inputPricePerMillionUsd) || !isCoreDecimal(outputPricePerMillionUsd)) {
-      exclusions.push({ modelId: raw.data.id, reason: "invalid-pricing" });
+      exclude("invalid-pricing");
       continue;
     }
     const architecture = isRecord(raw.data.architecture) ? raw.data.architecture : undefined;
     const parameters = parseBoundedStringArray(raw.data.supported_parameters, 200);
     const outputModalities = parseBoundedStringArray(architecture?.output_modalities, 20);
     if (parameters === undefined || outputModalities === undefined) {
-      exclusions.push({ modelId: raw.data.id, reason: "invalid-capabilities" });
+      exclude("invalid-capabilities");
       continue;
     }
 
     const textGeneration = outputModalities.includes("text");
     if (!textGeneration) {
-      exclusions.push({ modelId: raw.data.id, reason: "invalid-capabilities" });
+      exclude("invalid-capabilities");
       continue;
     }
     const model: CatalogModel = {
@@ -326,13 +347,12 @@ export function normalizeOpenRouterCatalog(
         toolCalls: parameters.includes("tools") || parameters.includes("tool_choice"),
       },
       contextWindowTokens: raw.data.context_length,
-      id: raw.data.id,
+      id: modelId,
       inputPricePerMillionUsd,
       outputPricePerMillionUsd,
       provider,
       retired: false,
     };
-    if (ambiguousModelIds.has(model.id)) continue;
     const existingModel = models.get(model.id);
     if (existingModel === undefined) {
       models.set(model.id, model);
