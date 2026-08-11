@@ -2,37 +2,41 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "V1-04",
-  "revision": 5,
-  "state": "in_progress",
+  "revision": 6,
+  "state": "verification_pending",
   "attempt": 2,
-  "candidate": null,
+  "candidate": {
+    "baseCommit": "e9a36cb0df2566b9c059265b6f472528c15f4e73",
+    "commit": "f044a087bd924cf6b0ba92b0fad21ce62b8b8d9b",
+    "executor": "implementation-agent"
+  },
   "criteria": [
     {
       "criterionId": "MANIFEST-001",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-04-contracts-f044a08"]
     },
     {
       "criterionId": "MANIFEST-002",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-04-repo-check-f044a08"]
     },
     {
       "criterionId": "MANIFEST-003",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-04-contracts-f044a08"]
     }
   ],
   "gates": [
     {
       "gateId": "QG-REPO-CHECK",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-04-repo-check-f044a08"]
     },
     {
       "gateId": "QG-CONTRACTS",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-04-contracts-f044a08"]
     },
     {
       "gateId": "QG-INDEPENDENT-VERIFY",
@@ -90,6 +94,13 @@
       "at": "2026-08-11T04:37:00Z",
       "actor": "implementation-agent",
       "reason": "Started the second bounded implementation attempt to apply the approved scope amendment and correct the manifest-init CLI output."
+    },
+    {
+      "from": "in_progress",
+      "to": "verification_pending",
+      "at": "2026-08-11T04:40:28Z",
+      "actor": "implementation-agent",
+      "reason": "Submitted the scope-amended manifest candidate with fresh contract and repository-gate evidence for separate maintainer promotion."
     }
   ]
 }
