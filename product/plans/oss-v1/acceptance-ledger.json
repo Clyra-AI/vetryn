@@ -115,8 +115,8 @@
       "statement": "A separate maintainer-controlled task records two consumed V1-02 attempts and authorizes exactly one remaining attempt for five exact plan-embedded review findings, with no product-scope or capability expansion.",
       "verification": { "method": "test", "testLevel": "contract", "gateId": "QG-PLAN-CHECK" },
       "waivable": false,
-      "status": "planned",
-      "evidenceRefs": []
+      "status": "accepted",
+      "evidenceRefs": ["ev-m0-03-plan-check-8484b56"]
     },
     {
       "id": "CONTRACT-001",
