@@ -6,9 +6,7 @@
   "state": "in_progress",
   "attempt": 1,
   "candidate": null,
-  "criteria": [
-    { "criterionId": "PROCESS-009", "status": "pending", "evidenceRefs": [] }
-  ],
+  "criteria": [{ "criterionId": "PROCESS-009", "status": "pending", "evidenceRefs": [] }],
   "gates": [
     { "gateId": "QG-PLAN-CHECK", "status": "pending", "evidenceRefs": [] },
     { "gateId": "QG-REPO-CHECK", "status": "pending", "evidenceRefs": [] }
