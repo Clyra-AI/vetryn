@@ -97,6 +97,19 @@
       "evidenceRefs": ["ev-m0-01-repo-check-86d1097"]
     },
     {
+      "id": "PROCESS-003",
+      "taskId": "M0-02",
+      "statement": "The golden-scenario skill has an explicit offline-only fixture boundary and routes V1-02 through deterministic semantic assertions without acceptance or merge authority.",
+      "verification": {
+        "method": "test",
+        "testLevel": "contract",
+        "gateId": "QG-REPO-CHECK"
+      },
+      "waivable": false,
+      "status": "accepted",
+      "evidenceRefs": ["ev-m0-02-repo-check-35e330b"]
+    },
+    {
       "id": "CONTRACT-001",
       "taskId": "V1-01",
       "statement": "Every V1 artifact has a versioned strict schema and canonical serializer.",

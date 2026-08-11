@@ -1,0 +1,4 @@
+interface:
+  display_name: "Vetryn Golden Scenario"
+  short_description: "Build deterministic offline golden scenarios"
+  default_prompt: "Use $vetryn-golden-scenario to implement or review Vetryn’s offline golden fixture."

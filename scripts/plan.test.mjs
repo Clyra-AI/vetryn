@@ -15,7 +15,7 @@ const planScript = path.join(repositoryRoot, "scripts/plan.mjs");
 const temporaryRoots = [];
 const bootstrapCommentId = 987654321;
 const v1TaskId = "V1-00";
-const fixtureTaskIds = [v1TaskId, "M0-01", "V1-01"];
+const fixtureTaskIds = [v1TaskId, "M0-01", "M0-02", "V1-01"];
 
 function bootstrapBody(overrides = {}) {
   const values = {
@@ -134,6 +134,41 @@ async function normalizeV1Fixture(root) {
     ],
   });
   await writeFixtureJson(root, processStatePath, processState);
+
+  const goldenScenarioSkillStatePath = "product/plans/oss-v1/state/M0-02.json";
+  const goldenScenarioSkillState = await readFixtureJson(root, goldenScenarioSkillStatePath);
+  Object.assign(goldenScenarioSkillState, {
+    revision: 0,
+    state: "planned",
+    attempt: 0,
+    candidate: null,
+    criteria: goldenScenarioSkillState.criteria.map((criterion) => ({
+      ...criterion,
+      status: "pending",
+      evidenceRefs: [],
+    })),
+    gates: goldenScenarioSkillState.gates.map((gate) => ({
+      ...gate,
+      status: "pending",
+      evidenceRefs: [],
+    })),
+    reviews: goldenScenarioSkillState.reviews.map((review) => ({
+      ...review,
+      status: "pending",
+      evidenceRefs: [],
+    })),
+    blockers: [],
+    history: [
+      {
+        from: null,
+        to: "planned",
+        at: "2026-08-10T00:00:00Z",
+        actor: "plan-test-fixture",
+        reason: "Reset the golden-scenario process task with the V1-00 fixture baseline.",
+      },
+    ],
+  });
+  await writeFixtureJson(root, goldenScenarioSkillStatePath, goldenScenarioSkillState);
 
   const dependentStatePath = "product/plans/oss-v1/state/V1-01.json";
   const dependentState = await readFixtureJson(root, dependentStatePath);
@@ -423,7 +458,7 @@ describe("implementation plan validator", () => {
 
     const progressPath = path.join(root, "product/plans/oss-v1/progress.json");
     const contents = await readFile(progressPath, "utf8");
-    expect(JSON.parse(contents).nextLegalTasks).toEqual(["M0-01", "V1-02"]);
+    expect(JSON.parse(contents).nextLegalTasks).toEqual(["M0-01", "M0-02"]);
     expect(await checkPrettier(contents, { ...prettierConfig, filepath: progressPath })).toBe(true);
 
     const checkResult = runPlan(root);
