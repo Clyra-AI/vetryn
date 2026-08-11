@@ -1,0 +1,12 @@
+{
+  "artifactType": "golden-scenario-summary",
+  "callSiteId": "support-classification",
+  "diagnosticCodes": ["stale-source-fingerprint"],
+  "disposition": "refuse",
+  "patch": null,
+  "redaction": {
+    "rawInputs": false,
+    "rawOutputs": false
+  },
+  "schemaVersion": "1.0.0"
+}

@@ -177,8 +177,8 @@
         "gateId": "QG-SCENARIOS"
       },
       "waivable": false,
-      "status": "planned",
-      "evidenceRefs": []
+      "status": "accepted",
+      "evidenceRefs": ["ev-v1-02-scenarios-b51c341"]
     },
     {
       "id": "GOLDEN-002",
@@ -186,8 +186,8 @@
       "statement": "The pinned catalog, clock, and mock provider make every golden scenario reproducible without network access.",
       "verification": { "method": "test", "testLevel": "e2e", "gateId": "QG-SCENARIOS" },
       "waivable": false,
-      "status": "planned",
-      "evidenceRefs": []
+      "status": "accepted",
+      "evidenceRefs": ["ev-v1-02-scenarios-b51c341"]
     },
     {
       "id": "GOLDEN-003",
@@ -195,8 +195,8 @@
       "statement": "The mock provider exercises success, invalid output, timeout, rate limit, usage, retry, and budget behavior.",
       "verification": { "method": "test", "testLevel": "adversarial", "gateId": "QG-SCENARIOS" },
       "waivable": false,
-      "status": "planned",
-      "evidenceRefs": []
+      "status": "accepted",
+      "evidenceRefs": ["ev-v1-02-scenarios-b51c341"]
     },
     {
       "id": "GOLDEN-004",
@@ -208,8 +208,8 @@
         "gateId": "QG-TRUST-REVIEW"
       },
       "waivable": false,
-      "status": "planned",
-      "evidenceRefs": []
+      "status": "accepted",
+      "evidenceRefs": ["ev-v1-02-scenarios-b51c341"]
     },
     {
       "id": "SCAN-001",

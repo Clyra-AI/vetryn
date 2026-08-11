@@ -1,0 +1,30 @@
+{"id":"support-001","input":"Synthetic request: update a billing address.","expectedClass":"billing","review":{"owner":"support-platform","status":"reviewed","reviewedAt":"2026-08-10"}}
+{"id":"support-002","input":"Synthetic request: download an invoice.","expectedClass":"billing","review":{"owner":"support-platform","status":"reviewed","reviewedAt":"2026-08-10"}}
+{"id":"support-003","input":"Synthetic request: understand a duplicate charge.","expectedClass":"billing","review":{"owner":"support-platform","status":"reviewed","reviewedAt":"2026-08-10"}}
+{"id":"support-004","input":"Synthetic request: reset an account password.","expectedClass":"account-access","review":{"owner":"support-platform","status":"reviewed","reviewedAt":"2026-08-10"}}
+{"id":"support-005","input":"Synthetic request: change a sign-in email.","expectedClass":"account-access","review":{"owner":"support-platform","status":"reviewed","reviewedAt":"2026-08-10"}}
+{"id":"support-006","input":"Synthetic request: restore a locked account.","expectedClass":"account-access","review":{"owner":"support-platform","status":"reviewed","reviewedAt":"2026-08-10"}}
+{"id":"support-007","input":"Synthetic request: track an order shipment.","expectedClass":"order-status","review":{"owner":"support-platform","status":"reviewed","reviewedAt":"2026-08-10"}}
+{"id":"support-008","input":"Synthetic request: change a delivery date.","expectedClass":"order-status","review":{"owner":"support-platform","status":"reviewed","reviewedAt":"2026-08-10"}}
+{"id":"support-009","input":"Synthetic request: cancel an unshipped order.","expectedClass":"order-status","review":{"owner":"support-platform","status":"reviewed","reviewedAt":"2026-08-10"}}
+{"id":"support-010","input":"Synthetic request: request a return label.","expectedClass":"returns","review":{"owner":"support-platform","status":"reviewed","reviewedAt":"2026-08-10"}}
+{"id":"support-011","input":"Synthetic request: check refund timing.","expectedClass":"returns","review":{"owner":"support-platform","status":"reviewed","reviewedAt":"2026-08-10"}}
+{"id":"support-012","input":"Synthetic request: report a damaged item.","expectedClass":"returns","review":{"owner":"support-platform","status":"reviewed","reviewedAt":"2026-08-10"}}
+{"id":"support-013","input":"Synthetic request: connect a calendar integration.","expectedClass":"integrations","review":{"owner":"support-platform","status":"reviewed","reviewedAt":"2026-08-10"}}
+{"id":"support-014","input":"Synthetic request: diagnose an API integration error.","expectedClass":"integrations","review":{"owner":"support-platform","status":"reviewed","reviewedAt":"2026-08-10"}}
+{"id":"support-015","input":"Synthetic request: remove an inactive integration.","expectedClass":"integrations","review":{"owner":"support-platform","status":"reviewed","reviewedAt":"2026-08-10"}}
+{"id":"support-016","input":"Synthetic request: find an account setting.","expectedClass":"how-to","review":{"owner":"support-platform","status":"reviewed","reviewedAt":"2026-08-10"}}
+{"id":"support-017","input":"Synthetic request: understand notification controls.","expectedClass":"how-to","review":{"owner":"support-platform","status":"reviewed","reviewedAt":"2026-08-10"}}
+{"id":"support-018","input":"Synthetic request: export a workspace report.","expectedClass":"how-to","review":{"owner":"support-platform","status":"reviewed","reviewedAt":"2026-08-10"}}
+{"id":"support-019","input":"Synthetic request: report a blank application screen.","expectedClass":"bug","review":{"owner":"support-platform","status":"reviewed","reviewedAt":"2026-08-10"}}
+{"id":"support-020","input":"Synthetic request: report an unexpected error code.","expectedClass":"bug","review":{"owner":"support-platform","status":"reviewed","reviewedAt":"2026-08-10"}}
+{"id":"support-021","input":"Synthetic request: report a slow dashboard.","expectedClass":"bug","review":{"owner":"support-platform","status":"reviewed","reviewedAt":"2026-08-10"}}
+{"id":"support-022","input":"Synthetic request: ask about plan limits.","expectedClass":"plan","review":{"owner":"support-platform","status":"reviewed","reviewedAt":"2026-08-10"}}
+{"id":"support-023","input":"Synthetic request: compare subscription plans.","expectedClass":"plan","review":{"owner":"support-platform","status":"reviewed","reviewedAt":"2026-08-10"}}
+{"id":"support-024","input":"Synthetic request: add another workspace member.","expectedClass":"plan","review":{"owner":"support-platform","status":"reviewed","reviewedAt":"2026-08-10"}}
+{"id":"support-025","input":"Synthetic request: report an unavailable feature.","expectedClass":"feature-request","review":{"owner":"support-platform","status":"reviewed","reviewedAt":"2026-08-10"}}
+{"id":"support-026","input":"Synthetic request: suggest an export format.","expectedClass":"feature-request","review":{"owner":"support-platform","status":"reviewed","reviewedAt":"2026-08-10"}}
+{"id":"support-027","input":"Synthetic request: request a keyboard shortcut.","expectedClass":"feature-request","review":{"owner":"support-platform","status":"reviewed","reviewedAt":"2026-08-10"}}
+{"id":"support-028","input":"Synthetic request: update notification preferences.","expectedClass":"account-access","review":{"owner":"support-platform","status":"reviewed","reviewedAt":"2026-08-10"}}
+{"id":"support-029","input":"Synthetic request: ask when a refund will arrive.","expectedClass":"returns","review":{"owner":"support-platform","status":"reviewed","reviewedAt":"2026-08-10"}}
+{"id":"support-030","input":"Synthetic request: request help with a report filter.","expectedClass":"how-to","review":{"owner":"support-platform","status":"reviewed","reviewedAt":"2026-08-10"}}

@@ -2,42 +2,46 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "V1-02",
-  "revision": 1,
-  "state": "planned",
-  "attempt": 2,
-  "candidate": null,
+  "revision": 9,
+  "state": "accepted",
+  "attempt": 3,
+  "candidate": {
+    "baseCommit": "223d4b7eed73272ff883b235daa2e3b8580695a7",
+    "commit": "b51c3415f0fa58b38fc8cc434e7cc3e726c2cce2",
+    "executor": "implementation-agent"
+  },
   "criteria": [
     {
       "criterionId": "GOLDEN-001",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-02-scenarios-b51c341"]
     },
     {
       "criterionId": "GOLDEN-002",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-02-scenarios-b51c341"]
     },
     {
       "criterionId": "GOLDEN-003",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-02-scenarios-b51c341"]
     },
     {
       "criterionId": "GOLDEN-004",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-02-scenarios-b51c341"]
     }
   ],
   "gates": [
     {
       "gateId": "QG-REPO-CHECK",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-02-repo-check-b51c341"]
     },
     {
       "gateId": "QG-SCENARIOS",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-02-scenarios-b51c341"]
     },
     {
       "gateId": "QG-INDEPENDENT-VERIFY",
@@ -119,6 +123,62 @@
       "at": "2026-08-11T01:57:20Z",
       "actor": "davidahmann",
       "reason": "Returned to planning after the original attempt budget was exhausted; any further attempt requires a separate accepted authorization task."
+    },
+    {
+      "from": "planned",
+      "to": "in_progress",
+      "at": "2026-08-11T02:41:40Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer started the single M0-03-authorized final implementation attempt before creating a new candidate."
+    },
+    {
+      "from": "in_progress",
+      "to": "accepted",
+      "at": "2026-08-11T02:45:01Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer accepted the exact deterministic golden-repository candidate after both active command gates passed; named review records remain advisory under ADR 0009."
+    },
+    {
+      "from": "accepted",
+      "to": "in_progress",
+      "at": "2026-08-11T03:39:39Z",
+      "actor": "implementation-agent",
+      "reason": "Reopened the still-unmerged golden-scenario task so the P1-required independent maintainer promotion can follow a new exact candidate."
+    },
+    {
+      "from": "in_progress",
+      "to": "verification_pending",
+      "at": "2026-08-11T03:40:55Z",
+      "actor": "implementation-agent",
+      "reason": "Submitted the exact P1/P2 corrective candidate with compact command evidence for independent maintainer promotion."
+    },
+    {
+      "from": "verification_pending",
+      "to": "changes_requested",
+      "at": "2026-08-11T03:49:07Z",
+      "actor": "implementation-agent",
+      "reason": "Paused the corrective candidate until a separate narrow process task authorizes the additional review finding."
+    },
+    {
+      "from": "changes_requested",
+      "to": "in_progress",
+      "at": "2026-08-11T04:00:00Z",
+      "actor": "implementation-agent",
+      "reason": "Started the M0-04-authorized continuation of the still-unaccepted third attempt."
+    },
+    {
+      "from": "in_progress",
+      "to": "verification_pending",
+      "at": "2026-08-11T04:05:00Z",
+      "actor": "implementation-agent",
+      "reason": "Submitted the M0-04-authorized candidate with exact offline scenario and repository-gate evidence for separate maintainer promotion."
+    },
+    {
+      "from": "verification_pending",
+      "to": "accepted",
+      "at": "2026-08-11T04:12:41Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer accepted the exact M0-04-authorized candidate after the active offline scenario and repository command gates passed; named reviewer records remain advisory under ADR 0009."
     }
   ]
 }
