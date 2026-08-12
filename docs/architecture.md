@@ -86,8 +86,9 @@ replay always uses its original snapshot.
 The runner executes current and candidate models over the same cases with controlled concurrency, retries, seeds
 where supported, and redaction. Every OpenRouter request is built from the call site's route policy. Complete runs
 record that policy plus bounded router metadata for every observed attempt with exactly one selected successful
-provider; request and attempt ordinals reconcile independently from evaluator repetition counts. Missing or
-contradictory metadata cannot support a recommendation. It records raw measurements separately from derived scores.
+provider. Each request binds a case and evaluator repetition; complete runs cover that exact cross-product once,
+while attempt ordinals independently identify router retries within a request. Missing, duplicated, or contradictory
+metadata cannot support a recommendation. It records raw measurements separately from derived scores.
 Credentials come from the execution environment and outputs stay local by default.
 
 ### Scorers and gates

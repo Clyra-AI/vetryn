@@ -822,6 +822,10 @@
             "reason": "Document request coverage for complete runs."
           },
           {
+            "path": "docs/architecture.md",
+            "reason": "Keep the evaluation-runner design aligned with evaluated-unit coverage."
+          },
+          {
             "path": "packages/cli/README.md",
             "reason": "Clarify file diagnostics versus call-site observations."
           }
