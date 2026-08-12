@@ -31,6 +31,27 @@
       "blocks": []
     },
     {
+      "id": "DEC-ECONOMIC-PROOF",
+      "status": "locked",
+      "decision": "Monthly and annual savings claims require a reviewed workload-volume profile with dated provenance that explicit policy derives as current; otherwise Vetryn reports normalized unit economics only and keeps observed evaluation spend separate.",
+      "rationale": "The PR must make value legible without presenting catalog-derived estimates as observed billing or inventing monthly precision from missing traffic data.",
+      "blocks": []
+    },
+    {
+      "id": "DEC-AGENT-ACTIVATION",
+      "status": "locked",
+      "decision": "V1 exposes one documented vetryn assess orchestration command plus a composite Action that invokes the same path, root llms.txt, Markdown-first onboarding, stable JSON output, and documented exit semantics as one provider-neutral coding-agent contract.",
+      "rationale": "Codex, Claude, and other agents should install and operate Vetryn from stable repository-native interfaces rather than vendor-specific automation or prose scraping.",
+      "blocks": []
+    },
+    {
+      "id": "DEC-ARTIFACT-EXPANSION",
+      "status": "locked",
+      "decision": "Recommendation PRs and abstention reports include a deterministic next-assessment section derived only from reconciled repository counts, with an exact action when another eligible target exists and an explicit none-available result otherwise; the section is presentation metadata, never decision evidence, and requires no mandatory telemetry.",
+      "rationale": "The evidence artifact can create internal distribution without weakening trust, overstating inventory coverage, or adding a hosted growth dependency.",
+      "blocks": []
+    },
+    {
       "id": "DEC-SCORING",
       "status": "locked",
       "decision": "V1 uses deterministic scorers, hard gates, and an explicit per-call-site minimum recommendation confidence (0.8 by default); LLM judges are deferred.",
@@ -1135,15 +1156,24 @@
       "id": "V1-07",
       "milestone": "M3",
       "title": "Implement recommendation policy and reports",
-      "objective": "Compare current and candidate runs, enforce non-inferiority and confidence, and emit evidence-backed JSON and Markdown recommendations or abstentions.",
+      "objective": "Compare current and candidate runs, enforce non-inferiority and confidence, and emit evidence-backed JSON and Markdown recommendations or abstentions with defensible economic and freshness proof.",
       "risk": { "level": "high", "domains": ["decision-policy", "trust"] },
       "dependsOn": [
         { "taskId": "V1-05", "kind": "hard" },
         { "taskId": "V1-06", "kind": "hard" }
       ],
-      "acceptanceItemIds": ["RECOMMEND-001", "RECOMMEND-002", "RECOMMEND-003", "RECOMMEND-004"],
+      "acceptanceItemIds": [
+        "RECOMMEND-001",
+        "RECOMMEND-002",
+        "RECOMMEND-003",
+        "RECOMMEND-004",
+        "RECOMMEND-005"
+      ],
       "scope": {
         "allowedPaths": [
+          ".changeset/**",
+          "CHANGELOG.md",
+          "docs/**",
           "packages/core/**",
           "packages/cli/**",
           "examples/openrouter-typescript/**"
@@ -1152,9 +1182,14 @@
       },
       "semanticInvariants": [
         "Savings never compensate for failed quality or hard gates.",
-        "JSON and Markdown are derived from the same canonical recommendation."
+        "JSON and Markdown are derived from the same canonical recommendation.",
+        "Monthly and annual economics are estimates derived from reviewed representative token weights, reviewed workload volume with dated provenance, and bound catalog pricing; missing, invalid, or policy-stale volume evidence cannot produce a monthly claim.",
+        "Observed evaluation spend, shortlist estimates, projected workload economics, and optional runtime corroboration remain distinct evidence types."
       ],
       "deliverables": [
+        ".changeset/**",
+        "CHANGELOG.md",
+        "docs/**",
         "packages/core/**",
         "packages/cli/**",
         "examples/openrouter-typescript/expected/**"
@@ -1177,7 +1212,9 @@
       "maxAttempts": 2,
       "stopConditions": [
         "A recommendation lacks reproducible evidence.",
-        "An abstention path produces a patch."
+        "An abstention path produces a patch.",
+        "A report presents monthly or annual savings without reviewed, policy-current workload-volume provenance.",
+        "A report presents projected workload economics as observed provider billing."
       ]
     },
     {
@@ -1237,7 +1274,7 @@
       "id": "V1-09",
       "milestone": "M4",
       "title": "Ship the composite GitHub Action and PR contract",
-      "objective": "Package scan, eval, recommend, report, and patch as a least-privilege composite Action with deterministic artifacts and idempotent PR behavior.",
+      "objective": "Package scan, eval, recommend, report, and patch as one agent-legible CLI or least-privilege composite Action flow with deterministic artifacts, contextual next actions, and idempotent PR behavior.",
       "risk": { "level": "high", "domains": ["github", "supply-chain", "automation"] },
       "dependsOn": [{ "taskId": "V1-08", "kind": "hard" }],
       "acceptanceItemIds": [
@@ -1246,11 +1283,17 @@
         "ACTION-003",
         "ACTION-004",
         "ACTION-005",
-        "ACTION-006"
+        "ACTION-006",
+        "ACTION-007",
+        "ACTION-008"
       ],
       "scope": {
         "allowedPaths": [
+          ".changeset/**",
+          "CHANGELOG.md",
           "action.yml",
+          "llms.txt",
+          "README.md",
           ".github/**",
           "packages/cli/**",
           "examples/openrouter-typescript/**",
@@ -1268,9 +1311,22 @@
         "Provider-backed assessment is manual by default and scheduled execution requires explicit repository opt-in.",
         "The evaluation-input digest binds the evaluator tool version and build or commit revision.",
         "An unchanged catalog and evaluation-input digest skips paid candidate execution only when prior evidence is complete, integrity-valid, and reusable under current policy.",
-        "Action reports reconcile the assessed repository surface from supported files through findings, manifest bindings, evaluation readiness, recommendations, abstentions, and pull requests without implying complete runtime inventory."
+        "Action reports reconcile the assessed repository surface from supported files through findings, manifest bindings, evaluation readiness, recommendations, abstentions, and pull requests without implying complete runtime inventory.",
+        "One documented vetryn assess command and the composite Action expose the same stable JSON and exit semantics after repository-owned setup.",
+        "Agent-facing installation guidance is provider-neutral and cannot add a hosted dependency, agent-specific product behavior, or autonomous merge authority.",
+        "Next-assessment actions are derived from reconciled eligible counts and cannot alter recommendation, abstention, or patch eligibility."
       ],
-      "deliverables": ["action.yml", ".github/workflows/**", "examples/openrouter-typescript/**"],
+      "deliverables": [
+        ".changeset/**",
+        "CHANGELOG.md",
+        "action.yml",
+        "llms.txt",
+        "README.md",
+        ".github/workflows/**",
+        "docs/**",
+        "packages/cli/**",
+        "examples/openrouter-typescript/**"
+      ],
       "requiredTestLevels": ["static", "contract", "integration", "e2e", "adversarial"],
       "requiredGates": [
         "QG-REPO-CHECK",
@@ -1295,14 +1351,16 @@
         "Installation alone enables recurring provider spend.",
         "An evaluator tool version or build/commit revision change reuses evidence produced by older executable code.",
         "Complete reusable evidence is ignored and unchanged inputs trigger provider execution.",
-        "Failed, partial, exhausted, privacy-unsafe, or otherwise non-reusable evidence suppresses a later bounded retry."
+        "Failed, partial, exhausted, privacy-unsafe, or otherwise non-reusable evidence suppresses a later bounded retry.",
+        "Agent instructions require prose scraping or produce behavior that differs by coding-agent vendor.",
+        "A next-assessment prompt uses unbounded, unreconciled, or implied runtime-inventory counts."
       ]
     },
     {
       "id": "V1-10",
       "milestone": "FIELD",
       "title": "Validate the beachhead in real repositories",
-      "objective": "Prove that qualified recommendation PRs are trusted, merged, safe, and economically meaningful, and assess whether deterministic evaluation blocks valuable open-ended call sites before expanding scope.",
+      "objective": "Prove that qualified recommendation PRs are trusted, merged, safe, economically meaningful, and capable of driving attributable follow-on assessment, and assess whether deterministic evaluation blocks valuable open-ended call sites before expanding scope.",
       "risk": { "level": "high", "domains": ["field-validation", "customer-trust", "economics"] },
       "dependsOn": [{ "taskId": "V1-09", "kind": "field" }],
       "acceptanceItemIds": [
@@ -1311,7 +1369,8 @@
         "FIELD-003",
         "FIELD-004",
         "FIELD-005",
-        "FIELD-006"
+        "FIELD-006",
+        "FIELD-007"
       ],
       "scope": {
         "allowedPaths": ["docs/**", "product/plans/**"],
@@ -1323,6 +1382,7 @@
         "Representative no-findings requires a predeclared eligibility census and direct assessment of at least ten eligible open-ended call sites across at least three FIELD-001 companies, with coverage and exclusions independently reviewed.",
         "Blocked open-ended call sites are never counted as qualified recommendations, and neither no-findings nor insufficient coverage can authorize semantic-scorer expansion.",
         "Each repository records the assessed surface and exact observed-to-bound-to-evaluated-to-recommended-to-PR-to-merged funnel with exclusions and denominators.",
+        "Field evidence records whether a qualified PR reviewer initiates or refers a follow-on call-site or repository assessment, with explicit denominators and without mandatory telemetry.",
         "Customer data and outcomes are recorded without raw prompts or outputs."
       ],
       "deliverables": ["product/plans/oss-v1/evidence/**", "docs/**"],
@@ -1339,6 +1399,7 @@
       "stopConditions": [
         "A serious quality, safety, privacy, or operational regression occurs.",
         "Savings cannot be attributed to the recommendation.",
+        "Follow-on assessment claims cannot be attributed to a qualified PR reviewer or lack their denominator.",
         "Customer consent or data handling is unclear.",
         "A semantic-scorer expansion claim lacks sanitized evidence of valuable open-ended call sites blocked specifically by deterministic evaluation."
       ]

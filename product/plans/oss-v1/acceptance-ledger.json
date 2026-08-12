@@ -536,6 +536,15 @@
       "evidenceRefs": []
     },
     {
+      "id": "RECOMMEND-005",
+      "taskId": "V1-07",
+      "statement": "A report claims estimated monthly or annual savings only from a human-reviewed workload-volume profile with request count, provenance, and observation time or window that explicit policy derives as current; otherwise it reports normalized unit economics, keeps observed evaluation spend separate, and labels every projection as an estimate.",
+      "verification": { "method": "test", "testLevel": "adversarial", "gateId": "QG-CONTRACTS" },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
       "id": "PATCH-001",
       "taskId": "V1-08",
       "statement": "A valid recommendation changes only the reviewed model literal and preserves formatting and unrelated syntax.",
@@ -634,6 +643,24 @@
       "evidenceRefs": []
     },
     {
+      "id": "ACTION-007",
+      "taskId": "V1-09",
+      "statement": "From a clean external fixture with a reviewed manifest and eval suite, one documented vetryn assess command runs the supported orchestration path and the composite Action invokes that same path with explicit GitHub mode for draft-PR creation; stable JSON, documented exit semantics, Markdown-first onboarding, and root llms.txt provide behaviorally identical installation and operation guidance for Codex, Claude, and other coding agents.",
+      "verification": { "method": "test", "testLevel": "e2e", "gateId": "QG-PACK-SMOKE" },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
+      "id": "ACTION-008",
+      "taskId": "V1-09",
+      "statement": "Every recommendation PR and abstention report derives its next-assessment section from reconciled eligible call-site or repository-funnel counts: it renders an exact action when another eligible target exists and explicitly reports none otherwise; it never changes decision or patch eligibility, implies complete runtime inventory, or requires mandatory telemetry.",
+      "verification": { "method": "test", "testLevel": "adversarial", "gateId": "QG-SCENARIOS" },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
       "id": "FIELD-001",
       "taskId": "V1-10",
       "statement": "At least ten qualified recommendation PRs are observed across at least three independent companies.",
@@ -686,6 +713,15 @@
       "id": "FIELD-006",
       "taskId": "V1-10",
       "statement": "Each design-partner repository records the exact assessed-surface funnel from supported observations through manifest binding, evaluation readiness, recommendation, pull request, and merge, including denominators and exclusion reasons.",
+      "verification": { "method": "field", "testLevel": "field", "gateId": "QG-FIELD" },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
+      "id": "FIELD-007",
+      "taskId": "V1-10",
+      "statement": "Field evidence records the denominator of qualified recommendation PRs and the attributable count whose reviewers initiate or refer a follow-on call-site or repository assessment, including time-to-follow-on and exclusion reasons, without mandatory telemetry or raw customer content.",
       "verification": { "method": "field", "testLevel": "field", "gateId": "QG-FIELD" },
       "waivable": false,
       "status": "planned",

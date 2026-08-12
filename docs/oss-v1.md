@@ -64,6 +64,11 @@ confidently.
 5. `vetryn recommend` creates a machine-readable and Markdown evidence report.
 6. The GitHub workflow opens or updates a draft PR changing one verified model literal.
 
+After a repository has a reviewed manifest and eval suite, one documented `vetryn assess` command orchestrates
+evaluation, recommendation, reporting, and verified patch preparation. The composite GitHub Action invokes the same
+path and may open the draft PR only in an explicit GitHub-enabled mode with the required permissions. The individual
+commands remain available for inspection and replay.
+
 ## PR evidence contract
 
 Every recommendation PR must show:
@@ -75,9 +80,20 @@ Every recommendation PR must show:
 - fixture revision, evaluator version, seed, attempts, and sample count;
 - quality, cost, latency, error, and variance deltas;
 - failed or regressed cases with redaction controls;
-- all configured gates and their outcomes;
-- confidence and explicit limitations; and
-- exact commands required to reproduce the result.
+- estimated current and proposed monthly cost, monthly and annual savings, and savings percentage when reviewed
+  workload-volume evidence is policy-current; otherwise normalized unit economics and the reason a monthly claim is
+  unavailable;
+- the reviewed workload volume and provenance used for any projection, plus the observed evaluation cost itself;
+- freshness evidence comprising the source fingerprint, catalog/pricing observation time, fixture digest or
+  revision, evaluator version and build, and evaluation completion time;
+- all configured gates, their outcomes, and the evidence or reason supporting each outcome;
+- confidence and explicit limitations;
+- exact commands required to reproduce the result; and
+- a next-assessment section derived from reconciled repository counts, with an exact action when another eligible
+  target exists and an explicit none-available result otherwise, without implying complete runtime inventory.
+
+Every abstention report carries the applicable provenance, economics, freshness, gate outcomes, and limitations
+from the same contract, plus a finite reason for abstention and no patch plan.
 
 ## Domain artifact contract
 
@@ -111,6 +127,17 @@ Every recommendation also carries finite explicit limitation codes and one or mo
 reproduction operations that the report renderer converts into exact commands. Candidate-run input lists reject duplicate artifact IDs; every durable repository path
 rejects absolute, traversal, backslash, and Windows drive-qualified forms.
 
+Economic projections require an optional human-reviewed workload-volume profile with a monthly request count,
+provenance, and observation time or window. Vetryn derives freshness under explicit policy and combines a current
+profile with the reviewed representative prompt/completion token weights and bound catalog pricing. These values
+are labeled estimates rather than observed billing. Missing, invalid, or stale volume evidence permits per-request
+or per-1,000-request comparisons but cannot produce a monthly or annual savings claim. Observed evaluation spend
+remains a separate measurement.
+
+The canonical recommendation and abstention remain decision artifacts. Agent-install guidance and contextual
+expansion prompts are deterministic presentation-layer next actions; they cannot alter eligibility, confidence,
+gate outcomes, or patch authorization.
+
 ## Non-goals
 
 OSS V1 is not a gateway, production proxy, dynamic router, prompt-management system, synthetic eval
@@ -136,12 +163,15 @@ Before calling V1 dependable, the project should demonstrate:
 - zero source rewrites outside the bound model literal in the fixture corpus;
 - deterministic replay for deterministic scorers and stable semantic artifact digests;
 - a clear `insufficient-evidence` outcome for undersized or contradictory suites;
-- less than 30 minutes from installation to the first local comparison on the golden path.
+- less than 30 minutes from installation to the first local comparison on the golden path; and
+- one documented CLI orchestration command or composite Action invocation after the reviewed manifest and eval suite
+  are configured, with stable JSON output and documented exit semantics.
 
 Engineering completion and field validation are separate gates. Before expanding beyond V1, require at
 least ten qualified recommendation PRs across three companies, at least a 40% merge rate, and zero
-serious escaped regressions. Twenty safe rollouts remain a later confidence milestone rather than a
-deterministic build gate.
+serious escaped regressions. Field evidence also records whether recommendation PR reviewers initiate or refer a
+follow-on call-site or repository assessment, without adding mandatory telemetry. Twenty safe rollouts remain a
+later confidence milestone rather than a deterministic build gate.
 
 An optional calibrated semantic-rubric scorer may be designed only after that field work demonstrates
 through separate sanitized evidence that deterministic evaluation blocks valuable open-ended call sites.
@@ -158,6 +188,15 @@ design.
   structural discovery fingerprint, confidence, and patchability reason.
 - JSON and Markdown are the required evidence formats. SARIF is deferred until a concrete code-scanning
   use is specified.
+- Monthly and annual economic claims require reviewed workload-volume provenance whose observation time or window
+  remains current under explicit policy. Without it, Vetryn reports normalized unit economics and does not
+  manufacture a monthly estimate.
+- Root `llms.txt`, Markdown onboarding, stable JSON output, and documented exit semantics provide one
+  provider-neutral installation and operation contract for coding agents. Codex- or Claude-specific pages may
+  explain the same commands but cannot introduce separate product behavior.
+- Recommendation PRs and abstention reports include a next-assessment section derived only from reconciled
+  repository counts. It renders an exact action when an eligible target exists and explicitly reports none otherwise.
+  This is presentation metadata, not recommendation evidence, and Vetryn ships no mandatory growth telemetry.
 - New packages are extracted only when their milestone begins; empty placeholder packages are not
   created.
 - `Rollout`, optional judges, Python, hosted execution, and production canaries are outside OSS V1.

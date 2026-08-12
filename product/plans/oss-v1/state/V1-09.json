@@ -2,7 +2,7 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "V1-09",
-  "revision": 7,
+  "revision": 8,
   "state": "planned",
   "attempt": 0,
   "candidate": null,
@@ -34,6 +34,16 @@
     },
     {
       "criterionId": "ACTION-006",
+      "status": "pending",
+      "evidenceRefs": []
+    },
+    {
+      "criterionId": "ACTION-007",
+      "status": "pending",
+      "evidenceRefs": []
+    },
+    {
+      "criterionId": "ACTION-008",
       "status": "pending",
       "evidenceRefs": []
     }
@@ -144,6 +154,13 @@
       "at": "2026-08-12T10:04:24Z",
       "actor": "davidahmann",
       "reason": "Required the Action to publish an exact assessed-surface funnel without claiming complete runtime inventory."
+    },
+    {
+      "from": "planned",
+      "to": "planned",
+      "at": "2026-08-12T23:30:00Z",
+      "actor": "davidahmann",
+      "reason": "Added one-command or Action activation, provider-neutral coding-agent instructions, stable machine semantics, and reconciled next-assessment actions."
     }
   ]
 }

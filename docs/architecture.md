@@ -116,18 +116,30 @@ site's declared reviewed eval-suite artifact, that suite's call site, fixture di
 Recommendation artifacts include provenance, finite status-compatible reason codes, confidence, limitations,
 failed cases, and structured allowlisted Vetryn reproduction operations. The durable limitation codes make report
 caveats machine-readable, while the report renderer maps both limitation and reproduction fields to clear prose
-and exact commands.
+and exact commands. A reviewed workload-volume profile with dated provenance enables estimated monthly and annual
+economics from representative token weights and bound catalog pricing only while explicit policy derives it as
+current. Without that evidence, the report shows normalized unit economics and does not claim monthly savings.
+Observed evaluation spend remains separate.
 
 ### Patcher and GitHub integration
 
 The patcher verifies that the patch plan exactly matches its recommendation and source fingerprint, then changes
 only the bound literal. The GitHub integration
 opens a draft PR from that patch, is idempotent per call site and candidate, and never merges or deploys.
+The PR renderer appends a deterministic next action derived from the reconciled assessed-surface funnel, such as
+reviewing another eligible call site, and explicitly reports that none is available when the reconciled count is
+zero. This presentation metadata cannot affect recommendation or patch eligibility.
 Provider-backed assessment is manual by default. A repository may opt into a schedule, but unchanged
 catalog and evaluation-input digests skip paid candidate execution only when prior evidence is complete,
 integrity-valid, and reusable under current policy. The evaluation-input digest includes the evaluator
 executable identity, so a tool version or build/commit revision change invalidates reuse. Failed, partial,
 exhausted, privacy-unsafe, or otherwise non-reusable evidence never suppresses a later bounded retry.
+
+Consumer activation uses one documented `vetryn assess` orchestration command after a reviewed manifest and eval
+suite exist. The composite Action invokes the same path and adds draft-PR creation only in an explicit
+GitHub-enabled mode. Root `llms.txt`, Markdown instructions, stable JSON, and documented exit semantics expose the
+same provider-neutral contract to Codex, Claude, and other coding agents without requiring a hosted control plane
+or agent-specific runtime integration.
 
 ## Package direction
 

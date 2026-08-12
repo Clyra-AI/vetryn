@@ -2,7 +2,7 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "V1-10",
-  "revision": 4,
+  "revision": 5,
   "state": "planned",
   "attempt": 0,
   "candidate": null,
@@ -34,6 +34,11 @@
     },
     {
       "criterionId": "FIELD-006",
+      "status": "pending",
+      "evidenceRefs": []
+    },
+    {
+      "criterionId": "FIELD-007",
       "status": "pending",
       "evidenceRefs": []
     }
@@ -103,6 +108,13 @@
       "at": "2026-08-12T10:04:24Z",
       "actor": "davidahmann",
       "reason": "Required per-repository assessed-surface and delivery-funnel denominators for field claims."
+    },
+    {
+      "from": "planned",
+      "to": "planned",
+      "at": "2026-08-12T23:30:00Z",
+      "actor": "davidahmann",
+      "reason": "Added privacy-preserving field measurement of reviewer-attributable follow-on call-site and repository assessments."
     }
   ]
 }
