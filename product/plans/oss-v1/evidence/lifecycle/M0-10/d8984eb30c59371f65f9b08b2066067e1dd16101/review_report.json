@@ -1,0 +1,31 @@
+{
+  "artifact_type": "review_report",
+  "schema_version": "1.0.0",
+  "task_id": "M0-10",
+  "candidate_commit": "d8984eb30c59371f65f9b08b2066067e1dd16101",
+  "review_type": "architecture-and-security",
+  "risk_class": "high",
+  "reviewer": "codex-local:single-maintainer-review",
+  "independence": {
+    "status": "advisory-same-maintainer-session",
+    "policy_ref": "docs/adr/0009-single-maintainer-v1-delivery.md",
+    "note": "The single-maintainer policy makes local reviewer independence advisory; remote CI and latest-head Codex review remain separate shipping gates."
+  },
+  "validation_report_ref": "product/plans/oss-v1/evidence/lifecycle/M0-10/d8984eb30c59371f65f9b08b2066067e1dd16101/validation_report.json",
+  "review_scope": [
+    "route request coverage derivation",
+    "router-attempt versus evaluator-repetition units",
+    "scan file-diagnostic versus call-site-observation units",
+    "changed-path and secret boundaries"
+  ],
+  "findings": [],
+  "resolved_during_review": [
+    "Updated stale tests to preserve 30-request coverage while exercising unrelated recommendation checks."
+  ],
+  "verdict": "approved",
+  "required_fixes": [],
+  "residual_risks": [
+    "Live adapter correlation remains V1-06 scope; this task only establishes strict offline contracts."
+  ],
+  "created_at": "2026-08-12T10:55:28Z"
+}

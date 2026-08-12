@@ -2,18 +2,42 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "M0-10",
-  "revision": 1,
-  "state": "in_progress",
+  "revision": 2,
+  "state": "accepted",
   "attempt": 1,
-  "candidate": null,
+  "candidate": {
+    "baseCommit": "0a43e3249cbc5cc1419841b4051c955246a24b71",
+    "commit": "d8984eb30c59371f65f9b08b2066067e1dd16101",
+    "executor": "implementation-agent"
+  },
   "criteria": [
-    { "criterionId": "ROUTE-004", "status": "pending", "evidenceRefs": [] },
-    { "criterionId": "RECON-002", "status": "pending", "evidenceRefs": [] }
+    {
+      "criterionId": "ROUTE-004",
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-10-contracts-d8984eb"]
+    },
+    {
+      "criterionId": "RECON-002",
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-10-repo-check-d8984eb"]
+    }
   ],
   "gates": [
-    { "gateId": "QG-PLAN-CHECK", "status": "pending", "evidenceRefs": [] },
-    { "gateId": "QG-REPO-CHECK", "status": "pending", "evidenceRefs": [] },
-    { "gateId": "QG-CONTRACTS", "status": "pending", "evidenceRefs": [] },
+    {
+      "gateId": "QG-PLAN-CHECK",
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-10-plan-check-d8984eb"]
+    },
+    {
+      "gateId": "QG-REPO-CHECK",
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-10-repo-check-d8984eb"]
+    },
+    {
+      "gateId": "QG-CONTRACTS",
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-10-contracts-d8984eb"]
+    },
     { "gateId": "QG-INDEPENDENT-VERIFY", "status": "pending", "evidenceRefs": [] },
     { "gateId": "QG-TRUST-REVIEW", "status": "pending", "evidenceRefs": [] }
   ],
@@ -36,6 +60,13 @@
       "at": "2026-08-12T10:50:01Z",
       "actor": "implementation-agent",
       "reason": "Compiled both related findings into one bounded offline hotfix task before V1-06."
+    },
+    {
+      "from": "in_progress",
+      "to": "accepted",
+      "at": "2026-08-12T10:55:28Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer accepted the exact hotfix after all active command gates passed and candidate-bound local architecture, security, and trust reviews found no unresolved blocker under ADR 0009."
     }
   ]
 }

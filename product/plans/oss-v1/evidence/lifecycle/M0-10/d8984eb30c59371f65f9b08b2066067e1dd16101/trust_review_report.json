@@ -1,0 +1,42 @@
+{
+  "artifactType": "trust_review_report",
+  "schemaVersion": "1.0.0",
+  "taskId": "M0-10",
+  "candidateCommit": "d8984eb30c59371f65f9b08b2066067e1dd16101",
+  "reviewer": "codex-local:vetryn-trust-review",
+  "independence": "advisory-same-maintainer-session-under-adr-0009",
+  "verdict": "pass",
+  "createdAt": "2026-08-12T10:55:28Z",
+  "validationReportRef": "product/plans/oss-v1/evidence/lifecycle/M0-10/d8984eb30c59371f65f9b08b2066067e1dd16101/validation_report.json",
+  "surfaceMatrix": [
+    {
+      "surface": "evidence completeness",
+      "status": "pass",
+      "evidence": "Complete candidate runs cannot understate or overstate request coverage relative to evaluated cases and repetitions."
+    },
+    {
+      "surface": "unit separation",
+      "status": "pass",
+      "evidence": "Expected requests use evaluator repetitions, while per-request router retries remain attempt ordinals within each request."
+    },
+    {
+      "surface": "contradictory and stale evidence",
+      "status": "pass",
+      "evidence": "Existing ordinal, success, selection, policy, model, provider, and digest checks remain intact alongside the new derived count."
+    },
+    {
+      "surface": "assessment claims",
+      "status": "pass",
+      "evidence": "Parse failures are retained as file diagnostics but excluded from semantic call-site observation denominators."
+    },
+    {
+      "surface": "privacy and scope",
+      "status": "pass",
+      "evidence": "No prompts, outputs, credentials, live execution, scanner support, dependencies, or workflows changed."
+    }
+  ],
+  "unresolvedFindings": [],
+  "residualRisks": [
+    "Provider metadata remains untrusted and must be parsed into these bounded records during V1-06."
+  ]
+}
