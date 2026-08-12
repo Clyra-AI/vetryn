@@ -1,15 +1,13 @@
 {
-  "name": "vetryn",
+  "name": "@vetryn/openrouter",
   "version": "0.0.0",
-  "description": "Dependabot for AI model dependencies.",
+  "description": "Reproducible OpenRouter catalog snapshots and deterministic candidate shortlists for Vetryn.",
   "license": "Apache-2.0",
   "type": "module",
+  "sideEffects": false,
   "files": [
     "dist"
   ],
-  "bin": {
-    "vetryn": "./dist/index.js"
-  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -19,12 +17,8 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Clyra-AI/vetryn.git",
-    "directory": "packages/cli"
+    "directory": "packages/openrouter"
   },
-  "bugs": {
-    "url": "https://github.com/Clyra-AI/vetryn/issues"
-  },
-  "homepage": "https://github.com/Clyra-AI/vetryn#readme",
   "publishConfig": {
     "access": "public",
     "provenance": true
@@ -33,14 +27,11 @@
     "build": "tsup src/index.ts --format esm --dts --sourcemap --clean",
     "clean": "rm -rf dist",
     "pack:check": "pnpm pack --pack-destination ../../.artifacts",
-    "start": "node dist/index.js",
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
     "@vetryn/core": "workspace:*",
-    "@vetryn/openrouter": "workspace:*",
-    "@vetryn/typescript": "workspace:*",
-    "commander": "15.0.0"
+    "zod": "4.4.3"
   },
   "devDependencies": {
     "@types/node": "26.2.0",

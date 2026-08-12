@@ -1,0 +1,163 @@
+{
+  "work_item_id": "V1-05",
+  "validation_contract_ref": ".factoryd/packets/V1-05-c58b458.json",
+  "test_intent": [
+    {
+      "behavior": "Normalize and persist bounded, provenance-bound OpenRouter catalog snapshots.",
+      "expected_signal": "Both provider responses and repository captures stop at the decoded-byte cap."
+    },
+    {
+      "behavior": "Produce deterministic shortlists with exact projected dollar costs.",
+      "expected_signal": "Per-million prices are converted to dollars before reporting and compatible models retain deterministic ordering."
+    },
+    {
+      "behavior": "Replay immutable snapshots and keep future-task fixtures isolated.",
+      "expected_signal": "Stored inputs replay identically only with canonical, temporally compatible provenance, and temporary task fixtures cannot leak accepted state."
+    }
+  ],
+  "red_evidence": [
+    {
+      "check": "current-head Codex reviews for PR #25",
+      "summary": "Reviews identified self-authorization, unbounded ingestion, replay, and duration, missing compatibility checks, incorrect cost scaling, forged, missing, or future freshness, partial, non-atomic, misordered, or concurrency-ambiguous refresh persistence, uncanceled rejected bodies, unsafe store paths, forged snapshot identity, and incomplete capability and duplicate-ID handling; each was corrected before this candidate.",
+      "evidence_refs": [
+        "https://github.com/Clyra-AI/vetryn/pull/25#discussion_r3761880068",
+        "https://github.com/Clyra-AI/vetryn/pull/25#discussion_r3761880072",
+        "https://github.com/Clyra-AI/vetryn/pull/25#discussion_r3761880076",
+        "https://github.com/Clyra-AI/vetryn/pull/25#discussion_r3762001010",
+        "https://github.com/Clyra-AI/vetryn/pull/25#discussion_r3762001017",
+        "https://github.com/Clyra-AI/vetryn/pull/25#discussion_r3762088438",
+        "https://github.com/Clyra-AI/vetryn/pull/25#discussion_r3762088447",
+        "https://github.com/Clyra-AI/vetryn/pull/25#discussion_r3762159331",
+        "https://github.com/Clyra-AI/vetryn/pull/25#discussion_r3762159336",
+        "https://github.com/Clyra-AI/vetryn/pull/25#discussion_r3762159341",
+        "https://github.com/Clyra-AI/vetryn/pull/25#discussion_r3762229905",
+        "https://github.com/Clyra-AI/vetryn/pull/25#discussion_r3762286874",
+        "https://github.com/Clyra-AI/vetryn/pull/25#discussion_r3762286881",
+        "https://github.com/Clyra-AI/vetryn/pull/25#discussion_r3762353481",
+        "https://github.com/Clyra-AI/vetryn/pull/25#discussion_r3762353487",
+        "https://github.com/Clyra-AI/vetryn/pull/25#discussion_r3762409262",
+        "https://github.com/Clyra-AI/vetryn/pull/25#discussion_r3762409268",
+        "https://github.com/Clyra-AI/vetryn/pull/25#discussion_r3762458510",
+        "https://github.com/Clyra-AI/vetryn/pull/25#discussion_r3762524358",
+        "https://github.com/Clyra-AI/vetryn/pull/25#discussion_r3762524361",
+        "https://github.com/Clyra-AI/vetryn/pull/25#discussion_r3762584391",
+        "https://github.com/Clyra-AI/vetryn/pull/25#discussion_r3762584396",
+        "https://github.com/Clyra-AI/vetryn/pull/25#discussion_r3762584401",
+        "https://github.com/Clyra-AI/vetryn/pull/26"
+      ]
+    }
+  ],
+  "green_evidence": [
+    {
+      "check": "pnpm check",
+      "summary": "The exact candidate passed the full repository gate with 169 tests.",
+      "evidence_refs": ["ev-v1-05-repo-check-c58b458"]
+    },
+    {
+      "check": "pnpm test:contracts",
+      "summary": "The exact candidate passed all deterministic contract and adversarial tests.",
+      "evidence_refs": ["ev-v1-05-contracts-c58b458"]
+    },
+    {
+      "check": "pnpm test:scenarios",
+      "summary": "The exact candidate passed all 9 offline catalog scenarios.",
+      "evidence_refs": ["ev-v1-05-scenarios-c58b458"]
+    }
+  ],
+  "work_proof_marker_refs": [
+    "product/plans/oss-v1/evidence/lifecycle/V1-05/c58b4584e1d057cc5903d1585cb2c54a84161969/work_proof_marker.json"
+  ],
+  "test_scope": [
+    "packages/openrouter/src/index.ts",
+    "packages/openrouter/test/catalog.test.ts",
+    "packages/cli/src/index.ts",
+    "packages/cli/test/catalog.test.ts",
+    "examples/openrouter-typescript/test/scenarios.test.ts",
+    "scripts/plan.test.mjs",
+    "scripts/task.test.mjs"
+  ],
+  "checks": [
+    { "name": "pnpm check", "status": "pass" },
+    { "name": "pnpm test:contracts", "status": "pass" },
+    { "name": "pnpm test:scenarios", "status": "pass" },
+    { "name": "git diff --check", "status": "pass" }
+  ],
+  "result": "pass",
+  "introduced_failures": [],
+  "pre_existing_failures": [],
+  "independent_validation": {
+    "risk_class": "high",
+    "required_level": "independent_or_human",
+    "provided_levels": ["validation_gate", "replay", "adversarial", "security_review"],
+    "status": "satisfied",
+    "evidence_refs": [
+      "ev-v1-05-repo-check-c58b458",
+      "ev-v1-05-contracts-c58b458",
+      "ev-v1-05-scenarios-c58b458",
+      "product/plans/oss-v1/evidence/lifecycle/V1-05/c58b4584e1d057cc5903d1585cb2c54a84161969/review_report.json"
+    ],
+    "notes": "Remote latest-head CI and Codex review remain required shipping gates."
+  },
+  "test_first_skipped_reason": {
+    "status": "not_skipped",
+    "reason": "Current-head review supplied concrete failing scenarios before each final correctness and provenance repair."
+  },
+  "anti_fitting_notes": [
+    "The captured-file test uses a sparse file above the cap and exercises the real CLI ingestion path.",
+    "Exact cost assertions prove conversion from per-million prices while retaining deterministic ordering.",
+    "The provider stream test omits Content-Length and proves cancellation at the decoded-byte cap.",
+    "The context test uses a cheaper incompatible model that would otherwise displace an evaluable candidate.",
+    "The live test pins the process clock and proves caller input cannot forge freshness.",
+    "The storage test preseeds valid same-digest artifacts with forged source, identity, and future timestamps.",
+    "All repository JSON and source reads share a byte-limited streaming reader.",
+    "Replay rejects schema-valid snapshots whose source or digest-derived identity is noncanonical.",
+    "Duplicate IDs are retained only when every row normalizes identically; conflicting or partially invalid groups are excluded.",
+    "Repository captures without an explicit acquisition timestamp are rejected before file ingestion.",
+    "Refresh persistence proves an observation conflict cannot publish a snapshot and a snapshot-write failure removes its new observation.",
+    "Captured timestamps beyond the five-minute skew allowance are rejected before fetching or persistence.",
+    "Real filesystem tests prove symlinked snapshot and observation directories cannot redirect files outside the store.",
+    "Tool-choice-only metadata is incompatible with call sites that require tool definitions.",
+    "Fake-clock tests prove both stalled headers and stalled bodies abort at the shared deadline and record failure evidence.",
+    "Snapshot and observation persistence publish complete same-directory temporary files atomically and never overwrite immutable identities.",
+    "A real concurrent FileCatalogStore test proves per-digest serialization records exactly one new snapshot and one reused snapshot across competing refreshes.",
+    "A paused snapshot writer proves successful observation evidence is not visible until the referenced snapshot publishes.",
+    "Replay rejects future-edited snapshot freshness and binds a matching successful observation ID and time while allowing later observations of unchanged content.",
+    "A rejected streaming response proves the body is canceled before failure evidence returns."
+  ],
+  "residual_risks": [
+    "Live OpenRouter transport remains intentionally outside offline CI.",
+    "Windows-specific filesystem behavior is outside the current V1 matrix."
+  ],
+  "integrated_validation": {
+    "status": "task_only",
+    "scope_summary": "The whole repository and offline scenarios passed on the exact implementation candidate; remote gates remain pending.",
+    "integrated_checks": [
+      {
+        "name": "pnpm check",
+        "status": "pass",
+        "work_proof_marker_ref": "product/plans/oss-v1/evidence/lifecycle/V1-05/c58b4584e1d057cc5903d1585cb2c54a84161969/work_proof_marker.json"
+      }
+    ],
+    "fresh_checkout": {
+      "required": false,
+      "status": "not_required",
+      "work_proof_marker_refs": [],
+      "notes": "GitHub CI supplies clean-checkout replay."
+    },
+    "docs_schema_parity": {
+      "status": "pass",
+      "evidence_refs": [
+        "packages/openrouter/README.md",
+        "packages/cli/README.md",
+        "examples/openrouter-typescript/README.md"
+      ]
+    },
+    "release_readiness": {
+      "claimed": false,
+      "status": "not_applicable",
+      "work_proof_marker_refs": [],
+      "notes": "This task records a changeset but does not publish."
+    }
+  },
+  "promotion_decision": "ready_for_pr"
+}

@@ -1,0 +1,31 @@
+{
+  "$schema": "../../schemas/evidence.schema.json",
+  "schemaVersion": "1.0.0",
+  "id": "ev-v1-05-repo-check-c58b458",
+  "taskId": "V1-05",
+  "type": "command-run",
+  "actor": "implementation-agent",
+  "commit": "c58b4584e1d057cc5903d1585cb2c54a84161969",
+  "createdAt": "2026-08-12T00:02:06Z",
+  "result": {
+    "status": "pass",
+    "checks": [
+      {
+        "name": "pnpm check",
+        "status": "pass",
+        "summary": "The exact candidate passed formatting, plan validation, lint, dead-code analysis, typechecking, all 169 tests, build, and package smoke checks."
+      }
+    ]
+  },
+  "inputs": {
+    "planDigest": "sha256:61ebe031ccf5d742fa1104a7f59fc0befd659fe96d81ee36ebd1d444e64da1cd",
+    "lockfileDigest": "sha256:3ee6dca039a23c4a43059ce1ebb34822d4184cd53027f261dcf30de222ec80e3"
+  },
+  "gateBinding": { "gateId": "QG-REPO-CHECK", "kind": "command", "command": "pnpm check" },
+  "review": null,
+  "redaction": {
+    "status": "not_applicable",
+    "containsRawModelOutput": false,
+    "containsSecrets": false
+  }
+}
