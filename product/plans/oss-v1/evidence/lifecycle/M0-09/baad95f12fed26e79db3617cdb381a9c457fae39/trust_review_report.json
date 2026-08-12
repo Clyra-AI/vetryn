@@ -1,0 +1,58 @@
+{
+  "artifactType": "trust_review_report",
+  "schemaVersion": "1.0.0",
+  "taskId": "M0-09",
+  "candidateCommit": "baad95f12fed26e79db3617cdb381a9c457fae39",
+  "reviewer": "codex-local:vetryn-trust-review",
+  "independence": "advisory-same-maintainer-session-under-adr-0009",
+  "verdict": "pass",
+  "createdAt": "2026-08-12T10:33:37Z",
+  "validationReportRef": "product/plans/oss-v1/evidence/lifecycle/M0-09/baad95f12fed26e79db3617cdb381a9c457fae39/validation_report.json",
+  "surfaceMatrix": [
+    {
+      "surface": "identity",
+      "status": "pass",
+      "evidence": "modelAuthor is catalog metadata and cannot satisfy route policy or privacy."
+    },
+    {
+      "surface": "request policy",
+      "status": "pass",
+      "evidence": "One provider slug, no fallbacks, required parameters, denied collection, ZDR, and metadata opt-in are generated deterministically."
+    },
+    {
+      "surface": "complete evidence",
+      "status": "pass",
+      "evidence": "Every declared request has contiguous attempts and exactly one successful attempt matching the selected model and provider."
+    },
+    {
+      "surface": "partial and failure evidence",
+      "status": "pass",
+      "evidence": "Failed runs may retain only failed attempts with a null selection; successful attempts without selection fail validation."
+    },
+    {
+      "surface": "contradictory and stale evidence",
+      "status": "pass",
+      "evidence": "Mismatched routes, providers, models, counts, ordinals, catalog digests, and evaluation inputs fail closed."
+    },
+    {
+      "surface": "cost claims",
+      "status": "pass",
+      "evidence": "Shortlist values are estimatedCostUsd with an explicit OpenRouter model-catalog estimate basis."
+    },
+    {
+      "surface": "assessment claims",
+      "status": "pass",
+      "evidence": "File and observation denominators reconcile and are limited to supported direct TypeScript calls."
+    },
+    {
+      "surface": "privacy and redaction",
+      "status": "pass",
+      "evidence": "Durable route observations contain bounded model/provider/status metadata only; no prompts, outputs, credentials, or provider error bodies."
+    }
+  ],
+  "unresolvedFindings": [],
+  "residualRisks": [
+    "Live provider and cache paths must be exercised in the explicitly authorized V1-06 task.",
+    "Production traces and billed-cost corroboration remain later evidence tiers."
+  ]
+}

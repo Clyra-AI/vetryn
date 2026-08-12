@@ -2,57 +2,61 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "M0-09",
-  "revision": 3,
-  "state": "in_progress",
+  "revision": 4,
+  "state": "accepted",
   "attempt": 1,
-  "candidate": null,
+  "candidate": {
+    "baseCommit": "49127228fc28db8dfddce9ea0b63893728866c51",
+    "commit": "baad95f12fed26e79db3617cdb381a9c457fae39",
+    "executor": "implementation-agent"
+  },
   "criteria": [
     {
       "criterionId": "ROUTE-001",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-09-contracts-baad95f"]
     },
     {
       "criterionId": "ROUTE-002",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-09-scenarios-baad95f"]
     },
     {
       "criterionId": "ROUTE-003",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-09-contracts-baad95f"]
     },
     {
       "criterionId": "RECON-001",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-09-repo-check-baad95f"]
     },
     {
       "criterionId": "PLAN-005",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-09-plan-check-baad95f"]
     }
   ],
   "gates": [
     {
       "gateId": "QG-PLAN-CHECK",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-09-plan-check-baad95f"]
     },
     {
       "gateId": "QG-REPO-CHECK",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-09-repo-check-baad95f"]
     },
     {
       "gateId": "QG-CONTRACTS",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-09-contracts-baad95f"]
     },
     {
       "gateId": "QG-SCENARIOS",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-09-scenarios-baad95f"]
     },
     {
       "gateId": "QG-INDEPENDENT-VERIFY",
@@ -106,6 +110,13 @@
       "at": "2026-08-12T10:04:27Z",
       "actor": "implementation-agent",
       "reason": "Aligned the reviewed delivery intent with the final ADR filename after implementation clarified the model-author and execution-route terminology."
+    },
+    {
+      "from": "in_progress",
+      "to": "accepted",
+      "at": "2026-08-12T10:33:38Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer accepted the exact offline correction after every active command gate passed and candidate-bound local architecture, security, and Vetryn trust reviews found no unresolved blocker under ADR 0009."
     }
   ]
 }

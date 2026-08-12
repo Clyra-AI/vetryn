@@ -1,0 +1,37 @@
+{
+  "artifact_type": "review_report",
+  "schema_version": "1.0.0",
+  "task_id": "M0-09",
+  "candidate_commit": "baad95f12fed26e79db3617cdb381a9c457fae39",
+  "review_type": "architecture-and-security",
+  "risk_class": "high",
+  "reviewer": "codex-local:single-maintainer-review",
+  "independence": {
+    "status": "advisory-same-maintainer-session",
+    "policy_ref": "docs/adr/0009-single-maintainer-v1-delivery.md",
+    "note": "The single-maintainer policy makes reviewer independence advisory; remote CI and latest-head Codex review remain separate shipping gates."
+  },
+  "validation_report_ref": "product/plans/oss-v1/evidence/lifecycle/M0-09/baad95f12fed26e79db3617cdb381a9c457fae39/validation_report.json",
+  "review_scope": [
+    "model author versus execution-provider identity",
+    "route request policy and metadata opt-in",
+    "complete, failed, and contradictory route observations",
+    "shortlist estimate semantics",
+    "scan assessment denominators",
+    "future task dependencies and evidence claims",
+    "changed-path and secret boundaries"
+  ],
+  "findings": [],
+  "resolved_during_review": [
+    "Separated evaluator repetitions from per-request router attempts.",
+    "Allowed failed and incomplete runs to retain reconciled failed attempts without a selected provider.",
+    "Required observed provider names and canonical slugs to match the reviewed route."
+  ],
+  "verdict": "approved",
+  "required_fixes": [],
+  "residual_risks": [
+    "The V1-06 adapter must parse additive OpenRouter metadata permissively while projecting only strict durable fields.",
+    "Cache hits omit router metadata and must remain incomplete for recommendation evidence."
+  ],
+  "created_at": "2026-08-12T10:33:37Z"
+}

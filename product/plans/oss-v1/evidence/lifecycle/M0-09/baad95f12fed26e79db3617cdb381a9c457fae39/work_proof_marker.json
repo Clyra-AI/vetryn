@@ -1,0 +1,23 @@
+{
+  "artifactType": "vetryn-work-proof-marker",
+  "schemaVersion": "1.0.0",
+  "taskId": "M0-09",
+  "candidateCommit": "baad95f12fed26e79db3617cdb381a9c457fae39",
+  "baseCommit": "49127228fc28db8dfddce9ea0b63893728866c51",
+  "runner": "codex-exec-tool",
+  "workspaceRef": "codex/m0-09-route-evidence",
+  "cleanCandidateVerified": true,
+  "observedAt": "2026-08-12T10:33:37Z",
+  "commands": [
+    { "command": "pnpm plan:check", "exitCode": 0, "status": "pass" },
+    { "command": "pnpm check", "exitCode": 0, "status": "pass" },
+    { "command": "pnpm test:contracts", "exitCode": 0, "status": "pass" },
+    { "command": "pnpm test:scenarios", "exitCode": 0, "status": "pass" },
+    { "command": "git diff --check", "exitCode": 0, "status": "pass" }
+  ],
+  "redaction": {
+    "containsRawModelOutput": false,
+    "containsSecrets": false,
+    "rawLogsPersisted": false
+  }
+}

@@ -177,8 +177,8 @@
       "statement": "Catalog and call-site contracts model the canonical model-ID namespace as model-author identity and model execution as a separate reviewed OpenRouter route policy.",
       "verification": { "method": "test", "testLevel": "contract", "gateId": "QG-CONTRACTS" },
       "waivable": false,
-      "status": "planned",
-      "evidenceRefs": []
+      "status": "accepted",
+      "evidenceRefs": ["ev-m0-09-contracts-baad95f"]
     },
     {
       "id": "ROUTE-002",
@@ -186,8 +186,8 @@
       "statement": "Candidate shortlists carry one explicit provider route with fallbacks disabled, parameter support required, provider data collection denied, and zero-data-retention required; model authors cannot satisfy this policy.",
       "verification": { "method": "test", "testLevel": "adversarial", "gateId": "QG-SCENARIOS" },
       "waivable": false,
-      "status": "planned",
-      "evidenceRefs": []
+      "status": "accepted",
+      "evidenceRefs": ["ev-m0-09-scenarios-baad95f"]
     },
     {
       "id": "ROUTE-003",
@@ -195,8 +195,8 @@
       "statement": "A complete provider-backed candidate-run contract binds the requested route policy and accounts for every observed router attempt plus exactly one selected provider; missing or contradictory route evidence fails closed.",
       "verification": { "method": "test", "testLevel": "adversarial", "gateId": "QG-CONTRACTS" },
       "waivable": false,
-      "status": "planned",
-      "evidenceRefs": []
+      "status": "accepted",
+      "evidenceRefs": ["ev-m0-09-contracts-baad95f"]
     },
     {
       "id": "RECON-001",
@@ -204,8 +204,8 @@
       "statement": "Repository scan output deterministically reconciles supported TypeScript files, parse failures, findings, patchable bindings, and ambiguous or non-patchable observations using explicit units and a supported-surface-only claim.",
       "verification": { "method": "test", "testLevel": "integration", "gateId": "QG-REPO-CHECK" },
       "waivable": false,
-      "status": "planned",
-      "evidenceRefs": []
+      "status": "accepted",
+      "evidenceRefs": ["ev-m0-09-repo-check-baad95f"]
     },
     {
       "id": "PLAN-005",
@@ -217,8 +217,8 @@
         "gateId": "QG-TRUST-REVIEW"
       },
       "waivable": false,
-      "status": "planned",
-      "evidenceRefs": []
+      "status": "accepted",
+      "evidenceRefs": ["ev-m0-09-plan-check-baad95f"]
     },
     {
       "id": "CONTRACT-001",
