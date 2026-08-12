@@ -1,5 +1,7 @@
 # ADR 0017: Derive privacy gates from approved provider policy
 
+> Superseded by ADR 0019 for execution-provider identity and route evidence.
+
 ## Context
 
 Catalog models expose their provider, while a candidate run's privacy outcome is producer-supplied. Without a

@@ -1,0 +1,111 @@
+{
+  "$schema": "../../schemas/task-state.schema.json",
+  "schemaVersion": "1.0.0",
+  "taskId": "M0-09",
+  "revision": 3,
+  "state": "in_progress",
+  "attempt": 1,
+  "candidate": null,
+  "criteria": [
+    {
+      "criterionId": "ROUTE-001",
+      "status": "pending",
+      "evidenceRefs": []
+    },
+    {
+      "criterionId": "ROUTE-002",
+      "status": "pending",
+      "evidenceRefs": []
+    },
+    {
+      "criterionId": "ROUTE-003",
+      "status": "pending",
+      "evidenceRefs": []
+    },
+    {
+      "criterionId": "RECON-001",
+      "status": "pending",
+      "evidenceRefs": []
+    },
+    {
+      "criterionId": "PLAN-005",
+      "status": "pending",
+      "evidenceRefs": []
+    }
+  ],
+  "gates": [
+    {
+      "gateId": "QG-PLAN-CHECK",
+      "status": "pending",
+      "evidenceRefs": []
+    },
+    {
+      "gateId": "QG-REPO-CHECK",
+      "status": "pending",
+      "evidenceRefs": []
+    },
+    {
+      "gateId": "QG-CONTRACTS",
+      "status": "pending",
+      "evidenceRefs": []
+    },
+    {
+      "gateId": "QG-SCENARIOS",
+      "status": "pending",
+      "evidenceRefs": []
+    },
+    {
+      "gateId": "QG-INDEPENDENT-VERIFY",
+      "status": "pending",
+      "evidenceRefs": []
+    },
+    {
+      "gateId": "QG-TRUST-REVIEW",
+      "status": "pending",
+      "evidenceRefs": []
+    }
+  ],
+  "reviews": [
+    {
+      "role": "maintainer",
+      "status": "pending",
+      "evidenceRefs": []
+    },
+    {
+      "role": "trust-reviewer",
+      "status": "pending",
+      "evidenceRefs": []
+    }
+  ],
+  "blockers": [],
+  "history": [
+    {
+      "from": null,
+      "to": "planned",
+      "at": "2026-08-12T10:04:24Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer authorized a systemic correction separating OpenRouter model identity, route policy, observed execution, and reconciled assessment counts before V1-06."
+    },
+    {
+      "from": "planned",
+      "to": "in_progress",
+      "at": "2026-08-12T10:04:25Z",
+      "actor": "implementation-agent",
+      "reason": "Compiled the bounded route-evidence correction for offline implementation before provider-backed evaluation."
+    },
+    {
+      "from": "in_progress",
+      "to": "in_progress",
+      "at": "2026-08-12T10:04:26Z",
+      "actor": "implementation-agent",
+      "reason": "Made the task's changelog, versioning, migration, and documentation intent explicit so Factory cannot reuse unrelated planning-contract boilerplate."
+    },
+    {
+      "from": "in_progress",
+      "to": "in_progress",
+      "at": "2026-08-12T10:04:27Z",
+      "actor": "implementation-agent",
+      "reason": "Aligned the reviewed delivery intent with the final ADR filename after implementation clarified the model-author and execution-route terminology."
+    }
+  ]
+}

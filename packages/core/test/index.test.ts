@@ -19,7 +19,13 @@ const validSpec = {
   id: "support-classification",
   name: "Support classification",
   owner: "support-platform",
-  providerPolicy: { allowedProviders: ["openai"] },
+  routePolicy: {
+    allowFallbacks: false,
+    dataCollection: "deny",
+    providerSlug: "azure",
+    requireParameters: true,
+    zdr: true,
+  },
   requiredCapabilities: {
     structuredOutput: true,
     textGeneration: true,

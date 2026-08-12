@@ -40,6 +40,18 @@ describe("scanRepository", () => {
     const root = await createFixture();
 
     await expect(scanRepository({ repositoryRoot: root })).resolves.toMatchObject({
+      assessment: {
+        files: { considered: 1, parseErrors: 0, parsed: 1 },
+        observations: {
+          ambiguous: 0,
+          highConfidence: 1,
+          nonPatchable: 0,
+          patchable: 1,
+          reasonCounts: { "static-model-literal": 1 },
+          total: 1,
+        },
+        scope: "supported-direct-openai-compatible-typescript-calls",
+      },
       files: ["src/classify.ts"],
       findings: [
         {
@@ -51,6 +63,32 @@ describe("scanRepository", () => {
         },
       ],
     });
+  });
+
+  it("reconciles parsed files, parse errors, and disjoint finding dispositions", async () => {
+    const root = await createFixture();
+    await writeFile(path.join(root, "src", "empty.ts"), "export const untouched = true;\n");
+    await writeFile(
+      path.join(root, "src", "broken.ts"),
+      'import OpenAI from "openai";\nconst client = new OpenAI({\n',
+    );
+
+    const result = await scanRepository({ repositoryRoot: root });
+
+    expect(result.assessment.files).toEqual({ considered: 3, parseErrors: 1, parsed: 2 });
+    expect(result.assessment.observations.total).toBe(result.findings.length);
+    expect(
+      result.assessment.observations.patchable + result.assessment.observations.nonPatchable,
+    ).toBe(result.assessment.observations.total);
+    expect(
+      result.assessment.observations.highConfidence + result.assessment.observations.ambiguous,
+    ).toBe(result.assessment.observations.total);
+    expect(
+      Object.values(result.assessment.observations.reasonCounts).reduce(
+        (total, count) => total + (count ?? 0),
+        0,
+      ),
+    ).toBe(result.assessment.observations.total);
   });
 
   it("rejects requests that escape the repository root", async () => {

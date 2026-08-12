@@ -1,7 +1,7 @@
 # `@vetryn/openrouter`
 
 This package turns untrusted OpenRouter model metadata into immutable Vetryn catalog snapshots and
-resolves a deterministic, policy-filtered candidate shortlist from a reviewed call-site manifest.
+resolves a deterministic candidate shortlist from a reviewed call-site manifest.
 
 Catalog refreshes are explicit. Each observation binds its acquisition mode to either OpenRouter's fixed
 public models endpoint or a repository-captured response. A successful refresh stores a content-addressed
@@ -21,10 +21,17 @@ write destinations remain beneath the configured store root. Catalog acquisition
 30-second abort deadline; expiration records explicit failure evidence. Tool-call compatibility requires explicit
 `tools` parameter support rather than `tool_choice` alone. Tests inject `fetch`; CI never calls a live provider.
 
-Candidate resolution excludes incomplete catalog entries, the baseline model, retired models, blocked
-providers, and models missing required capabilities before ranking. The default and maximum candidate
-limit is five. A repository may choose a lower limit. Ranking is exact-decimal projected cost ascending,
-context window descending, then canonical model ID ascending.
+Candidate resolution excludes incomplete catalog entries, the baseline model, retired models, and models missing
+required capabilities before ranking. OpenRouter's model-ID namespace is exposed as `modelAuthor`; it is not treated
+as proof of the provider that executes a request. The shortlist separately carries the manifest's reviewed route
+policy. The default and maximum candidate limit is five. A repository may choose a lower limit. Ranking is
+exact-decimal estimated model-level cost ascending, context window descending, then canonical model ID ascending.
+The estimate is a shortlist input, not observed provider billing.
+
+Use `createOpenRouterRouteRequestPolicy(shortlist.routePolicy)` to build the exact provider preferences and opt-in
+router-metadata header supplied with an evaluation request. V1 requires one reviewed provider slug, `allow_fallbacks: false`,
+`require_parameters: true`, `data_collection: "deny"`, and `zdr: true`. Complete candidate-run evidence must later
+bind this request policy to redacted OpenRouter router metadata; catalog authorship alone never satisfies privacy.
 
 ```ts
 import { FileCatalogStore, refreshOpenRouterCatalog, resolveCandidates } from "@vetryn/openrouter";

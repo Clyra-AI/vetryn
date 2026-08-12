@@ -161,6 +161,39 @@
             "items": { "$ref": "#/$defs/repoGlob" },
             "uniqueItems": true
           },
+          "deliveryIntent": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["changelog", "versioningImpact", "migrationImpact", "docsSyncRefs"],
+            "properties": {
+              "changelog": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["impact", "section", "draftEntry", "semverMarker"],
+                "properties": {
+                  "impact": { "enum": ["required", "not_required"] },
+                  "section": { "type": "string", "minLength": 1 },
+                  "draftEntry": { "type": "string", "minLength": 1 },
+                  "semverMarker": { "enum": ["none", "patch", "minor", "major"] }
+                }
+              },
+              "versioningImpact": { "type": "string", "minLength": 1 },
+              "migrationImpact": { "type": "string", "minLength": 1 },
+              "docsSyncRefs": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["path", "reason"],
+                  "properties": {
+                    "path": { "$ref": "#/$defs/repoPath" },
+                    "reason": { "type": "string", "minLength": 1 }
+                  }
+                }
+              }
+            }
+          },
           "requiredTestLevels": {
             "type": "array",
             "minItems": 1,

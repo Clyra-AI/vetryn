@@ -6,11 +6,13 @@ import path from "node:path";
 import {
   VETRYN_ARTIFACT_SCHEMA_VERSION,
   createCatalogContentDigest,
+  openRouterRoutePolicySchema,
   parseCallSite,
   parseCatalogSnapshot,
   type CallSite,
   type CatalogModel,
   type CatalogSnapshot,
+  type OpenRouterRoutePolicy,
 } from "@vetryn/core";
 import { z } from "zod";
 
@@ -155,18 +157,14 @@ export type RefreshCatalogResult =
 export interface CandidateExclusion {
   readonly modelId: string;
   readonly reason:
-    | "baseline-model"
-    | "capability-incompatible"
-    | "context-window-insufficient"
-    | "provider-blocked"
-    | "retired";
+    "baseline-model" | "capability-incompatible" | "context-window-insufficient" | "retired";
 }
 
 export interface RankedCandidate {
   readonly contextWindowTokens: number;
+  readonly estimatedCostUsd: string;
   readonly modelId: string;
-  readonly projectedCostUsd: string;
-  readonly provider: string;
+  readonly modelAuthor: string;
 }
 
 export interface CandidateShortlist {
@@ -177,10 +175,47 @@ export interface CandidateShortlist {
   readonly catalogObservationId: string;
   readonly catalogObservedAt: string;
   readonly catalogSnapshotId: string;
+  readonly costBasis: "openrouter-model-catalog-estimate";
   readonly exclusions: readonly CandidateExclusion[];
   readonly limit: number;
   readonly representativeUsageProvenanceRef: string;
+  readonly routePolicy: OpenRouterRoutePolicy;
   readonly schemaVersion: "1.0.0";
+}
+
+export interface OpenRouterProviderPreferences {
+  readonly allow_fallbacks: false;
+  readonly data_collection: "deny";
+  readonly only: readonly [string];
+  readonly require_parameters: true;
+  readonly zdr: true;
+}
+
+export interface OpenRouterRouteRequestPolicy {
+  readonly headers: Readonly<{ "X-OpenRouter-Metadata": "enabled" }>;
+  readonly provider: OpenRouterProviderPreferences;
+}
+
+export function createOpenRouterProviderPreferences(
+  routePolicyInput: OpenRouterRoutePolicy | unknown,
+): OpenRouterProviderPreferences {
+  const routePolicy = openRouterRoutePolicySchema.parse(routePolicyInput);
+  return {
+    allow_fallbacks: routePolicy.allowFallbacks,
+    data_collection: routePolicy.dataCollection,
+    only: [routePolicy.providerSlug],
+    require_parameters: routePolicy.requireParameters,
+    zdr: routePolicy.zdr,
+  };
+}
+
+export function createOpenRouterRouteRequestPolicy(
+  routePolicyInput: OpenRouterRoutePolicy | unknown,
+): OpenRouterRouteRequestPolicy {
+  return {
+    headers: { "X-OpenRouter-Metadata": "enabled" },
+    provider: createOpenRouterProviderPreferences(routePolicyInput),
+  };
 }
 
 export interface ResolveCandidatesOptions {
@@ -502,8 +537,8 @@ export function normalizeOpenRouterCatalog(
       continue;
     }
     const modelId = raw.data.id;
-    const provider = modelId.slice(0, modelId.indexOf("/"));
-    if (!/^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/.test(provider)) {
+    const modelAuthor = modelId.slice(0, modelId.indexOf("/"));
+    if (!/^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/.test(modelAuthor)) {
       exclusions.push({ modelId, reason: "invalid-model-id" });
       continue;
     }
@@ -564,7 +599,7 @@ export function normalizeOpenRouterCatalog(
       id: modelId,
       inputPricePerMillionUsd,
       outputPricePerMillionUsd,
-      provider,
+      modelAuthor,
       retired: false,
     };
     const existingModel = models.get(model.id);
@@ -718,8 +753,7 @@ export function resolveCandidates({
     }
     candidates.push({
       contextWindowTokens: model.contextWindowTokens,
-      modelId: model.id,
-      projectedCostUsd: divideDecimalByPowerOfTen(
+      estimatedCostUsd: divideDecimalByPowerOfTen(
         addDecimals(
           multiplyDecimalByInteger(
             model.inputPricePerMillionUsd,
@@ -732,12 +766,13 @@ export function resolveCandidates({
         ),
         6,
       ),
-      provider: model.provider,
+      modelId: model.id,
+      modelAuthor: model.modelAuthor,
     });
   }
 
   candidates.sort((left, right) => {
-    const cost = compareDecimals(left.projectedCostUsd, right.projectedCostUsd);
+    const cost = compareDecimals(left.estimatedCostUsd, right.estimatedCostUsd);
     if (cost !== 0) return cost;
     if (left.contextWindowTokens !== right.contextWindowTokens) {
       return right.contextWindowTokens - left.contextWindowTokens;
@@ -753,9 +788,11 @@ export function resolveCandidates({
     catalogObservationId: observation.id,
     catalogObservedAt: observation.observedAt,
     catalogSnapshotId: snapshot.id,
+    costBasis: "openrouter-model-catalog-estimate",
     exclusions: exclusions.toSorted((left, right) => compareText(left.modelId, right.modelId)),
     limit,
     representativeUsageProvenanceRef: callSite.representativeUsage.provenanceRef,
+    routePolicy: callSite.routePolicy,
     schemaVersion: "1.0.0",
   };
 }
@@ -793,7 +830,6 @@ function exclusionReason(
 ): CandidateExclusion["reason"] | undefined {
   if (model.id === callSite.currentModel) return "baseline-model";
   if (model.retired) return "retired";
-  if (!callSite.providerPolicy.allowedProviders.includes(model.provider)) return "provider-blocked";
   if (
     model.contextWindowTokens <
     callSite.representativeUsage.promptTokens + callSite.representativeUsage.completionTokens

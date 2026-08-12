@@ -205,6 +205,77 @@ function publishableDocumentationRefs(task) {
   return refs;
 }
 
+function deliveryIntentForTask(task, productContract) {
+  if (task.deliveryIntent !== undefined) {
+    return {
+      changelog_intent: {
+        impact: task.deliveryIntent.changelog.impact,
+        section: task.deliveryIntent.changelog.section,
+        draft_entry: task.deliveryIntent.changelog.draftEntry,
+        semver_marker: task.deliveryIntent.changelog.semverMarker,
+      },
+      versioning_impact: task.deliveryIntent.versioningImpact,
+      migration_impact: task.deliveryIntent.migrationImpact,
+      docs_sync_refs: task.deliveryIntent.docsSyncRefs,
+    };
+  }
+
+  const planningContractTask = task.deliverables.includes("product/plans/**");
+  const publishablePackageTask = task.scope.allowedPaths.includes(".changeset/**");
+  return {
+    changelog_intent: {
+      impact: planningContractTask || publishablePackageTask ? "required" : "not_required",
+      section: planningContractTask || publishablePackageTask ? "Added" : "Unreleased",
+      draft_entry: planningContractTask
+        ? "Made compiled Vetryn task packets runner-ready for Factory task-executor."
+        : publishablePackageTask
+          ? "Add a Changeset for every new or changed public package and CLI surface in this task."
+          : "No changelog edit is authorized unless the task scope explicitly includes CHANGELOG.md.",
+      semver_marker: publishablePackageTask ? "minor" : "none",
+    },
+    versioning_impact: publishablePackageTask
+      ? "Record a minor Changeset for each new or changed publishable package; publication remains a separate release operation."
+      : "No package version change or release is authorized by this task packet.",
+    migration_impact: planningContractTask
+      ? "Packet consumers must accept the additive runner-ready fields; existing Vetryn packet fields remain available."
+      : "No migration work is authorized by this task packet.",
+    docs_sync_refs: planningContractTask
+      ? [
+          {
+            path: "docs/implementation/oss-v1-execution.md",
+            reason: "Document the runner-ready packet and executor/lifecycle evidence split.",
+          },
+          {
+            path: "docs/adr/0003-bind-task-execution-and-review-evidence.md",
+            reason: "Record the additive public task-packet contract decision.",
+          },
+          {
+            path: "docs/adr/0010-require-local-and-domain-review-evidence.md",
+            reason:
+              "Record the local and domain review security boundary and compatibility impact.",
+          },
+          {
+            path: "product/plans/oss-v1/README.md",
+            reason: "Keep plan consumer instructions aligned with compiled packet behavior.",
+          },
+          {
+            path: ".factory/README.md",
+            reason:
+              "Keep the portable Factory adapter description aligned with the packet surface.",
+          },
+        ]
+      : publishablePackageTask
+        ? publishableDocumentationRefs(task)
+        : [
+            {
+              path: productContract,
+              reason:
+                "Product-facing documentation changes require explicit task scope and contract alignment.",
+            },
+          ],
+  };
+}
+
 function assertLifecycleEvidenceBindings(packet) {
   const expectedCandidate = packet.currentState.candidate?.commit ?? "unbound";
   const requiredArtifacts = [...packet.lifecycle_evidence_required].sort();
@@ -376,8 +447,7 @@ async function compile(taskId) {
     ]),
   ];
   const acceptanceResultRequirements = acceptanceResultRequirementsForItems(acceptanceItems);
-  const planningContractTask = task.deliverables.includes("product/plans/**");
-  const publishablePackageTask = task.scope.allowedPaths.includes(".changeset/**");
+  const deliveryIntent = deliveryIntentForTask(task, plan.productContract);
   const highRiskTask = task.risk.level === "high";
   const trustReviewRequired = task.requiredGates.includes("QG-TRUST-REVIEW");
   const factorySkills = factorySkillsForTask(task);
@@ -480,56 +550,7 @@ async function compile(taskId) {
         rule: "Apply the repository ADR, TDD, reliability, and failure-semantics policies.",
       },
     ],
-    changelog_intent: {
-      impact: planningContractTask || publishablePackageTask ? "required" : "not_required",
-      section: planningContractTask || publishablePackageTask ? "Added" : "Unreleased",
-      draft_entry: planningContractTask
-        ? "Made compiled Vetryn task packets runner-ready for Factory task-executor."
-        : publishablePackageTask
-          ? "Add a Changeset for every new or changed public package and CLI surface in this task."
-          : "No changelog edit is authorized unless the task scope explicitly includes CHANGELOG.md.",
-      semver_marker: publishablePackageTask ? "minor" : "none",
-    },
-    versioning_impact: publishablePackageTask
-      ? "Record a minor Changeset for each new or changed publishable package; publication remains a separate release operation."
-      : "No package version change or release is authorized by this task packet.",
-    migration_impact: planningContractTask
-      ? "Packet consumers must accept the additive runner-ready fields; existing Vetryn packet fields remain available."
-      : "No migration work is authorized by this task packet.",
-    docs_sync_refs: planningContractTask
-      ? [
-          {
-            path: "docs/implementation/oss-v1-execution.md",
-            reason: "Document the runner-ready packet and executor/lifecycle evidence split.",
-          },
-          {
-            path: "docs/adr/0003-bind-task-execution-and-review-evidence.md",
-            reason: "Record the additive public task-packet contract decision.",
-          },
-          {
-            path: "docs/adr/0010-require-local-and-domain-review-evidence.md",
-            reason:
-              "Record the local and domain review security boundary and compatibility impact.",
-          },
-          {
-            path: "product/plans/oss-v1/README.md",
-            reason: "Keep plan consumer instructions aligned with compiled packet behavior.",
-          },
-          {
-            path: ".factory/README.md",
-            reason:
-              "Keep the portable Factory adapter description aligned with the packet surface.",
-          },
-        ]
-      : publishablePackageTask
-        ? publishableDocumentationRefs(task)
-        : [
-            {
-              path: plan.productContract,
-              reason:
-                "Product-facing documentation changes require explicit task scope and contract alignment.",
-            },
-          ],
+    ...deliveryIntent,
     source: {
       repository: plan.baseline.repository,
       baselineCommit: plan.baseline.commit,
@@ -751,69 +772,15 @@ async function validatePacket(packet, { requireBoundCandidate }) {
     ],
     "architecture_guidance_refs",
   );
-  const planningContractTask = canonicalTask.deliverables.includes("product/plans/**");
-  const publishablePackageTask = canonicalTask.scope.allowedPaths.includes(".changeset/**");
-  assertSame(
-    packet.changelog_intent,
-    {
-      impact: planningContractTask || publishablePackageTask ? "required" : "not_required",
-      section: planningContractTask || publishablePackageTask ? "Added" : "Unreleased",
-      draft_entry: planningContractTask
-        ? "Made compiled Vetryn task packets runner-ready for Factory task-executor."
-        : publishablePackageTask
-          ? "Add a Changeset for every new or changed public package and CLI surface in this task."
-          : "No changelog edit is authorized unless the task scope explicitly includes CHANGELOG.md.",
-      semver_marker: publishablePackageTask ? "minor" : "none",
-    },
-    "changelog_intent",
-  );
+  const expectedDeliveryIntent = deliveryIntentForTask(canonicalTask, plan.productContract);
+  assertSame(packet.changelog_intent, expectedDeliveryIntent.changelog_intent, "changelog_intent");
   assertSame(
     packet.versioning_impact,
-    publishablePackageTask
-      ? "Record a minor Changeset for each new or changed publishable package; publication remains a separate release operation."
-      : "No package version change or release is authorized by this task packet.",
+    expectedDeliveryIntent.versioning_impact,
     "versioning_impact",
   );
-  assertSame(
-    packet.migration_impact,
-    planningContractTask
-      ? "Packet consumers must accept the additive runner-ready fields; existing Vetryn packet fields remain available."
-      : "No migration work is authorized by this task packet.",
-    "migration_impact",
-  );
-  const expectedDocsSyncRefs = planningContractTask
-    ? [
-        {
-          path: "docs/implementation/oss-v1-execution.md",
-          reason: "Document the runner-ready packet and executor/lifecycle evidence split.",
-        },
-        {
-          path: "docs/adr/0003-bind-task-execution-and-review-evidence.md",
-          reason: "Record the additive public task-packet contract decision.",
-        },
-        {
-          path: "docs/adr/0010-require-local-and-domain-review-evidence.md",
-          reason: "Record the local and domain review security boundary and compatibility impact.",
-        },
-        {
-          path: "product/plans/oss-v1/README.md",
-          reason: "Keep plan consumer instructions aligned with compiled packet behavior.",
-        },
-        {
-          path: ".factory/README.md",
-          reason: "Keep the portable Factory adapter description aligned with the packet surface.",
-        },
-      ]
-    : publishablePackageTask
-      ? publishableDocumentationRefs(canonicalTask)
-      : [
-          {
-            path: plan.productContract,
-            reason:
-              "Product-facing documentation changes require explicit task scope and contract alignment.",
-          },
-        ];
-  assertSame(packet.docs_sync_refs, expectedDocsSyncRefs, "docs_sync_refs");
+  assertSame(packet.migration_impact, expectedDeliveryIntent.migration_impact, "migration_impact");
+  assertSame(packet.docs_sync_refs, expectedDeliveryIntent.docs_sync_refs, "docs_sync_refs");
   assertSame(
     packet.execution,
     {

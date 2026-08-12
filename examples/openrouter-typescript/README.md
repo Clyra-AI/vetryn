@@ -42,9 +42,14 @@ node packages/cli/dist/index.js catalog shortlist \
   --snapshot examples/openrouter-typescript/fixtures/catalog-snapshot.json
 ```
 
-The shortlist excludes the baseline, retired entries, blocked providers, and incompatible capabilities
-before applying the five-candidate bound. Its ordering uses the manifest's reviewed prompt/completion
-weights and is reproducible even if OpenRouter's live catalog later changes.
+The shortlist excludes the baseline, retired entries, and incompatible capabilities before applying the
+five-candidate bound. Its ordering uses the manifest's reviewed prompt/completion weights and is reproducible even
+if OpenRouter's live catalog later changes. Catalog `modelAuthor` values describe namespaces only. The manifest
+separately pins the Azure route with fallbacks disabled, parameter support required, data collection denied, and ZDR
+required; a complete run must additionally record redacted router attempts and exactly one selected provider.
+
+The JSON scan result includes a reconciled assessment funnel for supported direct OpenAI-compatible TypeScript
+calls. Its denominators distinguish files considered and parsed from patchable and non-patchable observations.
 
 The golden pipeline is:
 

@@ -13,7 +13,7 @@ const taskScript = path.join(repositoryRoot, "scripts/task.mjs");
 const planScript = path.join(repositoryRoot, "scripts/plan.mjs");
 const temporaryRoots = [];
 const v1TaskId = "V1-00";
-const downstreamV1TaskIds = ["V1-05", "V1-06", "V1-07", "V1-08", "V1-09", "V1-10"];
+const downstreamV1TaskIds = ["M0-09", "V1-05", "V1-06", "V1-07", "V1-08", "V1-09", "V1-10"];
 const fixtureTaskIds = [
   v1TaskId,
   "M0-01",
@@ -1348,6 +1348,42 @@ describe("task packet compiler", () => {
         }),
       ]),
     );
+  });
+
+  it("compiles an explicit reviewed delivery intent instead of generic release boilerplate", async () => {
+    const root = await createFixture();
+    const planPath = path.join(root, "product/plans/oss-v1/plan.json");
+    const plan = JSON.parse(await readFile(planPath, "utf8"));
+    const task = plan.tasks.find(({ id }) => id === "V1-00");
+    task.deliveryIntent = {
+      changelog: {
+        draftEntry: "Document the reviewed contract migration.",
+        impact: "required",
+        section: "Changed",
+        semverMarker: "minor",
+      },
+      docsSyncRefs: [{ reason: "Public contract migration", path: "docs/oss-v1.md" }],
+      migrationImpact: "Regenerate pre-release repository artifacts.",
+      versioningImpact: "Record a minor Changeset for @vetryn/core.",
+    };
+    await writeFile(planPath, `${JSON.stringify(plan, null, 2)}\n`);
+    const writeResult = runPlan(root, "write");
+    expect(writeResult.status, writeResult.stderr).toBe(0);
+
+    const result = runTask(root, "compile", "V1-00");
+    expect(result.status, result.stderr).toBe(0);
+    const packet = JSON.parse(result.stdout);
+    expect(packet.changelog_intent).toEqual({
+      draft_entry: "Document the reviewed contract migration.",
+      impact: "required",
+      section: "Changed",
+      semver_marker: "minor",
+    });
+    expect(packet.versioning_impact).toBe("Record a minor Changeset for @vetryn/core.");
+    expect(packet.migration_impact).toBe("Regenerate pre-release repository artifacts.");
+    expect(packet.docs_sync_refs).toEqual([
+      { path: "docs/oss-v1.md", reason: "Public contract migration" },
+    ]);
   });
 
   it("changes the packet digest when the product contract changes", async () => {

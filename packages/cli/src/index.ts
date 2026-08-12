@@ -8,7 +8,7 @@ import { Readable } from "node:stream";
 import { pathToFileURL } from "node:url";
 
 import { Command } from "commander";
-import { scanTypeScript, type ScanFinding } from "@vetryn/typescript";
+import { scanTypeScript, type ScanFinding, type ScannerReasonCode } from "@vetryn/typescript";
 import {
   canonicalizeArtifact,
   initializeCallSiteManifest,
@@ -56,6 +56,22 @@ export interface ScanRepositoryOptions {
 }
 
 export interface ScanRepositoryResult {
+  readonly assessment: {
+    readonly files: {
+      readonly considered: number;
+      readonly parseErrors: number;
+      readonly parsed: number;
+    };
+    readonly observations: {
+      readonly ambiguous: number;
+      readonly highConfidence: number;
+      readonly nonPatchable: number;
+      readonly patchable: number;
+      readonly reasonCounts: Readonly<Partial<Record<ScannerReasonCode, number>>>;
+      readonly total: number;
+    };
+    readonly scope: "supported-direct-openai-compatible-typescript-calls";
+  };
   readonly files: readonly string[];
   readonly findings: readonly ScanFinding[];
 }
@@ -193,7 +209,35 @@ export async function scanRepository({
         : left.file.localeCompare(right.file),
     );
 
-  return { files, findings };
+  const parseErrorFiles = new Set(
+    findings.filter(({ reasonCode }) => reasonCode === "parse-error").map(({ file }) => file),
+  ).size;
+  const reasonCounts = Object.fromEntries(
+    [...new Set(findings.map(({ reasonCode }) => reasonCode))]
+      .toSorted()
+      .map((reasonCode) => [
+        reasonCode,
+        findings.filter((finding) => finding.reasonCode === reasonCode).length,
+      ]),
+  ) as Partial<Record<ScannerReasonCode, number>>;
+  const assessment = {
+    files: {
+      considered: files.length,
+      parseErrors: parseErrorFiles,
+      parsed: files.length - parseErrorFiles,
+    },
+    observations: {
+      ambiguous: findings.filter(({ confidence }) => confidence === "ambiguous").length,
+      highConfidence: findings.filter(({ confidence }) => confidence === "high").length,
+      nonPatchable: findings.filter(({ patchability }) => patchability === "not-patchable").length,
+      patchable: findings.filter(({ patchability }) => patchability === "patchable").length,
+      reasonCounts,
+      total: findings.length,
+    },
+    scope: "supported-direct-openai-compatible-typescript-calls" as const,
+  };
+
+  return { assessment, files, findings };
 }
 
 async function readJsonFile(filePath: string): Promise<unknown> {
@@ -510,8 +554,9 @@ export function createProgram(): Command {
         return;
       }
 
+      const { files: fileCounts, observations } = result.assessment;
       process.stdout.write(
-        `Scanned ${result.files.length} TypeScript file(s); found ${result.findings.length} finding(s).\n`,
+        `Assessed ${fileCounts.considered} TypeScript file(s) in the supported direct-call scope: ${fileCounts.parsed} parsed, ${fileCounts.parseErrors} parse error(s); observed ${observations.total} call-site signal(s): ${observations.patchable} patchable, ${observations.nonPatchable} non-patchable.\n`,
       );
       for (const finding of result.findings) {
         const model = finding.modelPin === undefined ? "" : ` ${finding.modelPin}`;
