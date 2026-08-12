@@ -209,6 +209,7 @@ describe("OpenRouter catalog normalization", () => {
         ...callSite,
         requiredCapabilities: { ...callSite.requiredCapabilities, toolCalls: true },
       },
+      observation: observationFor(result.snapshot),
       snapshot: result.snapshot,
     });
     expect(shortlist.candidates).toEqual([]);
@@ -276,7 +277,8 @@ describe("OpenRouter catalog normalization", () => {
 describe("candidate resolution", () => {
   it("filters first, computes exact weighted costs, and applies the locked ranking tuple", () => {
     const snapshot = createRankingSnapshot();
-    const shortlist = resolveCandidates({ callSite, snapshot });
+    const observation = observationFor(snapshot);
+    const shortlist = resolveCandidates({ callSite, observation, snapshot });
 
     expect(shortlist.candidates).toEqual([
       expect.objectContaining({ modelId: "mock/alpha", projectedCostUsd: "0.0000109" }),
@@ -287,6 +289,8 @@ describe("candidate resolution", () => {
     ]);
     expect(shortlist.catalogSnapshotId).toBe(snapshot.id);
     expect(shortlist.catalogContentDigest).toBe(snapshot.contentDigest);
+    expect(shortlist.catalogObservationId).toBe(observation.id);
+    expect(shortlist.catalogObservedAt).toBe(snapshot.observedAt);
     expect(shortlist.exclusions).toEqual(
       expect.arrayContaining([
         { modelId: "mock/baseline", reason: "baseline-model" },
@@ -299,11 +303,14 @@ describe("candidate resolution", () => {
 
   it("allows only a lower repository bound and fails closed on invalid usage", () => {
     const snapshot = createRankingSnapshot();
+    const observation = observationFor(snapshot);
     expect(
-      resolveCandidates({ callSite, limit: 2, snapshot }).candidates.map(({ modelId }) => modelId),
+      resolveCandidates({ callSite, limit: 2, observation, snapshot }).candidates.map(
+        ({ modelId }) => modelId,
+      ),
     ).toEqual(["mock/alpha", "mock/bravo"]);
     for (const limit of [0, 6, 1.5, Number.NaN]) {
-      expect(() => resolveCandidates({ callSite, limit, snapshot })).toThrow(/limit/i);
+      expect(() => resolveCandidates({ callSite, limit, observation, snapshot })).toThrow(/limit/i);
     }
     for (const representativeUsage of [
       undefined,
@@ -316,6 +323,7 @@ describe("candidate resolution", () => {
       expect(() =>
         resolveCandidates({
           callSite: { ...callSite, representativeUsage },
+          observation,
           snapshot,
         }),
       ).toThrow();
@@ -324,12 +332,50 @@ describe("candidate resolution", () => {
 
   it("rejects noncanonical snapshot identity during offline replay", () => {
     const snapshot = createRankingSnapshot();
+    const observation = observationFor(snapshot);
     for (const forged of [
       { ...snapshot, source: "evil" },
       { ...snapshot, id: "catalog-snapshot:forged" },
     ]) {
-      expect(() => resolveCandidates({ callSite, snapshot: forged })).toThrow(/canonical/i);
+      expect(() => resolveCandidates({ callSite, observation, snapshot: forged })).toThrow(
+        /canonical/i,
+      );
     }
+  });
+
+  it("rejects snapshot replay without matching timestamp provenance", () => {
+    const snapshot = createRankingSnapshot();
+    const observation = observationFor(snapshot);
+
+    expect(() =>
+      resolveCandidates({
+        callSite,
+        observation,
+        snapshot: { ...snapshot, observedAt: "2099-01-01T00:00:00.000Z" },
+      }),
+    ).toThrow(/compatible freshness/i);
+    expect(() =>
+      resolveCandidates({
+        callSite,
+        observation: { ...observation, contentDigest: digest("f") },
+        snapshot,
+      }),
+    ).toThrow(/commits the exact snapshot/i);
+  });
+
+  it("binds replay to a later successful observation of unchanged snapshot content", () => {
+    const snapshot = createRankingSnapshot();
+    const observation = {
+      ...observationFor(snapshot),
+      id: "later-catalog-observation",
+      observedAt: "2026-08-12T00:00:00.000Z",
+      reusedSnapshot: true,
+    };
+
+    expect(resolveCandidates({ callSite, observation, snapshot })).toMatchObject({
+      catalogObservationId: "later-catalog-observation",
+      catalogObservedAt: "2026-08-12T00:00:00.000Z",
+    });
   });
 });
 
@@ -460,6 +506,7 @@ describe("refresh evidence", () => {
 
   it("records failure without presenting an older snapshot as current", async () => {
     const store = new MemoryStore();
+    const cancel = vi.fn();
     await refreshOpenRouterCatalog({
       acquisition: "captured-response",
       fetch: async () => new Response(JSON.stringify({ data: [rawModel("mock/old")] })),
@@ -469,7 +516,16 @@ describe("refresh evidence", () => {
     });
     const failure = await refreshOpenRouterCatalog({
       acquisition: "captured-response",
-      fetch: async () => new Response("unavailable", { status: 503 }),
+      fetch: async () =>
+        new Response(
+          new ReadableStream<Uint8Array>({
+            cancel,
+            start(controller) {
+              controller.enqueue(new TextEncoder().encode("unavailable"));
+            },
+          }),
+          { status: 503 },
+        ),
       observedAt: "2026-08-11T14:00:00.000Z",
       refreshId: "refresh-failed",
       store,
@@ -489,6 +545,7 @@ describe("refresh evidence", () => {
       status: "failure",
     });
     expect(store.snapshots.size).toBe(1);
+    expect(cancel).toHaveBeenCalledOnce();
   });
 
   it("stops streaming an oversized catalog before buffering the full response", async () => {
@@ -663,6 +720,44 @@ describe("refresh evidence", () => {
     await expect(store.hasSnapshot(contentDigest)).resolves.toBe(false);
   });
 
+  it("does not expose successful observation evidence before snapshot publication", async () => {
+    const { mkdtemp } = await import("node:fs/promises");
+    const { tmpdir } = await import("node:os");
+    const root = await mkdtemp(`${tmpdir()}/vetryn-openrouter-commit-order-`);
+    temporaryDirectories.push(root);
+    let releaseSnapshot!: () => void;
+    let snapshotStarted!: () => void;
+    const release = new Promise<void>((resolve) => {
+      releaseSnapshot = resolve;
+    });
+    const started = new Promise<void>((resolve) => {
+      snapshotStarted = resolve;
+    });
+    class PausedSnapshotStore extends FileCatalogStore {
+      protected override async putSnapshotUnlocked(
+        snapshot: CatalogSnapshot,
+      ): Promise<{ readonly reused: boolean; readonly snapshot: CatalogSnapshot }> {
+        snapshotStarted();
+        await release;
+        return super.putSnapshotUnlocked(snapshot);
+      }
+    }
+    const pending = refreshOpenRouterCatalog({
+      acquisition: "captured-response",
+      fetch: async () => new Response(JSON.stringify({ data: [rawModel("mock/ordered")] })),
+      observedAt,
+      refreshId: "commit-order",
+      store: new PausedSnapshotStore(root),
+    });
+
+    await started;
+    await expect(readFile(`${root}/observations/commit-order.json`, "utf8")).rejects.toMatchObject({
+      code: "ENOENT",
+    });
+    releaseSnapshot();
+    await expect(pending).resolves.toMatchObject({ status: "success" });
+  });
+
   it("rolls back a new observation when snapshot publication fails", async () => {
     const { mkdtemp } = await import("node:fs/promises");
     const { tmpdir } = await import("node:os");
@@ -807,4 +902,22 @@ function createRankingSnapshot(): CatalogSnapshot {
     schemaVersion: "1.0.0",
     source: "openrouter",
   });
+}
+
+function observationFor(snapshot: CatalogSnapshot): RefreshObservation {
+  return {
+    acquisition: "captured-response",
+    artifactType: "openrouter-catalog-refresh-observation",
+    contentDigest: snapshot.contentDigest,
+    errorCode: null,
+    id: "catalog-observation",
+    normalizerVersion: "1.0.0",
+    observedAt: snapshot.observedAt,
+    reusedSnapshot: false,
+    schemaVersion: "1.0.0",
+    snapshotId: snapshot.id,
+    source: "openrouter",
+    sourceRef: "repository-captured-response",
+    status: "success",
+  };
 }

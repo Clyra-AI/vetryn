@@ -45,15 +45,19 @@ describe("catalog CLI operations", () => {
       "snapshots",
       `${refresh.snapshot.contentDigest.slice(7)}.json`,
     );
+    const observationPath = path.join(root, "store", "observations", "cli-refresh.json");
     const shortlist = await createCatalogShortlistFile({
       callSiteId: "support-classification",
       manifestPath,
+      observationPath,
       snapshotPath,
     });
 
     expect(shortlist).toMatchObject({
       baselineModel: "openai/baseline",
       candidates: [{ modelId: "openai/candidate", projectedCostUsd: "0.0000011" }],
+      catalogObservationId: "cli-refresh",
+      catalogObservedAt: "2026-08-11T12:00:00.000Z",
       catalogSnapshotId: refresh.snapshot.id,
       limit: 5,
     });
@@ -122,6 +126,7 @@ describe("catalog CLI operations", () => {
       createCatalogShortlistFile({
         callSiteId: "support-classification",
         manifestPath,
+        observationPath: path.join(root, "unused-observation.json"),
         snapshotPath,
       }),
     ).rejects.toThrow(/exceeds the .*byte limit/i);

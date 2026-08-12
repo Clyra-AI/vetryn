@@ -548,12 +548,13 @@ describe("OpenRouter catalog evidence and shortlist replay", () => {
     );
 
     const snapshot = rankedCatalogSnapshot();
-    const beforeLiveChange = resolveCandidates({ callSite: mockCallSite, snapshot });
+    const observation = scenarioObservation(snapshot);
+    const beforeLiveChange = resolveCandidates({ callSite: mockCallSite, observation, snapshot });
     normalizeOpenRouterCatalog(
       { data: [rawCatalogModel("mock/new-live-model", "0", "0", 2_000_000)] },
       "2026-08-11T00:00:00.000Z",
     );
-    const afterLiveChange = resolveCandidates({ callSite: mockCallSite, snapshot });
+    const afterLiveChange = resolveCandidates({ callSite: mockCallSite, observation, snapshot });
 
     expect(afterLiveChange).toEqual(beforeLiveChange);
     expect(beforeLiveChange.candidates).toEqual([
@@ -564,19 +565,20 @@ describe("OpenRouter catalog evidence and shortlist replay", () => {
       expect.objectContaining({ modelId: "mock/echo", projectedCostUsd: "0.0000118" }),
     ]);
     expect(
-      resolveCandidates({ callSite: mockCallSite, limit: 2, snapshot }).candidates.map(
+      resolveCandidates({ callSite: mockCallSite, limit: 2, observation, snapshot }).candidates.map(
         ({ modelId }) => modelId,
       ),
     ).toEqual(["mock/alpha", "mock/bravo"]);
-    expect(() => resolveCandidates({ callSite: mockCallSite, limit: 6, snapshot })).toThrow(
-      /limit/i,
-    );
+    expect(() =>
+      resolveCandidates({ callSite: mockCallSite, limit: 6, observation, snapshot }),
+    ).toThrow(/limit/i);
     expect(() =>
       resolveCandidates({
         callSite: {
           ...mockCallSite,
           representativeUsage: { ...mockCallSite.representativeUsage, reviewed: false },
         },
+        observation,
         snapshot,
       }),
     ).toThrow();
@@ -708,6 +710,22 @@ const rankedCatalogSnapshot = (): CoreCatalogSnapshot => {
     source: "openrouter",
   }) as CoreCatalogSnapshot;
 };
+
+const scenarioObservation = (snapshot: CoreCatalogSnapshot): RefreshObservation => ({
+  acquisition: "captured-response",
+  artifactType: "openrouter-catalog-refresh-observation",
+  contentDigest: snapshot.contentDigest,
+  errorCode: null,
+  id: "golden-catalog-observation",
+  normalizerVersion: "1.0.0",
+  observedAt: snapshot.observedAt,
+  reusedSnapshot: false,
+  schemaVersion: "1.0.0",
+  snapshotId: snapshot.id,
+  source: "openrouter",
+  sourceRef: "repository-captured-response",
+  status: "success",
+});
 
 class ScenarioCatalogStore implements CatalogStore {
   readonly observations: RefreshObservation[] = [];

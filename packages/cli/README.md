@@ -27,8 +27,10 @@ Resolve a shortlist entirely from checked-in evidence:
 vetryn catalog shortlist \
   --manifest .vetryn/manifest.json \
   --call-site support-classification \
+  --observation .vetryn/catalog/observations/REFRESH_ID.json \
   --snapshot .vetryn/catalog/snapshots/SHA256_HEX.json
 ```
 
-The output binds the call site and candidates to the snapshot ID and content digest. Use `--limit` only
-to lower the default bound of five.
+The successful observation must commit the snapshot's exact ID and digest with freshness no earlier than the
+snapshot's creation time. The output binds the call site and candidates to both evidence records. Use `--limit`
+only to lower the default bound of five.

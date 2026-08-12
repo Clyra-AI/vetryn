@@ -174,6 +174,8 @@ export interface CandidateShortlist {
   readonly callSiteId: string;
   readonly candidates: readonly RankedCandidate[];
   readonly catalogContentDigest: string;
+  readonly catalogObservationId: string;
+  readonly catalogObservedAt: string;
   readonly catalogSnapshotId: string;
   readonly exclusions: readonly CandidateExclusion[];
   readonly limit: number;
@@ -184,6 +186,7 @@ export interface CandidateShortlist {
 export interface ResolveCandidatesOptions {
   readonly callSite: CallSite | unknown;
   readonly limit?: number;
+  readonly observation: RefreshObservation | unknown;
   readonly snapshot: CatalogSnapshot | unknown;
 }
 
@@ -280,16 +283,19 @@ export class FileCatalogStore implements CatalogStore {
         );
       }
 
-      await this.putObservation(observation);
       if (existingSnapshot !== undefined) {
+        await this.putObservation(observation);
         return { observation, snapshot: existingSnapshot };
       }
 
+      let stored: { readonly reused: boolean; readonly snapshot: CatalogSnapshot } | undefined;
       try {
-        const stored = await this.putSnapshotUnlocked(snapshot);
+        stored = await this.putSnapshotUnlocked(snapshot);
+        await this.putObservation(observation);
         return { observation, snapshot: stored.snapshot };
       } catch (error: unknown) {
         await this.removeObservation(observation);
+        if (stored?.reused === false) await this.removeSnapshot(stored.snapshot);
         throw error;
       }
     });
@@ -376,6 +382,17 @@ export class FileCatalogStore implements CatalogStore {
   private async removeObservation(observation: RefreshObservation): Promise<void> {
     const target = path.join(this.root, "observations", `${observation.id}.json`);
     const expected = `${stableJson(observation)}\n`;
+    try {
+      await this.assertSafeTarget(target, false);
+      if ((await readBoundedCatalogFile(target)) === expected) await unlink(target);
+    } catch (error: unknown) {
+      if (!isMissingFileError(error)) throw error;
+    }
+  }
+
+  private async removeSnapshot(snapshot: CatalogSnapshot): Promise<void> {
+    const target = this.snapshotPath(snapshot.contentDigest);
+    const expected = `${stableJson(snapshot)}\n`;
     try {
       await this.assertSafeTarget(target, false);
       if ((await readBoundedCatalogFile(target)) === expected) await unlink(target);
@@ -622,10 +639,12 @@ export async function refreshOpenRouterCatalog(
       signal: abortController.signal,
     });
     if (!response.ok) {
+      await cancelResponseBody(response);
       return recordRefreshFailure(store, refreshId, observedAt, acquisition, "http-error");
     }
     const declaredLength = response.headers.get("content-length");
     if (declaredLength !== null && Number(declaredLength) > MAX_CATALOG_BYTES) {
+      await cancelResponseBody(response);
       return recordRefreshFailure(store, refreshId, observedAt, acquisition, "invalid-catalog");
     }
     const boundedBody = await readResponseBody(response, MAX_CATALOG_BYTES, abortController.signal);
@@ -678,11 +697,14 @@ export async function refreshOpenRouterCatalog(
 export function resolveCandidates({
   callSite: callSiteInput,
   limit: limitInput = DEFAULT_CANDIDATE_LIMIT,
+  observation: observationInput,
   snapshot: snapshotInput,
 }: ResolveCandidatesOptions): CandidateShortlist {
   const callSite = parseCallSite(callSiteInput);
   const snapshot = parseCatalogSnapshot(snapshotInput);
+  const observation = refreshObservationSchema.parse(observationInput);
   assertCanonicalOpenRouterSnapshot(snapshot);
+  assertObservationCommitsSnapshot(observation, snapshot);
   const limit = assertCandidateLimit(limitInput);
   assertRepresentativeUsage(callSite);
 
@@ -728,6 +750,8 @@ export function resolveCandidates({
     callSiteId: callSite.id,
     candidates: candidates.slice(0, limit),
     catalogContentDigest: snapshot.contentDigest,
+    catalogObservationId: observation.id,
+    catalogObservedAt: observation.observedAt,
     catalogSnapshotId: snapshot.id,
     exclusions: exclusions.toSorted((left, right) => compareText(left.modelId, right.modelId)),
     limit,
@@ -844,6 +868,10 @@ async function readResponseBody(
     reader.releaseLock();
   }
   return Buffer.concat(chunks, byteLength).toString("utf8");
+}
+
+async function cancelResponseBody(response: Response): Promise<void> {
+  await response.body?.cancel().catch(() => undefined);
 }
 
 async function readBoundedCatalogFile(filePath: string): Promise<string> {
@@ -982,6 +1010,24 @@ function assertCanonicalOpenRouterSnapshot(snapshot: CatalogSnapshot): void {
   if (!hasCanonicalOpenRouterIdentity(snapshot)) {
     throw new OpenRouterCatalogError(
       "Candidate resolution requires a canonical digest-derived OpenRouter snapshot.",
+    );
+  }
+}
+
+function assertObservationCommitsSnapshot(
+  observation: RefreshObservation,
+  snapshot: CatalogSnapshot,
+): void {
+  if (
+    observation.status !== "success" ||
+    observation.errorCode !== null ||
+    observation.source !== "openrouter" ||
+    observation.contentDigest !== snapshot.contentDigest ||
+    observation.snapshotId !== snapshot.id ||
+    Date.parse(observation.observedAt) < Date.parse(snapshot.observedAt)
+  ) {
+    throw new OpenRouterCatalogError(
+      "Candidate resolution requires successful refresh evidence that commits the exact snapshot identity with compatible freshness.",
     );
   }
 }

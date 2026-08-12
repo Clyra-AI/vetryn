@@ -1,7 +1,7 @@
 {
   "artifactType": "catalog-snapshot",
   "contentDigest": "sha256:d436f3d8b9981bf44431927803abb1d248c4fd1d7a60850467a44cda2bc8f70c",
-  "id": "catalog-snapshot:openrouter-golden-2026-08-10",
+  "id": "catalog-snapshot:openrouter--sha256-d436f3d8b9981bf44431927803abb1d248c4fd1d7a60850467a44cda2bc8f70c",
   "models": [
     {
       "capabilities": { "structuredOutput": true, "textGeneration": true, "toolCalls": false },

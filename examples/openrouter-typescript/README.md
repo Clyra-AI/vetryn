@@ -31,13 +31,14 @@ node packages/cli/dist/index.js scan --root examples/openrouter-typescript src -
 ```
 
 Catalog inputs are provider data and remain untrusted. Capture or fetch them through `catalog refresh`,
-then use only the persisted content-addressed snapshot for evaluation. This offline example already pins
-its reviewed snapshot at `fixtures/catalog-snapshot.json`:
+then use only a persisted content-addressed snapshot with its successful refresh observation for evaluation.
+This offline example pins both reviewed artifacts:
 
 ```sh
 node packages/cli/dist/index.js catalog shortlist \
   --manifest examples/openrouter-typescript/fixtures/manifest.json \
   --call-site support-classification \
+  --observation examples/openrouter-typescript/fixtures/catalog-observation.json \
   --snapshot examples/openrouter-typescript/fixtures/catalog-snapshot.json
 ```
 

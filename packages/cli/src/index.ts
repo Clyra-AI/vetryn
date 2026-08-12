@@ -71,6 +71,7 @@ export interface CatalogShortlistFileOptions {
   readonly callSiteId: string;
   readonly limit?: number;
   readonly manifestPath: string;
+  readonly observationPath: string;
   readonly snapshotPath: string;
 }
 
@@ -108,6 +109,7 @@ export async function createCatalogShortlistFile({
   callSiteId,
   limit,
   manifestPath,
+  observationPath,
   snapshotPath,
 }: CatalogShortlistFileOptions): Promise<CandidateShortlist> {
   const manifest = parseCallSiteManifest(await readJsonFile(manifestPath));
@@ -115,10 +117,13 @@ export async function createCatalogShortlistFile({
   if (callSite === undefined) {
     throw new Error(`Call site ${callSiteId} is not present in ${manifestPath}.`);
   }
+  const snapshot = parseCatalogSnapshot(await readJsonFile(snapshotPath));
+  const observation = await readJsonFile(observationPath);
   return resolveCandidates({
     callSite,
     ...(limit === undefined ? {} : { limit }),
-    snapshot: parseCatalogSnapshot(await readJsonFile(snapshotPath)),
+    observation,
+    snapshot,
   });
 }
 
@@ -459,15 +464,26 @@ export function createProgram(): Command {
     .requiredOption("--manifest <path>", "Path to a reviewed call-site manifest.")
     .requiredOption("--call-site <id>", "Human-owned call-site ID.")
     .requiredOption("--snapshot <path>", "Path to an immutable catalog snapshot.")
+    .requiredOption(
+      "--observation <path>",
+      "Path to successful refresh evidence that commits the snapshot timestamp.",
+    )
     .option("--limit <count>", "Repository candidate bound, from one to five.", (value) =>
       Number(value),
     )
     .action(
-      async (options: { callSite: string; limit?: number; manifest: string; snapshot: string }) => {
+      async (options: {
+        callSite: string;
+        limit?: number;
+        manifest: string;
+        observation: string;
+        snapshot: string;
+      }) => {
         const shortlist = await createCatalogShortlistFile({
           callSiteId: options.callSite,
           ...(options.limit === undefined ? {} : { limit: options.limit }),
           manifestPath: options.manifest,
+          observationPath: options.observation,
           snapshotPath: options.snapshot,
         });
         process.stdout.write(`${JSON.stringify(shortlist, null, 2)}\n`);

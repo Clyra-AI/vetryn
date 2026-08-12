@@ -11,9 +11,9 @@ Live observations derive their timestamp from the acquisition clock; captured re
 repository timestamp and reject values more than five minutes ahead of the trusted clock. Existing same-digest snapshots are reused only when their OpenRouter identity and temporal
 provenance are compatible. Duplicate model IDs are retained only when every row normalizes identically; conflicting
 or invalid duplicate rows exclude that model ID. Replay requires the canonical
-digest-derived OpenRouter snapshot identity. Successful refresh persistence records the immutable observation before
-publishing a new snapshot and rolls the observation back if snapshot publication fails, so a failed refresh cannot
-leave a directly replayable orphan snapshot. Completed snapshots and observations publish atomically from
+digest-derived OpenRouter snapshot identity. Successful refresh persistence publishes a new snapshot before its
+immutable observation, which acts as the commit record; if observation publication fails, the new snapshot is rolled
+back. Completed snapshots and observations publish atomically from
 same-directory temporary files without overwriting an existing immutable identity. Snapshot persistence is serialized
 per content digest so concurrent refresh observations report whether they actually reused an existing snapshot. A stale
 lock fails closed with an actionable error rather than changing evidence. File-backed stores reject symbolic-link components and verify resolved
@@ -36,8 +36,13 @@ const refresh = await refreshOpenRouterCatalog({
 });
 
 if (refresh.status === "success") {
-  const shortlist = resolveCandidates({ callSite, snapshot: refresh.snapshot });
+  const shortlist = resolveCandidates({
+    callSite,
+    observation: refresh.observation,
+    snapshot: refresh.snapshot,
+  });
 }
 ```
 
-Reproducible evaluation must consume the stored snapshot, never ambient live catalog state.
+Reproducible evaluation must consume the stored snapshot together with its successful refresh observation,
+never ambient live catalog state. Candidate shortlists bind both evidence IDs and the authenticated observation time.

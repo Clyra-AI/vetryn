@@ -3,5 +3,5 @@
 "vetryn": minor
 ---
 
-Add immutable OpenRouter catalog refresh evidence, deterministic offline candidate shortlists, and CLI
-commands for importing snapshots and replaying reviewed call sites.
+Add atomic OpenRouter catalog refresh evidence, deterministic offline candidate shortlists bound to a
+successful snapshot observation, and CLI commands for importing and replaying reviewed call sites.
