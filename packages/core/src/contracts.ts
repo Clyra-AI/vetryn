@@ -469,6 +469,7 @@ const candidateRunFailureCodeSchema = z.enum([
   "rate-limited",
   "timeout",
 ]);
+const MAX_ROUTE_REQUESTS = 10_000;
 
 const openRouterRouteAttemptSchema = z
   .object({
@@ -483,7 +484,7 @@ const openRouterRouteAttemptSchema = z
 export const openRouterRouteObservationSchema = z
   .object({
     attempts: z.array(openRouterRouteAttemptSchema).min(1).max(20_000),
-    requestCount: z.number().int().positive().max(10_000),
+    requestCount: z.number().int().positive().max(MAX_ROUTE_REQUESTS),
     selectedProvider: z
       .object({
         model: modelIdSchema,
@@ -658,6 +659,27 @@ export const candidateRunSchema = z
         message: "Complete candidate runs require exactly one selected OpenRouter provider.",
         path: ["routeObservation", "selectedProvider"],
       });
+    }
+
+    if (artifact.status === "complete" && artifact.metrics !== undefined) {
+      const expectedRequestCount = artifact.metrics.caseCount * artifact.provenance.attemptCount;
+      if (
+        !Number.isSafeInteger(expectedRequestCount) ||
+        expectedRequestCount > MAX_ROUTE_REQUESTS
+      ) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Complete candidate-run route coverage exceeds the supported request bound.",
+          path: ["routeObservation", "requestCount"],
+        });
+      } else if (artifact.routeObservation?.requestCount !== expectedRequestCount) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          message:
+            "Complete candidate-run route requestCount must equal candidate caseCount times evaluator attemptCount.",
+          path: ["routeObservation", "requestCount"],
+        });
+      }
     }
 
     if (

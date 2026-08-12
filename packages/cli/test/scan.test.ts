@@ -76,7 +76,12 @@ describe("scanRepository", () => {
     const result = await scanRepository({ repositoryRoot: root });
 
     expect(result.assessment.files).toEqual({ considered: 3, parseErrors: 1, parsed: 2 });
-    expect(result.assessment.observations.total).toBe(result.findings.length);
+    expect(result.assessment.observations.total).toBe(
+      result.findings.filter(({ reasonCode }) => reasonCode !== "parse-error").length,
+    );
+    expect(result.assessment.observations).not.toMatchObject({
+      reasonCounts: { "parse-error": expect.any(Number) },
+    });
     expect(
       result.assessment.observations.patchable + result.assessment.observations.nonPatchable,
     ).toBe(result.assessment.observations.total);

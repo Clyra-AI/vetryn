@@ -25,7 +25,9 @@ decision evidence.
 - A complete candidate run binds the exact route policy and a compact `openrouter-router-metadata` observation.
   The observation records every reported attempt and one selected provider/model. Exactly one successful attempt
   per request must reconcile with that selection, request and attempt ordinals must be complete, and the selected
-  model must be the candidate model. Router attempts and evaluator repetitions remain separate units.
+  model must be the candidate model. For complete runs, the expected request count is derived as candidate case
+  count times evaluator repetitions; it is never trusted as a standalone producer claim. Router attempts and
+  evaluator repetitions remain separate units.
 - Missing metadata, cache-hit responses without metadata, contradictory selections, or a route-policy mismatch
   cannot support a complete recommendation. Failed and incomplete runs may retain reconciled failed attempts with
   a null selection; a successful attempt without a selected provider fails validation. They always abstain.

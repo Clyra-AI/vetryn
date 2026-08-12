@@ -221,6 +221,24 @@
       "evidenceRefs": ["ev-m0-09-plan-check-baad95f"]
     },
     {
+      "id": "ROUTE-004",
+      "taskId": "M0-10",
+      "statement": "A complete candidate run derives its required route-request coverage from candidate case count times evaluator repetitions and rejects omitted, extra, duplicate, or contradictory request evidence.",
+      "verification": { "method": "test", "testLevel": "adversarial", "gateId": "QG-CONTRACTS" },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
+      "id": "RECON-002",
+      "taskId": "M0-10",
+      "statement": "Repository assessment treats parse failures only as file diagnostics and excludes them from call-site observation, confidence, patchability, and reason-code totals.",
+      "verification": { "method": "test", "testLevel": "integration", "gateId": "QG-REPO-CHECK" },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
       "id": "CONTRACT-001",
       "taskId": "V1-01",
       "statement": "Every V1 artifact has a versioned strict schema and canonical serializer.",

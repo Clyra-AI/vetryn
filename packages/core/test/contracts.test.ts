@@ -122,6 +122,14 @@ const catalogSnapshot = {
   source: "openrouter",
 };
 
+const candidateRouteAttempts = Array.from({ length: 30 }, (_, index) => ({
+  attemptOrdinal: 1,
+  model: "openai/gpt-4o",
+  providerName: "Azure",
+  requestOrdinal: index + 1,
+  statusCode: 200,
+}));
+
 const candidateRun = {
   artifactType: "candidate-run",
   baselineModel: callSite.currentModel,
@@ -181,16 +189,8 @@ const candidateRun = {
     },
   },
   routeObservation: {
-    attempts: [
-      {
-        attemptOrdinal: 1,
-        model: "openai/gpt-4o",
-        providerName: "Azure",
-        requestOrdinal: 1,
-        statusCode: 200,
-      },
-    ],
-    requestCount: 1,
+    attempts: candidateRouteAttempts,
+    requestCount: 30,
     selectedProvider: {
       model: "openai/gpt-4o",
       providerName: "Azure",
@@ -575,12 +575,10 @@ describe("V1 artifact contracts", () => {
             candidateModel: "openai/gpt-4.1",
             routeObservation: {
               ...candidateRun.routeObservation,
-              attempts: [
-                {
-                  ...candidateRun.routeObservation.attempts[0],
-                  model: "openai/gpt-4.1",
-                },
-              ],
+              attempts: candidateRun.routeObservation.attempts.map((attempt) => ({
+                ...attempt,
+                model: "openai/gpt-4.1",
+              })),
               selectedProvider: {
                 ...candidateRun.routeObservation.selectedProvider,
                 model: "openai/gpt-4.1",
@@ -734,7 +732,10 @@ describe("V1 artifact contracts", () => {
       candidateModel: unapprovedCandidate.id,
       routeObservation: {
         ...candidateRun.routeObservation,
-        attempts: [{ ...candidateRun.routeObservation.attempts[0], model: unapprovedCandidate.id }],
+        attempts: candidateRun.routeObservation.attempts.map((attempt) => ({
+          ...attempt,
+          model: unapprovedCandidate.id,
+        })),
         selectedProvider: {
           ...candidateRun.routeObservation.selectedProvider,
           model: unapprovedCandidate.id,
@@ -961,9 +962,19 @@ describe("V1 artifact contracts", () => {
     expect(() =>
       candidateRunSchema.parse({
         ...candidateRun,
-        routeObservation: { ...candidateRun.routeObservation, requestCount: 2 },
+        routeObservation: {
+          ...candidateRun.routeObservation,
+          attempts: candidateRun.routeObservation.attempts.slice(0, 29),
+          requestCount: 29,
+        },
       }),
-    ).toThrow(/every declared request/i);
+    ).toThrow(/caseCount times evaluator attemptCount/i);
+    expect(() =>
+      candidateRunSchema.parse({
+        ...candidateRun,
+        provenance: { ...candidateRun.provenance, attemptCount: 2 },
+      }),
+    ).toThrow(/caseCount times evaluator attemptCount/i);
     expect(() =>
       candidateRunSchema.parse({
         ...candidateRun,

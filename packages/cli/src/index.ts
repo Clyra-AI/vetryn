@@ -212,12 +212,13 @@ export async function scanRepository({
   const parseErrorFiles = new Set(
     findings.filter(({ reasonCode }) => reasonCode === "parse-error").map(({ file }) => file),
   ).size;
+  const observations = findings.filter(({ reasonCode }) => reasonCode !== "parse-error");
   const reasonCounts = Object.fromEntries(
-    [...new Set(findings.map(({ reasonCode }) => reasonCode))]
+    [...new Set(observations.map(({ reasonCode }) => reasonCode))]
       .toSorted()
       .map((reasonCode) => [
         reasonCode,
-        findings.filter((finding) => finding.reasonCode === reasonCode).length,
+        observations.filter((finding) => finding.reasonCode === reasonCode).length,
       ]),
   ) as Partial<Record<ScannerReasonCode, number>>;
   const assessment = {
@@ -227,12 +228,13 @@ export async function scanRepository({
       parsed: files.length - parseErrorFiles,
     },
     observations: {
-      ambiguous: findings.filter(({ confidence }) => confidence === "ambiguous").length,
-      highConfidence: findings.filter(({ confidence }) => confidence === "high").length,
-      nonPatchable: findings.filter(({ patchability }) => patchability === "not-patchable").length,
-      patchable: findings.filter(({ patchability }) => patchability === "patchable").length,
+      ambiguous: observations.filter(({ confidence }) => confidence === "ambiguous").length,
+      highConfidence: observations.filter(({ confidence }) => confidence === "high").length,
+      nonPatchable: observations.filter(({ patchability }) => patchability === "not-patchable")
+        .length,
+      patchable: observations.filter(({ patchability }) => patchability === "patchable").length,
       reasonCounts,
-      total: findings.length,
+      total: observations.length,
     },
     scope: "supported-direct-openai-compatible-typescript-calls" as const,
   };

@@ -1,0 +1,41 @@
+{
+  "$schema": "../../schemas/task-state.schema.json",
+  "schemaVersion": "1.0.0",
+  "taskId": "M0-10",
+  "revision": 1,
+  "state": "in_progress",
+  "attempt": 1,
+  "candidate": null,
+  "criteria": [
+    { "criterionId": "ROUTE-004", "status": "pending", "evidenceRefs": [] },
+    { "criterionId": "RECON-002", "status": "pending", "evidenceRefs": [] }
+  ],
+  "gates": [
+    { "gateId": "QG-PLAN-CHECK", "status": "pending", "evidenceRefs": [] },
+    { "gateId": "QG-REPO-CHECK", "status": "pending", "evidenceRefs": [] },
+    { "gateId": "QG-CONTRACTS", "status": "pending", "evidenceRefs": [] },
+    { "gateId": "QG-INDEPENDENT-VERIFY", "status": "pending", "evidenceRefs": [] },
+    { "gateId": "QG-TRUST-REVIEW", "status": "pending", "evidenceRefs": [] }
+  ],
+  "reviews": [
+    { "role": "maintainer", "status": "pending", "evidenceRefs": [] },
+    { "role": "trust-reviewer", "status": "pending", "evidenceRefs": [] }
+  ],
+  "blockers": [],
+  "history": [
+    {
+      "from": null,
+      "to": "planned",
+      "at": "2026-08-12T10:50:00Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer authorized one compact post-merge repair for delayed PR #27 P1 route-coverage and P2 assessment-unit findings."
+    },
+    {
+      "from": "planned",
+      "to": "in_progress",
+      "at": "2026-08-12T10:50:01Z",
+      "actor": "implementation-agent",
+      "reason": "Compiled both related findings into one bounded offline hotfix task before V1-06."
+    }
+  ]
+}
