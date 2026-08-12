@@ -1,0 +1,37 @@
+{
+  "artifactType": "trust_review_report",
+  "schemaVersion": "1.0.0",
+  "taskId": "M0-10",
+  "candidateCommit": "b2241d949034f8fc55130e079872994a3f9ca3ba",
+  "reviewer": "codex-local:vetryn-trust-review",
+  "independence": "advisory-same-maintainer-session-under-adr-0009",
+  "verdict": "pass",
+  "createdAt": "2026-08-12T11:06:44Z",
+  "validationReportRef": "product/plans/oss-v1/evidence/lifecycle/M0-10/b2241d949034f8fc55130e079872994a3f9ca3ba/validation_report.json",
+  "surfaceMatrix": [
+    {
+      "surface": "evidence completeness",
+      "status": "pass",
+      "evidence": "Count, bounds, per-request identity consistency, and unique cross-product coverage jointly reject omitted or duplicated evaluated units."
+    },
+    {
+      "surface": "unit separation",
+      "status": "pass",
+      "evidence": "caseOrdinal and repetitionOrdinal identify evaluated work; attemptOrdinal identifies router retries inside that request."
+    },
+    {
+      "surface": "assessment claims",
+      "status": "pass",
+      "evidence": "File parse failures do not inflate semantic call-site observation denominators."
+    },
+    {
+      "surface": "privacy and scope",
+      "status": "pass",
+      "evidence": "Durable additions are bounded ordinals only; no raw content, credentials, live execution, dependencies, scanner support, or workflows changed."
+    }
+  ],
+  "unresolvedFindings": [],
+  "residualRisks": [
+    "Provider metadata remains untrusted and must be correlated to evaluator-owned ordinals during V1-06."
+  ]
+}
