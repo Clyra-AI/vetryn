@@ -1,0 +1,22 @@
+{
+  "artifactType": "vetryn-work-proof-marker",
+  "schemaVersion": "1.0.0",
+  "taskId": "M0-10",
+  "candidateCommit": "d8984eb30c59371f65f9b08b2066067e1dd16101",
+  "baseCommit": "0a43e3249cbc5cc1419841b4051c955246a24b71",
+  "runner": "codex-exec-tool",
+  "workspaceRef": "codex/m0-10-route-count-hotfix",
+  "cleanCandidateVerified": true,
+  "observedAt": "2026-08-12T10:55:28Z",
+  "commands": [
+    { "command": "pnpm plan:check", "exitCode": 0, "status": "pass" },
+    { "command": "pnpm test:contracts", "exitCode": 0, "status": "pass" },
+    { "command": "pnpm check", "exitCode": 0, "status": "pass" },
+    { "command": "git diff --check", "exitCode": 0, "status": "pass" }
+  ],
+  "redaction": {
+    "containsRawModelOutput": false,
+    "containsSecrets": false,
+    "rawLogsPersisted": false
+  }
+}

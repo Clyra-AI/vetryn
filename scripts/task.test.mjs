@@ -13,7 +13,16 @@ const taskScript = path.join(repositoryRoot, "scripts/task.mjs");
 const planScript = path.join(repositoryRoot, "scripts/plan.mjs");
 const temporaryRoots = [];
 const v1TaskId = "V1-00";
-const downstreamV1TaskIds = ["M0-09", "V1-05", "V1-06", "V1-07", "V1-08", "V1-09", "V1-10"];
+const downstreamV1TaskIds = [
+  "M0-09",
+  "M0-10",
+  "V1-05",
+  "V1-06",
+  "V1-07",
+  "V1-08",
+  "V1-09",
+  "V1-10",
+];
 const fixtureTaskIds = [
   v1TaskId,
   "M0-01",

@@ -1,0 +1,39 @@
+{
+  "artifactType": "validation_report",
+  "schemaVersion": "1.0.0",
+  "taskId": "M0-10",
+  "candidateCommit": "d8984eb30c59371f65f9b08b2066067e1dd16101",
+  "packetId": "oss-v1:M0-10:r1",
+  "result": "pass",
+  "createdAt": "2026-08-12T10:55:28Z",
+  "workProofMarkerRef": "product/plans/oss-v1/evidence/lifecycle/M0-10/d8984eb30c59371f65f9b08b2066067e1dd16101/work_proof_marker.json",
+  "redEvidence": [
+    {
+      "check": "pnpm exec vitest run packages/core/test/contracts.test.ts packages/cli/test/scan.test.ts",
+      "summary": "The focused run exposed stale one-request test fixtures after route coverage became derived; fixtures were corrected without weakening the invariant."
+    }
+  ],
+  "greenEvidenceRefs": [
+    "ev-m0-10-plan-check-d8984eb",
+    "ev-m0-10-repo-check-d8984eb",
+    "ev-m0-10-contracts-d8984eb"
+  ],
+  "acceptanceResults": [
+    {
+      "acceptanceItemId": "ROUTE-004",
+      "status": "implemented",
+      "summary": "Complete runs derive route request coverage from candidate case count times evaluator repetitions and reject incomplete coverage."
+    },
+    {
+      "acceptanceItemId": "RECON-002",
+      "status": "implemented",
+      "summary": "Parse failures remain file findings but do not enter call-site observation, confidence, patchability, or reason totals."
+    }
+  ],
+  "introducedFailures": [],
+  "preExistingFailures": [],
+  "residualRisks": [
+    "V1-06 must populate one route request ordinal per candidate case and evaluator repetition from live adapter evidence."
+  ],
+  "promotionDecision": "ready_for_maintainer_promotion"
+}

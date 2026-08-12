@@ -12,8 +12,10 @@ Complete `CandidateRun` artifacts must bind that exact route policy and a redact
 opt-in OpenRouter router metadata. The observation records every reported provider/model/status attempt and one
 selected provider/model. Validation requires exactly one successful attempt per declared request to reconcile with
 the selection, request and attempt ordinals to be complete, and the selected model and provider slug to match policy.
-Router attempts and evaluator repetitions remain separate units. Missing, contradictory, or stale route evidence
-cannot support a recommendation.
+For complete runs, request coverage must equal candidate case count times evaluator repetitions. Each request must
+identify its case and evaluator repetition, and those identities must cover the exact cross-product once. Router
+attempts and evaluator repetitions remain separate units. Missing, duplicated, contradictory, or stale route
+evidence cannot support a recommendation.
 
 Failed or incomplete runs may retain bounded failed attempts with `selectedProvider: null`. A complete run, or any
 observation containing a successful attempt, cannot use a null selection.

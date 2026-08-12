@@ -1,0 +1,30 @@
+{
+  "artifact_type": "review_report",
+  "schema_version": "1.0.0",
+  "task_id": "M0-10",
+  "candidate_commit": "b2241d949034f8fc55130e079872994a3f9ca3ba",
+  "review_type": "architecture-and-security",
+  "risk_class": "high",
+  "reviewer": "codex-local:single-maintainer-review",
+  "independence": {
+    "status": "advisory-same-maintainer-session",
+    "policy_ref": "docs/adr/0009-single-maintainer-v1-delivery.md",
+    "note": "Local independence is advisory; remote CI and latest-head Codex review remain separate shipping gates."
+  },
+  "validation_report_ref": "product/plans/oss-v1/evidence/lifecycle/M0-10/b2241d949034f8fc55130e079872994a3f9ca3ba/validation_report.json",
+  "review_scope": [
+    "exact evaluated-unit cross-product",
+    "request versus retry identity",
+    "route count derivation",
+    "scan assessment units",
+    "changed-path and secret boundaries"
+  ],
+  "findings": [],
+  "resolved_during_review": [
+    "Bound each request to caseOrdinal and repetitionOrdinal and validated unique bounded cross-product coverage."
+  ],
+  "verdict": "approved",
+  "required_fixes": [],
+  "residual_risks": ["Live adapter correlation remains explicitly deferred to V1-06."],
+  "created_at": "2026-08-12T11:06:44Z"
+}

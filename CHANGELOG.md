@@ -4,6 +4,8 @@
 
 ### Fixed
 
+- Bound complete route observations to each evaluated case/repetition pair and excluded file parse diagnostics from
+  call-site observation totals.
 - Separated OpenRouter model authorship from execution-route policy and observed router evidence, labeled catalog
   ranking costs as estimates, and added reconciled repository scan assessment counts.
 

@@ -1,0 +1,31 @@
+{
+  "$schema": "../../schemas/evidence.schema.json",
+  "schemaVersion": "1.0.0",
+  "id": "ev-m0-10-plan-check-d8984eb",
+  "taskId": "M0-10",
+  "type": "command-run",
+  "actor": "codex-local-validation",
+  "commit": "d8984eb30c59371f65f9b08b2066067e1dd16101",
+  "createdAt": "2026-08-12T10:55:28Z",
+  "result": {
+    "status": "pass",
+    "checks": [
+      {
+        "name": "pnpm plan:check",
+        "status": "pass",
+        "summary": "The exact candidate plan, task state, dependencies, acceptance items, and generated progress are valid and current."
+      }
+    ]
+  },
+  "inputs": {
+    "planDigest": "sha256:f7924c9a7f54cbf144d524a6671f141f32a7414d65b7dcf6dd995dc6765b4457",
+    "lockfileDigest": "sha256:3ee6dca039a23c4a43059ce1ebb34822d4184cd53027f261dcf30de222ec80e3"
+  },
+  "gateBinding": { "gateId": "QG-PLAN-CHECK", "kind": "command", "command": "pnpm plan:check" },
+  "review": null,
+  "redaction": {
+    "status": "not_applicable",
+    "containsRawModelOutput": false,
+    "containsSecrets": false
+  }
+}

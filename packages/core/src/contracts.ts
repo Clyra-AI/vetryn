@@ -469,13 +469,16 @@ const candidateRunFailureCodeSchema = z.enum([
   "rate-limited",
   "timeout",
 ]);
+const MAX_ROUTE_REQUESTS = 10_000;
 
 const openRouterRouteAttemptSchema = z
   .object({
     attemptOrdinal: z.number().int().positive(),
+    caseOrdinal: z.number().int().positive(),
     model: modelIdSchema,
     providerName: z.string().trim().min(1).max(200),
     requestOrdinal: z.number().int().positive(),
+    repetitionOrdinal: z.number().int().positive(),
     statusCode: z.number().int().min(100).max(599),
   })
   .strict();
@@ -483,7 +486,7 @@ const openRouterRouteAttemptSchema = z
 export const openRouterRouteObservationSchema = z
   .object({
     attempts: z.array(openRouterRouteAttemptSchema).min(1).max(20_000),
-    requestCount: z.number().int().positive().max(10_000),
+    requestCount: z.number().int().positive().max(MAX_ROUTE_REQUESTS),
     selectedProvider: z
       .object({
         model: modelIdSchema,
@@ -527,6 +530,17 @@ export const openRouterRouteObservationSchema = z
           path: ["attempts"],
         });
         continue;
+      }
+      const evaluatedUnits = new Set(
+        attempts.map(({ caseOrdinal, repetitionOrdinal }) => `${caseOrdinal}:${repetitionOrdinal}`),
+      );
+      if (evaluatedUnits.size !== 1) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          message:
+            "All router attempts for one request must identify the same evaluated case and repetition.",
+          path: ["attempts"],
+        });
       }
       const ordinals = attempts
         .map(({ attemptOrdinal }) => attemptOrdinal)
@@ -658,6 +672,56 @@ export const candidateRunSchema = z
         message: "Complete candidate runs require exactly one selected OpenRouter provider.",
         path: ["routeObservation", "selectedProvider"],
       });
+    }
+
+    if (artifact.status === "complete" && artifact.metrics !== undefined) {
+      const expectedRequestCount = artifact.metrics.caseCount * artifact.provenance.attemptCount;
+      if (
+        !Number.isSafeInteger(expectedRequestCount) ||
+        expectedRequestCount > MAX_ROUTE_REQUESTS
+      ) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Complete candidate-run route coverage exceeds the supported request bound.",
+          path: ["routeObservation", "requestCount"],
+        });
+      } else if (artifact.routeObservation?.requestCount !== expectedRequestCount) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          message:
+            "Complete candidate-run route requestCount must equal candidate caseCount times evaluator attemptCount.",
+          path: ["routeObservation", "requestCount"],
+        });
+      } else if (artifact.routeObservation !== undefined) {
+        const evaluatedUnits = new Set<string>();
+        for (let requestOrdinal = 1; requestOrdinal <= expectedRequestCount; requestOrdinal += 1) {
+          const firstAttempt = artifact.routeObservation.attempts.find(
+            (attempt) => attempt.requestOrdinal === requestOrdinal,
+          );
+          if (firstAttempt === undefined) continue;
+          if (
+            firstAttempt.caseOrdinal > artifact.metrics.caseCount ||
+            firstAttempt.repetitionOrdinal > artifact.provenance.attemptCount
+          ) {
+            context.addIssue({
+              code: z.ZodIssueCode.custom,
+              message:
+                "Route request evaluated-unit identity exceeds candidate case or repetition bounds.",
+              path: ["routeObservation", "attempts"],
+            });
+            continue;
+          }
+          evaluatedUnits.add(`${firstAttempt.caseOrdinal}:${firstAttempt.repetitionOrdinal}`);
+        }
+        if (evaluatedUnits.size !== expectedRequestCount) {
+          context.addIssue({
+            code: z.ZodIssueCode.custom,
+            message:
+              "Complete candidate-run route requests must cover each case and evaluator repetition exactly once.",
+            path: ["routeObservation", "attempts"],
+          });
+        }
+      }
     }
 
     if (

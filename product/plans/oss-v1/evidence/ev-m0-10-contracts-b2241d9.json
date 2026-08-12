@@ -1,0 +1,31 @@
+{
+  "$schema": "../../schemas/evidence.schema.json",
+  "schemaVersion": "1.0.0",
+  "id": "ev-m0-10-contracts-b2241d9",
+  "taskId": "M0-10",
+  "type": "command-run",
+  "actor": "codex-local-validation",
+  "commit": "b2241d949034f8fc55130e079872994a3f9ca3ba",
+  "createdAt": "2026-08-12T11:06:44Z",
+  "result": {
+    "status": "pass",
+    "checks": [
+      {
+        "name": "pnpm test:contracts",
+        "status": "pass",
+        "summary": "All 173 tests passed, including exact case/repetition cross-product, route undercount, repeated-evaluation, and parse-diagnostic reconciliation cases."
+      }
+    ]
+  },
+  "inputs": {
+    "planDigest": "sha256:9c0581bc42ec1b1c5170d6576dae55a7c2d28fde8bc09f196881382e74d0f9d6",
+    "lockfileDigest": "sha256:3ee6dca039a23c4a43059ce1ebb34822d4184cd53027f261dcf30de222ec80e3"
+  },
+  "gateBinding": { "gateId": "QG-CONTRACTS", "kind": "command", "command": "pnpm test:contracts" },
+  "review": null,
+  "redaction": {
+    "status": "not_applicable",
+    "containsRawModelOutput": false,
+    "containsSecrets": false
+  }
+}

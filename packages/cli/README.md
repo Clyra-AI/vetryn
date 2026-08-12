@@ -37,5 +37,6 @@ only to lower the default bound of five.
 
 `vetryn scan --json` includes both findings and an `assessment` funnel for the supported direct-call scope. File
 counts reconcile considered, parsed, and parse-error units; observation counts reconcile patchable/non-patchable,
-high-confidence/ambiguous, and reason-code totals. A scan with no findings therefore remains an explicitly scoped
-assessment rather than a claim that the repository contains no other AI usage.
+high-confidence/ambiguous, and reason-code totals. File-level parse diagnostics remain outside those call-site
+observation totals. A scan with no findings therefore remains an explicitly scoped assessment rather than a claim
+that the repository contains no other AI usage.

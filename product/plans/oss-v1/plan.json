@@ -761,6 +761,99 @@
       ]
     },
     {
+      "id": "M0-10",
+      "milestone": "M0",
+      "title": "Bind route coverage and scan units",
+      "objective": "Address delayed latest-head review by binding complete route observations to evaluated case repetitions and excluding file parse diagnostics from call-site observation totals.",
+      "risk": { "level": "high", "domains": ["privacy", "evidence-lineage", "reporting"] },
+      "dependsOn": [{ "taskId": "M0-09", "kind": "hard" }],
+      "acceptanceItemIds": ["ROUTE-004", "RECON-002"],
+      "scope": {
+        "allowedPaths": [
+          ".changeset/**",
+          "CHANGELOG.md",
+          "docs/**",
+          "product/plans/**",
+          "packages/core/**",
+          "packages/cli/**",
+          "scripts/plan.test.mjs",
+          "scripts/task.test.mjs"
+        ],
+        "forbiddenPaths": [
+          "packages/openrouter/**",
+          "packages/typescript/**",
+          "examples/**",
+          "action.yml",
+          ".github/workflows/**"
+        ]
+      },
+      "semanticInvariants": [
+        "A complete candidate run proves route coverage for every evaluated candidate case and evaluator repetition with an exact unique pair identity rather than trusting a self-declared request count.",
+        "Router attempts remain distinct from evaluator repetitions while the derived expected request count binds both units.",
+        "File parse diagnostics contribute only to file assessment counts and never to call-site observation totals or reason counts.",
+        "The repair does not add provider execution, scanner support, runtime discovery, hosted dependencies, or workflow changes."
+      ],
+      "deliverables": [
+        ".changeset/**",
+        "CHANGELOG.md",
+        "docs/**",
+        "product/plans/**",
+        "packages/core/**",
+        "packages/cli/**",
+        "scripts/plan.test.mjs",
+        "scripts/task.test.mjs"
+      ],
+      "deliveryIntent": {
+        "changelog": {
+          "impact": "required",
+          "section": "Fixed",
+          "draftEntry": "Bound complete route observations to evaluated work and separated parse diagnostics from call-site observation totals.",
+          "semverMarker": "patch"
+        },
+        "versioningImpact": "Record patch Changesets for @vetryn/core and vetryn; publication remains a separate release operation.",
+        "migrationImpact": "Complete candidate-run fixtures must provide one route request record per evaluated candidate case and evaluator repetition.",
+        "docsSyncRefs": [
+          {
+            "path": "docs/adr/0019-separate-model-author-and-execution-route.md",
+            "reason": "Clarify the derived request-coverage invariant."
+          },
+          {
+            "path": "packages/core/README.md",
+            "reason": "Document request coverage for complete runs."
+          },
+          {
+            "path": "docs/architecture.md",
+            "reason": "Keep the evaluation-runner design aligned with evaluated-unit coverage."
+          },
+          {
+            "path": "packages/cli/README.md",
+            "reason": "Clarify file diagnostics versus call-site observations."
+          }
+        ]
+      },
+      "requiredTestLevels": ["unit", "contract", "integration", "adversarial"],
+      "requiredGates": [
+        "QG-PLAN-CHECK",
+        "QG-REPO-CHECK",
+        "QG-CONTRACTS",
+        "QG-INDEPENDENT-VERIFY",
+        "QG-TRUST-REVIEW"
+      ],
+      "requiredReviews": ["maintainer", "trust-reviewer"],
+      "capabilities": {
+        "network": false,
+        "credentials": false,
+        "provider": false,
+        "githubWrite": false
+      },
+      "maxAttempts": 1,
+      "stopConditions": [
+        "A complete run can cover fewer route requests than evaluated candidate cases times evaluator repetitions.",
+        "A parse-error file diagnostic contributes to call-site observation totals.",
+        "The repair changes scanner detection behavior, provider routing policy, workflows, dependencies, or accepted M0-09 evidence."
+      ]
+    },
+    {
       "id": "V1-02",
       "milestone": "M1",
       "title": "Build the deterministic golden repository",
@@ -997,7 +1090,8 @@
         { "taskId": "V1-01", "kind": "hard" },
         { "taskId": "V1-02", "kind": "hard" },
         { "taskId": "M0-06", "kind": "hard" },
-        { "taskId": "M0-09", "kind": "hard" }
+        { "taskId": "M0-09", "kind": "hard" },
+        { "taskId": "M0-10", "kind": "hard" }
       ],
       "acceptanceItemIds": ["EVAL-001", "EVAL-002", "EVAL-003", "EVAL-004", "EVAL-005"],
       "scope": {
