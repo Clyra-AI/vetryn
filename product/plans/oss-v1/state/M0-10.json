@@ -2,37 +2,41 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "M0-10",
-  "revision": 5,
-  "state": "in_progress",
+  "revision": 6,
+  "state": "accepted",
   "attempt": 1,
-  "candidate": null,
+  "candidate": {
+    "baseCommit": "0a43e3249cbc5cc1419841b4051c955246a24b71",
+    "commit": "fc214dffb42e37c40f67024e95c865b0cfe89950",
+    "executor": "implementation-agent"
+  },
   "criteria": [
     {
       "criterionId": "ROUTE-004",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-10-contracts-fc214df"]
     },
     {
       "criterionId": "RECON-002",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-10-repo-check-fc214df"]
     }
   ],
   "gates": [
     {
       "gateId": "QG-PLAN-CHECK",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-10-plan-check-fc214df"]
     },
     {
       "gateId": "QG-REPO-CHECK",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-10-repo-check-fc214df"]
     },
     {
       "gateId": "QG-CONTRACTS",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-10-contracts-fc214df"]
     },
     { "gateId": "QG-INDEPENDENT-VERIFY", "status": "pending", "evidenceRefs": [] },
     { "gateId": "QG-TRUST-REVIEW", "status": "pending", "evidenceRefs": [] }
@@ -84,6 +88,13 @@
       "at": "2026-08-12T11:12:14Z",
       "actor": "implementation-agent",
       "reason": "Latest-head Codex review found the architecture guide contradicted the repaired evaluated-unit contract; prior candidate evidence was invalidated for the bounded documentation alignment."
+    },
+    {
+      "from": "in_progress",
+      "to": "accepted",
+      "at": "2026-08-12T11:15:19Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer accepted the documentation-aligned exact candidate after all active command gates passed and the bounded consistency review found no unresolved local blocker under ADR 0009."
     }
   ]
 }

@@ -1,0 +1,37 @@
+{
+  "artifactType": "trust_review_report",
+  "schemaVersion": "1.0.0",
+  "taskId": "M0-10",
+  "candidateCommit": "fc214dffb42e37c40f67024e95c865b0cfe89950",
+  "reviewer": "codex-local:vetryn-trust-review",
+  "independence": "advisory-same-maintainer-session-under-adr-0009",
+  "verdict": "pass",
+  "createdAt": "2026-08-12T11:15:19Z",
+  "validationReportRef": "product/plans/oss-v1/evidence/lifecycle/M0-10/fc214dffb42e37c40f67024e95c865b0cfe89950/validation_report.json",
+  "surfaceMatrix": [
+    {
+      "surface": "evidence completeness",
+      "status": "pass",
+      "evidence": "All durable design and contract sources now require the same bounded unique case/repetition coverage."
+    },
+    {
+      "surface": "unit separation",
+      "status": "pass",
+      "evidence": "Evaluator repetitions identify evaluated work; router attempt ordinals identify retries inside one request."
+    },
+    {
+      "surface": "assessment claims",
+      "status": "pass",
+      "evidence": "File diagnostics remain outside call-site observation denominators."
+    },
+    {
+      "surface": "privacy and scope",
+      "status": "pass",
+      "evidence": "The final repair is documentation and planning synchronization only."
+    }
+  ],
+  "unresolvedFindings": [],
+  "residualRisks": [
+    "Provider metadata remains untrusted and must be correlated with evaluator-owned ordinals in V1-06."
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "artifact_type": "review_report",
+  "schema_version": "1.0.0",
+  "task_id": "M0-10",
+  "candidate_commit": "fc214dffb42e37c40f67024e95c865b0cfe89950",
+  "review_type": "architecture-and-security",
+  "risk_class": "high",
+  "reviewer": "codex-local:single-maintainer-review",
+  "independence": {
+    "status": "advisory-same-maintainer-session",
+    "policy_ref": "docs/adr/0009-single-maintainer-v1-delivery.md",
+    "note": "Local independence is advisory; remote CI and latest-head Codex review remain separate shipping gates."
+  },
+  "validation_report_ref": "product/plans/oss-v1/evidence/lifecycle/M0-10/fc214dffb42e37c40f67024e95c865b0cfe89950/validation_report.json",
+  "review_scope": [
+    "architecture versus ADR and schema consistency",
+    "exact evaluated-unit cross-product",
+    "scan assessment units",
+    "changed-path and secret boundaries"
+  ],
+  "findings": [],
+  "resolved_during_review": [
+    "Replaced the obsolete independent-repetition statement with evaluator-unit and retry-unit semantics."
+  ],
+  "verdict": "approved",
+  "required_fixes": [],
+  "residual_risks": ["Live adapter correlation remains V1-06 scope."],
+  "created_at": "2026-08-12T11:15:19Z"
+}

@@ -1,0 +1,39 @@
+{
+  "artifactType": "validation_report",
+  "schemaVersion": "1.0.0",
+  "taskId": "M0-10",
+  "candidateCommit": "fc214dffb42e37c40f67024e95c865b0cfe89950",
+  "packetId": "oss-v1:M0-10:r5",
+  "result": "pass",
+  "createdAt": "2026-08-12T11:15:19Z",
+  "workProofMarkerRef": "product/plans/oss-v1/evidence/lifecycle/M0-10/fc214dffb42e37c40f67024e95c865b0cfe89950/work_proof_marker.json",
+  "redEvidence": [
+    {
+      "check": "latest-head Codex review on PR #28",
+      "summary": "Review found architecture guidance contradicted the evaluated-unit contract; the exact bounded documentation alignment was made and all gates rerun."
+    }
+  ],
+  "greenEvidenceRefs": [
+    "ev-m0-10-plan-check-fc214df",
+    "ev-m0-10-repo-check-fc214df",
+    "ev-m0-10-contracts-fc214df"
+  ],
+  "acceptanceResults": [
+    {
+      "acceptanceItemId": "ROUTE-004",
+      "status": "implemented",
+      "summary": "Code, ADR, package docs, and architecture now consistently require exact case/repetition cross-product coverage."
+    },
+    {
+      "acceptanceItemId": "RECON-002",
+      "status": "implemented",
+      "summary": "Parse failures remain file diagnostics outside semantic call-site observation totals."
+    }
+  ],
+  "introducedFailures": [],
+  "preExistingFailures": [],
+  "residualRisks": [
+    "V1-06 must populate evaluator-owned ordinals while parsing untrusted provider route evidence."
+  ],
+  "promotionDecision": "ready_for_maintainer_promotion"
+}
