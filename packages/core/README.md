@@ -15,5 +15,8 @@ the selection, request and attempt ordinals to be complete, and the selected mod
 Router attempts and evaluator repetitions remain separate units. Missing, contradictory, or stale route evidence
 cannot support a recommendation.
 
+Failed or incomplete runs may retain bounded failed attempts with `selectedProvider: null`. A complete run, or any
+observation containing a successful attempt, cannot use a null selection.
+
 This is an incompatible pre-release contract migration from `providerPolicy` and catalog `provider`. Regenerate
 checked-in manifests, catalog snapshots, and candidate-run fixtures before evaluation.

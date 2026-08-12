@@ -490,7 +490,8 @@ export const openRouterRouteObservationSchema = z
         providerName: z.string().trim().min(1).max(200),
         providerSlug: openRouterProviderSlugSchema,
       })
-      .strict(),
+      .strict()
+      .nullable(),
     source: z.literal("openrouter-router-metadata"),
   })
   .strict()
@@ -537,14 +538,18 @@ export const openRouterRouteObservationSchema = z
           path: ["attempts"],
         });
       }
-      const selectedAttempts = attempts.filter(
-        (attempt) =>
-          attempt.providerName === observation.selectedProvider.providerName &&
-          attempt.model === observation.selectedProvider.model &&
-          attempt.statusCode >= 200 &&
-          attempt.statusCode < 300,
+      const successfulAttempts = attempts.filter(
+        (attempt) => attempt.statusCode >= 200 && attempt.statusCode < 300,
       );
-      if (selectedAttempts.length !== 1) {
+      const selectedAttempts =
+        observation.selectedProvider === null
+          ? []
+          : successfulAttempts.filter(
+              (attempt) =>
+                attempt.providerName === observation.selectedProvider?.providerName &&
+                attempt.model === observation.selectedProvider?.model,
+            );
+      if (observation.selectedProvider !== null && selectedAttempts.length !== 1) {
         context.addIssue({
           code: z.ZodIssueCode.custom,
           message:
@@ -552,13 +557,23 @@ export const openRouterRouteObservationSchema = z
           path: ["attempts"],
         });
       }
+      if (observation.selectedProvider === null && successfulAttempts.length > 0) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          message:
+            "A route observation with a successful attempt must identify the selected provider.",
+          path: ["selectedProvider"],
+        });
+      }
     }
 
+    const selectedProvider = observation.selectedProvider;
     if (
+      selectedProvider !== null &&
       observation.attempts.some(
         (attempt) =>
-          attempt.providerName !== observation.selectedProvider.providerName ||
-          attempt.model !== observation.selectedProvider.model,
+          attempt.providerName !== selectedProvider.providerName ||
+          attempt.model !== selectedProvider.model,
       )
     ) {
       context.addIssue({
@@ -637,8 +652,17 @@ export const candidateRunSchema = z
       });
     }
 
+    if (artifact.status === "complete" && artifact.routeObservation?.selectedProvider === null) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Complete candidate runs require exactly one selected OpenRouter provider.",
+        path: ["routeObservation", "selectedProvider"],
+      });
+    }
+
     if (
       artifact.routeObservation !== undefined &&
+      artifact.routeObservation.selectedProvider !== null &&
       artifact.routeObservation.selectedProvider.model !== artifact.candidateModel
     ) {
       context.addIssue({
@@ -650,6 +674,7 @@ export const candidateRunSchema = z
 
     if (
       artifact.routeObservation !== undefined &&
+      artifact.routeObservation.selectedProvider !== null &&
       artifact.routeObservation.selectedProvider.providerSlug !== artifact.routePolicy.providerSlug
     ) {
       context.addIssue({
@@ -661,6 +686,7 @@ export const candidateRunSchema = z
 
     if (
       artifact.routeObservation !== undefined &&
+      artifact.routeObservation.selectedProvider !== null &&
       normalizedProviderName(artifact.routeObservation.selectedProvider.providerName) !==
         artifact.routePolicy.providerSlug.split("/", 1)[0]
     ) {
@@ -668,6 +694,23 @@ export const candidateRunSchema = z
         code: z.ZodIssueCode.custom,
         message: "The observed selected provider name must match the requested provider slug.",
         path: ["routeObservation", "selectedProvider", "providerName"],
+      });
+    }
+
+    if (
+      artifact.routeObservation !== undefined &&
+      artifact.routeObservation.attempts.some(
+        (attempt) =>
+          attempt.model !== artifact.candidateModel ||
+          normalizedProviderName(attempt.providerName) !==
+            artifact.routePolicy.providerSlug.split("/", 1)[0],
+      )
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          "Every observed route attempt must match the candidate model and requested provider.",
+        path: ["routeObservation", "attempts"],
       });
     }
 

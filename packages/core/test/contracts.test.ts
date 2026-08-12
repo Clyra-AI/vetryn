@@ -886,6 +886,41 @@ describe("V1 artifact contracts", () => {
     expect(() =>
       candidateRunSchema.parse({
         ...candidateRun,
+        routeObservation: { ...candidateRun.routeObservation, selectedProvider: null },
+      }),
+    ).toThrow(/selected OpenRouter provider/i);
+    expect(() =>
+      candidateRunSchema.parse({
+        ...candidateRun,
+        baselineMetrics: undefined,
+        failureCode: "provider-error",
+        gateOutcomes: undefined,
+        metrics: undefined,
+        routeObservation: {
+          ...candidateRun.routeObservation,
+          attempts: candidateRun.routeObservation.attempts.map((attempt) => ({
+            ...attempt,
+            statusCode: 503,
+          })),
+          selectedProvider: null,
+        },
+        status: "failed",
+      }),
+    ).not.toThrow();
+    expect(() =>
+      candidateRunSchema.parse({
+        ...candidateRun,
+        baselineMetrics: undefined,
+        failureCode: "provider-error",
+        gateOutcomes: undefined,
+        metrics: undefined,
+        routeObservation: { ...candidateRun.routeObservation, selectedProvider: null },
+        status: "failed",
+      }),
+    ).toThrow(/successful attempt must identify/i);
+    expect(() =>
+      candidateRunSchema.parse({
+        ...candidateRun,
         routeObservation: {
           ...candidateRun.routeObservation,
           selectedProvider: {

@@ -27,7 +27,8 @@ decision evidence.
   per request must reconcile with that selection, request and attempt ordinals must be complete, and the selected
   model must be the candidate model. Router attempts and evaluator repetitions remain separate units.
 - Missing metadata, cache-hit responses without metadata, contradictory selections, or a route-policy mismatch
-  cannot support a complete recommendation. Failed and incomplete runs retain bounded failure evidence and abstain.
+  cannot support a complete recommendation. Failed and incomplete runs may retain reconciled failed attempts with
+  a null selection; a successful attempt without a selected provider fails validation. They always abstain.
 - Privacy remains a hard gate, but catalog authorship can never satisfy it. V1-06 must derive it from the
   request-bound route policy and validated router observation.
 - Scanner coverage is reported as a reconciled, explicitly scoped assessment funnel rather than an unqualified
