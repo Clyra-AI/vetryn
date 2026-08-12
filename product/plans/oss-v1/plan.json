@@ -788,7 +788,7 @@
         ]
       },
       "semanticInvariants": [
-        "A complete candidate run proves route coverage for every evaluated candidate case and evaluator repetition rather than trusting a self-declared request count.",
+        "A complete candidate run proves route coverage for every evaluated candidate case and evaluator repetition with an exact unique pair identity rather than trusting a self-declared request count.",
         "Router attempts remain distinct from evaluator repetitions while the derived expected request count binds both units.",
         "File parse diagnostics contribute only to file assessment counts and never to call-site observation totals or reason counts.",
         "The repair does not add provider execution, scanner support, runtime discovery, hosted dependencies, or workflow changes."

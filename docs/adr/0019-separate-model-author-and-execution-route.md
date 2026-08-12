@@ -26,7 +26,8 @@ decision evidence.
   The observation records every reported attempt and one selected provider/model. Exactly one successful attempt
   per request must reconcile with that selection, request and attempt ordinals must be complete, and the selected
   model must be the candidate model. For complete runs, the expected request count is derived as candidate case
-  count times evaluator repetitions; it is never trusted as a standalone producer claim. Router attempts and
+  count times evaluator repetitions; it is never trusted as a standalone producer claim. Every request also binds
+  its case and repetition, and complete evidence must cover that exact cross-product once. Router attempts and
   evaluator repetitions remain separate units.
 - Missing metadata, cache-hit responses without metadata, contradictory selections, or a route-policy mismatch
   cannot support a complete recommendation. Failed and incomplete runs may retain reconciled failed attempts with

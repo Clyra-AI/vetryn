@@ -223,11 +223,11 @@
     {
       "id": "ROUTE-004",
       "taskId": "M0-10",
-      "statement": "A complete candidate run derives its required route-request coverage from candidate case count times evaluator repetitions and rejects omitted, extra, duplicate, or contradictory request evidence.",
+      "statement": "A complete candidate run derives its required route-request coverage from candidate case count times evaluator repetitions, binds each request to that evaluated-unit identity, and rejects omitted, extra, duplicate, or contradictory request evidence.",
       "verification": { "method": "test", "testLevel": "adversarial", "gateId": "QG-CONTRACTS" },
       "waivable": false,
-      "status": "accepted",
-      "evidenceRefs": ["ev-m0-10-contracts-d8984eb"]
+      "status": "planned",
+      "evidenceRefs": []
     },
     {
       "id": "RECON-002",
@@ -235,8 +235,8 @@
       "statement": "Repository assessment treats parse failures only as file diagnostics and excludes them from call-site observation, confidence, patchability, and reason-code totals.",
       "verification": { "method": "test", "testLevel": "integration", "gateId": "QG-REPO-CHECK" },
       "waivable": false,
-      "status": "accepted",
-      "evidenceRefs": ["ev-m0-10-repo-check-d8984eb"]
+      "status": "planned",
+      "evidenceRefs": []
     },
     {
       "id": "CONTRACT-001",

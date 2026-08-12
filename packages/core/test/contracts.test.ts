@@ -124,9 +124,11 @@ const catalogSnapshot = {
 
 const candidateRouteAttempts = Array.from({ length: 30 }, (_, index) => ({
   attemptOrdinal: 1,
+  caseOrdinal: index + 1,
   model: "openai/gpt-4o",
   providerName: "Azure",
   requestOrdinal: index + 1,
+  repetitionOrdinal: 1,
   statusCode: 200,
 }));
 
@@ -975,6 +977,19 @@ describe("V1 artifact contracts", () => {
         provenance: { ...candidateRun.provenance, attemptCount: 2 },
       }),
     ).toThrow(/caseCount times evaluator attemptCount/i);
+    expect(() =>
+      candidateRunSchema.parse({
+        ...candidateRun,
+        routeObservation: {
+          ...candidateRun.routeObservation,
+          attempts: candidateRun.routeObservation.attempts.map((attempt, index) =>
+            index === candidateRun.routeObservation.attempts.length - 1
+              ? { ...attempt, caseOrdinal: 1 }
+              : attempt,
+          ),
+        },
+      }),
+    ).toThrow(/cover each case and evaluator repetition exactly once/i);
     expect(() =>
       candidateRunSchema.parse({
         ...candidateRun,
