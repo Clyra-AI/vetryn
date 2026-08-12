@@ -1,0 +1,122 @@
+{
+  "$schema": "../../schemas/task-state.schema.json",
+  "schemaVersion": "1.0.0",
+  "taskId": "M0-09",
+  "revision": 4,
+  "state": "accepted",
+  "attempt": 1,
+  "candidate": {
+    "baseCommit": "49127228fc28db8dfddce9ea0b63893728866c51",
+    "commit": "baad95f12fed26e79db3617cdb381a9c457fae39",
+    "executor": "implementation-agent"
+  },
+  "criteria": [
+    {
+      "criterionId": "ROUTE-001",
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-09-contracts-baad95f"]
+    },
+    {
+      "criterionId": "ROUTE-002",
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-09-scenarios-baad95f"]
+    },
+    {
+      "criterionId": "ROUTE-003",
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-09-contracts-baad95f"]
+    },
+    {
+      "criterionId": "RECON-001",
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-09-repo-check-baad95f"]
+    },
+    {
+      "criterionId": "PLAN-005",
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-09-plan-check-baad95f"]
+    }
+  ],
+  "gates": [
+    {
+      "gateId": "QG-PLAN-CHECK",
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-09-plan-check-baad95f"]
+    },
+    {
+      "gateId": "QG-REPO-CHECK",
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-09-repo-check-baad95f"]
+    },
+    {
+      "gateId": "QG-CONTRACTS",
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-09-contracts-baad95f"]
+    },
+    {
+      "gateId": "QG-SCENARIOS",
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-09-scenarios-baad95f"]
+    },
+    {
+      "gateId": "QG-INDEPENDENT-VERIFY",
+      "status": "pending",
+      "evidenceRefs": []
+    },
+    {
+      "gateId": "QG-TRUST-REVIEW",
+      "status": "pending",
+      "evidenceRefs": []
+    }
+  ],
+  "reviews": [
+    {
+      "role": "maintainer",
+      "status": "pending",
+      "evidenceRefs": []
+    },
+    {
+      "role": "trust-reviewer",
+      "status": "pending",
+      "evidenceRefs": []
+    }
+  ],
+  "blockers": [],
+  "history": [
+    {
+      "from": null,
+      "to": "planned",
+      "at": "2026-08-12T10:04:24Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer authorized a systemic correction separating OpenRouter model identity, route policy, observed execution, and reconciled assessment counts before V1-06."
+    },
+    {
+      "from": "planned",
+      "to": "in_progress",
+      "at": "2026-08-12T10:04:25Z",
+      "actor": "implementation-agent",
+      "reason": "Compiled the bounded route-evidence correction for offline implementation before provider-backed evaluation."
+    },
+    {
+      "from": "in_progress",
+      "to": "in_progress",
+      "at": "2026-08-12T10:04:26Z",
+      "actor": "implementation-agent",
+      "reason": "Made the task's changelog, versioning, migration, and documentation intent explicit so Factory cannot reuse unrelated planning-contract boilerplate."
+    },
+    {
+      "from": "in_progress",
+      "to": "in_progress",
+      "at": "2026-08-12T10:04:27Z",
+      "actor": "implementation-agent",
+      "reason": "Aligned the reviewed delivery intent with the final ADR filename after implementation clarified the model-author and execution-route terminology."
+    },
+    {
+      "from": "in_progress",
+      "to": "accepted",
+      "at": "2026-08-12T10:33:38Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer accepted the exact offline correction after every active command gate passed and candidate-bound local architecture, security, and Vetryn trust reviews found no unresolved blocker under ADR 0009."
+    }
+  ]
+}

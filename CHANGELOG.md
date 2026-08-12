@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Separated OpenRouter model authorship from execution-route policy and observed router evidence, labeled catalog
+  ranking costs as estimates, and added reconciled repository scan assessment counts.
+
 ### Added
 
 - Added bounded representative-workload-cost OpenRouter candidate ranking, idempotent catalog-refresh,

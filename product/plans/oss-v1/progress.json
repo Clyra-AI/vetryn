@@ -3,12 +3,12 @@
   "schemaVersion": "1.0.0",
   "planId": "oss-v1",
   "taskCounts": {
-    "accepted": 15,
+    "accepted": 16,
     "planned": 5
   },
   "acceptanceCounts": {
-    "accepted": 36,
-    "planned": 22
+    "accepted": 41,
+    "planned": 25
   },
   "nextLegalTasks": ["V1-06"],
   "blockedTasks": [],
@@ -80,6 +80,12 @@
       "totalCriteria": 1
     },
     {
+      "taskId": "M0-09",
+      "state": "accepted",
+      "acceptedCriteria": 5,
+      "totalCriteria": 5
+    },
+    {
       "taskId": "V1-02",
       "state": "accepted",
       "acceptedCriteria": 4,
@@ -107,7 +113,7 @@
       "taskId": "V1-06",
       "state": "planned",
       "acceptedCriteria": 0,
-      "totalCriteria": 4
+      "totalCriteria": 5
     },
     {
       "taskId": "V1-07",
@@ -125,13 +131,13 @@
       "taskId": "V1-09",
       "state": "planned",
       "acceptedCriteria": 0,
-      "totalCriteria": 5
+      "totalCriteria": 6
     },
     {
       "taskId": "V1-10",
       "state": "planned",
       "acceptedCriteria": 0,
-      "totalCriteria": 5
+      "totalCriteria": 6
     }
   ]
 }

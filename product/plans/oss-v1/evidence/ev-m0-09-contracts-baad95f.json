@@ -1,0 +1,35 @@
+{
+  "$schema": "../../schemas/evidence.schema.json",
+  "schemaVersion": "1.0.0",
+  "id": "ev-m0-09-contracts-baad95f",
+  "taskId": "M0-09",
+  "type": "command-run",
+  "actor": "codex-local-validation",
+  "commit": "baad95f12fed26e79db3617cdb381a9c457fae39",
+  "createdAt": "2026-08-12T10:33:37Z",
+  "result": {
+    "status": "pass",
+    "checks": [
+      {
+        "name": "pnpm test:contracts",
+        "status": "pass",
+        "summary": "Contract and adversarial tests prove author/route separation, exact request policy, complete and failed route-observation reconciliation, selected-provider consistency, and fail-closed recommendation evidence."
+      }
+    ]
+  },
+  "inputs": {
+    "planDigest": "sha256:0b635d7f095969cd2495234707dfd4cb96ebd2d4f5089a782fd084ddc312043c",
+    "lockfileDigest": "sha256:3ee6dca039a23c4a43059ce1ebb34822d4184cd53027f261dcf30de222ec80e3"
+  },
+  "gateBinding": {
+    "gateId": "QG-CONTRACTS",
+    "kind": "command",
+    "command": "pnpm test:contracts"
+  },
+  "review": null,
+  "redaction": {
+    "status": "verified",
+    "containsRawModelOutput": false,
+    "containsSecrets": false
+  }
+}

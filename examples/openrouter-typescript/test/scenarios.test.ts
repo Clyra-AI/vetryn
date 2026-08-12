@@ -148,6 +148,13 @@ describe("OpenRouter TypeScript golden scenario", () => {
       id: "support-classification",
       owner: "support-platform",
       representativeUsage: { reviewed: true },
+      routePolicy: {
+        allowFallbacks: false,
+        dataCollection: "deny",
+        providerSlug: "azure",
+        requireParameters: true,
+        zdr: true,
+      },
       sourceBinding: { file: "src/support-classification.ts", symbol: "classifySupportTicket" },
     });
     const client = createOpenRouterClient("fixture-only-key-not-a-secret");
@@ -191,6 +198,7 @@ describe("OpenRouter TypeScript golden scenario", () => {
       "cheaper-valid-candidate",
       "invalid-json-output",
       "contradictory-evidence",
+      "model-author-route-separation",
       "rate-limit-budget-exhaustion",
       "stale-source-fingerprint",
     ];
@@ -205,8 +213,13 @@ describe("OpenRouter TypeScript golden scenario", () => {
       expect.arrayContaining(requiredScenarioIds),
     );
     expect(catalog.contentDigest).toBe(createCatalogContentDigest(catalog.models));
-    expect(catalog.models.every(({ id, provider }) => id.startsWith(`${provider}/`))).toBe(true);
+    expect(catalog.models.every(({ id, modelAuthor }) => id.startsWith(`${modelAuthor}/`))).toBe(
+      true,
+    );
     expect(() => parseVetrynArtifact(catalog)).not.toThrow();
+    expect(catalog.models.find(({ id }) => id === "openai/gpt-4.1-mini")?.modelAuthor).toBe(
+      "openai",
+    );
     expect(mockSource).not.toMatch(/\bfetch\s*\(|\bprocess\.env\b|node:(?:http|https)/u);
   });
 
@@ -558,11 +571,11 @@ describe("OpenRouter catalog evidence and shortlist replay", () => {
 
     expect(afterLiveChange).toEqual(beforeLiveChange);
     expect(beforeLiveChange.candidates).toEqual([
-      expect.objectContaining({ modelId: "mock/alpha", projectedCostUsd: "0.0000109" }),
-      expect.objectContaining({ modelId: "mock/bravo", projectedCostUsd: "0.000011" }),
-      expect.objectContaining({ modelId: "mock/charlie", projectedCostUsd: "0.000011" }),
-      expect.objectContaining({ modelId: "mock/delta", projectedCostUsd: "0.000011" }),
-      expect.objectContaining({ modelId: "mock/echo", projectedCostUsd: "0.0000118" }),
+      expect.objectContaining({ estimatedCostUsd: "0.0000109", modelId: "mock/alpha" }),
+      expect.objectContaining({ estimatedCostUsd: "0.000011", modelId: "mock/bravo" }),
+      expect.objectContaining({ estimatedCostUsd: "0.000011", modelId: "mock/charlie" }),
+      expect.objectContaining({ estimatedCostUsd: "0.000011", modelId: "mock/delta" }),
+      expect.objectContaining({ estimatedCostUsd: "0.0000118", modelId: "mock/echo" }),
     ]);
     expect(
       resolveCandidates({ callSite: mockCallSite, limit: 2, observation, snapshot }).candidates.map(
@@ -646,14 +659,14 @@ const mockCatalogModel = (
   inputPricePerMillionUsd: string,
   outputPricePerMillionUsd: string,
   contextWindowTokens: number,
-  options: { readonly provider?: string; readonly retired?: boolean } = {},
+  options: { readonly modelAuthor?: string; readonly retired?: boolean } = {},
 ) => ({
   capabilities: { structuredOutput: true, textGeneration: true, toolCalls: false },
   contextWindowTokens,
   id,
   inputPricePerMillionUsd,
   outputPricePerMillionUsd,
-  provider: options.provider ?? id.slice(0, id.indexOf("/")),
+  modelAuthor: options.modelAuthor ?? id.slice(0, id.indexOf("/")),
   retired: options.retired ?? false,
 });
 
@@ -670,7 +683,13 @@ const mockCallSite = {
   id: "support-classification",
   name: "Support classification",
   owner: "support-platform",
-  providerPolicy: { allowedProviders: ["mock"] },
+  routePolicy: {
+    allowFallbacks: false,
+    dataCollection: "deny",
+    providerSlug: "azure",
+    requireParameters: true,
+    zdr: true,
+  },
   representativeUsage: {
     completionTokens: 1,
     promptTokens: 9,
@@ -697,7 +716,7 @@ const rankedCatalogSnapshot = (): CoreCatalogSnapshot => {
     mockCatalogModel("mock/foxtrot", "0.2", "10.2", 131_072),
     mockCatalogModel("mock/golf", "2", "0.1", 131_072),
     mockCatalogModel("mock/retired", "0", "0", 2_000_000, { retired: true }),
-    mockCatalogModel("other/blocked", "0", "0", 2_000_000, { provider: "other" }),
+    mockCatalogModel("other/slow", "100", "100", 2_000_000, { modelAuthor: "other" }),
   ];
   const contentDigest = createCatalogContentDigest(models);
   return parseVetrynArtifact({

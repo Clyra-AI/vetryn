@@ -33,7 +33,7 @@ organizations requiring dynamic runtime routing are outside the beachhead.
 | Staff AI/application engineer | Keep many model pins current without manually re-benchmarking every release | A trustworthy, reviewable upgrade PR                 |
 | AI platform lead              | Standardize how model migrations are evaluated across repositories          | Versioned manifests, gates, and reproducible reports |
 | Engineering manager           | Reduce inference cost without creating regression incidents                 | Verified savings and no violated quality gate        |
-| Security or privacy reviewer  | Know which data leaves the repository and which provider executes it        | Local/BYOK execution and explicit provider policy    |
+| Security or privacy reviewer  | Know which data leaves the repository and which route actually executes it  | Local/BYOK execution and explicit route evidence     |
 
 ## Supported golden path
 
@@ -45,7 +45,7 @@ V1 supports:
 4. text generation, structured JSON, and simple tool-call workloads;
 5. checked-in JSONL eval cases reviewed by a human;
 6. deterministic assertions; LLM-as-judge scoring is deferred beyond V1;
-7. a deterministic, policy-filtered OpenRouter shortlist of at most five candidates by default,
+7. a deterministic, compatibility-filtered OpenRouter shortlist of at most five candidates by default,
    configurable only to a lower bound;
 8. hard quality, latency, cost, context, and privacy gates;
 9. local runs and GitHub Actions using repository secrets; and
@@ -70,7 +70,8 @@ Every recommendation PR must show:
 
 - call-site ID and source binding;
 - current and proposed canonical model IDs;
-- catalog snapshot and pricing timestamp;
+- catalog snapshot, pricing timestamp, and model author namespace;
+- requested OpenRouter route policy and the redacted router attempts that identify the selected execution provider;
 - fixture revision, evaluator version, seed, attempts, and sample count;
 - quality, cost, latency, error, and variance deltas;
 - failed or regressed cases with redaction controls;
@@ -89,9 +90,13 @@ reproducibility provenance: evaluator version and build, deterministic scorer co
 seed, attempts, timestamps, and aggregate variance. Each call site has an explicit minimum recommendation
 confidence (0.8 by default); the run and recommendation preserve that policy, and a recommendation cannot exceed
 the candidate evidence's variance-adjusted quality lower bound, using only a representation-safe exact-boundary
-comparison. Each call site also declares its approved provider
-allowlist; catalog model metadata must agree with the provider segment of its canonical model ID, and recommendation
-validation derives the privacy gate from that bound catalog identity rather than trusting a producer label.
+comparison. Each call site also declares a strict OpenRouter execution-route policy: one reviewed provider slug,
+fallbacks disabled, required-parameter enforcement enabled, data collection denied, and ZDR required. The segment
+before the first slash in a canonical model ID is stored only as `modelAuthor`; it never proves which endpoint
+executed a request. A complete candidate run must bind the exact route policy used for the request and compact,
+redacted OpenRouter router metadata for every observed attempt with exactly one successful selected attempt.
+Recommendation validation compares the run policy with the reviewed call-site policy and rejects missing,
+contradictory, or unreconciled route evidence rather than trusting catalog identity or a producer privacy label.
 Reason codes are finite and status-compatible. A recommendation can cite only matching, complete runs whose hard
 gates all pass. The core derives quality, cost, and latency outcomes from the bound call-site policy and paired
 metrics rather than trusting producer labels, and proves that a recommended model is present, active, satisfies the
@@ -159,9 +164,16 @@ design.
 - OpenRouter supplies the V1 catalog universe, but hard compatibility and policy filters run before a
   deterministic shortlist whose default and maximum size is five candidates. Each manifest pins a
   human-reviewed representative prompt/completion token-weight profile with provenance. Ranking computes
-  exact-decimal projected workload cost from that profile and normalized catalog prices, then sorts cost
+  exact-decimal estimated workload cost from that profile and normalized model-level catalog prices, then sorts cost
   ascending, context limit descending, and canonical model ID ascending; missing or invalid profiles fail
-  closed.
+  closed. This is a shortlist estimate, not observed provider billing.
+- OpenRouter model IDs identify model authors, not execution providers. Every evaluation request is built from the
+  manifest's explicit route policy with one provider slug, fallbacks disabled, required parameters enforced, data
+  collection denied, and ZDR required. A complete run requires redacted router metadata that reconciles attempts
+  and identifies exactly one selected provider; absent or contradictory route evidence abstains.
+- Scanner reports use an explicit supported-direct-call scope and reconcile files considered, parsed, and failed
+  with patchable/non-patchable observations, confidence counts, and reason-code totals. Zero findings are not
+  represented as zero AI usage.
 - Provider-backed assessment is manual by default. A repository may explicitly opt into a schedule;
   unchanged normalized catalog and evaluation-input digests skip paid candidate execution only when
   prior evidence is complete, integrity-valid, and reusable under current policy.

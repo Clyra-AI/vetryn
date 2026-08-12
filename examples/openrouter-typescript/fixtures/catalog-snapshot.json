@@ -9,7 +9,7 @@
       "id": "anthropic/claude-3-5-haiku",
       "inputPricePerMillionUsd": "0.80",
       "outputPricePerMillionUsd": "4.00",
-      "provider": "anthropic",
+      "modelAuthor": "anthropic",
       "retired": false
     },
     {
@@ -18,7 +18,7 @@
       "id": "openai/gpt-4.1-mini",
       "inputPricePerMillionUsd": "0.40",
       "outputPricePerMillionUsd": "1.60",
-      "provider": "openai",
+      "modelAuthor": "openai",
       "retired": false
     },
     {
@@ -27,7 +27,7 @@
       "id": "openai/gpt-4o-mini",
       "inputPricePerMillionUsd": "0.15",
       "outputPricePerMillionUsd": "0.60",
-      "provider": "openai",
+      "modelAuthor": "openai",
       "retired": false
     }
   ],

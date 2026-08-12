@@ -34,3 +34,8 @@ vetryn catalog shortlist \
 The successful observation must commit the snapshot's exact ID and digest with freshness no earlier than the
 snapshot's creation time. The output binds the call site and candidates to both evidence records. Use `--limit`
 only to lower the default bound of five.
+
+`vetryn scan --json` includes both findings and an `assessment` funnel for the supported direct-call scope. File
+counts reconcile considered, parsed, and parse-error units; observation counts reconcile patchable/non-patchable,
+high-confidence/ambiguous, and reason-code totals. A scan with no findings therefore remains an explicitly scoped
+assessment rather than a claim that the repository contains no other AI usage.

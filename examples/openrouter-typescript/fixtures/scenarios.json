@@ -105,13 +105,25 @@
       ]
     },
     {
+      "id": "model-author-route-separation",
+      "category": "provider",
+      "description": "A model authored under the OpenAI namespace is evaluated through a separately reviewed Azure execution route.",
+      "expectedDisposition": "idempotent",
+      "expectedReason": "Model authorship is catalog metadata; privacy is bound to explicit request policy and observed router metadata.",
+      "assertions": [
+        "The catalog records modelAuthor as openai without claiming OpenAI executed the request.",
+        "The manifest requires the Azure route, disables fallbacks, requires parameter support, denies data collection, and requires ZDR.",
+        "A complete candidate run without router attempt metadata must fail validation."
+      ]
+    },
+    {
       "id": "filter-before-shortlist-truncation",
       "category": "catalog",
-      "description": "The three lowest projected-cost catalog entries are respectively retired, missing required tool support, and blocked by repository privacy policy, while more than five compatible entries remain.",
+      "description": "The lowest projected-cost catalog entries include retired and capability-incompatible models while more than five compatible entries remain.",
       "expectedDisposition": "idempotent",
       "expectedReason": "Hard compatibility and policy filters run before the ranked shortlist is truncated.",
       "assertions": [
-        "The retired, tool-incompatible, and privacy-blocked entries are excluded with deterministic reasons before ranking and truncation.",
+        "The retired and tool-incompatible entries are excluded with deterministic reasons before ranking and truncation.",
         "The ordered candidate IDs are mock/alpha, mock/bravo, mock/charlie, mock/delta, and mock/echo.",
         "The filtered entries do not consume candidate slots and mock/foxtrot remains the first eligible model outside the bound.",
         "Exactly five compatible candidates execute and no filtered model executes."

@@ -1,5 +1,8 @@
 # ADR 0018: Bind confidence and provider identity to candidate evidence
 
+> Partially superseded by ADR 0019. The confidence decision remains active; model-ID namespaces now bind
+> `modelAuthor`, not execution-provider identity.
+
 ## Context
 
 Recommendation confidence and catalog provider metadata are untrusted artifact inputs. A producer could otherwise

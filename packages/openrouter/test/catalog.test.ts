@@ -10,6 +10,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   FileCatalogStore,
   OpenRouterCatalogError,
+  createOpenRouterProviderPreferences,
+  createOpenRouterRouteRequestPolicy,
   normalizeOpenRouterCatalog,
   refreshOpenRouterCatalog,
   resolveCandidates,
@@ -54,7 +56,13 @@ const callSite = {
   id: "support-classification",
   name: "Support classification",
   owner: "support-platform",
-  providerPolicy: { allowedProviders: ["mock"] },
+  routePolicy: {
+    allowFallbacks: false,
+    dataCollection: "deny",
+    providerSlug: "azure",
+    requireParameters: true,
+    zdr: true,
+  },
   representativeUsage: {
     completionTokens: 1,
     promptTokens: 9,
@@ -80,7 +88,7 @@ const catalogModel = (
   output: string,
   contextWindowTokens: number,
   options: {
-    readonly provider?: string;
+    readonly modelAuthor?: string;
     readonly retired?: boolean;
     readonly tools?: boolean;
   } = {},
@@ -94,7 +102,7 @@ const catalogModel = (
   id,
   inputPricePerMillionUsd: input,
   outputPricePerMillionUsd: output,
-  provider: options.provider ?? id.slice(0, id.indexOf("/")),
+  modelAuthor: options.modelAuthor ?? id.slice(0, id.indexOf("/")),
   retired: options.retired ?? false,
 });
 
@@ -281,24 +289,61 @@ describe("candidate resolution", () => {
     const shortlist = resolveCandidates({ callSite, observation, snapshot });
 
     expect(shortlist.candidates).toEqual([
-      expect.objectContaining({ modelId: "mock/alpha", projectedCostUsd: "0.0000109" }),
-      expect.objectContaining({ modelId: "mock/bravo", projectedCostUsd: "0.000011" }),
-      expect.objectContaining({ modelId: "mock/charlie", projectedCostUsd: "0.000011" }),
-      expect.objectContaining({ modelId: "mock/delta", projectedCostUsd: "0.000011" }),
-      expect.objectContaining({ modelId: "mock/echo", projectedCostUsd: "0.0000118" }),
+      expect.objectContaining({ estimatedCostUsd: "0.0000109", modelId: "mock/alpha" }),
+      expect.objectContaining({ estimatedCostUsd: "0.000011", modelId: "mock/bravo" }),
+      expect.objectContaining({ estimatedCostUsd: "0.000011", modelId: "mock/charlie" }),
+      expect.objectContaining({ estimatedCostUsd: "0.000011", modelId: "mock/delta" }),
+      expect.objectContaining({ estimatedCostUsd: "0.0000118", modelId: "mock/echo" }),
     ]);
     expect(shortlist.catalogSnapshotId).toBe(snapshot.id);
     expect(shortlist.catalogContentDigest).toBe(snapshot.contentDigest);
     expect(shortlist.catalogObservationId).toBe(observation.id);
     expect(shortlist.catalogObservedAt).toBe(snapshot.observedAt);
+    expect(shortlist.costBasis).toBe("openrouter-model-catalog-estimate");
+    expect(shortlist.routePolicy).toEqual(callSite.routePolicy);
     expect(shortlist.exclusions).toEqual(
       expect.arrayContaining([
         { modelId: "mock/baseline", reason: "baseline-model" },
         { modelId: "mock/too-small", reason: "context-window-insufficient" },
         { modelId: "mock/retired", reason: "retired" },
-        { modelId: "other/blocked", reason: "provider-blocked" },
       ]),
     );
+    expect(shortlist.exclusions).not.toContainEqual(
+      expect.objectContaining({ modelId: "other/slow" }),
+    );
+  });
+
+  it("keeps model authorship separate from the reviewed execution route", () => {
+    const snapshot = createRankingSnapshot();
+    const shortlist = resolveCandidates({
+      callSite,
+      limit: 5,
+      observation: observationFor(snapshot),
+      snapshot,
+    });
+
+    expect(shortlist.routePolicy.providerSlug).toBe("azure");
+    expect(snapshot.models.find(({ id }) => id === "other/slow")?.modelAuthor).toBe("other");
+    expect(shortlist.exclusions).not.toContainEqual(
+      expect.objectContaining({ modelId: "other/slow" }),
+    );
+    expect(createOpenRouterProviderPreferences(shortlist.routePolicy)).toEqual({
+      allow_fallbacks: false,
+      data_collection: "deny",
+      only: ["azure"],
+      require_parameters: true,
+      zdr: true,
+    });
+    expect(createOpenRouterRouteRequestPolicy(shortlist.routePolicy)).toEqual({
+      headers: { "X-OpenRouter-Metadata": "enabled" },
+      provider: createOpenRouterProviderPreferences(shortlist.routePolicy),
+    });
+    expect(() =>
+      createOpenRouterProviderPreferences({
+        ...shortlist.routePolicy,
+        allowFallbacks: true,
+      }),
+    ).toThrow(/allowFallbacks/i);
   });
 
   it("allows only a lower repository bound and fails closed on invalid usage", () => {
@@ -890,7 +935,7 @@ function createRankingSnapshot(): CatalogSnapshot {
     catalogModel("mock/golf", "2", "0.1", 131_072),
     catalogModel("mock/too-small", "0", "0", 9),
     catalogModel("mock/retired", "0", "0", 1_000_000, { retired: true }),
-    catalogModel("other/blocked", "0", "0", 1_000_000, { provider: "other" }),
+    catalogModel("other/slow", "100", "100", 1_000_000, { modelAuthor: "other" }),
   ];
   const contentDigest = createCatalogContentDigest(models);
   return parseCatalogSnapshot({

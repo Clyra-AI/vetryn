@@ -1,0 +1,60 @@
+{
+  "artifactType": "validation_report",
+  "schemaVersion": "1.0.0",
+  "taskId": "M0-09",
+  "candidateCommit": "baad95f12fed26e79db3617cdb381a9c457fae39",
+  "packetId": "oss-v1:M0-09:r3",
+  "result": "pass",
+  "createdAt": "2026-08-12T10:33:37Z",
+  "workProofMarkerRef": "product/plans/oss-v1/evidence/lifecycle/M0-09/baad95f12fed26e79db3617cdb381a9c457fae39/work_proof_marker.json",
+  "redEvidence": [
+    {
+      "check": "pnpm test",
+      "summary": "The initial plan fixture run failed because the new active task was not isolated; product contract tests then failed until model authorship, route observations, and selected-provider consistency were implemented."
+    },
+    {
+      "check": "clean-SHA trust review",
+      "summary": "Review found evaluator repetitions were being conflated with router attempts and that failed runs could not retain failed route observations; both were corrected before this candidate."
+    }
+  ],
+  "greenEvidenceRefs": [
+    "ev-m0-09-plan-check-baad95f",
+    "ev-m0-09-repo-check-baad95f",
+    "ev-m0-09-contracts-baad95f",
+    "ev-m0-09-scenarios-baad95f"
+  ],
+  "acceptanceResults": [
+    {
+      "acceptanceItemId": "ROUTE-001",
+      "status": "implemented",
+      "summary": "Catalog modelAuthor and reviewed routePolicy are separate strict fields."
+    },
+    {
+      "acceptanceItemId": "ROUTE-002",
+      "status": "implemented",
+      "summary": "Shortlists carry strict provider routing plus opt-in router-metadata request configuration."
+    },
+    {
+      "acceptanceItemId": "ROUTE-003",
+      "status": "implemented",
+      "summary": "Complete runs require per-request reconciled attempts and one matching selected provider; failed runs may preserve failed attempts with no selection."
+    },
+    {
+      "acceptanceItemId": "RECON-001",
+      "status": "implemented",
+      "summary": "Scan results reconcile file, observation, confidence, patchability, and reason-code units within an explicit supported scope."
+    },
+    {
+      "acceptanceItemId": "PLAN-005",
+      "status": "implemented",
+      "summary": "V1-06, V1-07, V1-09, and V1-10 preserve route and assessment evidence without adding runtime discovery."
+    }
+  ],
+  "introducedFailures": [],
+  "preExistingFailures": [],
+  "residualRisks": [
+    "OpenRouter router metadata is provider-supplied untrusted input and remains subject to adapter parsing in V1-06.",
+    "Live provider transport and cache behavior remain outside this offline correction task."
+  ],
+  "promotionDecision": "ready_for_maintainer_promotion"
+}

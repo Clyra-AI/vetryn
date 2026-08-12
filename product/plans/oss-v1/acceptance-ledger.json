@@ -172,6 +172,55 @@
       "evidenceRefs": ["ev-m0-08-repo-check-7f9e338"]
     },
     {
+      "id": "ROUTE-001",
+      "taskId": "M0-09",
+      "statement": "Catalog and call-site contracts model the canonical model-ID namespace as model-author identity and model execution as a separate reviewed OpenRouter route policy.",
+      "verification": { "method": "test", "testLevel": "contract", "gateId": "QG-CONTRACTS" },
+      "waivable": false,
+      "status": "accepted",
+      "evidenceRefs": ["ev-m0-09-contracts-baad95f"]
+    },
+    {
+      "id": "ROUTE-002",
+      "taskId": "M0-09",
+      "statement": "Candidate shortlists carry one explicit provider route with fallbacks disabled, parameter support required, provider data collection denied, and zero-data-retention required; model authors cannot satisfy this policy.",
+      "verification": { "method": "test", "testLevel": "adversarial", "gateId": "QG-SCENARIOS" },
+      "waivable": false,
+      "status": "accepted",
+      "evidenceRefs": ["ev-m0-09-scenarios-baad95f"]
+    },
+    {
+      "id": "ROUTE-003",
+      "taskId": "M0-09",
+      "statement": "A complete provider-backed candidate-run contract binds the requested route policy and accounts for every observed router attempt plus exactly one selected provider; missing or contradictory route evidence fails closed.",
+      "verification": { "method": "test", "testLevel": "adversarial", "gateId": "QG-CONTRACTS" },
+      "waivable": false,
+      "status": "accepted",
+      "evidenceRefs": ["ev-m0-09-contracts-baad95f"]
+    },
+    {
+      "id": "RECON-001",
+      "taskId": "M0-09",
+      "statement": "Repository scan output deterministically reconciles supported TypeScript files, parse failures, findings, patchable bindings, and ambiguous or non-patchable observations using explicit units and a supported-surface-only claim.",
+      "verification": { "method": "test", "testLevel": "integration", "gateId": "QG-REPO-CHECK" },
+      "waivable": false,
+      "status": "accepted",
+      "evidenceRefs": ["ev-m0-09-repo-check-baad95f"]
+    },
+    {
+      "id": "PLAN-005",
+      "taskId": "M0-09",
+      "statement": "The V1 evaluation, recommendation, Action, and field packets preserve the source-to-route-to-observation evidence ladder and require reconciled denominators without adding runtime discovery to V1.",
+      "verification": {
+        "method": "review",
+        "testLevel": "adversarial",
+        "gateId": "QG-TRUST-REVIEW"
+      },
+      "waivable": false,
+      "status": "accepted",
+      "evidenceRefs": ["ev-m0-09-plan-check-baad95f"]
+    },
+    {
       "id": "CONTRACT-001",
       "taskId": "V1-01",
       "statement": "Every V1 artifact has a versioned strict schema and canonical serializer.",
@@ -420,6 +469,15 @@
       "evidenceRefs": []
     },
     {
+      "id": "EVAL-005",
+      "taskId": "V1-06",
+      "statement": "Provider-backed execution applies the reviewed route policy at the request boundary and records every router attempt and exactly one selected provider; missing, cached-without-metadata, or inconsistent route evidence remains incomplete.",
+      "verification": { "method": "test", "testLevel": "adversarial", "gateId": "QG-SCENARIOS" },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
       "id": "RECOMMEND-001",
       "taskId": "V1-07",
       "statement": "A recommendation requires all hard gates, the configured quality threshold, minimum evidence, and a material economic opportunity.",
@@ -440,7 +498,7 @@
     {
       "id": "RECOMMEND-003",
       "taskId": "V1-07",
-      "statement": "JSON and Markdown reports describe the same deltas, failures, confidence, provenance, and estimated savings.",
+      "statement": "JSON and Markdown reports describe the same deltas, failures, confidence, route provenance, limitations, and savings while distinguishing repository pins, shortlist estimates, observed evaluation cost, and optional runtime corroboration.",
       "verification": { "method": "test", "testLevel": "contract", "gateId": "QG-CONTRACTS" },
       "waivable": false,
       "status": "planned",
@@ -549,6 +607,15 @@
       "evidenceRefs": []
     },
     {
+      "id": "ACTION-006",
+      "taskId": "V1-09",
+      "statement": "Action evidence reconciles supported files, parse failures, source observations, manifest-bound call sites, evaluation readiness, recommendations, abstentions, and draft PRs without claiming a complete runtime inventory.",
+      "verification": { "method": "test", "testLevel": "e2e", "gateId": "QG-SCENARIOS" },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
       "id": "FIELD-001",
       "taskId": "V1-10",
       "statement": "At least ten qualified recommendation PRs are observed across at least three independent companies.",
@@ -592,6 +659,15 @@
       "id": "FIELD-005",
       "taskId": "V1-10",
       "statement": "Sanitized field evidence records exactly one outcome: positive valuable open-ended call sites blocked specifically because deterministic evaluation cannot establish semantic non-inferiority; representative no-findings after a predeclared eligibility census and direct assessment of at least ten eligible open-ended call sites across at least three FIELD-001 companies; or insufficient coverage with the denominator, exclusions, and missing coverage recorded. Coverage and exclusions require independent review, and only the positive outcome may justify semantic-scorer design.",
+      "verification": { "method": "field", "testLevel": "field", "gateId": "QG-FIELD" },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
+      "id": "FIELD-006",
+      "taskId": "V1-10",
+      "statement": "Each design-partner repository records the exact assessed-surface funnel from supported observations through manifest binding, evaluation readiness, recommendation, pull request, and merge, including denominators and exclusion reasons.",
       "verification": { "method": "field", "testLevel": "field", "gateId": "QG-FIELD" },
       "waivable": false,
       "status": "planned",

@@ -2,7 +2,7 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "V1-06",
-  "revision": 0,
+  "revision": 1,
   "state": "planned",
   "attempt": 0,
   "candidate": null,
@@ -24,6 +24,11 @@
     },
     {
       "criterionId": "EVAL-004",
+      "status": "pending",
+      "evidenceRefs": []
+    },
+    {
+      "criterionId": "EVAL-005",
       "status": "pending",
       "evidenceRefs": []
     }
@@ -75,6 +80,13 @@
       "at": "2026-08-10T00:30:00Z",
       "actor": "planning-agent",
       "reason": "Task created by the canonical OSS V1 plan."
+    },
+    {
+      "from": "planned",
+      "to": "planned",
+      "at": "2026-08-12T10:04:24Z",
+      "actor": "davidahmann",
+      "reason": "Required explicit OpenRouter route-policy enforcement and complete router-attempt evidence before a provider-backed run can complete."
     }
   ]
 }

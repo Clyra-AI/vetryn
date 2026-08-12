@@ -55,7 +55,7 @@ describe("catalog CLI operations", () => {
 
     expect(shortlist).toMatchObject({
       baselineModel: "openai/baseline",
-      candidates: [{ modelId: "openai/candidate", projectedCostUsd: "0.0000011" }],
+      candidates: [{ estimatedCostUsd: "0.0000011", modelId: "openai/candidate" }],
       catalogObservationId: "cli-refresh",
       catalogObservedAt: "2026-08-11T12:00:00.000Z",
       catalogSnapshotId: refresh.snapshot.id,
@@ -157,7 +157,13 @@ const manifest = {
       id: "support-classification",
       name: "Support classification",
       owner: "support-platform",
-      providerPolicy: { allowedProviders: ["openai"] },
+      routePolicy: {
+        allowFallbacks: false,
+        dataCollection: "deny",
+        providerSlug: "azure",
+        requireParameters: true,
+        zdr: true,
+      },
       representativeUsage: {
         completionTokens: 1,
         promptTokens: 9,

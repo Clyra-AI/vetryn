@@ -154,16 +154,32 @@ export const callSiteCapabilityRequirementsSchema = z
 
 export type CallSiteCapabilityRequirements = z.infer<typeof callSiteCapabilityRequirementsSchema>;
 
-export const providerPolicySchema = z
-  .object({
-    allowedProviders: z.array(stableIdSchema).min(1),
-  })
-  .strict()
-  .superRefine((policy, context) =>
-    assertUniqueValues(policy.allowedProviders, context, "approved provider", ["allowedProviders"]),
+const openRouterProviderSlugSchema = z
+  .string()
+  .regex(
+    /^[a-z0-9][a-z0-9-]*(?:\/[a-z0-9][a-z0-9-]*)?$/,
+    "Use a canonical OpenRouter provider slug.",
   );
 
-export type ProviderPolicy = z.infer<typeof providerPolicySchema>;
+function normalizedProviderName(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
+export const openRouterRoutePolicySchema = z
+  .object({
+    allowFallbacks: z.literal(false),
+    dataCollection: z.literal("deny"),
+    providerSlug: openRouterProviderSlugSchema,
+    requireParameters: z.literal(true),
+    zdr: z.literal(true),
+  })
+  .strict();
+
+export type OpenRouterRoutePolicy = z.infer<typeof openRouterRoutePolicySchema>;
 
 export const callSiteSpecSchema = z
   .object({
@@ -173,7 +189,7 @@ export const callSiteSpecSchema = z
     id: stableIdSchema,
     name: z.string().min(1),
     owner: z.string().min(1),
-    providerPolicy: providerPolicySchema,
+    routePolicy: openRouterRoutePolicySchema,
     requiredCapabilities: callSiteCapabilityRequirementsSchema,
   })
   .strict();
@@ -192,7 +208,7 @@ export const callSiteSchema = z
     id: stableIdSchema,
     name: z.string().min(1),
     owner: z.string().min(1),
-    providerPolicy: providerPolicySchema,
+    routePolicy: openRouterRoutePolicySchema,
     requiredCapabilities: callSiteCapabilityRequirementsSchema,
     representativeUsage: representativeUsageSchema,
     sourceBinding: boundSourceBindingSchema,
@@ -308,18 +324,18 @@ const catalogModelSchema = z
     id: modelIdSchema,
     inputPricePerMillionUsd: decimalSchema,
     outputPricePerMillionUsd: decimalSchema,
-    provider: stableIdSchema,
+    modelAuthor: stableIdSchema,
     retired: z.boolean(),
   })
   .strict()
   .superRefine((model, context) => {
-    const providerFromModelId = model.id.split("/", 1)[0];
+    const authorFromModelId = model.id.split("/", 1)[0];
 
-    if (model.provider !== providerFromModelId) {
+    if (model.modelAuthor !== authorFromModelId) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "Catalog model provider must match the canonical model ID provider segment.",
-        path: ["provider"],
+        message: "Catalog model author must match the canonical model ID author segment.",
+        path: ["modelAuthor"],
       });
     }
   });
@@ -454,6 +470,123 @@ const candidateRunFailureCodeSchema = z.enum([
   "timeout",
 ]);
 
+const openRouterRouteAttemptSchema = z
+  .object({
+    attemptOrdinal: z.number().int().positive(),
+    model: modelIdSchema,
+    providerName: z.string().trim().min(1).max(200),
+    requestOrdinal: z.number().int().positive(),
+    statusCode: z.number().int().min(100).max(599),
+  })
+  .strict();
+
+export const openRouterRouteObservationSchema = z
+  .object({
+    attempts: z.array(openRouterRouteAttemptSchema).min(1).max(20_000),
+    requestCount: z.number().int().positive().max(10_000),
+    selectedProvider: z
+      .object({
+        model: modelIdSchema,
+        providerName: z.string().trim().min(1).max(200),
+        providerSlug: openRouterProviderSlugSchema,
+      })
+      .strict()
+      .nullable(),
+    source: z.literal("openrouter-router-metadata"),
+  })
+  .strict()
+  .superRefine((observation, context) => {
+    const attemptKeys = new Set<string>();
+    for (const [index, attempt] of observation.attempts.entries()) {
+      if (attempt.requestOrdinal > observation.requestCount) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Route attempt requestOrdinal exceeds the declared request count.",
+          path: ["attempts", index, "requestOrdinal"],
+        });
+      }
+      const key = `${attempt.requestOrdinal}:${attempt.attemptOrdinal}`;
+      if (attemptKeys.has(key)) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Route observation contains a duplicate request/attempt ordinal.",
+          path: ["attempts", index],
+        });
+      }
+      attemptKeys.add(key);
+    }
+
+    for (let requestOrdinal = 1; requestOrdinal <= observation.requestCount; requestOrdinal += 1) {
+      const attempts = observation.attempts.filter(
+        (attempt) => attempt.requestOrdinal === requestOrdinal,
+      );
+      if (attempts.length === 0) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Route observation must account for every declared request.",
+          path: ["attempts"],
+        });
+        continue;
+      }
+      const ordinals = attempts
+        .map(({ attemptOrdinal }) => attemptOrdinal)
+        .toSorted((a, b) => a - b);
+      if (ordinals.some((ordinal, index) => ordinal !== index + 1)) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Route attempt ordinals must be contiguous for each request.",
+          path: ["attempts"],
+        });
+      }
+      const successfulAttempts = attempts.filter(
+        (attempt) => attempt.statusCode >= 200 && attempt.statusCode < 300,
+      );
+      const selectedAttempts =
+        observation.selectedProvider === null
+          ? []
+          : successfulAttempts.filter(
+              (attempt) =>
+                attempt.providerName === observation.selectedProvider?.providerName &&
+                attempt.model === observation.selectedProvider?.model,
+            );
+      if (observation.selectedProvider !== null && selectedAttempts.length !== 1) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          message:
+            "Each observed request must reconcile exactly one successful attempt with the selected provider.",
+          path: ["attempts"],
+        });
+      }
+      if (observation.selectedProvider === null && successfulAttempts.length > 0) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          message:
+            "A route observation with a successful attempt must identify the selected provider.",
+          path: ["selectedProvider"],
+        });
+      }
+    }
+
+    const selectedProvider = observation.selectedProvider;
+    if (
+      selectedProvider !== null &&
+      observation.attempts.some(
+        (attempt) =>
+          attempt.providerName !== selectedProvider.providerName ||
+          attempt.model !== selectedProvider.model,
+      )
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          "Fallback-disabled route evidence cannot include another provider or model attempt.",
+        path: ["attempts"],
+      });
+    }
+  });
+
+export type OpenRouterRouteObservation = z.infer<typeof openRouterRouteObservationSchema>;
+
 export const candidateRunSchema = z
   .object({
     artifactType: z.literal("candidate-run"),
@@ -471,6 +604,8 @@ export const candidateRunSchema = z
     ...artifactEnvelope,
     metrics: candidateMetricsSchema.optional(),
     provenance: candidateRunProvenanceSchema,
+    routeObservation: openRouterRouteObservationSchema.optional(),
+    routePolicy: openRouterRoutePolicySchema,
     status: z.enum(["complete", "failed", "incomplete"]),
   })
   .strict()
@@ -506,6 +641,76 @@ export const candidateRunSchema = z
         code: z.ZodIssueCode.custom,
         message: "Complete candidate runs require hard-gate outcomes.",
         path: ["gateOutcomes"],
+      });
+    }
+
+    if (artifact.status === "complete" && artifact.routeObservation === undefined) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Complete candidate runs require observed OpenRouter routing metadata.",
+        path: ["routeObservation"],
+      });
+    }
+
+    if (artifact.status === "complete" && artifact.routeObservation?.selectedProvider === null) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Complete candidate runs require exactly one selected OpenRouter provider.",
+        path: ["routeObservation", "selectedProvider"],
+      });
+    }
+
+    if (
+      artifact.routeObservation !== undefined &&
+      artifact.routeObservation.selectedProvider !== null &&
+      artifact.routeObservation.selectedProvider.model !== artifact.candidateModel
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "The selected route provider must identify the candidate model.",
+        path: ["routeObservation", "selectedProvider", "model"],
+      });
+    }
+
+    if (
+      artifact.routeObservation !== undefined &&
+      artifact.routeObservation.selectedProvider !== null &&
+      artifact.routeObservation.selectedProvider.providerSlug !== artifact.routePolicy.providerSlug
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "The selected route provider must match the requested provider slug.",
+        path: ["routeObservation", "selectedProvider", "providerSlug"],
+      });
+    }
+
+    if (
+      artifact.routeObservation !== undefined &&
+      artifact.routeObservation.selectedProvider !== null &&
+      normalizedProviderName(artifact.routeObservation.selectedProvider.providerName) !==
+        artifact.routePolicy.providerSlug.split("/", 1)[0]
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "The observed selected provider name must match the requested provider slug.",
+        path: ["routeObservation", "selectedProvider", "providerName"],
+      });
+    }
+
+    if (
+      artifact.routeObservation !== undefined &&
+      artifact.routeObservation.attempts.some(
+        (attempt) =>
+          attempt.model !== artifact.candidateModel ||
+          normalizedProviderName(attempt.providerName) !==
+            artifact.routePolicy.providerSlug.split("/", 1)[0],
+      )
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          "Every observed route attempt must match the candidate model and requested provider.",
+        path: ["routeObservation", "attempts"],
       });
     }
 
@@ -840,6 +1045,12 @@ export function assertCandidateRunPolicy(
     );
   }
 
+  if (canonicalizeJson(candidateRun.routePolicy) !== canonicalizeJson(callSite.routePolicy)) {
+    throw new VetrynContractError(
+      "Candidate run has a different OpenRouter route policy than its call-site policy.",
+    );
+  }
+
   if (candidateRun.status === "complete") {
     assertMeasuredHardGateOutcomes(candidateRun, callSite);
   }
@@ -1152,15 +1363,9 @@ function assertCandidateRunCatalog(
     );
   }
 
-  if (!callSite.providerPolicy.allowedProviders.includes(candidateModel.provider)) {
-    throw new VetrynContractError(
-      `Recommendation evidence candidate model ${candidateRun.candidateModel} provider ${candidateModel.provider} is not in the call site's approved provider policy.`,
-    );
-  }
-
   if (candidateRun.status === "complete" && candidateRun.gateOutcomes?.privacy !== "pass") {
     throw new VetrynContractError(
-      `Candidate run ${candidateRun.id} has an invalid privacy gate outcome for its approved provider policy.`,
+      `Candidate run ${candidateRun.id} has an invalid privacy gate outcome for its reviewed route policy.`,
     );
   }
 

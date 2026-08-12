@@ -52,6 +52,13 @@
       "blocks": []
     },
     {
+      "id": "DEC-ROUTE-EVIDENCE",
+      "status": "locked",
+      "decision": "A model namespace identifies its author, not the OpenRouter execution provider. V1 privacy policy binds an explicit provider route, disables provider fallbacks, requires parameter support, and requires observed route evidence before an evaluation run is complete.",
+      "rationale": "Model identity, requested route policy, and the provider that actually handled a request are distinct evidence types; conflating them can make privacy and cost claims pass without execution evidence.",
+      "blocks": []
+    },
+    {
       "id": "DEC-IDENTITY",
       "status": "locked",
       "decision": "Humans own stable call-site IDs in manifests; scanners emit source fingerprints.",
@@ -639,6 +646,121 @@
       ]
     },
     {
+      "id": "M0-09",
+      "milestone": "M0",
+      "title": "Separate model identity from execution-route evidence",
+      "objective": "Correct the accepted catalog and privacy boundary before provider-backed evaluation, add explicit OpenRouter route policy and observation contracts, and make repository assessment counts reconcilable without broadening scanner support.",
+      "risk": {
+        "level": "high",
+        "domains": ["provider-identity", "privacy", "evidence-lineage", "reporting"]
+      },
+      "dependsOn": [
+        { "taskId": "V1-03", "kind": "hard" },
+        { "taskId": "V1-04", "kind": "hard" },
+        { "taskId": "V1-05", "kind": "hard" }
+      ],
+      "acceptanceItemIds": ["ROUTE-001", "ROUTE-002", "ROUTE-003", "RECON-001", "PLAN-005"],
+      "scope": {
+        "allowedPaths": [
+          ".changeset/**",
+          "CHANGELOG.md",
+          "docs/**",
+          "product/plans/**",
+          "packages/core/**",
+          "packages/openrouter/**",
+          "packages/cli/**",
+          "examples/openrouter-typescript/**",
+          "scripts/task.mjs",
+          "scripts/plan.test.mjs",
+          "scripts/task.test.mjs"
+        ],
+        "forbiddenPaths": ["packages/typescript/**", "action.yml", ".github/workflows/**"]
+      },
+      "semanticInvariants": [
+        "A canonical model ID namespace is model-author evidence and never execution-provider evidence.",
+        "OpenRouter evaluation route policy permits one reviewed provider slug, disables provider fallbacks, requires parameter support, denies provider data collection, and requires zero-data-retention routing.",
+        "A complete provider-backed candidate run binds the requested route policy and a router observation that accounts for every provider attempt and exactly one selected provider.",
+        "Model-catalog cost remains an explicitly labeled shortlist estimate; recommendation savings use observed evaluation cost rather than presenting the catalog estimate as billed cost.",
+        "Repository scan reporting reconciles supported TypeScript files, parse failures, findings, patchable bindings, and ambiguous or non-patchable observations with explicit units and a narrow coverage claim.",
+        "The correction does not add wrapper resolution, production tracing, dynamic routing, a lineage graph, a hosted dependency, or live provider calls."
+      ],
+      "deliverables": [
+        ".changeset/**",
+        "packages/core/**",
+        "packages/openrouter/**",
+        "packages/cli/**",
+        "examples/openrouter-typescript/**",
+        "docs/**",
+        "product/plans/**",
+        "scripts/task.mjs",
+        "scripts/task.test.mjs"
+      ],
+      "deliveryIntent": {
+        "changelog": {
+          "impact": "required",
+          "section": "Fixed",
+          "draftEntry": "Separated OpenRouter model authors from reviewed provider routes, required route observations for complete runs, and added reconciled repository assessment counts.",
+          "semverMarker": "minor"
+        },
+        "versioningImpact": "Record minor Changesets for @vetryn/core, @vetryn/openrouter, and vetryn; publication remains a separate release operation.",
+        "migrationImpact": "Pre-release call-site, catalog, candidate-run, shortlist, and scan-result fixtures must migrate from inferred provider identity to explicit route policy and observation fields.",
+        "docsSyncRefs": [
+          {
+            "path": "docs/oss-v1.md",
+            "reason": "Correct the product trust boundary and evidence claims."
+          },
+          {
+            "path": "docs/architecture.md",
+            "reason": "Document model, route-policy, route-observation, and assessment-reconciliation ownership."
+          },
+          {
+            "path": "docs/adr/0019-separate-model-author-and-execution-route.md",
+            "reason": "Record the public identity, privacy, cost, and failure-semantics correction."
+          },
+          {
+            "path": "packages/core/README.md",
+            "reason": "Document the changed public domain contracts."
+          },
+          {
+            "path": "packages/openrouter/README.md",
+            "reason": "Document explicit provider routing and estimate semantics."
+          },
+          {
+            "path": "packages/cli/README.md",
+            "reason": "Document reconciled supported-surface scan output."
+          },
+          {
+            "path": "examples/openrouter-typescript/README.md",
+            "reason": "Keep the golden workflow and fixture terminology aligned."
+          }
+        ]
+      },
+      "requiredTestLevels": ["unit", "contract", "integration", "e2e", "adversarial"],
+      "requiredGates": [
+        "QG-PLAN-CHECK",
+        "QG-REPO-CHECK",
+        "QG-CONTRACTS",
+        "QG-SCENARIOS",
+        "QG-INDEPENDENT-VERIFY",
+        "QG-TRUST-REVIEW"
+      ],
+      "requiredReviews": ["maintainer", "trust-reviewer"],
+      "capabilities": {
+        "network": false,
+        "credentials": false,
+        "provider": false,
+        "githubWrite": false
+      },
+      "maxAttempts": 2,
+      "stopConditions": [
+        "A model author or model-ID namespace can satisfy execution-provider privacy policy.",
+        "A complete provider-backed run can omit route policy, provider attempts, or the selected provider.",
+        "A shortlist estimate is represented as observed or billed provider cost.",
+        "A repository assessment makes a negative claim beyond the explicitly supported scanned surface.",
+        "The change introduces live provider execution, runtime tracing, wrapper resolution, or dynamic routing."
+      ]
+    },
+    {
       "id": "V1-02",
       "milestone": "M1",
       "title": "Build the deterministic golden repository",
@@ -874,9 +996,10 @@
       "dependsOn": [
         { "taskId": "V1-01", "kind": "hard" },
         { "taskId": "V1-02", "kind": "hard" },
-        { "taskId": "M0-06", "kind": "hard" }
+        { "taskId": "M0-06", "kind": "hard" },
+        { "taskId": "M0-09", "kind": "hard" }
       ],
-      "acceptanceItemIds": ["EVAL-001", "EVAL-002", "EVAL-003", "EVAL-004"],
+      "acceptanceItemIds": ["EVAL-001", "EVAL-002", "EVAL-003", "EVAL-004", "EVAL-005"],
       "scope": {
         "allowedPaths": [
           "packages/core/**",
@@ -888,7 +1011,8 @@
       },
       "semanticInvariants": [
         "Hard limits cannot be outweighed by aggregate quality or savings.",
-        "Partial, exhausted, or privacy-unsafe runs cannot recommend."
+        "Partial, exhausted, or privacy-unsafe runs cannot recommend.",
+        "Provider-backed execution applies the reviewed route policy at the request boundary and records router attempts and the selected provider; missing or inconsistent route evidence leaves the run incomplete."
       ],
       "deliverables": ["packages/core/**", "packages/openrouter/**", "packages/cli/**"],
       "requiredTestLevels": ["unit", "contract", "integration", "e2e", "adversarial"],
@@ -1022,7 +1146,14 @@
       "objective": "Package scan, eval, recommend, report, and patch as a least-privilege composite Action with deterministic artifacts and idempotent PR behavior.",
       "risk": { "level": "high", "domains": ["github", "supply-chain", "automation"] },
       "dependsOn": [{ "taskId": "V1-08", "kind": "hard" }],
-      "acceptanceItemIds": ["ACTION-001", "ACTION-002", "ACTION-003", "ACTION-004", "ACTION-005"],
+      "acceptanceItemIds": [
+        "ACTION-001",
+        "ACTION-002",
+        "ACTION-003",
+        "ACTION-004",
+        "ACTION-005",
+        "ACTION-006"
+      ],
       "scope": {
         "allowedPaths": [
           "action.yml",
@@ -1042,7 +1173,8 @@
         "Unchanged inputs do not create duplicate PRs or mutable evidence.",
         "Provider-backed assessment is manual by default and scheduled execution requires explicit repository opt-in.",
         "The evaluation-input digest binds the evaluator tool version and build or commit revision.",
-        "An unchanged catalog and evaluation-input digest skips paid candidate execution only when prior evidence is complete, integrity-valid, and reusable under current policy."
+        "An unchanged catalog and evaluation-input digest skips paid candidate execution only when prior evidence is complete, integrity-valid, and reusable under current policy.",
+        "Action reports reconcile the assessed repository surface from supported files through findings, manifest bindings, evaluation readiness, recommendations, abstentions, and pull requests without implying complete runtime inventory."
       ],
       "deliverables": ["action.yml", ".github/workflows/**", "examples/openrouter-typescript/**"],
       "requiredTestLevels": ["static", "contract", "integration", "e2e", "adversarial"],
@@ -1079,7 +1211,14 @@
       "objective": "Prove that qualified recommendation PRs are trusted, merged, safe, and economically meaningful, and assess whether deterministic evaluation blocks valuable open-ended call sites before expanding scope.",
       "risk": { "level": "high", "domains": ["field-validation", "customer-trust", "economics"] },
       "dependsOn": [{ "taskId": "V1-09", "kind": "field" }],
-      "acceptanceItemIds": ["FIELD-001", "FIELD-002", "FIELD-003", "FIELD-004", "FIELD-005"],
+      "acceptanceItemIds": [
+        "FIELD-001",
+        "FIELD-002",
+        "FIELD-003",
+        "FIELD-004",
+        "FIELD-005",
+        "FIELD-006"
+      ],
       "scope": {
         "allowedPaths": ["docs/**", "product/plans/**"],
         "forbiddenPaths": ["packages/**", "action.yml", ".github/workflows/**"]
@@ -1089,6 +1228,7 @@
         "The field assessment separately records positive blocked-call-site evidence, representative no-findings, or insufficient coverage.",
         "Representative no-findings requires a predeclared eligibility census and direct assessment of at least ten eligible open-ended call sites across at least three FIELD-001 companies, with coverage and exclusions independently reviewed.",
         "Blocked open-ended call sites are never counted as qualified recommendations, and neither no-findings nor insufficient coverage can authorize semantic-scorer expansion.",
+        "Each repository records the assessed surface and exact observed-to-bound-to-evaluated-to-recommended-to-PR-to-merged funnel with exclusions and denominators.",
         "Customer data and outcomes are recorded without raw prompts or outputs."
       ],
       "deliverables": ["product/plans/oss-v1/evidence/**", "docs/**"],

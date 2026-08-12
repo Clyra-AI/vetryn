@@ -35,14 +35,14 @@ contains only source metadata, opaque digests, aggregate measurements, safe iden
 failure codes; raw prompts, raw outputs, credentials, provider error payloads, and source diffs are not fields
 in these contracts.
 
-| Artifact           | Durable responsibility                                                                                  |
-| ------------------ | ------------------------------------------------------------------------------------------------------- |
-| Call-site manifest | Human-owned identity, bound source, model pin, gates, required capabilities, and reviewed usage profile |
-| Eval suite         | Reviewed fixture reference, digest, case count, and redaction posture                                   |
-| Catalog snapshot   | Immutable normalized model capabilities, pricing, and source provenance                                 |
-| Candidate run      | Input digest, paired metrics, hard-gate outcomes, reproducibility provenance, and bounded failure state |
-| Recommendation     | Abstention or proposed source-bound model with a bound confidence floor and finite reason codes         |
-| Patch plan         | One source-bound expected-model to replacement-model change bound to its recommendation                 |
+| Artifact           | Durable responsibility                                                                              |
+| ------------------ | --------------------------------------------------------------------------------------------------- |
+| Call-site manifest | Human-owned identity, bound source, model pin, gates, route policy, capabilities, and usage profile |
+| Eval suite         | Reviewed fixture reference, digest, case count, and redaction posture                               |
+| Catalog snapshot   | Immutable model author, normalized capabilities, model-level pricing, and source provenance         |
+| Candidate run      | Input digest, route policy and observation, paired metrics, gates, provenance, and failure state    |
+| Recommendation     | Abstention or proposed source-bound model with a bound confidence floor and finite reason codes     |
+| Patch plan         | One source-bound expected-model to replacement-model change bound to its recommendation             |
 
 ### Scanner
 
@@ -50,24 +50,30 @@ Language adapters use syntax trees rather than regular expressions. A scanner ma
 only when it can identify the SDK operation and an editable, static model literal. Each result includes
 syntactic evidence, confidence, a patchability reason, and a source fingerprint used to prevent stale
 patches. The scanner does not assign the human-owned stable call-site ID.
+Repository scan output also records a reconciled assessment funnel: supported TypeScript files considered,
+successfully parsed, and parse-failed; total observations; disjoint patchable and non-patchable counts; disjoint
+high-confidence and ambiguous counts; and reason-code totals. These units prevent a zero-finding scan from being
+misreported as evidence that the repository has no AI usage.
 
 ### Manifest
 
-The repository owns the call-site manifest. It records source binding, owner, fixture, gates, an explicit approved
-provider allowlist used to derive privacy outcomes, and a human-reviewed representative prompt/completion token-weight profile with provenance,
-without storing credentials or raw traces. Generated changes remain reviewable in Git.
+The repository owns the call-site manifest. It records source binding, owner, fixture, gates, a strict OpenRouter
+route policy, and a human-reviewed representative prompt/completion token-weight profile with provenance, without
+storing credentials or raw traces. V1 route policy selects one reviewed provider slug, disables fallbacks, requires
+parameter support, denies data collection, and requires ZDR. Generated changes remain reviewable in Git.
 
 ### Candidate resolver and catalog
 
-Catalog adapters normalize model capabilities, context limits, retirement state, provider, region, and
-timestamped pricing. Every run pins its catalog snapshot so a result remains explainable after prices
-or aliases change. The core derives the privacy gate by comparing each candidate's provider with the manifest's
-approved-provider allowlist. Hard compatibility and repository policy filters run before shortlisting. V1 selects
+Catalog adapters normalize model author namespaces, capabilities, context limits, retirement state, and timestamped
+model-level pricing. The namespace before the first slash in an OpenRouter model ID identifies the author; it does
+not identify the gateway endpoint or execution provider. Every run pins its catalog snapshot so a result remains
+explainable after prices or aliases change. Hard compatibility filters run before shortlisting. V1 selects
 at most five candidates by default and permits only a lower repository-configured bound. It ranks by
-exact-decimal projected workload cost, computed from normalized catalog prices and the manifest's pinned
+exact-decimal estimated workload cost, computed from normalized catalog prices and the manifest's pinned
 prompt/completion token weights, ascending; then context limit descending; then canonical model ID
-ascending. Missing, invalid, unreviewed, or unprovenanced weights fail closed. The current baseline is
-recorded separately from the candidate bound.
+ascending. That number is explicitly a shortlist estimate, not observed provider billing. Missing, invalid,
+unreviewed, or unprovenanced weights fail closed. The current baseline is recorded separately from the candidate
+bound, and the shortlist carries the reviewed route policy separately from each candidate's author metadata.
 
 Live refresh computes a SHA-256 digest over the canonical, model-ID-sorted normalized model list, and the
 core rejects a snapshot whose declared digest does not match that content. Unchanged content reuses the existing
@@ -77,9 +83,12 @@ replay always uses its original snapshot.
 
 ### Evaluation runner
 
-The runner executes current and candidate models over the same cases with controlled concurrency,
-retries, seeds where supported, and redaction. It records raw measurements separately from derived
-scores. Credentials come from the execution environment and outputs stay local by default.
+The runner executes current and candidate models over the same cases with controlled concurrency, retries, seeds
+where supported, and redaction. Every OpenRouter request is built from the call site's route policy. Complete runs
+record that policy plus bounded router metadata for every observed attempt with exactly one selected successful
+provider; request and attempt ordinals reconcile independently from evaluator repetition counts. Missing or
+contradictory metadata cannot support a recommendation. It records raw measurements separately from derived scores.
+Credentials come from the execution environment and outputs stay local by default.
 
 ### Scorers and gates
 
@@ -135,19 +144,19 @@ independent boundary emerges.
 
 ## Trust boundaries
 
-| Boundary                 | Rule                                                        |
-| ------------------------ | ----------------------------------------------------------- |
-| Repository → scanner     | Parse untrusted source without executing it                 |
-| Fixtures → provider      | Show destination and require explicit credentials/policy    |
-| Provider → evaluator     | Treat outputs and usage metadata as untrusted input         |
-| Catalog → resolver       | Pin provenance and timestamps; do not trust mutable aliases |
-| Recommendation → patcher | Require passed gates and a fresh source fingerprint         |
-| Workflow → GitHub        | Use least-privilege permissions and draft PRs only          |
+| Boundary                 | Rule                                                                              |
+| ------------------------ | --------------------------------------------------------------------------------- |
+| Repository → scanner     | Parse untrusted source without executing it                                       |
+| Fixtures → route         | Show the reviewed route and require explicit credentials/policy                   |
+| Router → evaluator       | Treat outputs, usage, attempts, and selected-provider metadata as untrusted input |
+| Catalog → resolver       | Pin provenance and timestamps; do not trust mutable aliases                       |
+| Recommendation → patcher | Require passed gates and a fresh source fingerprint                               |
+| Workflow → GitHub        | Use least-privilege permissions and draft PRs only                                |
 
 ## Reproducibility and privacy
 
 An evaluation run records tool version, build or commit revision, call-site manifest digest, fixture
-digest, catalog digest, model identifiers, scorer configuration, sampling configuration and seed, attempt count,
+digest, catalog digest, model author identifiers, route policy, router attempts and selected provider, scorer configuration, sampling configuration and seed, attempt count,
 timestamps, and aggregate variance. The evaluation-input digest binds that evaluator executable identity with the
 remaining inputs. Secrets and unredacted fixtures are never written to reports. Remote telemetry is opt-in; OSS
 execution has no mandatory control plane.

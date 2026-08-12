@@ -43,7 +43,13 @@ const callSite = {
   id: "support-classification",
   name: "Support classification",
   owner: "support-platform",
-  providerPolicy: { allowedProviders: ["openai"] },
+  routePolicy: {
+    allowFallbacks: false,
+    dataCollection: "deny",
+    providerSlug: "azure",
+    requireParameters: true,
+    zdr: true,
+  },
   requiredCapabilities: {
     structuredOutput: true,
     textGeneration: true,
@@ -88,7 +94,7 @@ const catalogModels = [
     id: "openai/gpt-4o-mini",
     inputPricePerMillionUsd: "0.15",
     outputPricePerMillionUsd: "0.60",
-    provider: "openai",
+    modelAuthor: "openai",
     retired: false,
   },
   {
@@ -101,7 +107,7 @@ const catalogModels = [
     id: "openai/gpt-4o",
     inputPricePerMillionUsd: "2.50",
     outputPricePerMillionUsd: "10.00",
-    provider: "openai",
+    modelAuthor: "openai",
     retired: false,
   },
 ];
@@ -174,6 +180,25 @@ const candidateRun = {
       passRateStdDev: 0,
     },
   },
+  routeObservation: {
+    attempts: [
+      {
+        attemptOrdinal: 1,
+        model: "openai/gpt-4o",
+        providerName: "Azure",
+        requestOrdinal: 1,
+        statusCode: 200,
+      },
+    ],
+    requestCount: 1,
+    selectedProvider: {
+      model: "openai/gpt-4o",
+      providerName: "Azure",
+      providerSlug: "azure",
+    },
+    source: "openrouter-router-metadata",
+  },
+  routePolicy: callSite.routePolicy,
   schemaVersion: VETRYN_ARTIFACT_SCHEMA_VERSION,
   status: "complete",
 };
@@ -268,8 +293,8 @@ describe("V1 artifact contracts", () => {
     expect(() => callSiteSchema.parse({ ...callSite, requiredCapabilities: undefined })).toThrow(
       /required.?capabilities/i,
     );
-    expect(() => callSiteSchema.parse({ ...callSite, providerPolicy: undefined })).toThrow(
-      /providerPolicy/i,
+    expect(() => callSiteSchema.parse({ ...callSite, routePolicy: undefined })).toThrow(
+      /routePolicy/i,
     );
     expect(() =>
       parseVetrynArtifact({ ...recommendation, recommendedModel: callSite.currentModel }),
@@ -309,7 +334,7 @@ describe("V1 artifact contracts", () => {
       }).contentDigest,
     ).toBe(catalogSnapshot.contentDigest);
     const catalogWithMismatchedProvider = catalogSnapshot.models.map((model) =>
-      model.id === "openai/gpt-4o" ? { ...model, provider: "other-provider" } : model,
+      model.id === "openai/gpt-4o" ? { ...model, modelAuthor: "other-provider" } : model,
     );
     expect(() =>
       catalogSnapshotSchema.parse({
@@ -317,7 +342,7 @@ describe("V1 artifact contracts", () => {
         contentDigest: createCatalogContentDigest(catalogWithMismatchedProvider),
         models: catalogWithMismatchedProvider,
       }),
-    ).toThrow(/provider segment/i);
+    ).toThrow(/author segment/i);
     expect(() => parseVetrynArtifact({ ...candidateRun, gateOutcomes: undefined })).toThrow(
       /hard-gate outcomes/i,
     );
@@ -545,7 +570,24 @@ describe("V1 artifact contracts", () => {
     expect(() =>
       assertRecommendationEvidence(
         parsedRecommendation,
-        [candidateRunWith({ candidateModel: "openai/gpt-4.1" })],
+        [
+          candidateRunWith({
+            candidateModel: "openai/gpt-4.1",
+            routeObservation: {
+              ...candidateRun.routeObservation,
+              attempts: [
+                {
+                  ...candidateRun.routeObservation.attempts[0],
+                  model: "openai/gpt-4.1",
+                },
+              ],
+              selectedProvider: {
+                ...candidateRun.routeObservation.selectedProvider,
+                model: "openai/gpt-4.1",
+              },
+            },
+          }),
+        ],
         candidateRun.evaluationInputDigest,
         parsedCallSite,
         parsedEvalSuite,
@@ -683,12 +725,22 @@ describe("V1 artifact contracts", () => {
     const unapprovedCandidate = {
       ...approvedCandidate,
       id: "other-provider/gpt-4o",
-      provider: "other-provider",
+      modelAuthor: "other-provider",
     };
     const candidateFromUnapprovedProvider = catalogSnapshot.models.map((model) =>
       model.id === candidateRun.candidateModel ? unapprovedCandidate : model,
     );
-    const unapprovedRun = candidateRunWith({ candidateModel: unapprovedCandidate.id });
+    const unapprovedRun = candidateRunWith({
+      candidateModel: unapprovedCandidate.id,
+      routeObservation: {
+        ...candidateRun.routeObservation,
+        attempts: [{ ...candidateRun.routeObservation.attempts[0], model: unapprovedCandidate.id }],
+        selectedProvider: {
+          ...candidateRun.routeObservation.selectedProvider,
+          model: unapprovedCandidate.id,
+        },
+      },
+    });
     const unapprovedRecommendation = parseRecommendation({
       ...recommendation,
       recommendedModel: unapprovedCandidate.id,
@@ -706,7 +758,7 @@ describe("V1 artifact contracts", () => {
           models: candidateFromUnapprovedProvider,
         }),
       ),
-    ).toThrow(/approved provider policy/i);
+    ).not.toThrow();
     expect(() =>
       assertRecommendationEvidence(
         parsedRecommendation,
@@ -825,6 +877,142 @@ describe("V1 artifact contracts", () => {
         parsedRecommendation,
       ),
     ).toThrow(/source binding/i);
+  });
+
+  it("requires request-bound route policy and reconciled router observations", () => {
+    expect(() =>
+      candidateRunSchema.parse({ ...candidateRun, routeObservation: undefined }),
+    ).toThrow(/routing metadata/i);
+    expect(() =>
+      candidateRunSchema.parse({
+        ...candidateRun,
+        routeObservation: { ...candidateRun.routeObservation, selectedProvider: null },
+      }),
+    ).toThrow(/selected OpenRouter provider/i);
+    expect(() =>
+      candidateRunSchema.parse({
+        ...candidateRun,
+        baselineMetrics: undefined,
+        failureCode: "provider-error",
+        gateOutcomes: undefined,
+        metrics: undefined,
+        routeObservation: {
+          ...candidateRun.routeObservation,
+          attempts: candidateRun.routeObservation.attempts.map((attempt) => ({
+            ...attempt,
+            statusCode: 503,
+          })),
+          selectedProvider: null,
+        },
+        status: "failed",
+      }),
+    ).not.toThrow();
+    expect(() =>
+      candidateRunSchema.parse({
+        ...candidateRun,
+        baselineMetrics: undefined,
+        failureCode: "provider-error",
+        gateOutcomes: undefined,
+        metrics: undefined,
+        routeObservation: { ...candidateRun.routeObservation, selectedProvider: null },
+        status: "failed",
+      }),
+    ).toThrow(/successful attempt must identify/i);
+    expect(() =>
+      candidateRunSchema.parse({
+        ...candidateRun,
+        routeObservation: {
+          ...candidateRun.routeObservation,
+          selectedProvider: {
+            ...candidateRun.routeObservation.selectedProvider,
+            providerName: "Other",
+          },
+        },
+      }),
+    ).toThrow(/exactly one successful attempt/i);
+    expect(() =>
+      candidateRunSchema.parse({
+        ...candidateRun,
+        routeObservation: {
+          ...candidateRun.routeObservation,
+          selectedProvider: {
+            ...candidateRun.routeObservation.selectedProvider,
+            providerSlug: "deepinfra",
+          },
+        },
+      }),
+    ).toThrow(/requested provider slug/i);
+    expect(() =>
+      candidateRunSchema.parse({
+        ...candidateRun,
+        routeObservation: {
+          ...candidateRun.routeObservation,
+          attempts: candidateRun.routeObservation.attempts.map((attempt) => ({
+            ...attempt,
+            providerName: "OpenAI",
+          })),
+          selectedProvider: {
+            ...candidateRun.routeObservation.selectedProvider,
+            providerName: "OpenAI",
+          },
+        },
+      }),
+    ).toThrow(/provider name must match/i);
+    expect(() =>
+      candidateRunSchema.parse({
+        ...candidateRun,
+        routeObservation: { ...candidateRun.routeObservation, requestCount: 2 },
+      }),
+    ).toThrow(/every declared request/i);
+    expect(() =>
+      candidateRunSchema.parse({
+        ...candidateRun,
+        routeObservation: {
+          ...candidateRun.routeObservation,
+          attempts: [
+            candidateRun.routeObservation.attempts[0],
+            { ...candidateRun.routeObservation.attempts[0], attemptOrdinal: 3, statusCode: 500 },
+          ],
+        },
+      }),
+    ).toThrow(/contiguous/i);
+    expect(() =>
+      candidateRunSchema.parse({
+        ...candidateRun,
+        routeObservation: {
+          ...candidateRun.routeObservation,
+          attempts: candidateRun.routeObservation.attempts.map((attempt) => ({
+            ...attempt,
+            statusCode: 500,
+          })),
+        },
+      }),
+    ).toThrow(/exactly one successful attempt/i);
+
+    const parsedRun = candidateRunSchema.parse(candidateRun);
+    const parsedCallSite = callSiteSchema.parse(callSite);
+    expect(() =>
+      assertCandidateRunPolicy(
+        candidateRunSchema.parse({
+          ...candidateRun,
+          routePolicy: { ...candidateRun.routePolicy, providerSlug: "deepinfra" },
+          routeObservation: {
+            ...candidateRun.routeObservation,
+            attempts: candidateRun.routeObservation.attempts.map((attempt) => ({
+              ...attempt,
+              providerName: "DeepInfra",
+            })),
+            selectedProvider: {
+              ...candidateRun.routeObservation.selectedProvider,
+              providerName: "DeepInfra",
+              providerSlug: "deepinfra",
+            },
+          },
+        }),
+        parsedCallSite,
+      ),
+    ).toThrow(/route policy/i);
+    expect(assertCandidateRunPolicy(parsedRun, parsedCallSite)).toEqual(parsedRun);
   });
 
   it("keeps every core source file free of provider and side-effect system integrations", async () => {
