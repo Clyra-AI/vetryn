@@ -2,7 +2,7 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "V1-07",
-  "revision": 6,
+  "revision": 7,
   "state": "planned",
   "attempt": 0,
   "candidate": null,
@@ -127,6 +127,13 @@
       "at": "2026-08-13T00:58:00Z",
       "actor": "davidahmann",
       "reason": "Required trusted catalog and per-run time provenance, independent freshness checks for every cited run, and bounded positive monthly request counts."
+    },
+    {
+      "from": "planned",
+      "to": "planned",
+      "at": "2026-08-13T01:12:00Z",
+      "actor": "davidahmann",
+      "reason": "Made the recommendation policy required and fail-closed while keeping missing or stale workload-volume evidence an optional normalized-economics fallback."
     }
   ]
 }

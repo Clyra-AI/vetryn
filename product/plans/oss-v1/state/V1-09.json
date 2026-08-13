@@ -2,7 +2,7 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "V1-09",
-  "revision": 11,
+  "revision": 12,
   "state": "planned",
   "attempt": 0,
   "candidate": null,
@@ -182,6 +182,13 @@
       "at": "2026-08-13T00:58:00Z",
       "actor": "davidahmann",
       "reason": "Required live or authenticated catalog time evidence and independent trusted-time validation for every cited candidate run before draft-PR writes."
+    },
+    {
+      "from": "planned",
+      "to": "planned",
+      "at": "2026-08-13T01:12:00Z",
+      "actor": "davidahmann",
+      "reason": "Required PR-time workload-age revalidation and normalized rerendering when projections expire after report generation."
     }
   ]
 }

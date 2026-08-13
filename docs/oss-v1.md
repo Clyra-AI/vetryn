@@ -140,8 +140,9 @@ generator derives persisted report `generatedAt` from its internal orchestration
 from report input, a CLI flag, or an Action input. Production uses the Vetryn runtime clock; deterministic tests and
 offline replay may substitute a reviewed fixed clock at that boundary. The effective observation time is the window end when present and `observedAt` otherwise; it
 is current only when it is within the five-minute future-skew allowance and its age is within the declared bound.
-Missing policy, malformed or reversed windows, out-of-skew future times, and older inputs permit per-request or
-per-1,000-request comparisons but cannot produce a monthly or annual savings claim. Current profiles combine with
+Malformed or reversed windows, out-of-skew future times, and older optional workload inputs permit per-request or
+per-1,000-request comparisons but cannot produce a monthly or annual savings claim. A missing required
+recommendation policy fails closed and abstains. Current profiles combine with
 reviewed representative prompt/completion token weights and bound catalog pricing, and every resulting value is
 labeled an estimate rather than observed billing. Observed evaluation spend remains a separate measurement.
 Projected workload economics never extrapolate the bounded eval run's observed spend. Bound catalog pricing
@@ -165,7 +166,9 @@ content, policy digest, representative-usage profile digest, and workload-volume
 exactly match the currently authorized inputs. Missing, stale, out-of-skew, or identity-mismatched required decision
 evidence produces an explicit abstention and no patch; presence alone is never freshness proof. An absent, invalid,
 or stale optional workload profile suppresses only monthly and annual projections and uses normalized unit economics;
-it does not by itself make an otherwise valid recommendation abstain.
+it does not by itself make an otherwise valid recommendation abstain. Patch and PR authorization re-evaluate the
+optional workload profile at their own trusted invocation clock and suppress projections that have expired since
+report generation.
 
 Equivalent authenticated external provenance requires a verifier explicitly allowlisted by repository policy. The
 authorization binds that verifier's identity, version, and configuration digest, and its verified statement binds
@@ -234,8 +237,9 @@ design.
 - JSON and Markdown are the required evidence formats. SARIF is deferred until a concrete code-scanning
   use is specified.
 - Monthly and annual economic claims require reviewed workload-volume provenance that passes the digest-bound
-  1-to-31-day repository policy at trusted report `generatedAt`. Out-of-skew future, malformed, reversed-window,
-  missing-policy, and stale inputs produce normalized unit economics rather than a manufactured monthly estimate.
+  1-to-31-day repository policy at report generation and every later patch or PR authorization. Out-of-skew future,
+  malformed, reversed-window, and stale optional workload inputs produce normalized unit economics rather than a
+  manufactured monthly estimate; a missing required recommendation policy abstains.
 - The digest-bound freshness policy also caps catalog/pricing evidence at 168 hours, evaluation evidence at 24
   hours, and reports at 24 hours, with repository-selected values at or below those ceilings. Generation and every
   later patch or PR authorization use a trusted clock with no more than five minutes of future skew and require

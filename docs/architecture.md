@@ -136,7 +136,9 @@ runs are replay-only. Source fingerprint, immutable fixture digest, evaluator id
 successful refresh observation and committed catalog content, pricing, policy, and economic profile bindings must
 exactly match the authorized inputs. Any required temporal or identity failure prevents patch authorization. An
 absent, invalid, or stale optional workload profile falls back to normalized unit economics without making an
-otherwise valid recommendation abstain. Observed evaluation spend remains separate.
+otherwise valid recommendation abstain; missing required recommendation policy fails closed. Patch and PR
+authorization re-evaluate workload age at their own trusted invocation clock and suppress projections that have
+expired since report generation. Observed evaluation spend remains separate.
 An external provenance verifier is usable only when repository policy allowlists its identity, version, and
 configuration digest and its verified statement binds artifact content, runner or acquisition identity, and time.
 Without such a verifier, only same-invocation runtime-derived timestamps are actionable.

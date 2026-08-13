@@ -44,9 +44,11 @@ between decision evidence and presentation-layer next actions.
   execution record and completion time, successful refresh observation, catalog content and pricing, policy digest,
   representative-usage profile digest, and workload-volume profile digest or absent marker must exactly match the
   currently authorized inputs. Missing, stale, future, or identity-mismatched
-  required decision evidence abstains and cannot authorize a patch. An absent, invalid, or stale optional workload
-  profile suppresses only monthly and annual projections and uses normalized unit economics; it does not by itself
-  make an otherwise valid recommendation abstain.
+  required decision evidence, including the recommendation policy itself, abstains and cannot authorize a patch. An
+  absent, invalid, or stale optional workload profile suppresses only monthly and annual projections and uses
+  normalized unit economics; it does not by itself make an otherwise valid recommendation abstain. Patch and PR
+  authorization re-evaluate workload age at their own trusted invocation clock and remove projections that have
+  expired since report generation.
 - Equivalent authenticated external provenance is accepted only through a repository-policy-allowlisted verifier
   whose identity, version, and configuration digest are bound into the authorization. Its verified statement must
   bind the artifact content digest, acquisition or runner identity, and timestamps. With no configured verifier,
