@@ -13,6 +13,9 @@ const defaultRoot = path.resolve(import.meta.dirname, "..");
 const schemaRef = "product/plans/schemas/semantic-risk-report-v0.2.schema.json";
 const legacySchemaRef = "product/plans/schemas/semantic-risk-report-v0.1.schema.json";
 const profileRef = ".factory/profile.yaml";
+const timestampAjv = new Ajv2020({ strict: false });
+addFormats(timestampAjv);
+const validateRfc3339Timestamp = timestampAjv.compile({ type: "string", format: "date-time" });
 
 function fail(message) {
   throw new Error(message);
@@ -20,6 +23,11 @@ function fail(message) {
 
 function assert(condition, message) {
   if (!condition) fail(message);
+}
+
+function parseRfc3339Timestamp(value, label) {
+  assert(validateRfc3339Timestamp(value), `${label} must be an RFC 3339 timestamp`);
+  return Date.parse(value);
 }
 
 function sha256(value) {
@@ -250,9 +258,12 @@ export async function validateSemanticRiskEvidence({ root = defaultRoot, packet 
     marker.git_sha === report.source_revision,
     "semantic-risk source revision differs from the integrity marker",
   );
+  const startedAt = parseRfc3339Timestamp(marker.started_at, "integrity marker started_at");
+  const finishedAt = parseRfc3339Timestamp(marker.finished_at, "integrity marker finished_at");
+  const createdAt = Date.parse(report.created_at);
   assert(
-    Date.parse(marker.finished_at) <= Date.parse(report.created_at),
-    "semantic-risk report predates its integrity marker",
+    startedAt <= finishedAt && finishedAt <= createdAt,
+    "integrity marker timestamps must satisfy started_at <= finished_at <= report created_at",
   );
   const expectedBinding = {
     task_id: packet.task_id,
@@ -263,10 +274,7 @@ export async function validateSemanticRiskEvidence({ root = defaultRoot, packet 
     observed_changed_paths: [reportRef],
   };
   assert(
-    Array.isArray(marker.authorized_task_bindings) &&
-      marker.authorized_task_bindings.some(
-        (binding) => canonicalJson(binding) === canonicalJson(expectedBinding),
-      ),
+    canonicalJson(marker.authorized_task_bindings) === canonicalJson([expectedBinding]),
     "integrity marker does not bind the exact semantic-risk content and source",
   );
   assert(

@@ -239,6 +239,62 @@ describe("semantic-risk implementation design", () => {
     await expect(readFile(path.join(root, integrityMarkerRef))).rejects.toThrow();
   });
 
+  it("rejects malformed or reversed timestamps and additional task bindings", async () => {
+    const root = await createFixture();
+    const draftRef = ".factory/tmp/task-runs/V1-06/semantic-risk-report.draft.json";
+    const { reportRef, integrityMarkerRef } = semanticRiskRefs("V1-06");
+    await mkdir(path.dirname(path.join(root, draftRef)), { recursive: true });
+    await writeFile(path.join(root, draftRef), `${JSON.stringify(highRiskDraft(), null, 2)}\n`);
+    const design = run(root, "design", "--", "V1-06", "--input", draftRef);
+    expect(design.status, design.stderr).toBe(0);
+    git(root, "add", reportRef, integrityMarkerRef);
+    git(root, "commit", "--quiet", "-m", "commit semantic-risk evidence");
+
+    const validMarker = JSON.parse(await readFile(path.join(root, integrityMarkerRef), "utf8"));
+    const packet = {
+      task_id: "V1-06",
+      risk_class: "high",
+      semantic_risk_report_ref: reportRef,
+      semantic_risk_integrity_marker_ref: integrityMarkerRef,
+      currentState: { candidate: { commit: "" } },
+    };
+    const commitMarker = async (marker, message) => {
+      const markerBytes = `${JSON.stringify(marker, null, 2)}\n`;
+      const report = JSON.parse(await readFile(path.join(root, reportRef), "utf8"));
+      report.baseline_evidence.work_proof_marker_sha256 = sha256(markerBytes);
+      await writeFile(path.join(root, integrityMarkerRef), markerBytes);
+      await writeFile(path.join(root, reportRef), `${JSON.stringify(report, null, 2)}\n`);
+      git(root, "add", reportRef, integrityMarkerRef);
+      git(root, "commit", "--quiet", "-m", message);
+      packet.currentState.candidate.commit = git(root, "rev-parse", "HEAD");
+    };
+    const cloneValidMarker = () => JSON.parse(JSON.stringify(validMarker));
+
+    const malformedTimestamp = cloneValidMarker();
+    malformedTimestamp.finished_at = "not-a-date";
+    await commitMarker(malformedTimestamp, "commit malformed timestamp");
+    await expect(validateSemanticRiskEvidence({ root, packet })).rejects.toThrow(
+      "integrity marker finished_at must be an RFC 3339 timestamp",
+    );
+
+    const reversedTimestamps = cloneValidMarker();
+    reversedTimestamps.started_at = "2030-01-01T00:00:00.000Z";
+    await commitMarker(reversedTimestamps, "commit reversed timestamps");
+    await expect(validateSemanticRiskEvidence({ root, packet })).rejects.toThrow(
+      "integrity marker timestamps must satisfy started_at <= finished_at <= report created_at",
+    );
+
+    const additionalBinding = cloneValidMarker();
+    additionalBinding.authorized_task_bindings.push({
+      ...additionalBinding.authorized_task_bindings[0],
+      task_id: "V1-07",
+    });
+    await commitMarker(additionalBinding, "commit additional task binding");
+    await expect(validateSemanticRiskEvidence({ root, packet })).rejects.toThrow(
+      "integrity marker does not bind the exact semantic-risk content and source",
+    );
+  }, 15_000);
+
   it("rejects artifact paths redirected outside the repository by a symlink", async () => {
     const root = await createFixture();
     const outside = await mkdtemp(path.join(tmpdir(), "vetryn-semantic-risk-outside-"));
