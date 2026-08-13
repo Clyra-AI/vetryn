@@ -2,7 +2,7 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "V1-07",
-  "revision": 9,
+  "revision": 10,
   "state": "planned",
   "attempt": 0,
   "candidate": null,
@@ -148,6 +148,13 @@
       "at": "2026-08-13T01:38:00Z",
       "actor": "davidahmann",
       "reason": "Required terminal refresh-attempt lineage and defined deterministic basis-point percentage arithmetic with finite unavailable outcomes."
+    },
+    {
+      "from": "planned",
+      "to": "planned",
+      "at": "2026-08-13T02:50:00Z",
+      "actor": "davidahmann",
+      "reason": "Separated immutable recommendation evidence from authenticated presentation revisions used when optional workload projections expire."
     }
   ]
 }

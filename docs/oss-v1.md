@@ -67,7 +67,9 @@ confidently.
 After a repository has a reviewed manifest and eval suite, one documented `vetryn assess` command orchestrates
 evaluation, recommendation, reporting, and verified patch preparation. The composite GitHub Action invokes the same
 path and may open the draft PR only in an explicit GitHub-enabled mode with the required permissions. The individual
-commands remain available for inspection and replay.
+commands remain available for inspection and replay. Both orchestration paths validate the required repository
+recommendation policy and other deterministic prerequisites before any provider call. Missing or malformed required
+policy emits an explicit abstention with zero provider calls and no provider spend.
 
 ## PR evidence contract
 
@@ -137,8 +139,9 @@ normalized unit economics and a finite reason rather than monthly or annual valu
 recommendation policy must
 declare `workloadVolumeMaxAgeDays` as an integer from 1 through 31 and must be digest-bound into the report. The
 generator derives persisted report `generatedAt` from its internal orchestration clock rather than accepting it
-from report input, a CLI flag, or an Action input. Production uses the Vetryn runtime clock; deterministic tests and
-offline replay may substitute a reviewed fixed clock at that boundary. The effective observation time is the window end when present and `observedAt` otherwise; it
+from report input, a CLI flag, or an Action input. It writes an authenticated report-generation receipt binding the
+report content digest, generator identity, original time, and every decision input, so restamping cannot refresh a
+persisted report. Production uses the Vetryn runtime clock; deterministic tests and offline replay may substitute a reviewed fixed clock at that boundary. The effective observation time is the window end when present and `observedAt` otherwise; it
 is current only when it is within the five-minute future-skew allowance and its age is within the declared bound.
 Malformed or reversed windows, out-of-skew future times, and older optional workload inputs permit per-request or
 per-1,000-request comparisons but cannot produce a monthly or annual savings claim. A missing required
@@ -158,31 +161,38 @@ patch, and PR authorization use a fresh trusted clock, allow at most five minute
 report and catalog/pricing ages plus the completion time of every cited candidate run; no newest-run or aggregate
 timestamp can mask a stale cited run. The cited successful refresh must be the terminal result of the current
 invocation's ordered refresh attempts, or authenticated provenance must commit the complete ordered lineage and
-prove that success remains the latest terminal attempt; a newer failure or omitted attempt fails closed. Actionable catalog freshness requires live acquisition timed by the Vetryn
-runtime or equivalent authenticated external provenance, and every actionable candidate run binds an immutable
-execution record whose times come from the canonical runner's trusted clock or authenticated external provenance.
-Caller-timestamped catalog captures and imported or restamped candidate runs are replay-only and cannot authorize a
+prove that success remains the latest terminal attempt; a newer failure or omitted attempt fails closed. Actionable
+catalog freshness requires live acquisition timed by the Vetryn runtime, a canonical persisted repository receipt,
+or equivalent authenticated external provenance, and every actionable candidate run binds an immutable execution
+record whose times come from the canonical runner's trusted clock, a canonical persisted receipt, or authenticated
+external provenance. Caller-timestamped catalog captures and arbitrary imported or restamped candidate runs are replay-only and cannot authorize a
 patch or PR. Authorization also requires the report's source fingerprint, immutable fixture digest, evaluator
 version and build, every cited execution record, successful refresh observation and committed catalog/pricing
-content, policy digest, representative-usage profile digest, and workload-volume profile digest or absent marker to
-exactly match the currently authorized inputs. Abstention reports carry every available or rejected identity and a
+content, policy digest, representative-usage profile digest, and original workload-volume profile digest or absent
+marker to match the recommendation inputs. Abstention reports carry every available or rejected identity and a
 finite status-compatible reason for every unavailable required binding; they never invent missing provenance.
 Missing, stale, out-of-skew, or identity-mismatched required decision
 evidence produces an explicit abstention and no patch; presence alone is never freshness proof. An absent, invalid,
 or stale optional workload profile suppresses only monthly and annual projections and uses normalized unit economics;
-it does not by itself make an otherwise valid recommendation abstain. Patch and PR authorization re-evaluate the
-optional workload profile at their own trusted invocation clock and suppress projections that have expired since
-report generation.
+it does not by itself make an otherwise valid recommendation abstain. Patch and PR authorization do not rewrite that
+decision artifact. If an originally current workload profile expires, Vetryn creates a separately authenticated
+presentation revision binding the recommendation digest, original profile digest, fresh authorization time,
+canonical rejection reason, and normalized economics. The revision may remove projections only; another valid
+profile requires a new recommendation.
 
 Savings percentage uses exact rational arithmetic and is stored as integer basis points from 0 through 10,000,
 rounded half up to the nearest basis point; Markdown renders that same integer as a fixed two-decimal percentage.
 When current estimated cost is zero or proposed cost exceeds current cost, percentage is unavailable with the finite
 reason `zero-current-cost` or `not-a-saving` instead of division by zero, infinity, or a negative percentage.
 
-Equivalent authenticated external provenance requires a verifier explicitly allowlisted by repository policy. The
-authorization binds that verifier's identity, version, and configuration digest, and its verified statement binds
-the artifact content digest, acquisition or runner identity, and timestamps. When no verifier is configured, only
-same-invocation time evidence derived by the Vetryn runtime is actionable; producer labels never authenticate time.
+Same-invocation evidence and canonical persisted repository receipts are actionable. For cross-invocation reuse,
+Vetryn authenticates every hash-chain extension with a key outside repository-controlled content and atomically
+advances its exact-head per-repository anchor in the same locked transaction. Authorization requires every entry to
+verify and the repository head to equal that anchor; append, deletion, truncation, fork, or rollback fails closed. A
+fresh machine without the authenticated key and anchor treats historical receipts as replay-only. A new run creates
+a new externally anchored trust epoch containing only newly produced same-invocation receipts; it never authenticates
+or makes prior unanchored history actionable. Other provenance requires a policy-allowlisted verifier that binds an
+exact anti-rollback head.
 
 The canonical recommendation and abstention remain decision artifacts. Agent-install guidance and contextual
 expansion prompts are deterministic presentation-layer next actions; they cannot alter eligibility, confidence,

@@ -2,7 +2,7 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "V1-06",
-  "revision": 3,
+  "revision": 6,
   "state": "planned",
   "attempt": 0,
   "candidate": null,
@@ -111,6 +111,27 @@
       "at": "2026-08-13T01:38:00Z",
       "actor": "davidahmann",
       "reason": "Required terminal catalog-refresh attempt lineage so a newer failure or omitted attempt cannot leave an older success actionable."
+    },
+    {
+      "from": "planned",
+      "to": "planned",
+      "at": "2026-08-13T02:00:00Z",
+      "actor": "davidahmann",
+      "reason": "Preserved unchanged-input reuse through canonical content-addressed repository receipts while keeping arbitrary imports and caller-restamped evidence replay-only."
+    },
+    {
+      "from": "planned",
+      "to": "planned",
+      "at": "2026-08-13T02:10:00Z",
+      "actor": "davidahmann",
+      "reason": "Added hash-chain and trusted anti-rollback proof for persisted reuse plus Changeset scope for the new public receipt contracts."
+    },
+    {
+      "from": "planned",
+      "to": "planned",
+      "at": "2026-08-13T02:50:00Z",
+      "actor": "davidahmann",
+      "reason": "Defined recovery as a new externally anchored trust epoch that cannot rehabilitate prior unanchored receipts."
     }
   ]
 }

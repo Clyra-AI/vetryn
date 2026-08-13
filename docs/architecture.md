@@ -131,20 +131,28 @@ invocation's ordered refresh attempts, or authenticated provenance commits the c
 it is still the latest terminal attempt; a newer failure or omitted attempt fails closed. Generation and later patch or PR authorization re-evaluate all
 required temporal evidence against their own trusted clock with at most five minutes of future skew; report,
 catalog/pricing, and every cited evaluation run's completion time remain within their bounds. Actionable catalog
-freshness comes only from live acquisition timed by the Vetryn runtime or equivalent authenticated provenance;
+freshness comes only from live acquisition timed by the Vetryn runtime, a canonical persisted repository receipt,
+or equivalent authenticated provenance;
 caller-timestamped captures are replay-only. Each actionable run binds an immutable execution record whose times
-come from the canonical runner's trusted clock or authenticated external provenance; imported or caller-restamped
-runs are replay-only. Source fingerprint, immutable fixture digest, evaluator identity, every cited run record,
+come from the canonical runner's trusted clock, a canonical persisted repository receipt written by that runner, or
+authenticated external provenance; arbitrary imports and caller-restamped runs are replay-only. Source fingerprint,
+immutable fixture digest, evaluator identity, every cited run record,
 successful refresh observation and committed catalog content, pricing, policy, and economic profile bindings must
 exactly match the authorized inputs. An abstention report carries every available or rejected identity and a finite
 reason for each unavailable required binding rather than manufacturing provenance. Any required temporal or identity failure prevents patch authorization. An
 absent, invalid, or stale optional workload profile falls back to normalized unit economics without making an
 otherwise valid recommendation abstain; missing required recommendation policy fails closed. Patch and PR
-authorization re-evaluate workload age at their own trusted invocation clock and suppress projections that have
-expired since report generation. Observed evaluation spend remains separate.
-An external provenance verifier is usable only when repository policy allowlists its identity, version, and
-configuration digest and its verified statement binds artifact content, runner or acquisition identity, and time.
-Without such a verifier, only same-invocation runtime-derived timestamps are actionable.
+authorization never mutate the immutable recommendation. If its originally valid workload profile has expired, they
+require a separately authenticated presentation revision binding the recommendation, original profile, fresh clock,
+rejection reason, and normalized economics; the revision may only remove projections. Observed evaluation spend
+remains separate.
+Same-invocation evidence is actionable. For cross-invocation reuse, Vetryn authenticates each repository-log
+extension with a key outside repository-controlled content and atomically advances an exact-head per-repository
+anchor in the same locked transaction. Authorization requires all entries to verify and the repository head to equal
+that anchor; append, deletion, truncation, fork, or rollback fails closed. A machine without the authenticated key
+and anchor treats historical receipts as replay-only. A fresh run creates a new externally anchored trust epoch from
+newly produced same-invocation receipts and never rehabilitates prior unanchored history. Report-generation receipts
+also bind report content, generator identity, original generated time, and decision inputs, preventing restamping.
 Projected workload economics never extrapolate observed eval-run spend. Catalog-bound projections, observed
 evaluation spend, and later realized billing or runtime corroboration are three distinct evidence tiers.
 Savings percentage is a 0-to-10,000 integer basis-point value derived with exact rational arithmetic and half-up
@@ -169,7 +177,9 @@ Consumer activation uses one documented `vetryn assess` orchestration command af
 suite exist. The composite Action invokes the same path and adds draft-PR creation only in an explicit
 GitHub-enabled mode. Root `llms.txt`, Markdown instructions, stable JSON, and documented exit semantics expose the
 same provider-neutral contract to Codex, Claude, and other coding agents without requiring a hosted control plane
-or agent-specific runtime integration.
+or agent-specific runtime integration. Both paths validate the required recommendation policy and other
+deterministic prerequisites before any provider call; missing or malformed required policy abstains without provider
+spend.
 
 ## Package direction
 
