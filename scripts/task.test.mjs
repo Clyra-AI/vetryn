@@ -974,6 +974,21 @@ describe("task packet compiler", () => {
         `portable Factory profile does not pin canonical ${portableSchemaField}`,
       );
     }
+    await writeFile(
+      factoryProfilePath,
+      `${factoryProfile}\nimplementation_risk:\n  enabled: false\n`,
+    );
+    const duplicateRiskBlockCompile = runTask(root, "compile", "V1-00");
+    expect(duplicateRiskBlockCompile.status).toBe(1);
+    expect(duplicateRiskBlockCompile.stderr).toContain("portable Factory profile is invalid YAML");
+
+    await writeFile(
+      factoryProfilePath,
+      `${factoryProfile}\ncanonical_factory_profile: redirected/profile.yaml\n`,
+    );
+    const duplicateProfilePinCompile = runTask(root, "compile", "V1-00");
+    expect(duplicateProfilePinCompile.status).toBe(1);
+    expect(duplicateProfilePinCompile.stderr).toContain("portable Factory profile is invalid YAML");
   }, 15_000);
 
   it("requires frozen-candidate structured review evidence for high-risk tasks", async () => {

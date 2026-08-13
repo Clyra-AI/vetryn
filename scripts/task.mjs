@@ -8,6 +8,7 @@ import { isDeepStrictEqual } from "node:util";
 
 import Ajv2020 from "ajv/dist/2020.js";
 import addFormats from "ajv-formats";
+import { parseDocument } from "yaml";
 
 import { semanticRiskRefs, validateSemanticRiskEvidence } from "./semantic-risk.mjs";
 
@@ -397,6 +398,16 @@ function textDigest(contents) {
 
 async function validatePortableFactoryProfile() {
   const profile = await readFile(path.join(root, sourcePaths.factoryProfile), "utf8");
+  const profileDocument = parseDocument(profile, { uniqueKeys: true });
+  assert(
+    profileDocument.errors.length === 0,
+    `portable Factory profile is invalid YAML: ${profileDocument.errors[0]?.message ?? "unknown error"}`,
+  );
+  const profileData = profileDocument.toJS();
+  assert(
+    profileData && typeof profileData === "object" && !Array.isArray(profileData),
+    "portable Factory profile must be a YAML mapping",
+  );
   assert(
     (await digest(sourcePaths.semanticRiskLegacySchema)) ===
       canonicalFactorySource.semantic_risk_legacy_schema_sha256,
@@ -410,32 +421,37 @@ async function validatePortableFactoryProfile() {
   const riskBlock = profile.match(
     /^implementation_risk:\n.*?(?=^[A-Za-z_][A-Za-z0-9_]*:|(?![\s\S]))/msu,
   )?.[0];
-  assert(riskBlock, "portable Factory profile is missing implementation_risk");
+  assert(
+    riskBlock && profileData.implementation_risk,
+    "portable Factory profile is missing implementation_risk",
+  );
   assert(
     textDigest(`${riskBlock.trimEnd()}\n`) === canonicalFactorySource.implementation_risk_sha256,
     "portable Factory implementation_risk does not match the pinned canonical policy",
   );
   assert(
-    new RegExp(
-      `^canonical_factory_profile:\\s+${escapeRegExp(canonicalFactorySource.profile_path)}$`,
-      "mu",
-    ).test(profile),
+    profileData.canonical_factory_profile === canonicalFactorySource.profile_path,
     "portable Factory profile does not pin canonical profile_path",
   );
-  const sourceBlock = profile.match(
-    /^canonical_factory_source:\n.*?(?=^[A-Za-z_][A-Za-z0-9_]*:|(?![\s\S]))/msu,
-  )?.[0];
-  assert(sourceBlock, "portable Factory profile is missing canonical_factory_source");
-  for (const [field, value] of Object.entries(canonicalFactorySource).filter(
-    ([field]) => field !== "profile_path",
-  )) {
+  const expectedSource = Object.fromEntries(
+    Object.entries(canonicalFactorySource).filter(([field]) => field !== "profile_path"),
+  );
+  assert(
+    profileData.canonical_factory_source &&
+      typeof profileData.canonical_factory_source === "object" &&
+      !Array.isArray(profileData.canonical_factory_source),
+    "portable Factory profile is missing canonical_factory_source",
+  );
+  for (const [field, value] of Object.entries(expectedSource)) {
     assert(
-      new RegExp(`^\\s{2}${escapeRegExp(field)}:\\s+${escapeRegExp(value)}$`, "mu").test(
-        sourceBlock,
-      ),
+      profileData.canonical_factory_source[field] === value,
       `portable Factory profile does not pin canonical ${field}`,
     );
   }
+  assert(
+    isDeepStrictEqual(profileData.canonical_factory_source, expectedSource),
+    "portable Factory profile does not exactly pin canonical_factory_source",
+  );
 }
 
 function readAtCommit(commit, relativePath) {
