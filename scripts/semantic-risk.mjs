@@ -1,6 +1,6 @@
 import { Buffer } from "node:buffer";
 import { createHash } from "node:crypto";
-import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
+import { mkdir, readFile, realpath, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 import { spawnSync } from "node:child_process";
@@ -48,6 +48,21 @@ function repoPath(root, relativePath, label) {
   return resolved;
 }
 
+function isWithinRoot(root, candidate) {
+  const relative = path.relative(root, candidate);
+  return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
+}
+
+async function canonicalRepoPath(root, relativePath, label) {
+  const target = repoPath(root, relativePath, label);
+  const [canonicalRoot, canonicalTarget] = await Promise.all([realpath(root), realpath(target)]);
+  assert(
+    isWithinRoot(canonicalRoot, canonicalTarget),
+    `${label} escapes the repository via symlink`,
+  );
+  return canonicalTarget;
+}
+
 function runGit(root, arguments_, { allowFailure = false } = {}) {
   const result = spawnSync("git", ["-C", root, ...arguments_], { encoding: "utf8" });
   if (!allowFailure && result.status !== 0)
@@ -57,7 +72,7 @@ function runGit(root, arguments_, { allowFailure = false } = {}) {
 
 async function readJson(root, relativePath, label = relativePath) {
   try {
-    return JSON.parse(await readFile(repoPath(root, relativePath, label), "utf8"));
+    return JSON.parse(await readFile(await canonicalRepoPath(root, relativePath, label), "utf8"));
   } catch (error) {
     fail(
       `${label} is missing or invalid JSON: ${error instanceof Error ? error.message : String(error)}`,
@@ -94,9 +109,18 @@ function readJsonAtCommit(root, commit, ref, label) {
 async function writeJsonAtomic(root, relativePath, value) {
   const target = repoPath(root, relativePath, relativePath);
   await mkdir(path.dirname(target), { recursive: true });
-  const temporary = `${target}.tmp-${process.pid}`;
+  const [canonicalRoot, canonicalParent] = await Promise.all([
+    realpath(root),
+    realpath(path.dirname(target)),
+  ]);
+  assert(
+    isWithinRoot(canonicalRoot, canonicalParent),
+    `${relativePath} escapes the repository via symlink`,
+  );
+  const safeTarget = path.join(canonicalParent, path.basename(target));
+  const temporary = `${safeTarget}.tmp-${process.pid}`;
   await writeFile(temporary, `${JSON.stringify(value, null, 2)}\n`, { flag: "wx" });
-  await rename(temporary, target);
+  await rename(temporary, safeTarget);
 }
 
 function semanticContent(report) {
@@ -193,6 +217,22 @@ export async function validateSemanticRiskEvidence({ root = defaultRoot, packet 
     "semantic-risk report integrity marker digest is stale",
   );
 
+  const expectedMarkerKeys = [
+    "artifact_type",
+    "authorized_task_bindings",
+    "command",
+    "execution_status",
+    "exit_code",
+    "finished_at",
+    "git_sha",
+    "schema_version",
+    "started_at",
+  ];
+  assert(
+    canonicalJson(Object.keys(marker).toSorted()) === canonicalJson(expectedMarkerKeys.toSorted()),
+    "integrity marker contains unsupported or redundant fields",
+  );
+
   assert(
     marker.artifact_type === "semantic_risk_integrity_marker",
     "integrity marker type is invalid",
@@ -270,7 +310,8 @@ async function design(root, taskId, inputRef) {
     .stdout.split("\n")
     .filter(Boolean);
   const normalizedInput = path.relative(root, repoPath(root, inputRef, "draft input"));
-  const unexpected = statusLines.filter((line) => line.slice(3) !== normalizedInput);
+  const allowedChanges = new Set([normalizedInput, reportRef, integrityMarkerRef]);
+  const unexpected = statusLines.filter((line) => !allowedChanges.has(line.slice(3)));
   assert(
     unexpected.length === 0,
     `semantic-risk design requires a clean candidate snapshot; unexpected changes: ${unexpected.join(", ")}`,
@@ -301,9 +342,6 @@ async function design(root, taskId, inputRef) {
     artifact_type: "semantic_risk_integrity_marker",
     schema_version: "0.2",
     command: `pnpm --silent semantic-risk:design -- ${taskId}`,
-    task_id: taskId,
-    profile_ref: profileRef,
-    semantic_risk_report_ref: reportRef,
     git_sha: sourceRevision,
     exit_code: 0,
     execution_status: "pass",

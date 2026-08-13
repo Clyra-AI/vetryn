@@ -1,4 +1,5 @@
-import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { cp, mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import process from "node:process";
@@ -11,6 +12,10 @@ import { semanticRiskRefs, validateSemanticRiskEvidence } from "./semantic-risk.
 const repositoryRoot = path.resolve(import.meta.dirname, "..");
 const semanticRiskScript = path.join(repositoryRoot, "scripts/semantic-risk.mjs");
 const temporaryRoots = [];
+
+function sha256(value) {
+  return `sha256:${createHash("sha256").update(value).digest("hex")}`;
+}
 
 function run(root, ...arguments_) {
   return spawnSync(process.execPath, [semanticRiskScript, ...arguments_], {
@@ -147,6 +152,8 @@ describe("semantic-risk implementation design", () => {
     const result = run(root, "design", "--", "V1-06", "--input", draftRef);
     expect(result.status, result.stderr).toBe(0);
     expect(JSON.parse(result.stdout)).toMatchObject({ status: "pass", taskId: "V1-06" });
+    const rerun = run(root, "design", "--", "V1-06", "--input", draftRef);
+    expect(rerun.status, rerun.stderr).toBe(0);
     const report = JSON.parse(
       await readFile(
         path.join(root, ".factory/artifacts/task-runs/V1-06/semantic-risk-report.json"),
@@ -181,9 +188,30 @@ describe("semantic-risk implementation design", () => {
     };
     await expect(validateSemanticRiskEvidence({ root, packet })).resolves.toBeUndefined();
 
+    const contradictoryMarker = JSON.parse(
+      await readFile(path.join(root, integrityMarkerRef), "utf8"),
+    );
+    contradictoryMarker.task_id = "V1-07";
+    const contradictoryMarkerBytes = `${JSON.stringify(contradictoryMarker, null, 2)}\n`;
+    const contradictoryReport = JSON.parse(await readFile(path.join(root, reportRef), "utf8"));
+    contradictoryReport.baseline_evidence.work_proof_marker_sha256 =
+      sha256(contradictoryMarkerBytes);
+    await writeFile(path.join(root, integrityMarkerRef), contradictoryMarkerBytes);
+    await writeFile(
+      path.join(root, reportRef),
+      `${JSON.stringify(contradictoryReport, null, 2)}\n`,
+    );
+    git(root, "add", reportRef, integrityMarkerRef);
+    git(root, "commit", "--quiet", "-m", "commit contradictory marker");
+    packet.currentState.candidate.commit = git(root, "rev-parse", "HEAD");
+    await expect(validateSemanticRiskEvidence({ root, packet })).rejects.toThrow(
+      "integrity marker contains unsupported or redundant fields",
+    );
+    packet.currentState.candidate.commit = candidateCommit;
+
     await writeFile(path.join(root, reportRef), "{}\n");
     await expect(validateSemanticRiskEvidence({ root, packet })).resolves.toBeUndefined();
-    packet.currentState.candidate.commit = git(root, "rev-parse", "HEAD~1");
+    packet.currentState.candidate.commit = git(root, "rev-parse", `${candidateCommit}^`);
     await expect(validateSemanticRiskEvidence({ root, packet })).rejects.toThrow(
       "semantic-risk report is unavailable at candidate",
     );
@@ -209,5 +237,27 @@ describe("semantic-risk implementation design", () => {
     const { reportRef, integrityMarkerRef } = semanticRiskRefs("V1-06");
     await expect(readFile(path.join(root, reportRef))).rejects.toThrow();
     await expect(readFile(path.join(root, integrityMarkerRef))).rejects.toThrow();
+  });
+
+  it("rejects artifact paths redirected outside the repository by a symlink", async () => {
+    const root = await createFixture();
+    const outside = await mkdtemp(path.join(tmpdir(), "vetryn-semantic-risk-outside-"));
+    temporaryRoots.push(outside);
+    const draftRef = ".factory/tmp/task-runs/V1-06/semantic-risk-report.draft.json";
+    await mkdir(path.dirname(path.join(root, draftRef)), { recursive: true });
+    await writeFile(path.join(root, draftRef), `${JSON.stringify(highRiskDraft(), null, 2)}\n`);
+    const redirectedDirectory = path.join(root, ".factory/artifacts/task-runs/V1-06");
+    await symlink(outside, redirectedDirectory);
+    git(root, "add", ".factory/artifacts/task-runs/V1-06");
+    git(root, "commit", "--quiet", "-m", "commit redirected artifact directory");
+
+    const result = run(root, "design", "--", "V1-06", "--input", draftRef);
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("escapes the repository via symlink");
+    await expect(readFile(path.join(outside, "semantic-risk-report.json"))).rejects.toThrow();
+    await expect(
+      readFile(path.join(outside, "semantic-risk-integrity-marker.json")),
+    ).rejects.toThrow();
   });
 });
