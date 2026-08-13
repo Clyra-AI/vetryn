@@ -2,7 +2,7 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "V1-09",
-  "revision": 12,
+  "revision": 13,
   "state": "planned",
   "attempt": 0,
   "candidate": null,
@@ -189,6 +189,13 @@
       "at": "2026-08-13T01:12:00Z",
       "actor": "davidahmann",
       "reason": "Required PR-time workload-age revalidation and normalized rerendering when projections expire after report generation."
+    },
+    {
+      "from": "planned",
+      "to": "planned",
+      "at": "2026-08-13T01:38:00Z",
+      "actor": "davidahmann",
+      "reason": "Required PR-time proof that the cited catalog success is the latest terminal refresh attempt with no omitted failure."
     }
   ]
 }

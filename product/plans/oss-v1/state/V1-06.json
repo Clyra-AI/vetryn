@@ -2,7 +2,7 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "V1-06",
-  "revision": 2,
+  "revision": 3,
   "state": "planned",
   "attempt": 0,
   "candidate": null,
@@ -34,6 +34,11 @@
     },
     {
       "criterionId": "EVAL-006",
+      "status": "pending",
+      "evidenceRefs": []
+    },
+    {
+      "criterionId": "EVAL-007",
       "status": "pending",
       "evidenceRefs": []
     }
@@ -99,6 +104,13 @@
       "at": "2026-08-13T00:58:00Z",
       "actor": "davidahmann",
       "reason": "Required canonical runner-derived or authenticated execution times and made imported or caller-restamped evaluation evidence replay-only."
+    },
+    {
+      "from": "planned",
+      "to": "planned",
+      "at": "2026-08-13T01:38:00Z",
+      "actor": "davidahmann",
+      "reason": "Required terminal catalog-refresh attempt lineage so a newer failure or omitted attempt cannot leave an older success actionable."
     }
   ]
 }

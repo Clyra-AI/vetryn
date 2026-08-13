@@ -2,7 +2,7 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "V1-07",
-  "revision": 8,
+  "revision": 9,
   "state": "planned",
   "attempt": 0,
   "candidate": null,
@@ -141,6 +141,13 @@
       "at": "2026-08-13T01:24:00Z",
       "actor": "davidahmann",
       "reason": "Made recommendation evidence status-discriminated so missing-policy and failed-refresh cases emit explicit abstentions without inventing unavailable identities."
+    },
+    {
+      "from": "planned",
+      "to": "planned",
+      "at": "2026-08-13T01:38:00Z",
+      "actor": "davidahmann",
+      "reason": "Required terminal refresh-attempt lineage and defined deterministic basis-point percentage arithmetic with finite unavailable outcomes."
     }
   ]
 }

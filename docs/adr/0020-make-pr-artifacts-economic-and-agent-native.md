@@ -33,9 +33,12 @@ between decision evidence and presentation-layer next actions.
   through 24, and `reportMaxAgeHours` from 1 through 24. A recommendation report binds the policy digest, representative-usage
   profile digest, and workload-volume profile digest or a canonical absent marker. It also binds the immutable
   successful catalog-refresh observation whose ID, time, snapshot ID, and content digest commit the catalog and
-  pricing evidence. An actionable authorization requires live acquisition whose time the Vetryn runtime derives at
-  the acquisition boundary, or equivalent authenticated external provenance; a caller-timestamped captured response
-  is replay-only and cannot authorize a patch or PR. Each cited candidate run similarly binds an immutable execution
+  pricing evidence. It must be the terminal result of the current invocation's ordered refresh attempts; equivalent
+  authenticated external provenance must commit the ordered attempt lineage and prove the cited success remains the
+  latest terminal attempt at authorization time. A later failure always abstains, and omission of an attempt fails
+  closed. An actionable authorization requires live acquisition whose time the Vetryn runtime derives at the
+  acquisition boundary, or equivalent authenticated external provenance; a caller-timestamped captured response is
+  replay-only and cannot authorize a patch or PR. Each cited candidate run similarly binds an immutable execution
   record whose start and completion times come from the canonical runner's trusted clock or authenticated external
   provenance. Imported or caller-restamped runs are replay-only. The report generator derives `generatedAt` from
   its injected trusted invocation clock and never accepts it from report input, a CLI flag, or an Action input.
@@ -58,7 +61,10 @@ between decision evidence and presentation-layer next actions.
   only same-invocation runtime-derived time evidence is actionable; a producer label is never authentication.
 - When that profile is valid and policy-current, reports derive estimated current and proposed monthly cost, monthly
   and annual savings, and savings percentage from it, the reviewed representative token profile, and bound catalog
-  pricing. All projections are labeled estimates. Observed evaluation spend and optional runtime corroboration stay
+  pricing. JSON stores savings percentage as integer basis points from 0 through 10,000, computed from the exact
+  rational `(current - proposed) / current` and rounded half up to the nearest basis point; Markdown renders the same
+  integer as a fixed two-decimal percentage. A zero current cost or proposed cost above current makes percentage
+  unavailable with `zero-current-cost` or `not-a-saving`, respectively. All projections are labeled estimates. Observed evaluation spend and optional runtime corroboration stay
   separate. For projected workload economics only, this supersedes M0-09's earlier shorthand that recommendation
   savings use observed evaluation cost: observed evaluation spend describes the bounded eval run, while realized
   field value requires later billing or runtime corroboration.

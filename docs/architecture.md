@@ -126,7 +126,9 @@ policy is digest-bound into the report and requires
 report `generatedAt` from an internal orchestration clock rather than report input, CLI flags, or Action inputs;
 tests and offline replay may replace it only with a reviewed fixed clock. A recommendation report binds the current policy,
 representative-usage profile, optional workload-volume profile or canonical absence, and immutable successful
-catalog-refresh observation by digest or identity. Generation and later patch or PR authorization re-evaluate all
+catalog-refresh observation by digest or identity. The cited success is the terminal result of the current
+invocation's ordered refresh attempts, or authenticated provenance commits the complete ordered lineage and proves
+it is still the latest terminal attempt; a newer failure or omitted attempt fails closed. Generation and later patch or PR authorization re-evaluate all
 required temporal evidence against their own trusted clock with at most five minutes of future skew; report,
 catalog/pricing, and every cited evaluation run's completion time remain within their bounds. Actionable catalog
 freshness comes only from live acquisition timed by the Vetryn runtime or equivalent authenticated provenance;
@@ -145,6 +147,9 @@ configuration digest and its verified statement binds artifact content, runner o
 Without such a verifier, only same-invocation runtime-derived timestamps are actionable.
 Projected workload economics never extrapolate observed eval-run spend. Catalog-bound projections, observed
 evaluation spend, and later realized billing or runtime corroboration are three distinct evidence tiers.
+Savings percentage is a 0-to-10,000 integer basis-point value derived with exact rational arithmetic and half-up
+rounding; Markdown renders the same value with two decimal places. Zero-current-cost and non-saving comparisons use
+finite unavailable reasons rather than division, infinity, or a negative percentage.
 
 ### Patcher and GitHub integration
 

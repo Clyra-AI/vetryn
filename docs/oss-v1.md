@@ -156,7 +156,9 @@ digest, workload-volume profile digest or a canonical absent marker, and the imm
 observation whose record commits its ID, observation time, snapshot ID, and catalog content digest. Recommendation,
 patch, and PR authorization use a fresh trusted clock, allow at most five minutes of future skew, and re-evaluate
 report and catalog/pricing ages plus the completion time of every cited candidate run; no newest-run or aggregate
-timestamp can mask a stale cited run. Actionable catalog freshness requires live acquisition timed by the Vetryn
+timestamp can mask a stale cited run. The cited successful refresh must be the terminal result of the current
+invocation's ordered refresh attempts, or authenticated provenance must commit the complete ordered lineage and
+prove that success remains the latest terminal attempt; a newer failure or omitted attempt fails closed. Actionable catalog freshness requires live acquisition timed by the Vetryn
 runtime or equivalent authenticated external provenance, and every actionable candidate run binds an immutable
 execution record whose times come from the canonical runner's trusted clock or authenticated external provenance.
 Caller-timestamped catalog captures and imported or restamped candidate runs are replay-only and cannot authorize a
@@ -171,6 +173,11 @@ or stale optional workload profile suppresses only monthly and annual projection
 it does not by itself make an otherwise valid recommendation abstain. Patch and PR authorization re-evaluate the
 optional workload profile at their own trusted invocation clock and suppress projections that have expired since
 report generation.
+
+Savings percentage uses exact rational arithmetic and is stored as integer basis points from 0 through 10,000,
+rounded half up to the nearest basis point; Markdown renders that same integer as a fixed two-decimal percentage.
+When current estimated cost is zero or proposed cost exceeds current cost, percentage is unavailable with the finite
+reason `zero-current-cost` or `not-a-saving` instead of division by zero, infinity, or a negative percentage.
 
 Equivalent authenticated external provenance requires a verifier explicitly allowlisted by repository policy. The
 authorization binds that verifier's identity, version, and configuration digest, and its verified statement binds

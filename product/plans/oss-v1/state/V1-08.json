@@ -2,7 +2,7 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "V1-08",
-  "revision": 4,
+  "revision": 5,
   "state": "planned",
   "attempt": 0,
   "candidate": null,
@@ -113,6 +113,13 @@
       "at": "2026-08-13T01:12:00Z",
       "actor": "davidahmann",
       "reason": "Required patch-time workload-age revalidation and suppression of projections that expire after report generation."
+    },
+    {
+      "from": "planned",
+      "to": "planned",
+      "at": "2026-08-13T01:38:00Z",
+      "actor": "davidahmann",
+      "reason": "Required patch-time proof that the cited catalog success is not superseded by a newer failed or omitted refresh attempt."
     }
   ]
 }
