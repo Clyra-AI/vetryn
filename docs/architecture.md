@@ -118,8 +118,11 @@ failed cases, and structured allowlisted Vetryn reproduction operations. The dur
 caveats machine-readable, while the report renderer maps both limitation and reproduction fields to clear prose
 and exact commands. A reviewed workload-volume profile with dated provenance enables estimated monthly and annual
 economics from representative token weights and bound catalog pricing only while explicit policy derives it as
-current. Without that evidence, the report shows normalized unit economics and does not claim monthly savings.
-Observed evaluation spend remains separate.
+current. The repository-owned recommendation policy is digest-bound into the report and requires a
+`workloadVolumeMaxAgeDays` value from 1 through 31. At persisted report `generatedAt`, the window end or point
+`observedAt` must not be future-dated and must remain within that bound; absent policy, malformed or reversed
+windows, future times, and stale inputs fall back to normalized unit economics. Observed evaluation spend remains
+separate.
 
 ### Patcher and GitHub integration
 

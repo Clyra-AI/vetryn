@@ -85,7 +85,8 @@ Every recommendation PR must show:
   unavailable;
 - the reviewed workload volume and provenance used for any projection, plus the observed evaluation cost itself;
 - freshness evidence comprising the source fingerprint, catalog/pricing observation time, fixture digest or
-  revision, evaluator version and build, and evaluation completion time;
+  revision, evaluator version and build, evaluation completion time, report `generatedAt`, and the digest-bound
+  policy used to derive freshness;
 - all configured gates, their outcomes, and the evidence or reason supporting each outcome;
 - confidence and explicit limitations;
 - exact commands required to reproduce the result; and
@@ -128,11 +129,14 @@ reproduction operations that the report renderer converts into exact commands. C
 rejects absolute, traversal, backslash, and Windows drive-qualified forms.
 
 Economic projections require an optional human-reviewed workload-volume profile with a monthly request count,
-provenance, and observation time or window. Vetryn derives freshness under explicit policy and combines a current
-profile with the reviewed representative prompt/completion token weights and bound catalog pricing. These values
-are labeled estimates rather than observed billing. Missing, invalid, or stale volume evidence permits per-request
-or per-1,000-request comparisons but cannot produce a monthly or annual savings claim. Observed evaluation spend
-remains a separate measurement.
+provenance, and RFC 3339 UTC observation time or window. The repository-owned reviewed recommendation policy must
+declare `workloadVolumeMaxAgeDays` as an integer from 1 through 31 and must be digest-bound into the report. At persisted
+report `generatedAt`, the effective observation time is the window end when present and `observedAt` otherwise; it
+is current only when it is not future-dated and its age is within the declared bound. Missing policy, malformed or
+reversed windows, future times, and older inputs permit per-request or per-1,000-request comparisons but cannot
+produce a monthly or annual savings claim. Current profiles combine with reviewed representative prompt/completion
+token weights and bound catalog pricing, and every resulting value is labeled an estimate rather than observed
+billing. Observed evaluation spend remains a separate measurement.
 
 The canonical recommendation and abstention remain decision artifacts. Agent-install guidance and contextual
 expansion prompts are deterministic presentation-layer next actions; they cannot alter eligibility, confidence,
@@ -188,9 +192,9 @@ design.
   structural discovery fingerprint, confidence, and patchability reason.
 - JSON and Markdown are the required evidence formats. SARIF is deferred until a concrete code-scanning
   use is specified.
-- Monthly and annual economic claims require reviewed workload-volume provenance whose observation time or window
-  remains current under explicit policy. Without it, Vetryn reports normalized unit economics and does not
-  manufacture a monthly estimate.
+- Monthly and annual economic claims require reviewed workload-volume provenance that passes the digest-bound
+  1-to-31-day repository policy at persisted report `generatedAt`. Future, malformed, reversed-window, missing-policy,
+  and stale inputs produce normalized unit economics rather than a manufactured monthly estimate.
 - Root `llms.txt`, Markdown onboarding, stable JSON output, and documented exit semantics provide one
   provider-neutral installation and operation contract for coding agents. Codex- or Claude-specific pages may
   explain the same commands but cannot introduce separate product behavior.

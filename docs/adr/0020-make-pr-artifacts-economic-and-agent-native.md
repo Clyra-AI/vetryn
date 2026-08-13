@@ -19,8 +19,12 @@ between decision evidence and presentation-layer next actions.
 ## Decision
 
 - A call site may carry a human-reviewed workload-volume profile with monthly request count, provenance, and an
-  observation time or window. Freshness is derived under explicit policy; a producer-supplied freshness claim is not
-  trusted.
+  RFC 3339 UTC observation time or window. The repository-owned reviewed recommendation policy must declare
+  `workloadVolumeMaxAgeDays` as an integer from 1 through 31 and must be bound into the report by digest. At the report's
+  persisted `generatedAt`, the effective observation time is the window end when a window exists and `observedAt`
+  otherwise. It is current only when it is not in the future and its age is no greater than the declared bound;
+  absent policy, malformed or reversed windows, future times, and older observations forbid monthly and annual
+  claims. A producer-supplied freshness claim is not trusted.
 - When that profile is valid and policy-current, reports derive estimated current and proposed monthly cost, monthly
   and annual savings, and savings percentage from it, the reviewed representative token profile, and bound catalog
   pricing. All projections are labeled estimates. Observed evaluation spend and optional runtime corroboration stay

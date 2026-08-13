@@ -538,7 +538,16 @@
     {
       "id": "RECOMMEND-005",
       "taskId": "V1-07",
-      "statement": "A report claims estimated monthly or annual savings only from a human-reviewed workload-volume profile with request count, provenance, and observation time or window that explicit policy derives as current; otherwise it reports normalized unit economics, keeps observed evaluation spend separate, and labels every projection as an estimate.",
+      "statement": "A report claims estimated monthly or annual savings only from a human-reviewed workload-volume profile with request count, provenance, and RFC 3339 UTC observation time or window plus a digest-bound repository recommendation policy declaring workloadVolumeMaxAgeDays from 1 through 31. At persisted report generatedAt, window.end or observedAt is not future-dated and is within that bound; missing policy, malformed or reversed windows, future times, and stale evidence deterministically produce normalized unit economics, while observed evaluation spend stays separate and every projection is labeled as an estimate.",
+      "verification": { "method": "test", "testLevel": "adversarial", "gateId": "QG-CONTRACTS" },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
+      "id": "RECOMMEND-006",
+      "taskId": "V1-07",
+      "statement": "Every recommendation and abstention report carries the exact source fingerprint, catalog and pricing observation time, fixture digest or revision, evaluator version and build, evaluation completion time, persisted report generatedAt, digest-bound freshness policy, and every configured gate outcome with its evidence or finite reason; deterministic missing, malformed, stale, and future-time cases cannot silently omit proof or authorize a patch.",
       "verification": { "method": "test", "testLevel": "adversarial", "gateId": "QG-CONTRACTS" },
       "waivable": false,
       "status": "planned",

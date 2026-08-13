@@ -2,7 +2,7 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "V1-07",
-  "revision": 1,
+  "revision": 2,
   "state": "planned",
   "attempt": 0,
   "candidate": null,
@@ -29,6 +29,11 @@
     },
     {
       "criterionId": "RECOMMEND-005",
+      "status": "pending",
+      "evidenceRefs": []
+    },
+    {
+      "criterionId": "RECOMMEND-006",
       "status": "pending",
       "evidenceRefs": []
     }
@@ -87,6 +92,13 @@
       "at": "2026-08-12T23:30:00Z",
       "actor": "davidahmann",
       "reason": "Required defensible monthly economics, evidence freshness, normalized fallback economics, and separate observed evaluation spend in the recommendation artifact."
+    },
+    {
+      "from": "planned",
+      "to": "planned",
+      "at": "2026-08-13T00:15:00Z",
+      "actor": "davidahmann",
+      "reason": "Defined the digest-bound workload freshness clock and added explicit acceptance for complete freshness and gate evidence in recommendation and abstention reports."
     }
   ]
 }
