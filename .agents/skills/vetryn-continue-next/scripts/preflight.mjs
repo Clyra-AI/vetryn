@@ -55,8 +55,11 @@ const ZERO_DIGEST = `sha256:${"0".repeat(64)}`;
 const ZERO_SOURCE_REF = `Clyra-AI/factory@${"0".repeat(40)}`;
 const SAFE_IDENTIFIER_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._/-]*$/u;
 const SAFE_ARGUMENT_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._/:=-]*$/u;
-const CANONICAL_RESUME_POLICY_PATHS = [
+const SAFE_PACKAGE_NAME_PATTERN = /^(?:@[a-z0-9][a-z0-9._-]*\/)?[a-z0-9][a-z0-9._-]*$/u;
+const FIXED_CANONICAL_RESUME_POLICY_PATHS = [
   ".factory/profile.yaml",
+  "package.json",
+  "pnpm-lock.yaml",
   "prettier.config.mjs",
   "product/plans/oss-v1/acceptance-ledger.json",
   "product/plans/oss-v1/plan.json",
@@ -80,6 +83,10 @@ const REQUIRED_PROFILE_FIELDS = new Map([
   ["standards", "nonempty_map"],
   ["task_adapter.plan_script", "portable_path"],
   ["task_adapter.task_script", "portable_path"],
+  ["task_adapter.package_manifest", "portable_path"],
+  ["task_adapter.lockfile", "portable_path"],
+  ["task_adapter.dependency_roots", "nonempty_string_list"],
+  ["task_adapter.dependency_packages", "nonempty_map_list"],
   ["task_adapter.plan_check_args", "nonempty_string_list"],
   ["task_adapter.next_args", "nonempty_string_list"],
   ["task_adapter.compile_args", "nonempty_string_list"],
@@ -585,6 +592,9 @@ function validTypedValue(value, policy) {
       value.every((entry) => typeof entry === "string" && Boolean(entry.trim()))
     );
   }
+  if (policy === "nonempty_map_list") {
+    return Array.isArray(value) && value.length > 0 && value.every((entry) => isPlainObject(entry));
+  }
   if (policy === "nonempty_map") return isPlainObject(value) && Object.keys(value).length > 0;
   if (policy === "portable_path") {
     try {
@@ -608,6 +618,50 @@ function validTypedValue(value, policy) {
     );
   }
   return false;
+}
+
+function validateAdapterPackagePolicy(profile) {
+  const roots = profile.task_adapter.dependency_roots;
+  const packages = profile.task_adapter.dependency_packages;
+  const byName = new Map();
+  for (const record of packages) {
+    if (
+      !exactObjectKeys(record, ["name", "version", "path", "tree_digest", "dependencies"]) ||
+      typeof record.name !== "string" ||
+      !SAFE_PACKAGE_NAME_PATTERN.test(record.name) ||
+      typeof record.version !== "string" ||
+      !record.version ||
+      typeof record.path !== "string" ||
+      !record.path.startsWith("node_modules/") ||
+      typeof record.tree_digest !== "string" ||
+      !DIGEST_PATTERN.test(record.tree_digest) ||
+      record.tree_digest === ZERO_DIGEST ||
+      !validTypedValue(record.dependencies, "string_list") ||
+      record.dependencies.some((dependency) => !SAFE_PACKAGE_NAME_PATTERN.test(dependency)) ||
+      byName.has(record.name)
+    ) {
+      throw new PreflightBlock("invalid_adapter_package_policy", "profile");
+    }
+    portablePath(record.path);
+    byName.set(record.name, record);
+  }
+  if (
+    roots.some((rootName) => !SAFE_PACKAGE_NAME_PATTERN.test(rootName) || !byName.has(rootName))
+  ) {
+    throw new PreflightBlock("invalid_adapter_package_policy", "profile");
+  }
+  const visited = new Set();
+  const visit = (name) => {
+    if (visited.has(name)) return;
+    const record = byName.get(name);
+    if (!record) throw new PreflightBlock("invalid_adapter_package_policy", "profile");
+    visited.add(name);
+    for (const dependency of record.dependencies) visit(dependency);
+  };
+  for (const rootName of roots) visit(rootName);
+  if (visited.size !== packages.length) {
+    throw new PreflightBlock("invalid_adapter_package_policy", "profile");
+  }
 }
 
 function parseProfile(root) {
@@ -639,6 +693,10 @@ function parseProfile(root) {
       throw new PreflightBlock("unsafe_adapter_argument", "profile");
     }
   }
+  validateAdapterPackagePolicy(profile);
+  if (profile.source_contract !== undefined) {
+    trackedHeadBytes(root, profile.source_contract, "profile");
+  }
   for (const reference of Object.values(profile.standards)) {
     if (typeof reference !== "string") throw new PreflightBlock("invalid_standard_ref", "profile");
     trackedHeadBytes(root, reference, "profile");
@@ -646,6 +704,8 @@ function parseProfile(root) {
   trackedHeadBytes(root, profile.maintainer_roster, "profile");
   trackedHeadBytes(root, profile.task_adapter.plan_script, "profile");
   trackedHeadBytes(root, profile.task_adapter.task_script, "profile");
+  trackedHeadBytes(root, profile.task_adapter.package_manifest, "profile");
+  trackedHeadBytes(root, profile.task_adapter.lockfile, "profile");
   trackedHeadBytes(root, profile.task_adapter.packet_schema, "profile");
   for (const skillRef of Object.values(profile.skills)) {
     if (typeof skillRef !== "string") throw new PreflightBlock("invalid_skill_ref", "profile");
@@ -739,16 +799,25 @@ async function captureSnapshot(root) {
   };
 }
 
-function canonicalInputPaths(root, profile) {
+function profileDeclaredPolicyPaths(profile) {
   const paths = new Set([
     ".factory/profile.yaml",
     profile.maintainer_roster,
     profile.task_adapter.plan_script,
     profile.task_adapter.task_script,
+    profile.task_adapter.package_manifest,
+    profile.task_adapter.lockfile,
     profile.task_adapter.packet_schema,
+    ...ADAPTER_DEPENDENCY_PATHS,
     ...Object.values(profile.standards),
     ...Object.values(profile.skills),
   ]);
+  if (profile.source_contract !== undefined) paths.add(profile.source_contract);
+  return [...paths].sort((left, right) => left.localeCompare(right));
+}
+
+function canonicalInputPaths(root, profile) {
+  const paths = new Set(profileDeclaredPolicyPaths(profile));
   portablePath(profile.plan_root);
   const planPaths = git(root, ["ls-files", "-z", "--", profile.plan_root], {
     errorCode: "plan_root_unreadable",
@@ -999,14 +1068,153 @@ function runNodeTwice(root, profile, scriptRef, args, check) {
   return first;
 }
 
+function stablePackageFileBytes(target) {
+  let descriptor;
+  try {
+    descriptor = openSync(target, fsConstants.O_RDONLY | (fsConstants.O_NOFOLLOW ?? 0));
+    const before = fstatSync(descriptor, { bigint: true });
+    if (!before.isFile()) {
+      throw new PreflightBlock("adapter_package_unsupported_entry", "adapter_dependencies");
+    }
+    const bytes = readFileSync(descriptor);
+    const after = fstatSync(descriptor, { bigint: true });
+    const pathStat = lstatSync(target, { bigint: true });
+    if (!sameFileIdentity(before, after) || !sameFileIdentity(after, pathStat)) {
+      throw new PreflightBlock("adapter_package_drifted", "adapter_dependencies");
+    }
+    return bytes;
+  } catch (error) {
+    if (error instanceof PreflightBlock) throw error;
+    throw new PreflightBlock("adapter_package_unreadable", "adapter_dependencies");
+  } finally {
+    if (descriptor !== undefined) closeSync(descriptor);
+  }
+}
+
+function resolveAdapterPackageRoot(root, packageRef) {
+  const pieces = portablePath(packageRef);
+  if (pieces[0] !== "node_modules" || pieces.length < 2) {
+    throw new PreflightBlock("invalid_adapter_package_policy", "profile");
+  }
+  try {
+    const nodeModules = realpathSync(path.join(root, "node_modules"));
+    let current = nodeModules;
+    for (const piece of pieces.slice(1)) {
+      current = path.join(current, piece);
+      const stat = lstatSync(current);
+      if (stat.isSymbolicLink()) {
+        throw new PreflightBlock("adapter_package_symlink", "adapter_dependencies");
+      }
+    }
+    const resolved = realpathSync(current);
+    const relative = path.relative(nodeModules, resolved);
+    if (
+      relative.startsWith("..") ||
+      path.isAbsolute(relative) ||
+      !lstatSync(resolved).isDirectory()
+    ) {
+      throw new PreflightBlock("adapter_package_path_escape", "adapter_dependencies");
+    }
+    return resolved;
+  } catch (error) {
+    if (error instanceof PreflightBlock) throw error;
+    throw new PreflightBlock("adapter_package_missing", "adapter_dependencies");
+  }
+}
+
+function adapterPackageTree(root, record) {
+  const packageRoot = resolveAdapterPackageRoot(root, record.path);
+  const rootBefore = lstatSync(packageRoot, { bigint: true });
+  const entries = [];
+  let packageJsonBytes = null;
+  const walk = (directory, prefix = "") => {
+    let names;
+    try {
+      names = readdirSync(directory).sort((left, right) => left.localeCompare(right));
+    } catch {
+      throw new PreflightBlock("adapter_package_unreadable", "adapter_dependencies");
+    }
+    for (const name of names) {
+      const relative = prefix ? `${prefix}/${name}` : name;
+      const target = path.join(directory, name);
+      let stat;
+      try {
+        stat = lstatSync(target);
+      } catch {
+        throw new PreflightBlock("adapter_package_drifted", "adapter_dependencies");
+      }
+      if (stat.isSymbolicLink()) {
+        throw new PreflightBlock("adapter_package_symlink", "adapter_dependencies");
+      }
+      if (stat.isDirectory()) {
+        entries.push(`D\0${relative}`);
+        walk(target, relative);
+        continue;
+      }
+      if (!stat.isFile()) {
+        throw new PreflightBlock("adapter_package_unsupported_entry", "adapter_dependencies");
+      }
+      const bytes = stablePackageFileBytes(target);
+      entries.push(`F\0${relative}\0${digestBytes(bytes).slice("sha256:".length)}`);
+      if (relative === "package.json") packageJsonBytes = bytes;
+    }
+  };
+  walk(packageRoot);
+  const rootAfter = lstatSync(packageRoot, { bigint: true });
+  if (!sameFileIdentity(rootBefore, rootAfter) || realpathSync(packageRoot) !== packageRoot) {
+    throw new PreflightBlock("adapter_package_drifted", "adapter_dependencies");
+  }
+  if (!packageJsonBytes) {
+    throw new PreflightBlock("adapter_package_manifest_missing", "adapter_dependencies");
+  }
+  let manifest;
+  try {
+    manifest = JSON.parse(packageJsonBytes.toString("utf8"));
+  } catch {
+    throw new PreflightBlock("adapter_package_manifest_invalid", "adapter_dependencies");
+  }
+  const runtimeDependencies = [
+    ...new Set([
+      ...Object.keys(isPlainObject(manifest.dependencies) ? manifest.dependencies : {}),
+      ...Object.keys(
+        isPlainObject(manifest.optionalDependencies) ? manifest.optionalDependencies : {},
+      ),
+      ...Object.keys(isPlainObject(manifest.peerDependencies) ? manifest.peerDependencies : {}),
+    ]),
+  ].sort((left, right) => left.localeCompare(right));
+  if (
+    manifest.name !== record.name ||
+    manifest.version !== record.version ||
+    !isDeepStrictEqual(
+      runtimeDependencies,
+      [...record.dependencies].sort((left, right) => left.localeCompare(right)),
+    )
+  ) {
+    throw new PreflightBlock("adapter_package_manifest_mismatch", "adapter_dependencies");
+  }
+  return digestBytes(Buffer.from(entries.join("\n"), "utf8"));
+}
+
+function authenticateAdapterPackages(root, profile) {
+  for (const record of profile.task_adapter.dependency_packages) {
+    if (adapterPackageTree(root, record) !== record.tree_digest) {
+      throw new PreflightBlock("adapter_package_digest_mismatch", "adapter_dependencies");
+    }
+  }
+}
+
 function authenticateAdapterDependencies(root, profile) {
   for (const relative of [
+    ".factory/profile.yaml",
     profile.task_adapter.plan_script,
     profile.task_adapter.task_script,
+    profile.task_adapter.package_manifest,
+    profile.task_adapter.lockfile,
     ...ADAPTER_DEPENDENCY_PATHS,
   ]) {
     trackedHeadBytes(root, relative, "adapter_dependencies");
   }
+  authenticateAdapterPackages(root, profile);
 }
 
 function parseJsonOutput(result, check) {
@@ -1300,7 +1508,13 @@ function resolveCanonicalDefault(root, profile) {
   return local;
 }
 
-function assertCanonicalResumePolicy(root, snapshot, canonicalDefault) {
+function canonicalResumePolicyPaths(profile) {
+  return [
+    ...new Set([...FIXED_CANONICAL_RESUME_POLICY_PATHS, ...profileDeclaredPolicyPaths(profile)]),
+  ].sort((left, right) => left.localeCompare(right));
+}
+
+function assertCanonicalResumePolicy(root, profile, snapshot, canonicalDefault) {
   if (!snapshot.branch || snapshot.branch === null) return;
   const comparison = git(
     root,
@@ -1311,7 +1525,7 @@ function assertCanonicalResumePolicy(root, snapshot, canonicalDefault) {
       "--no-textconv",
       `${canonicalDefault}..${snapshot.head}`,
       "--",
-      ...CANONICAL_RESUME_POLICY_PATHS,
+      ...canonicalResumePolicyPaths(profile),
     ],
     { accepted: [0, 1], check: "canonical_policy" },
   );
@@ -1368,7 +1582,44 @@ function promotionJson(root, relative) {
   }
 }
 
-function promotionTailPathAllowed(root, relative, taskId, candidateCommit, evidenceRefs) {
+function canonicalTaskLifecyclePolicy(root, profile, canonicalDefault, taskId) {
+  let plan;
+  try {
+    plan = JSON.parse(
+      gitBlobBytes(
+        root,
+        `${canonicalDefault}:${profile.plan_root}/plan.json`,
+        "canonical_policy",
+      ).toString("utf8"),
+    );
+  } catch (error) {
+    if (error instanceof PreflightBlock) throw error;
+    throw new PreflightBlock("invalid_canonical_task_policy", "canonical_policy");
+  }
+  const matches = Array.isArray(plan.tasks) ? plan.tasks.filter((task) => task?.id === taskId) : [];
+  const task = matches.length === 1 ? matches[0] : null;
+  if (
+    !task ||
+    !isPlainObject(task.risk) ||
+    typeof task.risk.level !== "string" ||
+    !uniqueStringArray(task.requiredGates)
+  ) {
+    throw new PreflightBlock("invalid_canonical_task_policy", "canonical_policy");
+  }
+  return {
+    codeReviewRequired: task.risk.level === "high",
+    trustReviewRequired: task.requiredGates.includes("QG-TRUST-REVIEW"),
+  };
+}
+
+function promotionTailPathAllowed(
+  root,
+  relative,
+  taskId,
+  candidateCommit,
+  evidenceRefs,
+  lifecyclePolicy,
+) {
   if (
     PROMOTION_TAIL_SHARED_PATHS.includes(relative) ||
     relative === `product/plans/oss-v1/state/${taskId}.json`
@@ -1385,10 +1636,11 @@ function promotionTailPathAllowed(root, relative, taskId, candidateCommit, evide
   const currentLifecycleRoot = `${evidenceRoot}lifecycle/${taskId}/${candidateCommit}/`;
   const currentNames = new Set([
     "canonical_promotion.json",
-    "review_report.json",
     "validation_report.json",
     "work_proof_marker.json",
   ]);
+  if (lifecyclePolicy.codeReviewRequired) currentNames.add("review_report.json");
+  if (lifecyclePolicy.trustReviewRequired) currentNames.add("trust_review_report.json");
   if (relative.startsWith(currentLifecycleRoot)) {
     return currentNames.has(relative.slice(currentLifecycleRoot.length));
   }
@@ -1405,7 +1657,7 @@ function promotionTailPathAllowed(root, relative, taskId, candidateCommit, evide
   }
 }
 
-function validateAcceptedPromotionArtifacts(root, state) {
+function validateAcceptedPromotionArtifacts(root, state, lifecyclePolicy) {
   const candidate = state.candidate;
   if (
     !Array.isArray(state.criteria) ||
@@ -1492,14 +1744,16 @@ function validateAcceptedPromotionArtifacts(root, state) {
   const lifecycleRoot = `product/plans/oss-v1/evidence/lifecycle/${state.taskId}/${candidate.commit}/`;
   const validationRef = `${lifecycleRoot}validation_report.json`;
   const reviewRef = `${lifecycleRoot}review_report.json`;
+  const trustReviewRef = `${lifecycleRoot}trust_review_report.json`;
   if (
     !promotion.evidenceRefs.includes(validationRef) ||
-    !promotion.evidenceRefs.includes(reviewRef)
+    promotion.evidenceRefs.includes(reviewRef) !== lifecyclePolicy.codeReviewRequired ||
+    promotion.evidenceRefs.includes(trustReviewRef) !== lifecyclePolicy.trustReviewRequired
   ) {
     throw new PreflightBlock("missing_promotion_lifecycle_evidence", "canonical_policy");
   }
   const validation = promotionJson(root, validationRef);
-  const review = promotionJson(root, reviewRef);
+  const review = lifecyclePolicy.codeReviewRequired ? promotionJson(root, reviewRef) : null;
   const validationContractPrefix = `task-packet:oss-v1:${state.taskId}:r`;
   const validationContractSuffix = `@${candidate.commit}`;
   const validationRevision =
@@ -1516,14 +1770,35 @@ function validateAcceptedPromotionArtifacts(root, state) {
     validation.result !== "pass" ||
     typeof validationRevision !== "string" ||
     !/^(?:0|[1-9][0-9]*)$/u.test(validationRevision) ||
-    review.task_id !== state.taskId ||
-    review.verdict !== "approved" ||
     !Array.isArray(validation.work_proof_marker_refs) ||
-    !Array.isArray(review.work_proof_marker_refs) ||
     validation.work_proof_marker_refs.length === 0 ||
-    !isDeepStrictEqual(validation.work_proof_marker_refs, review.work_proof_marker_refs)
+    (review !== null &&
+      (review.task_id !== state.taskId ||
+        review.verdict !== "approved" ||
+        !Array.isArray(review.work_proof_marker_refs) ||
+        !isDeepStrictEqual(validation.work_proof_marker_refs, review.work_proof_marker_refs)))
   ) {
     throw new PreflightBlock("invalid_promotion_lifecycle_evidence", "canonical_policy");
+  }
+  if (lifecyclePolicy.trustReviewRequired) {
+    const trustReview = promotionJson(root, trustReviewRef);
+    if (
+      trustReview.artifactType !== "trust_review_report" ||
+      trustReview.schemaVersion !== "1.0.0" ||
+      trustReview.taskId !== state.taskId ||
+      trustReview.candidateCommit !== candidate.commit ||
+      trustReview.verdict !== "pass" ||
+      trustReview.validationReportRef !== validationRef ||
+      !Array.isArray(trustReview.unresolvedFindings) ||
+      trustReview.unresolvedFindings.length !== 0 ||
+      !Array.isArray(trustReview.surfaceMatrix) ||
+      trustReview.surfaceMatrix.length === 0 ||
+      trustReview.surfaceMatrix.some(
+        (surface) => !isPlainObject(surface) || surface.status !== "pass",
+      )
+    ) {
+      throw new PreflightBlock("invalid_trust_review_evidence", "canonical_policy");
+    }
   }
   for (const markerRef of validation.work_proof_marker_refs) {
     if (markerRef !== `${lifecycleRoot}work_proof_marker.json`) {
@@ -1537,7 +1812,7 @@ function validateAcceptedPromotionArtifacts(root, state) {
   return evidenceRefs;
 }
 
-function assertAcceptedPromotionTail(root, snapshot, canonicalDefault) {
+function assertAcceptedPromotionTail(root, profile, snapshot, canonicalDefault) {
   if (!snapshot.branch) {
     throw new PreflightBlock("worker_promotion_tail_not_authenticated", "canonical_policy");
   }
@@ -1572,7 +1847,13 @@ function assertAcceptedPromotionTail(root, snapshot, canonicalDefault) {
       { accepted: [0, 1], check: "canonical_policy" },
     );
     if (defaultAncestor.status !== 0 || candidateAncestor.status !== 0) continue;
-    const evidenceRefs = validateAcceptedPromotionArtifacts(root, state);
+    const lifecyclePolicy = canonicalTaskLifecyclePolicy(
+      root,
+      profile,
+      canonicalDefault,
+      state.taskId,
+    );
+    const evidenceRefs = validateAcceptedPromotionArtifacts(root, state, lifecyclePolicy);
     const tail = changedPathsAcrossCommits(
       root,
       candidate.commit,
@@ -1584,7 +1865,14 @@ function assertAcceptedPromotionTail(root, snapshot, canonicalDefault) {
       tail.changedPaths.has(stateRef) &&
       tail.changedPaths.has("product/plans/oss-v1/acceptance-ledger.json") &&
       [...tail.changedPaths].every((relative) =>
-        promotionTailPathAllowed(root, relative, state.taskId, candidate.commit, evidenceRefs),
+        promotionTailPathAllowed(
+          root,
+          relative,
+          state.taskId,
+          candidate.commit,
+          evidenceRefs,
+          lifecyclePolicy,
+        ),
       )
     ) {
       matches.push(state.taskId);
@@ -1595,14 +1883,14 @@ function assertAcceptedPromotionTail(root, snapshot, canonicalDefault) {
   }
 }
 
-function assertWorkerReauthenticationPolicy(root, snapshot, canonicalDefault) {
+function assertWorkerReauthenticationPolicy(root, profile, snapshot, canonicalDefault) {
   try {
-    assertCanonicalResumePolicy(root, snapshot, canonicalDefault);
+    assertCanonicalResumePolicy(root, profile, snapshot, canonicalDefault);
   } catch (error) {
     if (!(error instanceof PreflightBlock) || error.code !== "branch_policy_inputs_not_canonical") {
       throw error;
     }
-    assertAcceptedPromotionTail(root, snapshot, canonicalDefault);
+    assertAcceptedPromotionTail(root, profile, snapshot, canonicalDefault);
   }
 }
 
@@ -1772,8 +2060,9 @@ async function preflight({ workerPacksOnly = false } = {}) {
     addCheck(result, "adapter_dependencies", "pass", "adapter_dependencies_authenticated");
 
     const canonicalDefault = resolveCanonicalDefault(root, profile);
-    if (workerPacksOnly) assertWorkerReauthenticationPolicy(root, before, canonicalDefault);
-    else assertCanonicalResumePolicy(root, before, canonicalDefault);
+    if (workerPacksOnly)
+      assertWorkerReauthenticationPolicy(root, profile, before, canonicalDefault);
+    else assertCanonicalResumePolicy(root, profile, before, canonicalDefault);
     addCheck(result, "canonical_policy", "pass", "canonical_policy_authenticated");
 
     result.resolved.factoryPacks = verifyFactoryPacks(root, profile);

@@ -29,6 +29,12 @@ Offline preflight also cannot prove that a server-side ref or repository role re
   regular tracked file equal to `HEAD`, verifies each external manifest pin, authenticates the verifier bytes from
   the manifest, and only then runs the installed verifier over the complete pack set. A sibling checkout is never
   consulted.
+- The same tracked profile declares the repository adapter's complete runtime package graph. Before every adapter
+  invocation, preflight reauthenticates the tracked package and lock manifests plus every declared installed
+  package tree, including transitive dependencies; ignored `node_modules` content is never trusted by name alone.
+- Resume policy is derived from all profile-declared standards, skills, adapter files, package inputs, and the
+  fixed plan/compiler surfaces on synchronized canonical main. Promotion reauthentication derives generic and
+  domain-review requirements from that task's canonical risk and gates before accepting lifecycle evidence.
 - Portable pack-set v1 supports POSIX macOS and Linux with `/dev/fd`. Unsupported platforms return a typed blocker
   before installed-pack I/O; the bootstrap never falls back to reopening a named verifier path.
 - A successful preflight emits strict, stable, path-redacted JSON with status `ready_for_authority`. That status is
@@ -56,6 +62,6 @@ Offline preflight also cannot prove that a server-side ref or repository role re
   must not collapse their evidence or infer the second from the first.
 - Server freshness still requires a separately authorized remote read followed by another preflight when the
   operation needs it. The offline result reports that limitation rather than claiming global freshness.
-- Repository adapters remain HEAD-owned, shell-free, repeated inputs surrounded by full snapshot checks. Preflight
+- Repository adapters remain HEAD-owned, package-closure authenticated, shell-free, repeated inputs surrounded by full snapshot checks. Preflight
   does not claim to defend against a malicious process with the same OS account that can rewrite and restore the
   checkout during execution; run it only on a trusted local host.

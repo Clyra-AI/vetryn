@@ -9,6 +9,7 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  readdirSync,
   rmSync,
   symlinkSync,
   writeFileSync,
@@ -59,6 +60,7 @@ function write(root, relative, contents, mode) {
 }
 
 const fakePlanScript = `
+import "fixture-a";
 import { readFileSync, appendFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 const behavior = JSON.parse(readFileSync(".adapter-behavior.json", "utf8"));
@@ -235,7 +237,81 @@ function makePacks(skillsRoot) {
   return pins;
 }
 
-function profile(pins) {
+function adapterPackageTreeDigest(packageRoot) {
+  const entries = [];
+  const walk = (directory, prefix = "") => {
+    for (const name of readdirSync(directory).sort((left, right) => left.localeCompare(right))) {
+      const relative = prefix ? `${prefix}/${name}` : name;
+      const target = path.join(directory, name);
+      const stat = lstatSync(target);
+      if (stat.isDirectory()) {
+        entries.push(`D\0${relative}`);
+        walk(target, relative);
+      } else if (stat.isFile()) {
+        entries.push(`F\0${relative}\0${sha256(readFileSync(target)).slice("sha256:".length)}`);
+      } else {
+        throw new Error(`unsupported fixture package entry: ${relative}`);
+      }
+    }
+  };
+  walk(packageRoot);
+  return sha256(Buffer.from(entries.join("\n"), "utf8"));
+}
+
+function makeAdapterPackages(root) {
+  const records = [
+    {
+      name: "fixture-a",
+      version: "1.0.0",
+      path: "node_modules/fixture-a",
+      dependencies: ["fixture-b"],
+      files: {
+        "package.json": `${JSON.stringify({
+          name: "fixture-a",
+          version: "1.0.0",
+          type: "module",
+          exports: "./index.js",
+          dependencies: { "fixture-b": "1.0.0" },
+        })}\n`,
+        "index.js": 'import "fixture-b";\nexport const fixtureA = true;\n',
+      },
+    },
+    {
+      name: "fixture-b",
+      version: "1.0.0",
+      path: "node_modules/fixture-b",
+      dependencies: [],
+      files: {
+        "package.json": `${JSON.stringify({
+          name: "fixture-b",
+          version: "1.0.0",
+          type: "module",
+          exports: "./index.js",
+        })}\n`,
+        "index.js": "export const fixtureB = true;\n",
+      },
+    },
+  ];
+  for (const record of records) {
+    for (const [relative, contents] of Object.entries(record.files)) {
+      write(root, `${record.path}/${relative}`, contents);
+    }
+    record.treeDigest = adapterPackageTreeDigest(path.join(root, record.path));
+    delete record.files;
+  }
+  return { packages: records, roots: ["fixture-a"] };
+}
+
+function profile(pins, adapterPackages) {
+  const dependencyPackages = adapterPackages.packages
+    .map(
+      (record) => `    - name: ${record.name}
+      version: ${record.version}
+      path: ${record.path}
+      tree_digest: ${record.treeDigest}
+      dependencies: ${JSON.stringify(record.dependencies)}`,
+    )
+    .join("\n");
   return `project: fixture
 product_name: Fixture
 repo_root: .
@@ -251,6 +327,11 @@ standards:
 task_adapter:
   plan_script: scripts/plan.mjs
   task_script: scripts/task.mjs
+  package_manifest: package.json
+  lockfile: pnpm-lock.yaml
+  dependency_roots: ${JSON.stringify(adapterPackages.roots)}
+  dependency_packages:
+${dependencyPackages}
   plan_check_args:
     - check
   next_args:
@@ -356,6 +437,7 @@ function makeFixture(options = {}) {
   git(root, "config", "user.email", "fixture@example.invalid");
   git(root, "config", "user.name", "Fixture");
   const pins = makePacks(skillsRoot);
+  const adapterPackages = makeAdapterPackages(root);
 
   cpSync(path.join(repositoryRoot, skillRef), path.join(root, skillRef), { recursive: true });
   for (const name of ["vetryn-implement-task", "vetryn-verify-task", "vetryn-promote-task"]) {
@@ -366,7 +448,6 @@ function makeFixture(options = {}) {
     );
   }
   write(root, ".gitignore", "node_modules\n.ignored\n");
-  symlinkSync(path.join(repositoryRoot, "node_modules"), path.join(root, "node_modules"), "dir");
   write(root, ".ignored", "initial\n");
   write(root, "AGENTS.md", "# Fixture agent contract\n");
   write(root, "WORKFLOW.md", "# Fixture workflow\n");
@@ -375,7 +456,19 @@ function makeFixture(options = {}) {
   write(root, "docs/oss-v1.md", "# Fixture product\n");
   write(root, "docs/architecture.md", "# Fixture architecture\n");
   write(root, "prettier.config.mjs", "export default {};\n");
-  write(root, "product/plans/oss-v1/plan.json", "{}\n");
+  write(
+    root,
+    "product/plans/oss-v1/plan.json",
+    `${JSON.stringify({
+      tasks: [
+        {
+          id: "TASK-ALPHA",
+          risk: { level: "high" },
+          requiredGates: options.trustReviewRequired ? ["QG-TRUST-REVIEW"] : [],
+        },
+      ],
+    })}\n`,
+  );
   write(root, "product/plans/schemas/task-packet.schema.json", "{}\n");
   write(root, "scripts/plan.mjs", fakePlanScript);
   write(root, "scripts/semantic-risk.mjs", "export const semanticRiskRefs = () => ({});\n");
@@ -393,7 +486,7 @@ function makeFixture(options = {}) {
       candidateBound: options.candidateBound ?? false,
     })}\n`,
   );
-  write(root, ".factory/profile.yaml", profile(pins));
+  write(root, ".factory/profile.yaml", profile(pins, adapterPackages));
   write(
     root,
     "package.json",
@@ -401,6 +494,7 @@ function makeFixture(options = {}) {
       name: "fixture",
       private: true,
       type: "module",
+      dependencies: { "fixture-a": "1.0.0" },
       scripts: {
         check: "true",
         "test:contracts": "true",
@@ -409,6 +503,7 @@ function makeFixture(options = {}) {
       },
     })}\n`,
   );
+  write(root, "pnpm-lock.yaml", "lockfileVersion: '9.0'\n");
   git(root, "add", ".");
   git(root, "commit", "-m", "fixture baseline");
   git(root, "update-ref", "refs/remotes/origin/main", "HEAD");
@@ -496,37 +591,19 @@ describe("vetryn-continue-next preflight", () => {
 
   it("does not execute ignored package replacements before repository authentication", () => {
     const fixture = makeFixture();
-    const installedModules = path.join(fixture.root, "node_modules");
     const sentinel = path.join(fixture.sandbox, "ignored-package-executed");
-    rmSync(installedModules);
     write(
       fixture.root,
-      "node_modules/ajv/package.json",
-      `${JSON.stringify({
-        name: "ajv",
-        type: "module",
-        exports: { "./dist/2020.js": "./dist/2020.js" },
-      })}\n`,
-    );
-    write(
-      fixture.root,
-      "node_modules/ajv/dist/2020.js",
-      `import { writeFileSync } from "node:fs";\nwriteFileSync(${JSON.stringify(sentinel)}, "ajv");\nexport default class Ajv {}\n`,
-    );
-    write(
-      fixture.root,
-      "node_modules/yaml/package.json",
-      `${JSON.stringify({ name: "yaml", type: "module", exports: "./index.js" })}\n`,
-    );
-    write(
-      fixture.root,
-      "node_modules/yaml/index.js",
-      `import { writeFileSync } from "node:fs";\nwriteFileSync(${JSON.stringify(sentinel)}, "yaml");\nexport function parseDocument() {}\n`,
+      "node_modules/fixture-b/index.js",
+      `import { writeFileSync } from "node:fs";\nwriteFileSync(${JSON.stringify(sentinel)}, "fixture-b");\nexport const fixtureB = true;\n`,
     );
 
     const result = runPreflight(fixture);
-    expect(result.status).toBe(0);
-    expect(result.json.status).toBe("ready_for_authority");
+    expect(result.status).toBe(2);
+    expect(result.json.blockers).toContainEqual({
+      check: "adapter_dependencies",
+      code: "adapter_package_digest_mismatch",
+    });
     expect(existsSync(sentinel)).toBe(false);
   });
 
@@ -688,6 +765,34 @@ describe("vetryn-continue-next preflight", () => {
     });
   });
 
+  it.each(["docs/oss-v1.md", ".agents/skills/vetryn-implement-task/SKILL.md"])(
+    "rejects branch-controlled profile policy input %s",
+    (policyPath) => {
+      const fixture = makeFixture();
+      git(fixture.root, "switch", "-c", "codex/branch-controlled-profile-policy");
+      setBehavior(fixture, {
+        activeTasks: [{ taskId: "TASK-ACTIVE", state: "in_progress" }],
+        nextLegalTasks: [],
+        mutation: null,
+        race: null,
+        compiledState: null,
+        candidateBound: false,
+      });
+      writeFileSync(path.join(fixture.root, policyPath), "\nbranch policy override\n", {
+        flag: "a",
+      });
+      git(fixture.root, "add", policyPath);
+      git(fixture.root, "commit", "-m", "change declared policy input");
+
+      const result = runPreflight(fixture);
+      expect(result.status).toBe(2);
+      expect(result.json.blockers).toContainEqual({
+        check: "canonical_policy",
+        code: "branch_policy_inputs_not_canonical",
+      });
+    },
+  );
+
   it.each(["--assume-unchanged", "--skip-worktree"])(
     "authenticates adapter imports hidden by %s before execution",
     (indexFlag) => {
@@ -702,7 +807,7 @@ describe("vetryn-continue-next preflight", () => {
       const result = runPreflight(fixture);
       expect(result.status).toBe(2);
       expect(result.json.blockers).toContainEqual({
-        check: "adapter_dependencies",
+        check: "canonical_inputs",
         code: "required_file_differs_from_head",
       });
     },
@@ -846,7 +951,7 @@ describe("vetryn-continue-next preflight", () => {
   });
 
   it("allows only an accepted candidate's bounded promotion tail during worker reauthentication", () => {
-    const fixture = makeFixture();
+    const fixture = makeFixture({ trustReviewRequired: true });
     const baseCommit = git(fixture.root, "rev-parse", "main");
     git(fixture.root, "switch", "-c", "codex/promoted-fixture");
     write(fixture.root, "src/implementation.txt", "candidate\n");
@@ -859,6 +964,7 @@ describe("vetryn-continue-next preflight", () => {
     const markerRef = `${lifecycleRoot}/work_proof_marker.json`;
     const validationRef = `${lifecycleRoot}/validation_report.json`;
     const reviewRef = `${lifecycleRoot}/review_report.json`;
+    const trustReviewRef = `${lifecycleRoot}/trust_review_report.json`;
     write(
       fixture.root,
       `product/plans/oss-v1/state/${taskId}.json`,
@@ -915,6 +1021,17 @@ describe("vetryn-continue-next preflight", () => {
         work_proof_marker_refs: [markerRef],
       })}\n`,
     );
+    const trustReviewBytes = `${JSON.stringify({
+      artifactType: "trust_review_report",
+      schemaVersion: "1.0.0",
+      taskId,
+      candidateCommit,
+      verdict: "pass",
+      validationReportRef: validationRef,
+      surfaceMatrix: [{ surface: "fixture trust surface", status: "pass" }],
+      unresolvedFindings: [],
+    })}\n`;
+    write(fixture.root, trustReviewRef, trustReviewBytes);
     write(
       fixture.root,
       `${lifecycleRoot}/canonical_promotion.json`,
@@ -922,7 +1039,7 @@ describe("vetryn-continue-next preflight", () => {
         taskId,
         candidateCommit,
         decision: "accepted",
-        evidenceRefs: [evidenceRef, validationRef, reviewRef],
+        evidenceRefs: [evidenceRef, validationRef, reviewRef, trustReviewRef],
       })}\n`,
     );
     git(fixture.root, "add", "product/plans/oss-v1");
@@ -945,6 +1062,21 @@ describe("vetryn-continue-next preflight", () => {
     write(fixture.root, validationRef, validationBytes);
     git(fixture.root, "add", validationRef);
     git(fixture.root, "commit", "-m", "restore required validation evidence");
+    expect(runPreflight(fixture, {}, [], ["--worker-packs-only"]).status).toBe(0);
+
+    rmSync(path.join(fixture.root, trustReviewRef));
+    git(fixture.root, "add", "-u", trustReviewRef);
+    git(fixture.root, "commit", "-m", "remove required trust review evidence");
+    const missingTrustReview = runPreflight(fixture, {}, [], ["--worker-packs-only"]);
+    expect(missingTrustReview.status).toBe(2);
+    expect(missingTrustReview.json.blockers).toContainEqual({
+      check: "canonical_policy",
+      code: "required_file_missing",
+    });
+
+    write(fixture.root, trustReviewRef, trustReviewBytes);
+    git(fixture.root, "add", trustReviewRef);
+    git(fixture.root, "commit", "-m", "restore required trust review evidence");
     expect(runPreflight(fixture, {}, [], ["--worker-packs-only"]).status).toBe(0);
 
     write(

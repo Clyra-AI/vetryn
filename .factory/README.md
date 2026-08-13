@@ -13,6 +13,9 @@ unconsumed Factory features are not part of Vetryn's worker contract.
   Factory source commit and the manifest digest of every required installed worker.
 - `$vetryn-continue-next` independently verifies committed profile bytes, every manifest pin and resource, and the
   manifest-bound verifier before installed code executes. It never consults a sibling checkout.
+- The profile also pins the complete runtime package graph used by the plan/task adapters. Preflight verifies the
+  tracked package and lock manifests and hashes every direct and transitive installed package before each adapter
+  invocation, so ignored dependency bytes cannot execute merely because their names resolve.
 - Portable worker-pack contract v1 supports POSIX macOS and Linux with `/dev/fd`; other platforms receive the typed
   `unsupported_platform` blocker before installed-pack I/O.
 - Factoryd remains deferred; `.factoryd/` is transient and non-authoritative.
