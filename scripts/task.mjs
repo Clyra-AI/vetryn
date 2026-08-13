@@ -21,19 +21,25 @@ const sourcePaths = {
   ledger: "product/plans/oss-v1/acceptance-ledger.json",
   progress: "product/plans/oss-v1/progress.json",
   factoryProfile: ".factory/profile.yaml",
-  semanticRiskSchema: "product/plans/schemas/semantic-risk-report.schema.json",
+  semanticRiskLegacySchema: "product/plans/schemas/semantic-risk-report-v0.1.schema.json",
+  semanticRiskSchema: "product/plans/schemas/semantic-risk-report-v0.2.schema.json",
 };
 
 const workerEvidenceRequired = ["work_proof_marker", "command_evidence", "acceptance_results"];
 const canonicalFactorySource = {
   repository: "https://github.com/Clyra-AI/factory",
-  commit: "54725330eb8c891edade37adbd682997ab8cc078",
+  commit: "e34a383eb5243a47d1779763226ebadeecd64858",
   profile_path: "profiles/vetryn.yaml",
-  profile_sha256: "79ee1bb3dbb673fe017f38317c60382dd6236be0d02792d5c091725fc153779f",
-  implementation_risk_sha256: "92aef4b6eb6705414b2556ec8fb6d5767656ad2e17b849f994048d8393a7750b",
-  semantic_risk_schema: "schemas/artifacts/semantic-risk-report.schema.json",
-  semantic_risk_schema_sha256: "6dc9198a8a522118127ac497393f857449803e6533f1ede82b03355640b75dfa",
-  portable_semantic_risk_schema: "product/plans/schemas/semantic-risk-report.schema.json",
+  profile_sha256: "9839833f777c42348a2feef1af880278d7b7846ba070b6ba2255cddc4fee15ec",
+  implementation_risk_sha256: "8e0b07fcdaad805a4a232c823ba5b1ca2f29cbf4bd4d28121a8ab753c81c601d",
+  semantic_risk_legacy_schema: "schemas/artifacts/semantic-risk-report-v0.1.schema.json",
+  semantic_risk_legacy_schema_sha256:
+    "6dc9198a8a522118127ac497393f857449803e6533f1ede82b03355640b75dfa",
+  portable_semantic_risk_legacy_schema:
+    "product/plans/schemas/semantic-risk-report-v0.1.schema.json",
+  semantic_risk_schema: "schemas/artifacts/semantic-risk-report-v0.2.schema.json",
+  semantic_risk_schema_sha256: "b24c5028566b7da75df74a45d0efe48387c112b438048148a2f9e5bf47c3b3ee",
+  portable_semantic_risk_schema: "product/plans/schemas/semantic-risk-report-v0.2.schema.json",
 };
 const baseFactorySkills = ["task-executor", "validation-gate"];
 const baseLifecycleEvidenceRequired = [
@@ -58,16 +64,16 @@ function semanticRiskReportRefForTask(task) {
   return semanticRiskRefs(task.id).reportRef;
 }
 
-function semanticRiskBaselineMarkerRefForTask(task) {
+function semanticRiskIntegrityMarkerRefForTask(task) {
   if (task.risk.level === "low") return null;
-  return semanticRiskRefs(task.id).markerRef;
+  return semanticRiskRefs(task.id).integrityMarkerRef;
 }
 
 function allowedPathsForTask(task) {
   const semanticRiskReportRef = semanticRiskReportRefForTask(task);
-  const semanticRiskBaselineMarkerRef = semanticRiskBaselineMarkerRefForTask(task);
+  const semanticRiskIntegrityMarkerRef = semanticRiskIntegrityMarkerRefForTask(task);
   return semanticRiskReportRef
-    ? [...task.scope.allowedPaths, semanticRiskReportRef, semanticRiskBaselineMarkerRef]
+    ? [...task.scope.allowedPaths, semanticRiskReportRef, semanticRiskIntegrityMarkerRef]
     : task.scope.allowedPaths;
 }
 
@@ -176,7 +182,7 @@ function stopConditionsForTask(task, highRiskTask, trustReviewRequired) {
     "A lifecycle artifact is used while its ref is unbound or does not contain the exact candidate commit.",
     ...(task.risk.level !== "low"
       ? [
-          "Implementation starts without a preflight-sealed semantic_risk_report and baseline marker at their exact packet refs, or either target is outside allowed_paths.",
+          "Implementation proceeds without a schema-valid semantic_risk_report and content-bound integrity marker at their exact packet refs, or either target is outside allowed_paths.",
         ]
       : []),
     ...(highRiskTask
@@ -392,6 +398,11 @@ function textDigest(contents) {
 async function validatePortableFactoryProfile() {
   const profile = await readFile(path.join(root, sourcePaths.factoryProfile), "utf8");
   assert(
+    (await digest(sourcePaths.semanticRiskLegacySchema)) ===
+      canonicalFactorySource.semantic_risk_legacy_schema_sha256,
+    "portable semantic-risk legacy schema does not match the pinned canonical Factory schema",
+  );
+  assert(
     (await digest(sourcePaths.semanticRiskSchema)) ===
       canonicalFactorySource.semantic_risk_schema_sha256,
     "portable semantic-risk schema does not match the pinned canonical Factory schema",
@@ -416,7 +427,12 @@ async function validatePortableFactoryProfile() {
   )?.[0];
   assert(sourceBlock, "portable Factory profile is missing canonical_factory_source");
   for (const [field, value] of Object.entries(canonicalFactorySource).filter(
-    ([field]) => !["profile_path", "portable_semantic_risk_schema"].includes(field),
+    ([field]) =>
+      ![
+        "profile_path",
+        "portable_semantic_risk_legacy_schema",
+        "portable_semantic_risk_schema",
+      ].includes(field),
   )) {
     assert(
       new RegExp(`^\\s{2}${escapeRegExp(field)}:\\s+${escapeRegExp(value)}$`, "mu").test(
@@ -538,6 +554,7 @@ async function compile(taskId) {
     sourcePaths.plan,
     "pnpm-lock.yaml",
     sourcePaths.factoryProfile,
+    sourcePaths.semanticRiskLegacySchema,
     sourcePaths.semanticRiskSchema,
   ];
   const sourceDigests = Object.fromEntries(
@@ -589,7 +606,7 @@ async function compile(taskId) {
     ...(semanticRiskReportRefForTask(task)
       ? {
           semantic_risk_report_ref: semanticRiskReportRefForTask(task),
-          semantic_risk_baseline_marker_ref: semanticRiskBaselineMarkerRefForTask(task),
+          semantic_risk_integrity_marker_ref: semanticRiskIntegrityMarkerRefForTask(task),
         }
       : {}),
     acceptance_ledger_ref: sourcePaths.ledger,
@@ -734,9 +751,9 @@ async function validatePacket(packet, { requireBoundCandidate }) {
     "semantic_risk_report_ref",
   );
   assertSame(
-    packet.semantic_risk_baseline_marker_ref,
-    semanticRiskBaselineMarkerRefForTask(canonicalTask) ?? undefined,
-    "semantic_risk_baseline_marker_ref",
+    packet.semantic_risk_integrity_marker_ref,
+    semanticRiskIntegrityMarkerRefForTask(canonicalTask) ?? undefined,
+    "semantic_risk_integrity_marker_ref",
   );
   assertSame(packet.forbidden_paths, canonicalTask.scope.forbiddenPaths, "forbidden_paths");
   assertSame(packet.validation_commands, canonicalValidationCommands, "validation_commands");
@@ -976,6 +993,7 @@ async function validatePacket(packet, { requireBoundCandidate }) {
     sourcePaths.plan,
     "pnpm-lock.yaml",
     sourcePaths.factoryProfile,
+    sourcePaths.semanticRiskLegacySchema,
     sourcePaths.semanticRiskSchema,
   ];
   assertSame(

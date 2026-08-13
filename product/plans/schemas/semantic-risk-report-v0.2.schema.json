@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://clyra.ai/factory/schemas/artifacts/semantic-risk-report-v0.2.schema.json",
+  "type": "object",
+  "required": [
+    "artifact_type",
+    "schema_version",
+    "task_id",
+    "work_item_id",
+    "risk_class",
+    "profile_ref",
+    "source_revision",
+    "baseline_evidence",
+    "phase",
+    "artifact_lifecycle_matrix",
+    "authorization_boundary_trace",
+    "normative_adversarial_matrix",
+    "review_convergence",
+    "residual_risks",
+    "created_at"
+  ],
+  "properties": {
+    "artifact_type": {"const": "semantic_risk_report"},
+    "schema_version": {"const": "0.2"},
+    "task_id": {"$ref": "semantic-risk-report-v0.1.schema.json#/properties/task_id"},
+    "work_item_id": {"$ref": "semantic-risk-report-v0.1.schema.json#/properties/work_item_id"},
+    "risk_class": {"$ref": "semantic-risk-report-v0.1.schema.json#/properties/risk_class"},
+    "profile_ref": {"$ref": "semantic-risk-report-v0.1.schema.json#/properties/profile_ref"},
+    "source_revision": {"$ref": "semantic-risk-report-v0.1.schema.json#/properties/source_revision"},
+    "baseline_evidence": {"$ref": "semantic-risk-report-v0.1.schema.json#/properties/baseline_evidence"},
+    "phase": {"const": "implementation_design"},
+    "artifact_lifecycle_matrix": {"$ref": "semantic-risk-report-v0.1.schema.json#/properties/artifact_lifecycle_matrix"},
+    "authorization_boundary_trace": {"$ref": "semantic-risk-report-v0.1.schema.json#/properties/authorization_boundary_trace"},
+    "normative_adversarial_matrix": {"$ref": "semantic-risk-report-v0.1.schema.json#/properties/normative_adversarial_matrix"},
+    "external_effect_preflight": {"$ref": "semantic-risk-report-v0.1.schema.json#/properties/external_effect_preflight"},
+    "persistence_threat_matrix": {"$ref": "semantic-risk-report-v0.1.schema.json#/properties/persistence_threat_matrix"},
+    "review_convergence": {
+      "type": "object",
+      "required": ["implementation_design_pass", "same_subsystem_p1_rounds_seen", "decision"],
+      "properties": {
+        "implementation_design_pass": {"type": "string", "enum": ["pass", "blocked"]},
+        "same_subsystem_p1_rounds_seen": {"type": "integer", "minimum": 0, "maximum": 2},
+        "decision": {"type": "string", "enum": ["proceed", "redesign"]}
+      },
+      "additionalProperties": false
+    },
+    "residual_risks": {"$ref": "semantic-risk-report-v0.1.schema.json#/properties/residual_risks"},
+    "created_at": {"$ref": "semantic-risk-report-v0.1.schema.json#/properties/created_at"}
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"risk_class": {"const": "high"}}, "required": ["risk_class"]},
+      "then": {"required": ["external_effect_preflight", "persistence_threat_matrix"]}
+    },
+    {
+      "if": {
+        "properties": {
+          "review_convergence": {
+            "type": "object",
+            "properties": {"implementation_design_pass": {"const": "blocked"}},
+            "required": ["implementation_design_pass"]
+          }
+        },
+        "required": ["review_convergence"]
+      },
+      "then": {
+        "properties": {
+          "review_convergence": {
+            "type": "object",
+            "properties": {"decision": {"const": "redesign"}},
+            "required": ["decision"]
+          }
+        }
+      }
+    }
+  ],
+  "additionalProperties": false
+}

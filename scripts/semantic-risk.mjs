@@ -10,9 +10,9 @@ import Ajv2020 from "ajv/dist/2020.js";
 import addFormats from "ajv-formats";
 
 const defaultRoot = path.resolve(import.meta.dirname, "..");
-const schemaRef = "product/plans/schemas/semantic-risk-report.schema.json";
+const schemaRef = "product/plans/schemas/semantic-risk-report-v0.2.schema.json";
+const legacySchemaRef = "product/plans/schemas/semantic-risk-report-v0.1.schema.json";
 const profileRef = ".factory/profile.yaml";
-const runnerId = "vetryn-semantic-risk-preflight-v0.1";
 
 function fail(message) {
   throw new Error(message);
@@ -105,9 +105,13 @@ function semanticContent(report) {
   return content;
 }
 
-function validateReportSchema(schema, report, label) {
+function validateReportSchema(schema, legacySchema, report, label) {
   const ajv = new Ajv2020({ allErrors: true, strict: false, allowUnionTypes: true });
   addFormats(ajv);
+  ajv.addSchema(
+    legacySchema,
+    "https://clyra.ai/factory/schemas/artifacts/semantic-risk-report-v0.1.schema.json",
+  );
   const validate = ajv.compile(schema);
   assert(
     validate(report),
@@ -120,25 +124,26 @@ function validateReportSchema(schema, report, label) {
 export function semanticRiskRefs(taskId) {
   return {
     reportRef: `.factory/artifacts/task-runs/${taskId}/semantic-risk-report.json`,
-    markerRef: `.factory/artifacts/task-runs/${taskId}/semantic-risk-baseline-marker.json`,
+    integrityMarkerRef: `.factory/artifacts/task-runs/${taskId}/semantic-risk-integrity-marker.json`,
   };
 }
 
 export async function validateSemanticRiskEvidence({ root = defaultRoot, packet }) {
   if (packet.risk_class === "low") return;
-  const { reportRef, markerRef } = semanticRiskRefs(packet.task_id);
+  const { reportRef, integrityMarkerRef } = semanticRiskRefs(packet.task_id);
   assert(
     packet.semantic_risk_report_ref === reportRef,
     "semantic-risk report target is not canonical",
   );
   assert(
-    packet.semantic_risk_baseline_marker_ref === markerRef,
-    "semantic-risk baseline marker target is not canonical",
+    packet.semantic_risk_integrity_marker_ref === integrityMarkerRef,
+    "semantic-risk integrity marker target is not canonical",
   );
 
   const candidateCommit = packet.currentState.candidate?.commit;
   assert(candidateCommit, "semantic-risk evidence requires a bound candidate");
   const schema = await readJson(root, schemaRef);
+  const legacySchema = await readJson(root, legacySchemaRef);
   const { value: report } = readJsonAtCommit(
     root,
     candidateCommit,
@@ -148,10 +153,10 @@ export async function validateSemanticRiskEvidence({ root = defaultRoot, packet 
   const { value: marker, bytes: markerBytes } = readJsonAtCommit(
     root,
     candidateCommit,
-    markerRef,
-    "semantic-risk baseline marker",
+    integrityMarkerRef,
+    "semantic-risk integrity marker",
   );
-  validateReportSchema(schema, report, reportRef);
+  validateReportSchema(schema, legacySchema, report, reportRef);
   assert(
     report.task_id === packet.task_id,
     "semantic-risk report task_id does not match the packet",
@@ -169,7 +174,7 @@ export async function validateSemanticRiskEvidence({ root = defaultRoot, packet 
     "semantic-risk report must bind the portable Factory profile",
   );
   assert(
-    report.review_convergence.pre_implementation_design_pass === "pass" &&
+    report.review_convergence.implementation_design_pass === "pass" &&
       report.review_convergence.decision === "proceed",
     "semantic-risk report blocks implementation",
   );
@@ -180,38 +185,34 @@ export async function validateSemanticRiskEvidence({ root = defaultRoot, packet 
     "repo-native semantic-risk evidence cannot authorize external actions",
   );
   assert(
-    report.baseline_evidence.work_proof_marker_ref === markerRef,
-    "semantic-risk report cites a different baseline marker",
+    report.baseline_evidence.work_proof_marker_ref === integrityMarkerRef,
+    "semantic-risk report cites a different integrity marker",
   );
   assert(
     report.baseline_evidence.work_proof_marker_sha256 === sha256(markerBytes),
-    "semantic-risk report baseline marker digest is stale",
+    "semantic-risk report integrity marker digest is stale",
   );
 
   assert(
-    marker.artifact_type === "semantic_risk_preflight_marker",
-    "baseline marker type is invalid",
+    marker.artifact_type === "semantic_risk_integrity_marker",
+    "integrity marker type is invalid",
   );
-  assert(marker.schema_version === "0.1", "baseline marker schema version is invalid");
+  assert(marker.schema_version === "0.2", "integrity marker schema version is invalid");
   assert(
-    marker.command === `pnpm --silent semantic-risk:preflight -- ${packet.task_id}`,
-    "baseline marker command is invalid",
+    marker.command === `pnpm --silent semantic-risk:design -- ${packet.task_id}`,
+    "integrity marker command is invalid",
   );
   assert(
     marker.execution_status === "pass" && marker.exit_code === 0,
-    "baseline preflight did not pass",
-  );
-  assert(
-    marker.generated_by === "trusted_runner" && marker.runner_id === runnerId,
-    "baseline marker is not runner-authenticated",
+    "semantic-risk design command did not pass",
   );
   assert(
     marker.git_sha === report.source_revision,
-    "semantic-risk source revision differs from the baseline marker",
+    "semantic-risk source revision differs from the integrity marker",
   );
   assert(
     Date.parse(marker.finished_at) <= Date.parse(report.created_at),
-    "semantic-risk report predates its baseline marker",
+    "semantic-risk report predates its integrity marker",
   );
   const expectedBinding = {
     task_id: packet.task_id,
@@ -226,7 +227,7 @@ export async function validateSemanticRiskEvidence({ root = defaultRoot, packet 
       marker.authorized_task_bindings.some(
         (binding) => canonicalJson(binding) === canonicalJson(expectedBinding),
       ),
-    "baseline marker does not bind the exact semantic-risk content and source",
+    "integrity marker does not bind the exact semantic-risk content and source",
   );
   assert(
     runGit(root, ["merge-base", "--is-ancestor", report.source_revision, candidateCommit], {
@@ -238,7 +239,7 @@ export async function validateSemanticRiskEvidence({ root = defaultRoot, packet 
 
 function parseArguments(arguments_) {
   const [command, taskId, ...rest] = arguments_;
-  assert(command === "preflight", "usage: semantic-risk.mjs preflight TASK-ID [--input PATH]");
+  assert(command === "design", "usage: semantic-risk.mjs design TASK-ID [--input PATH]");
   assert(/^(?:M0|V1)-\d{2}$/u.test(taskId ?? ""), "a valid task ID is required");
   let inputRef = `.factory/tmp/task-runs/${taskId}/semantic-risk-report.draft.json`;
   if (rest.length > 0) {
@@ -248,7 +249,7 @@ function parseArguments(arguments_) {
   return { taskId, inputRef };
 }
 
-async function preflight(root, taskId, inputRef) {
+async function design(root, taskId, inputRef) {
   const taskScript = path.join(import.meta.dirname, "task.mjs");
   const compiled = spawnSync(process.execPath, [taskScript, "compile", taskId], {
     cwd: root,
@@ -258,10 +259,10 @@ async function preflight(root, taskId, inputRef) {
   assert(compiled.status === 0, `task compilation failed: ${compiled.stderr.trim()}`);
   const packet = JSON.parse(compiled.stdout);
   assert(packet.risk_class !== "low", `${taskId} does not require semantic-risk evidence`);
-  const { reportRef, markerRef } = semanticRiskRefs(taskId);
+  const { reportRef, integrityMarkerRef } = semanticRiskRefs(taskId);
   assert(packet.semantic_risk_report_ref === reportRef, "compiled report target is not canonical");
   assert(
-    packet.semantic_risk_baseline_marker_ref === markerRef,
+    packet.semantic_risk_integrity_marker_ref === integrityMarkerRef,
     "compiled marker target is not canonical",
   );
 
@@ -272,7 +273,7 @@ async function preflight(root, taskId, inputRef) {
   const unexpected = statusLines.filter((line) => line.slice(3) !== normalizedInput);
   assert(
     unexpected.length === 0,
-    `semantic-risk preflight requires a clean baseline; unexpected changes: ${unexpected.join(", ")}`,
+    `semantic-risk design requires a clean candidate snapshot; unexpected changes: ${unexpected.join(", ")}`,
   );
   const sourceRevision = runGit(root, ["rev-parse", "HEAD"]).stdout.trim();
   const draft = await readJson(root, inputRef, "semantic-risk draft");
@@ -286,20 +287,20 @@ async function preflight(root, taskId, inputRef) {
   const report = {
     ...draft,
     artifact_type: "semantic_risk_report",
-    schema_version: "0.1",
+    schema_version: "0.2",
     task_id: taskId,
     work_item_id: taskId,
     risk_class: packet.risk_class,
     profile_ref: profileRef,
     source_revision: sourceRevision,
-    phase: "pre_implementation",
+    phase: "implementation_design",
     created_at: createdAt,
   };
   const semanticContentDigest = sha256(canonicalJson(semanticContent(report)));
   const marker = {
-    artifact_type: "semantic_risk_preflight_marker",
-    schema_version: "0.1",
-    command: `pnpm --silent semantic-risk:preflight -- ${taskId}`,
+    artifact_type: "semantic_risk_integrity_marker",
+    schema_version: "0.2",
+    command: `pnpm --silent semantic-risk:design -- ${taskId}`,
     task_id: taskId,
     profile_ref: profileRef,
     semantic_risk_report_ref: reportRef,
@@ -308,8 +309,6 @@ async function preflight(root, taskId, inputRef) {
     execution_status: "pass",
     started_at: startedAt,
     finished_at: createdAt,
-    runner_id: runnerId,
-    generated_by: "trusted_runner",
     authorized_task_bindings: [
       {
         task_id: taskId,
@@ -323,13 +322,14 @@ async function preflight(root, taskId, inputRef) {
   };
   const markerBytes = Buffer.from(`${JSON.stringify(marker, null, 2)}\n`);
   report.baseline_evidence = {
-    work_proof_marker_ref: markerRef,
+    work_proof_marker_ref: integrityMarkerRef,
     work_proof_marker_sha256: sha256(markerBytes),
   };
   const schema = await readJson(root, schemaRef);
-  validateReportSchema(schema, report, reportRef);
+  const legacySchema = await readJson(root, legacySchemaRef);
+  validateReportSchema(schema, legacySchema, report, reportRef);
   assert(
-    report.review_convergence.pre_implementation_design_pass === "pass" &&
+    report.review_convergence.implementation_design_pass === "pass" &&
       report.review_convergence.decision === "proceed",
     "semantic-risk draft does not authorize implementation",
   );
@@ -337,12 +337,12 @@ async function preflight(root, taskId, inputRef) {
     !(report.external_effect_preflight?.actions ?? []).some(
       (action) => action.disposition === "authorized",
     ),
-    "repo-native semantic-risk preflight cannot authorize external actions",
+    "repo-native semantic-risk design cannot authorize external actions",
   );
-  await writeJsonAtomic(root, markerRef, marker);
+  await writeJsonAtomic(root, integrityMarkerRef, marker);
   await writeJsonAtomic(root, reportRef, report);
   process.stdout.write(
-    `${JSON.stringify({ status: "pass", taskId, sourceRevision, reportRef, markerRef }, null, 2)}\n`,
+    `${JSON.stringify({ status: "pass", taskId, sourceRevision, reportRef, integrityMarkerRef }, null, 2)}\n`,
   );
 }
 
@@ -351,7 +351,7 @@ async function main() {
   const { taskId, inputRef } = parseArguments(
     process.argv.slice(2).filter((argument) => argument !== "--"),
   );
-  await preflight(root, taskId, inputRef);
+  await design(root, taskId, inputRef);
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href)

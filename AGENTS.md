@@ -23,8 +23,9 @@ These instructions apply to the entire repository.
 - Treat `WORKFLOW.md` as the repository operating contract. Compile one explicit task with
   `pnpm --silent task:compile -- TASK-ID` before implementation or verification.
 - For a medium- or high-risk packet, author the semantic-risk draft in `.factory/tmp/`, then run
-  `pnpm --silent semantic-risk:preflight -- TASK-ID` from a clean baseline before the first product edit. Use only
-  the packet's exact report and marker refs; bound-candidate validation verifies both against the pinned schema.
+  `pnpm --silent semantic-risk:design -- TASK-ID` from a clean candidate snapshot. Prefer doing this before product
+  edits, but treat the report and integrity marker as candidate-owned design evidence—not authenticated chronology,
+  approval, or execution authority. Use only the packet's exact refs; bound-candidate validation verifies both.
 - Use `docs/agent-map.md` to navigate repository responsibilities, route work to the right skill, and
   evaluate planned skill activation. It is guidance, not a second backlog and never expands a compiled
   task packet.

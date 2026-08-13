@@ -48,7 +48,8 @@ or compiled task authorizes it.
 3. Select one legal task and run `pnpm --silent task:compile -- TASK-ID`.
 4. Treat the packet's paths, capabilities, invariants, gates, and stop conditions as hard boundaries.
 5. For medium- or high-risk work, author the ignored semantic-risk draft and run
-   `pnpm --silent semantic-risk:preflight -- TASK-ID` from a clean baseline before the first product edit.
+   `pnpm --silent semantic-risk:design -- TASK-ID` from a clean candidate snapshot. Prefer doing this before
+   product edits; never interpret the repository-owned integrity marker as independent authority or chronology.
 6. Route the work through the applicable skill below.
 
 If no legal task covers the requested work, do not borrow scope from a future task. Propose a narrow plan or

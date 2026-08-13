@@ -22,12 +22,13 @@ access.
 4. Use `$vetryn-implement-task` for implementation. Use `$vetryn-verify-task` for an additional independent check
    when available, and `$vetryn-promote-task` for maintainer-controlled state promotion.
 
-For medium- and high-risk tasks, the packet declares exact report and baseline-marker targets under
+For medium- and high-risk tasks, the packet declares exact report and integrity-marker targets under
 `.factory/artifacts/task-runs/<task-id>/`. Author the report body as the ignored
 `.factory/tmp/task-runs/<task-id>/semantic-risk-report.draft.json`, then run
-`pnpm --silent semantic-risk:preflight -- TASK-ID` from a clean baseline before the first product edit. The
-repo-native runner seals the pinned-schema report and source-bound marker; bound-candidate packet validation
-rechecks their schema, digests, task/risk/profile identity, source ancestry, and convergence. The V1 adapter rejects
+`pnpm --silent semantic-risk:design -- TASK-ID` from a clean candidate snapshot, preferably before product edits.
+The repo-native command validates the pinned-schema report and writes a content- and source-bound integrity marker;
+it does not authenticate chronology, independent review, approval, or execution authority. Bound-candidate packet
+validation rechecks schema, digests, task/risk/profile identity, source ancestry, and convergence. The V1 adapter rejects
 `authorized` external actions; offline work records them only as `blocked` or `not_applicable`. The compiler adds
 only those two operational paths without changing canonical product scope.
 

@@ -26,9 +26,10 @@ artifacts, accept the task, edit generated progress, or broaden canonical scope.
 reviews use `required_domain_review_chain`; they are not aliases for Factory's generic `code-review` worker.
 This is Vetryn's lean adapter contract, not a claim that its packets implement Factory's larger universal
 task-packet runtime schema.
-Medium- and high-risk packets add exact writable report and baseline-marker targets under
+Medium- and high-risk packets add exact writable report and integrity-marker targets under
 `.factory/artifacts/task-runs/<task-id>/`. The repository vendors the byte-identical pinned Factory schema and
-provides `pnpm --silent semantic-risk:preflight -- TASK-ID`, so a clean checkout can seal and later validate the
-evidence without a hosted runtime or machine-local Factory path. This offline V1 adapter rejects `authorized`
+provides `pnpm --silent semantic-risk:design -- TASK-ID`, so a clean checkout can bind and later validate the
+design evidence without a hosted runtime or machine-local Factory path. The marker proves internal consistency,
+not chronology, approval, or independent authority. This offline V1 adapter rejects `authorized`
 external actions; live authority remains a separately reviewed field-operation boundary. Lifecycle-owned
 validation, review, shipping, and promotion artifacts remain outside executor scope.

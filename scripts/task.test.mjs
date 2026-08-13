@@ -103,13 +103,13 @@ async function writeSemanticRiskEvidence(root, packet, sourceRevision) {
   const timestamp = "2026-08-10T00:00:00.000Z";
   const report = {
     artifact_type: "semantic_risk_report",
-    schema_version: "0.1",
+    schema_version: "0.2",
     task_id: packet.task_id,
     work_item_id: packet.task_id,
     risk_class: packet.risk_class,
     profile_ref: ".factory/profile.yaml",
     source_revision: sourceRevision,
-    phase: "pre_implementation",
+    phase: "implementation_design",
     artifact_lifecycle_matrix: [
       {
         artifact: "semantic-risk fixture",
@@ -151,7 +151,7 @@ async function writeSemanticRiskEvidence(root, packet, sourceRevision) {
       },
     ],
     review_convergence: {
-      pre_implementation_design_pass: "pass",
+      implementation_design_pass: "pass",
       same_subsystem_p1_rounds_seen: 0,
       decision: "proceed",
     },
@@ -190,9 +190,9 @@ async function writeSemanticRiskEvidence(root, packet, sourceRevision) {
   }
   const contentDigest = sha256(canonicalJson(report));
   const marker = {
-    artifact_type: "semantic_risk_preflight_marker",
-    schema_version: "0.1",
-    command: `pnpm --silent semantic-risk:preflight -- ${packet.task_id}`,
+    artifact_type: "semantic_risk_integrity_marker",
+    schema_version: "0.2",
+    command: `pnpm --silent semantic-risk:design -- ${packet.task_id}`,
     task_id: packet.task_id,
     profile_ref: ".factory/profile.yaml",
     semantic_risk_report_ref: packet.semantic_risk_report_ref,
@@ -201,8 +201,6 @@ async function writeSemanticRiskEvidence(root, packet, sourceRevision) {
     execution_status: "pass",
     started_at: timestamp,
     finished_at: timestamp,
-    runner_id: "vetryn-semantic-risk-preflight-v0.1",
-    generated_by: "trusted_runner",
     authorized_task_bindings: [
       {
         task_id: packet.task_id,
@@ -216,11 +214,11 @@ async function writeSemanticRiskEvidence(root, packet, sourceRevision) {
   };
   const markerBytes = `${JSON.stringify(marker, null, 2)}\n`;
   report.baseline_evidence = {
-    work_proof_marker_ref: packet.semantic_risk_baseline_marker_ref,
+    work_proof_marker_ref: packet.semantic_risk_integrity_marker_ref,
     work_proof_marker_sha256: sha256(markerBytes),
   };
   await mkdir(path.dirname(path.join(root, packet.semantic_risk_report_ref)), { recursive: true });
-  await writeFile(path.join(root, packet.semantic_risk_baseline_marker_ref), markerBytes);
+  await writeFile(path.join(root, packet.semantic_risk_integrity_marker_ref), markerBytes);
   await writeFixtureJson(root, packet.semantic_risk_report_ref, report);
 }
 
@@ -851,8 +849,8 @@ describe("task packet compiler", () => {
       risk_class: "medium",
       worker_type: "task-executor",
       semantic_risk_report_ref: ".factory/artifacts/task-runs/V1-00/semantic-risk-report.json",
-      semantic_risk_baseline_marker_ref:
-        ".factory/artifacts/task-runs/V1-00/semantic-risk-baseline-marker.json",
+      semantic_risk_integrity_marker_ref:
+        ".factory/artifacts/task-runs/V1-00/semantic-risk-integrity-marker.json",
       retry_budget: { max_attempts: 2, current_attempt: 1, remaining_attempts: 1 },
       execution: {
         executorMayAccept: false,
@@ -876,10 +874,11 @@ describe("task packet compiler", () => {
       "product/plans/oss-v1/plan.json",
       "pnpm-lock.yaml",
       ".factory/profile.yaml",
-      "product/plans/schemas/semantic-risk-report.schema.json",
+      "product/plans/schemas/semantic-risk-report-v0.1.schema.json",
+      "product/plans/schemas/semantic-risk-report-v0.2.schema.json",
     ]);
     expect(packet.allowed_paths).toContain(packet.semantic_risk_report_ref);
-    expect(packet.allowed_paths).toContain(packet.semantic_risk_baseline_marker_ref);
+    expect(packet.allowed_paths).toContain(packet.semantic_risk_integrity_marker_ref);
     expect(packet.allowed_paths).toContain("vitest.config.ts");
     expect(packet.required_worker_chain).toEqual(packet.execution.factorySkills);
     expect(packet.required_worker_chain).toEqual([
@@ -1123,7 +1122,7 @@ describe("task packet compiler", () => {
         "pnpm-lock.yaml",
         "vitest.config.ts",
         ".factory/artifacts/task-runs/V1-05/semantic-risk-report.json",
-        ".factory/artifacts/task-runs/V1-05/semantic-risk-baseline-marker.json",
+        ".factory/artifacts/task-runs/V1-05/semantic-risk-integrity-marker.json",
       ]),
     );
     expect(packet.semantic_risk_report_ref).toBe(
@@ -1166,6 +1165,20 @@ describe("task packet compiler", () => {
       "source digest is stale for .factory/profile.yaml",
     );
     await writeFile(factoryProfilePath, factoryProfile);
+    expect(runTask(root, "validate", "candidate-packet.json").status).toBe(0);
+
+    const legacySchemaPath = path.join(
+      root,
+      "product/plans/schemas/semantic-risk-report-v0.1.schema.json",
+    );
+    const legacySchema = await readFile(legacySchemaPath, "utf8");
+    await writeFile(legacySchemaPath, `${legacySchema}\n`);
+    const staleLegacySchemaValidation = runTask(root, "validate", "candidate-packet.json");
+    expect(staleLegacySchemaValidation.status).toBe(1);
+    expect(staleLegacySchemaValidation.stderr).toContain(
+      "portable semantic-risk legacy schema does not match the pinned canonical Factory schema",
+    );
+    await writeFile(legacySchemaPath, legacySchema);
     expect(runTask(root, "validate", "candidate-packet.json").status).toBe(0);
 
     const rewrittenPacketId = globalThis.structuredClone(packet);

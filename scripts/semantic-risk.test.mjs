@@ -35,7 +35,7 @@ function highRiskDraft() {
         states: ["generated", "persisted"],
         freshness: "pinned task source revision",
         integrity: "schema and digest validation",
-        authenticity: "repository-owned preflight runner",
+        authenticity: "repository-owned integrity marker; independent authority is out of scope",
         actionable_states: [],
         transitions_and_recovery: ["Reject stale or tampered evidence and regenerate."],
       },
@@ -96,7 +96,7 @@ function highRiskDraft() {
       expected_disposition: "reject",
     })),
     review_convergence: {
-      pre_implementation_design_pass: "pass",
+      implementation_design_pass: "pass",
       same_subsystem_p1_rounds_seen: 0,
       decision: "proceed",
     },
@@ -131,20 +131,20 @@ afterEach(async () => {
   );
 });
 
-describe("semantic-risk preflight", () => {
-  it("seals a high-risk draft from a clean baseline and rejects unrelated changes", async () => {
+describe("semantic-risk implementation design", () => {
+  it("binds a high-risk draft to a clean candidate snapshot and rejects unrelated changes", async () => {
     const root = await createFixture();
     const draftRef = ".factory/tmp/task-runs/V1-06/semantic-risk-report.draft.json";
     await mkdir(path.dirname(path.join(root, draftRef)), { recursive: true });
     await writeFile(path.join(root, draftRef), `${JSON.stringify(highRiskDraft(), null, 2)}\n`);
 
     await writeFile(path.join(root, "unexpected.txt"), "not authorized\n");
-    const dirty = run(root, "preflight", "V1-06", "--input", draftRef);
+    const dirty = run(root, "design", "V1-06", "--input", draftRef);
     expect(dirty.status).toBe(1);
-    expect(dirty.stderr).toContain("requires a clean baseline");
+    expect(dirty.stderr).toContain("requires a clean candidate snapshot");
     await rm(path.join(root, "unexpected.txt"));
 
-    const result = run(root, "preflight", "--", "V1-06", "--input", draftRef);
+    const result = run(root, "design", "--", "V1-06", "--input", draftRef);
     expect(result.status, result.stderr).toBe(0);
     expect(JSON.parse(result.stdout)).toMatchObject({ status: "pass", taskId: "V1-06" });
     const report = JSON.parse(
@@ -158,18 +158,25 @@ describe("semantic-risk preflight", () => {
       risk_class: "high",
       source_revision: git(root, "rev-parse", "HEAD"),
       profile_ref: ".factory/profile.yaml",
-      review_convergence: { pre_implementation_design_pass: "pass", decision: "proceed" },
+      review_convergence: { implementation_design_pass: "pass", decision: "proceed" },
     });
     expect(report.baseline_evidence.work_proof_marker_sha256).toMatch(/^sha256:[0-9a-f]{64}$/u);
-    const { reportRef, markerRef } = semanticRiskRefs("V1-06");
-    git(root, "add", reportRef, markerRef);
+    const { reportRef, integrityMarkerRef } = semanticRiskRefs("V1-06");
+    const integrityMarker = JSON.parse(await readFile(path.join(root, integrityMarkerRef), "utf8"));
+    expect(integrityMarker).toMatchObject({
+      artifact_type: "semantic_risk_integrity_marker",
+      schema_version: "0.2",
+    });
+    expect(integrityMarker).not.toHaveProperty("generated_by");
+    expect(integrityMarker).not.toHaveProperty("runner_id");
+    git(root, "add", reportRef, integrityMarkerRef);
     git(root, "commit", "--quiet", "-m", "commit semantic-risk evidence");
     const candidateCommit = git(root, "rev-parse", "HEAD");
     const packet = {
       task_id: "V1-06",
       risk_class: "high",
       semantic_risk_report_ref: reportRef,
-      semantic_risk_baseline_marker_ref: markerRef,
+      semantic_risk_integrity_marker_ref: integrityMarkerRef,
       currentState: { candidate: { commit: candidateCommit } },
     };
     await expect(validateSemanticRiskEvidence({ root, packet })).resolves.toBeUndefined();
@@ -182,7 +189,7 @@ describe("semantic-risk preflight", () => {
     );
   });
 
-  it("rejects external-action authorization in the offline repo-native preflight", async () => {
+  it("rejects external-action authorization in the offline repo-native design pass", async () => {
     const root = await createFixture();
     const draftRef = ".factory/tmp/task-runs/V1-06/semantic-risk-report.draft.json";
     const draft = highRiskDraft();
@@ -195,12 +202,12 @@ describe("semantic-risk preflight", () => {
     });
     await mkdir(path.dirname(path.join(root, draftRef)), { recursive: true });
     await writeFile(path.join(root, draftRef), `${JSON.stringify(draft, null, 2)}\n`);
-    const preflight = run(root, "preflight", "--", "V1-06", "--input", draftRef);
-    expect(preflight.status).toBe(1);
-    expect(preflight.stderr).toContain("cannot authorize external actions");
+    const design = run(root, "design", "--", "V1-06", "--input", draftRef);
+    expect(design.status).toBe(1);
+    expect(design.stderr).toContain("cannot authorize external actions");
     expect(git(root, "status", "--short")).toBe("?? .factory/tmp/");
-    const { reportRef, markerRef } = semanticRiskRefs("V1-06");
+    const { reportRef, integrityMarkerRef } = semanticRiskRefs("V1-06");
     await expect(readFile(path.join(root, reportRef))).rejects.toThrow();
-    await expect(readFile(path.join(root, markerRef))).rejects.toThrow();
+    await expect(readFile(path.join(root, integrityMarkerRef))).rejects.toThrow();
   });
 });

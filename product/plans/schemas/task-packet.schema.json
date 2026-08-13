@@ -70,9 +70,9 @@
       "type": "string",
       "pattern": "^\\.factory/artifacts/task-runs/(M0|V1)-[0-9]{2}/semantic-risk-report\\.json$"
     },
-    "semantic_risk_baseline_marker_ref": {
+    "semantic_risk_integrity_marker_ref": {
       "type": "string",
-      "pattern": "^\\.factory/artifacts/task-runs/(M0|V1)-[0-9]{2}/semantic-risk-baseline-marker\\.json$"
+      "pattern": "^\\.factory/artifacts/task-runs/(M0|V1)-[0-9]{2}/semantic-risk-integrity-marker\\.json$"
     },
     "allowed_paths": { "$ref": "#/$defs/nonemptyUniqueStrings" },
     "forbidden_paths": { "$ref": "#/$defs/nonemptyUniqueStrings" },
@@ -225,6 +225,9 @@
             "profile_path",
             "profile_sha256",
             "implementation_risk_sha256",
+            "semantic_risk_legacy_schema",
+            "semantic_risk_legacy_schema_sha256",
+            "portable_semantic_risk_legacy_schema",
             "semantic_risk_schema",
             "semantic_risk_schema_sha256",
             "portable_semantic_risk_schema"
@@ -235,12 +238,19 @@
             "profile_path": { "const": "profiles/vetryn.yaml" },
             "profile_sha256": { "$ref": "#/$defs/digest" },
             "implementation_risk_sha256": { "$ref": "#/$defs/digest" },
+            "semantic_risk_legacy_schema": {
+              "const": "schemas/artifacts/semantic-risk-report-v0.1.schema.json"
+            },
+            "semantic_risk_legacy_schema_sha256": { "$ref": "#/$defs/digest" },
+            "portable_semantic_risk_legacy_schema": {
+              "const": "product/plans/schemas/semantic-risk-report-v0.1.schema.json"
+            },
             "semantic_risk_schema": {
-              "const": "schemas/artifacts/semantic-risk-report.schema.json"
+              "const": "schemas/artifacts/semantic-risk-report-v0.2.schema.json"
             },
             "semantic_risk_schema_sha256": { "$ref": "#/$defs/digest" },
             "portable_semantic_risk_schema": {
-              "const": "product/plans/schemas/semantic-risk-report.schema.json"
+              "const": "product/plans/schemas/semantic-risk-report-v0.2.schema.json"
             }
           }
         },
@@ -520,10 +530,10 @@
         "required": ["risk_class"]
       },
       "then": {
-        "required": ["semantic_risk_report_ref", "semantic_risk_baseline_marker_ref"],
+        "required": ["semantic_risk_report_ref", "semantic_risk_integrity_marker_ref"],
         "properties": {
           "semantic_risk_report_ref": {},
-          "semantic_risk_baseline_marker_ref": {},
+          "semantic_risk_integrity_marker_ref": {},
           "allowed_paths": {
             "type": "array",
             "allOf": [
@@ -536,7 +546,7 @@
               {
                 "contains": {
                   "type": "string",
-                  "pattern": "^\\.factory/artifacts/task-runs/(M0|V1)-[0-9]{2}/semantic-risk-baseline-marker\\.json$"
+                  "pattern": "^\\.factory/artifacts/task-runs/(M0|V1)-[0-9]{2}/semantic-risk-integrity-marker\\.json$"
                 }
               }
             ]
@@ -546,7 +556,7 @@
       "else": {
         "allOf": [
           { "not": { "required": ["semantic_risk_report_ref"] } },
-          { "not": { "required": ["semantic_risk_baseline_marker_ref"] } }
+          { "not": { "required": ["semantic_risk_integrity_marker_ref"] } }
         ]
       }
     },

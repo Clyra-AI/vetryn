@@ -106,7 +106,7 @@ implementation_risk:
     - ordering
     - anti_rollback
   review_convergence:
-    pre_implementation_design_pass: true
+    implementation_design_pass: true
     exact_candidate_review_after_validation: true
     same_subsystem_p1_round_limit: 2
     standalone_p2_policy_ref: commit_push.codex_review.standalone_p2_exception
@@ -122,9 +122,12 @@ implementation_risk:
 canonical_factory_profile: profiles/vetryn.yaml
 canonical_factory_source:
   repository: https://github.com/Clyra-AI/factory
-  commit: 54725330eb8c891edade37adbd682997ab8cc078
-  profile_sha256: 79ee1bb3dbb673fe017f38317c60382dd6236be0d02792d5c091725fc153779f
-  implementation_risk_sha256: 92aef4b6eb6705414b2556ec8fb6d5767656ad2e17b849f994048d8393a7750b
-  semantic_risk_schema: schemas/artifacts/semantic-risk-report.schema.json
-  semantic_risk_schema_sha256: 6dc9198a8a522118127ac497393f857449803e6533f1ede82b03355640b75dfa
-  portable_semantic_risk_schema: product/plans/schemas/semantic-risk-report.schema.json
+  commit: e34a383eb5243a47d1779763226ebadeecd64858
+  profile_sha256: 9839833f777c42348a2feef1af880278d7b7846ba070b6ba2255cddc4fee15ec
+  implementation_risk_sha256: 8e0b07fcdaad805a4a232c823ba5b1ca2f29cbf4bd4d28121a8ab753c81c601d
+  semantic_risk_legacy_schema: schemas/artifacts/semantic-risk-report-v0.1.schema.json
+  semantic_risk_legacy_schema_sha256: 6dc9198a8a522118127ac497393f857449803e6533f1ede82b03355640b75dfa
+  portable_semantic_risk_legacy_schema: product/plans/schemas/semantic-risk-report-v0.1.schema.json
+  semantic_risk_schema: schemas/artifacts/semantic-risk-report-v0.2.schema.json
+  semantic_risk_schema_sha256: b24c5028566b7da75df74a45d0efe48387c112b438048148a2f9e5bf47c3b3ee
+  portable_semantic_risk_schema: product/plans/schemas/semantic-risk-report-v0.2.schema.json
