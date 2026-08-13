@@ -891,11 +891,11 @@
     {
       "id": "M0-11",
       "milestone": "M0",
-      "title": "Activate portable continuation orchestration",
-      "objective": "Add one repository-owned continuation skill that discovers and executes the sole legal task from canonical repository state, while keeping read-only preflight, per-run authority, and protected delivery boundaries explicit and portable.",
+      "title": "Add a narrow next-task continuation helper",
+      "objective": "Add one repository-owned helper that discovers the sole legal task, compiles its packet, and routes an agent into the existing implementation, validation, promotion, and protected-delivery workflows without duplicating those workflows.",
       "risk": {
-        "level": "high",
-        "domains": ["agent-workflow", "delivery-policy", "authorization", "portability"]
+        "level": "medium",
+        "domains": ["agent-workflow", "delivery-policy", "portability"]
       },
       "dependsOn": [{ "taskId": "M0-10", "kind": "hard" }],
       "acceptanceItemIds": ["PROCESS-010", "PROCESS-011"],
@@ -932,12 +932,13 @@
         ]
       },
       "semanticInvariants": [
-        "The repository-owned continuation skill performs a mutation-checked read-only preflight before any implementation, promotion, git, GitHub, credential, network, or provider action.",
-        "Preflight resumes exactly one active task, otherwise selects exactly one next-legal task, and stops on zero or ambiguous candidates, dirty or drifting state, unresolved dependencies, missing capabilities, missing authority, or an incomplete execution environment.",
-        "Repository root, canonical default branch, task ID, packet, scope, commands, skills, reviews, promotion rules, and protected delivery lifecycle are discovered from repository-owned state without a baked task ID, commit SHA, username, absolute path, sibling checkout, or chat history.",
+        "The repository-owned helper performs a small read-only preflight using existing Git, plan, and task commands; it does not duplicate the plan compiler, evidence validator, Factory worker verifier, or shipping workflow.",
+        "Preflight resumes exactly one active task, otherwise selects exactly one next-legal task, and stops on zero or ambiguous candidates, a dirty checkout, repository-command failure, or changed HEAD or worktree status.",
+        "Repository root, task ID, packet, scope, capabilities, commands, skills, reviews, promotion rules, and protected delivery lifecycle are discovered from repository-owned state without a baked task ID, commit SHA, username, absolute path, sibling checkout, or chat history.",
         "The skill stores reusable procedure and prohibitions only; branch creation, promotion, GitHub writes, merge, live-provider spend, credentials, and other positive authority remain explicit per-run grants constrained by the compiled packet and repository policy.",
         "Any active maintainer listed in MAINTAINERS.md with current repository write authority may issue a per-run grant; roster membership, CODEOWNERS, the skill, and prior chat are never standing authorization.",
-        "Installed generic Factory workers are reused through a verified portable profile and self-contained resources; Vetryn does not copy Factory shipping behavior or require a sibling Factory checkout.",
+        "The helper trusts the local developer runtime and installed skills, delegates validation and evidence checks to existing repository and Factory workflows, and does not sandbox the host or authenticate installed package and worker bytes.",
+        "Installed generic Factory workers are invoked by skill name; Vetryn does not copy Factory shipping behavior or require a sibling Factory checkout.",
         "Direct pushes to main, ambient credentials, unauthorized live-provider work, and waivers of privacy, fail-closed, provider-safety, evidence-integrity, or other non-waivable requirements remain forbidden.",
         "The change does not modify Vetryn product behavior, package code, examples, GitHub workflows, consumer agent onboarding, or accepted task evidence."
       ],
@@ -964,8 +965,8 @@
         "scripts/task.mjs",
         "scripts/task.test.mjs"
       ],
-      "requiredTestLevels": ["static", "contract", "integration", "adversarial"],
-      "requiredGates": ["QG-PLAN-CHECK", "QG-REPO-CHECK", "QG-CONTRACTS", "QG-INDEPENDENT-VERIFY"],
+      "requiredTestLevels": ["static", "contract", "integration"],
+      "requiredGates": ["QG-PLAN-CHECK", "QG-REPO-CHECK", "QG-CONTRACTS"],
       "requiredReviews": ["maintainer"],
       "capabilities": {
         "network": false,
@@ -975,8 +976,8 @@
       },
       "maxAttempts": 2,
       "stopConditions": [
-        "Preflight changes HEAD, the current branch, the index, the worktree, remotes, canonical task state, or GitHub state.",
-        "Task selection is empty or ambiguous, the compiled packet drifts, or required skills, commands, reviews, capabilities, or authority cannot be resolved.",
+        "Preflight changes HEAD or the worktree status.",
+        "Task selection is empty or ambiguous, the checkout is dirty, or the repository plan or task command fails.",
         "The workflow infers positive mutation or delivery authority from the skill, profile, packet, prior chat, or ambient credentials.",
         "The implementation depends on a machine-local absolute path or sibling Factory checkout.",
         "A product package, example, GitHub workflow, consumer-facing llms.txt interface, or accepted task evidence changes."

@@ -29,7 +29,7 @@ const sourcePaths = {
 const workerEvidenceRequired = ["work_proof_marker", "command_evidence", "acceptance_results"];
 const canonicalFactorySource = {
   repository: "https://github.com/Clyra-AI/factory",
-  commit: "e34a383eb5243a47d1779763226ebadeecd64858",
+  commit: "c1a21e1d4b12fbde1e0d10935658d40b065b7bae",
   profile_path: "profiles/vetryn.yaml",
   profile_sha256: "9839833f777c42348a2feef1af880278d7b7846ba070b6ba2255cddc4fee15ec",
   implementation_risk_sha256: "8e0b07fcdaad805a4a232c823ba5b1ca2f29cbf4bd4d28121a8ab753c81c601d",

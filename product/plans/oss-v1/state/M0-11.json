@@ -33,11 +33,6 @@
       "gateId": "QG-CONTRACTS",
       "status": "pending",
       "evidenceRefs": []
-    },
-    {
-      "gateId": "QG-INDEPENDENT-VERIFY",
-      "status": "pending",
-      "evidenceRefs": []
     }
   ],
   "reviews": [

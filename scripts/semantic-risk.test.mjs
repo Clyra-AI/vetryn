@@ -248,7 +248,7 @@ describe("semantic-risk implementation design", () => {
     const design = run(root, "design", "--", "V1-06", "--input", draftRef);
     expect(design.status).toBe(1);
     expect(design.stderr).toContain("cannot authorize external actions");
-    expect(git(root, "status", "--short")).toBe("?? .factory/tmp/");
+    expect(git(root, "status", "--short")).toBe("?? .factory/tmp/task-runs/V1-06/");
     const { reportRef, integrityMarkerRef } = semanticRiskRefs("V1-06");
     await expect(readFile(path.join(root, reportRef))).rejects.toThrow();
     await expect(readFile(path.join(root, integrityMarkerRef))).rejects.toThrow();
