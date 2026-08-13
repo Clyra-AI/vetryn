@@ -29,9 +29,6 @@ import path from "node:path";
 import process from "node:process";
 import { isDeepStrictEqual } from "node:util";
 
-import Ajv2020 from "ajv/dist/2020.js";
-import { parseDocument } from "yaml";
-
 const WORKERS = ["task-executor", "validation-gate", "code-review", "commit-push"];
 const LIFECYCLE_GATE_KEYS = [
   "local_validation_required",
@@ -153,6 +150,136 @@ class PreflightBlock extends Error {
     this.code = code;
     this.check = check;
   }
+}
+
+function parseYamlLite(text, errorCode = "invalid_profile_yaml", check = "profile") {
+  const fail = () => {
+    throw new PreflightBlock(errorCode, check);
+  };
+  const lines = text.split(/\r?\n/u);
+  if (lines.some((line) => line.includes("\t"))) fail();
+  const skip = (start) => {
+    let index = start;
+    while (index < lines.length) {
+      const stripped = lines[index].trim();
+      if (stripped && !stripped.startsWith("#")) break;
+      index += 1;
+    }
+    return index;
+  };
+  const indentation = (line) => line.length - line.trimStart().length;
+  const parseScalar = (raw) => {
+    const value = raw.trim();
+    if (value.startsWith('"') && value.endsWith('"')) {
+      try {
+        return JSON.parse(value);
+      } catch {
+        fail();
+      }
+    }
+    if (value.startsWith("'") && value.endsWith("'")) {
+      return value.slice(1, -1).replaceAll("''", "'");
+    }
+    if (value === "true") return true;
+    if (value === "false") return false;
+    if (value === "null" || value === "~") return null;
+    if (value === "[]") return [];
+    if (value === "{}") return {};
+    if (/^-?(?:0|[1-9][0-9]*)$/u.test(value)) return Number(value);
+    if (value.startsWith("[") || value.startsWith("{")) {
+      try {
+        const parsed = JSON.parse(value);
+        if (!Array.isArray(parsed) && !isPlainObject(parsed)) fail();
+        return parsed;
+      } catch {
+        fail();
+      }
+    }
+    return value;
+  };
+  const inlineMapItem = (raw) => {
+    if ((raw.startsWith('"') && raw.endsWith('"')) || (raw.startsWith("'") && raw.endsWith("'"))) {
+      return null;
+    }
+    if (raw.includes("://")) return null;
+    const separator = raw.indexOf(":");
+    if (separator <= 0) return null;
+    if (separator + 1 < raw.length && !/\s/u.test(raw[separator + 1])) return null;
+    const key = raw.slice(0, separator).trim();
+    const rest = raw.slice(separator + 1).trim();
+    if (!key) fail();
+    return { [key]: rest ? parseScalar(rest) : {} };
+  };
+  let parseMap;
+  const parseList = (start, expectedIndent) => {
+    const items = [];
+    let index = start;
+    while (true) {
+      index = skip(index);
+      if (index >= lines.length) break;
+      const line = lines[index];
+      const currentIndent = indentation(line);
+      const stripped = line.trim();
+      if (currentIndent < expectedIndent || !stripped.startsWith("- ")) break;
+      if (currentIndent !== expectedIndent) fail();
+      const raw = stripped.slice(2).trim();
+      const inline = inlineMapItem(raw);
+      index += 1;
+      const next = skip(index);
+      if (inline) {
+        if (next < lines.length && indentation(lines[next]) > currentIndent) {
+          const nested = parseMap(next, currentIndent + 2);
+          Object.assign(inline, nested.value);
+          index = nested.index;
+        }
+        items.push(inline);
+      } else {
+        if (!raw) fail();
+        items.push(parseScalar(raw));
+      }
+    }
+    return { value: items, index };
+  };
+  parseMap = (start, expectedIndent) => {
+    const value = {};
+    let index = start;
+    while (true) {
+      index = skip(index);
+      if (index >= lines.length) break;
+      const line = lines[index];
+      const currentIndent = indentation(line);
+      const stripped = line.trim();
+      if (currentIndent < expectedIndent) break;
+      if (currentIndent !== expectedIndent || stripped.startsWith("- ")) fail();
+      const separator = stripped.indexOf(":");
+      if (separator <= 0) fail();
+      const key = stripped.slice(0, separator).trim();
+      const rest = stripped.slice(separator + 1).trim();
+      if (!key || Object.hasOwn(value, key)) fail();
+      if (rest) {
+        value[key] = parseScalar(rest);
+        index += 1;
+        continue;
+      }
+      const next = skip(index + 1);
+      if (next >= lines.length || indentation(lines[next]) <= currentIndent) {
+        value[key] = {};
+        index = next;
+      } else if (lines[next].trim().startsWith("- ")) {
+        const parsed = parseList(next, currentIndent + 2);
+        value[key] = parsed.value;
+        index = parsed.index;
+      } else {
+        const parsed = parseMap(next, currentIndent + 2);
+        value[key] = parsed.value;
+        index = parsed.index;
+      }
+    }
+    return { value, index };
+  };
+  const parsed = parseMap(0, 0);
+  if (skip(parsed.index) !== lines.length) fail();
+  return parsed.value;
 }
 
 function stableValue(value) {
@@ -486,20 +613,7 @@ function validTypedValue(value, policy) {
 function parseProfile(root) {
   const profileRef = ".factory/profile.yaml";
   const bytes = trackedHeadBytes(root, profileRef, "profile");
-  const document = parseDocument(bytes.toString("utf8"), {
-    maxAliasCount: 0,
-    prettyErrors: false,
-    uniqueKeys: true,
-  });
-  if (document.errors.length > 0 || document.warnings.length > 0) {
-    throw new PreflightBlock("invalid_profile_yaml", "profile");
-  }
-  let profile;
-  try {
-    profile = document.toJS({ maxAliasCount: 0 });
-  } catch {
-    throw new PreflightBlock("invalid_profile_yaml", "profile");
-  }
+  const profile = parseYamlLite(bytes.toString("utf8"));
   if (!isPlainObject(profile)) throw new PreflightBlock("invalid_profile", "profile");
   for (const [field, policy] of REQUIRED_PROFILE_FIELDS) {
     const value = nested(profile, field);
@@ -1041,15 +1155,7 @@ function parseSkillName(bytes) {
   const text = bytes.toString("utf8");
   const match = /^---\n([\s\S]*?)\n---(?:\n|$)/u.exec(text);
   if (!match) throw new PreflightBlock("invalid_repository_skill", "skills");
-  const document = parseDocument(match[1], {
-    maxAliasCount: 0,
-    prettyErrors: false,
-    uniqueKeys: true,
-  });
-  if (document.errors.length > 0 || document.warnings.length > 0) {
-    throw new PreflightBlock("invalid_repository_skill", "skills");
-  }
-  const frontmatter = document.toJS({ maxAliasCount: 0 });
+  const frontmatter = parseYamlLite(match[1], "invalid_repository_skill", "skills");
   if (!isPlainObject(frontmatter) || typeof frontmatter.name !== "string") {
     throw new PreflightBlock("invalid_repository_skill", "skills");
   }
@@ -1383,6 +1489,51 @@ function validateAcceptedPromotionArtifacts(root, state) {
   ) {
     throw new PreflightBlock("invalid_canonical_promotion", "canonical_policy");
   }
+  const lifecycleRoot = `product/plans/oss-v1/evidence/lifecycle/${state.taskId}/${candidate.commit}/`;
+  const validationRef = `${lifecycleRoot}validation_report.json`;
+  const reviewRef = `${lifecycleRoot}review_report.json`;
+  if (
+    !promotion.evidenceRefs.includes(validationRef) ||
+    !promotion.evidenceRefs.includes(reviewRef)
+  ) {
+    throw new PreflightBlock("missing_promotion_lifecycle_evidence", "canonical_policy");
+  }
+  const validation = promotionJson(root, validationRef);
+  const review = promotionJson(root, reviewRef);
+  const validationContractPrefix = `task-packet:oss-v1:${state.taskId}:r`;
+  const validationContractSuffix = `@${candidate.commit}`;
+  const validationRevision =
+    typeof validation.validation_contract_ref === "string" &&
+    validation.validation_contract_ref.startsWith(validationContractPrefix) &&
+    validation.validation_contract_ref.endsWith(validationContractSuffix)
+      ? validation.validation_contract_ref.slice(
+          validationContractPrefix.length,
+          -validationContractSuffix.length,
+        )
+      : null;
+  if (
+    validation.task_id !== state.taskId ||
+    validation.result !== "pass" ||
+    typeof validationRevision !== "string" ||
+    !/^(?:0|[1-9][0-9]*)$/u.test(validationRevision) ||
+    review.task_id !== state.taskId ||
+    review.verdict !== "approved" ||
+    !Array.isArray(validation.work_proof_marker_refs) ||
+    !Array.isArray(review.work_proof_marker_refs) ||
+    validation.work_proof_marker_refs.length === 0 ||
+    !isDeepStrictEqual(validation.work_proof_marker_refs, review.work_proof_marker_refs)
+  ) {
+    throw new PreflightBlock("invalid_promotion_lifecycle_evidence", "canonical_policy");
+  }
+  for (const markerRef of validation.work_proof_marker_refs) {
+    if (markerRef !== `${lifecycleRoot}work_proof_marker.json`) {
+      throw new PreflightBlock("invalid_promotion_lifecycle_evidence", "canonical_policy");
+    }
+    const marker = promotionJson(root, markerRef);
+    if (marker.git_sha !== candidate.commit || marker.execution_status !== "pass") {
+      throw new PreflightBlock("invalid_promotion_lifecycle_evidence", "canonical_policy");
+    }
+  }
   return evidenceRefs;
 }
 
@@ -1710,16 +1861,53 @@ async function preflight({ workerPacksOnly = false } = {}) {
 }
 
 function validateOutput(result) {
-  const schemaPath = path.resolve(
-    import.meta.dirname,
-    "..",
-    "references",
-    "preflight-result.schema.json",
+  const validStatus = ["ready_for_authority", "workers_authenticated", "blocked"].includes(
+    result?.status,
   );
-  const schema = JSON.parse(readFileSync(schemaPath, "utf8"));
-  const ajv = new Ajv2020({ allErrors: true, allowUnionTypes: true, strict: true });
-  const validate = ajv.compile(schema);
-  if (!validate(result)) throw new Error("internal_preflight_schema_failure");
+  const validMode = ["start", "resume", "worker_reauthentication", null].includes(result?.mode);
+  const validChecks =
+    Array.isArray(result?.checks) &&
+    result.checks.every(
+      (check) =>
+        exactObjectKeys(check, ["id", "status", "detail"]) &&
+        typeof check.id === "string" &&
+        ["pass", "fail", "not_checked"].includes(check.status) &&
+        typeof check.detail === "string",
+    );
+  const validBlockers =
+    Array.isArray(result?.blockers) &&
+    result.blockers.every(
+      (blocker) =>
+        exactObjectKeys(blocker, ["code", "check"]) &&
+        typeof blocker.code === "string" &&
+        typeof blocker.check === "string",
+    );
+  if (
+    !exactObjectKeys(result, [
+      "schemaVersion",
+      "status",
+      "mode",
+      "repository",
+      "selection",
+      "packet",
+      "resolved",
+      "authority",
+      "checks",
+      "blockers",
+    ]) ||
+    result.schemaVersion !== PREFLIGHT_SCHEMA_VERSION ||
+    !validStatus ||
+    !validMode ||
+    !isPlainObject(result.repository) ||
+    !isPlainObject(result.resolved) ||
+    !isPlainObject(result.authority) ||
+    !validChecks ||
+    !validBlockers ||
+    (result.status === "blocked") !== result.blockers.length > 0 ||
+    (result.status === "workers_authenticated") !== (result.mode === "worker_reauthentication")
+  ) {
+    throw new Error("internal_preflight_schema_failure");
+  }
 }
 
 function isDirectInvocation() {

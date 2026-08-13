@@ -494,6 +494,42 @@ describe("vetryn-continue-next preflight", () => {
     expect(git(fixture.root, "status", "--short")).toBe("");
   });
 
+  it("does not execute ignored package replacements before repository authentication", () => {
+    const fixture = makeFixture();
+    const installedModules = path.join(fixture.root, "node_modules");
+    const sentinel = path.join(fixture.sandbox, "ignored-package-executed");
+    rmSync(installedModules);
+    write(
+      fixture.root,
+      "node_modules/ajv/package.json",
+      `${JSON.stringify({
+        name: "ajv",
+        type: "module",
+        exports: { "./dist/2020.js": "./dist/2020.js" },
+      })}\n`,
+    );
+    write(
+      fixture.root,
+      "node_modules/ajv/dist/2020.js",
+      `import { writeFileSync } from "node:fs";\nwriteFileSync(${JSON.stringify(sentinel)}, "ajv");\nexport default class Ajv {}\n`,
+    );
+    write(
+      fixture.root,
+      "node_modules/yaml/package.json",
+      `${JSON.stringify({ name: "yaml", type: "module", exports: "./index.js" })}\n`,
+    );
+    write(
+      fixture.root,
+      "node_modules/yaml/index.js",
+      `import { writeFileSync } from "node:fs";\nwriteFileSync(${JSON.stringify(sentinel)}, "yaml");\nexport function parseDocument() {}\n`,
+    );
+
+    const result = runPreflight(fixture);
+    expect(result.status).toBe(0);
+    expect(result.json.status).toBe("ready_for_authority");
+    expect(existsSync(sentinel)).toBe(false);
+  });
+
   it("resumes one active candidate ahead of next-legal work", () => {
     const fixture = makeFixture();
     git(fixture.root, "switch", "-c", "codex/active-fixture");
@@ -819,6 +855,10 @@ describe("vetryn-continue-next preflight", () => {
     const candidateCommit = git(fixture.root, "rev-parse", "HEAD");
     const taskId = "TASK-ALPHA";
     const evidenceRef = "ev-task-alpha-check";
+    const lifecycleRoot = `product/plans/oss-v1/evidence/lifecycle/${taskId}/${candidateCommit}`;
+    const markerRef = `${lifecycleRoot}/work_proof_marker.json`;
+    const validationRef = `${lifecycleRoot}/validation_report.json`;
+    const reviewRef = `${lifecycleRoot}/review_report.json`;
     write(
       fixture.root,
       `product/plans/oss-v1/state/${taskId}.json`,
@@ -856,12 +896,33 @@ describe("vetryn-continue-next preflight", () => {
     );
     write(
       fixture.root,
-      `product/plans/oss-v1/evidence/lifecycle/${taskId}/${candidateCommit}/canonical_promotion.json`,
+      markerRef,
+      `${JSON.stringify({ git_sha: candidateCommit, execution_status: "pass" })}\n`,
+    );
+    const validationBytes = `${JSON.stringify({
+      task_id: taskId,
+      result: "pass",
+      validation_contract_ref: `task-packet:oss-v1:${taskId}:r0@${candidateCommit}`,
+      work_proof_marker_refs: [markerRef],
+    })}\n`;
+    write(fixture.root, validationRef, validationBytes);
+    write(
+      fixture.root,
+      reviewRef,
+      `${JSON.stringify({
+        task_id: taskId,
+        verdict: "approved",
+        work_proof_marker_refs: [markerRef],
+      })}\n`,
+    );
+    write(
+      fixture.root,
+      `${lifecycleRoot}/canonical_promotion.json`,
       `${JSON.stringify({
         taskId,
         candidateCommit,
         decision: "accepted",
-        evidenceRefs: [evidenceRef],
+        evidenceRefs: [evidenceRef, validationRef, reviewRef],
       })}\n`,
     );
     git(fixture.root, "add", "product/plans/oss-v1");
@@ -870,6 +931,21 @@ describe("vetryn-continue-next preflight", () => {
     const authenticated = runPreflight(fixture, {}, [], ["--worker-packs-only"]);
     expect(authenticated.status).toBe(0);
     expect(authenticated.json.status).toBe("workers_authenticated");
+
+    rmSync(path.join(fixture.root, validationRef));
+    git(fixture.root, "add", "-u", validationRef);
+    git(fixture.root, "commit", "-m", "remove required validation evidence");
+    const missingLifecycleEvidence = runPreflight(fixture, {}, [], ["--worker-packs-only"]);
+    expect(missingLifecycleEvidence.status).toBe(2);
+    expect(missingLifecycleEvidence.json.blockers).toContainEqual({
+      check: "canonical_policy",
+      code: "required_file_missing",
+    });
+
+    write(fixture.root, validationRef, validationBytes);
+    git(fixture.root, "add", validationRef);
+    git(fixture.root, "commit", "-m", "restore required validation evidence");
+    expect(runPreflight(fixture, {}, [], ["--worker-packs-only"]).status).toBe(0);
 
     write(
       fixture.root,
@@ -889,7 +965,7 @@ describe("vetryn-continue-next preflight", () => {
       check: "canonical_policy",
       code: "worker_promotion_tail_not_authenticated",
     });
-  });
+  }, 15_000);
 
   it("rejects inconsistent promotion ledger during worker reauthentication", () => {
     const fixture = makeFixture();
