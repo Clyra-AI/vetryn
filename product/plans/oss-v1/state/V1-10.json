@@ -2,7 +2,7 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "V1-10",
-  "revision": 5,
+  "revision": 6,
   "state": "planned",
   "attempt": 0,
   "candidate": null,
@@ -115,6 +115,13 @@
       "at": "2026-08-12T23:30:00Z",
       "actor": "davidahmann",
       "reason": "Added privacy-preserving field measurement of reviewer-attributable follow-on call-site and repository assessments."
+    },
+    {
+      "from": "planned",
+      "to": "planned",
+      "at": "2026-08-13T00:22:00Z",
+      "actor": "davidahmann",
+      "reason": "Defined authenticated event binding, a 30-day attribution window, exclusions, and deterministic earliest-event deduplication for follow-on assessment evidence."
     }
   ]
 }

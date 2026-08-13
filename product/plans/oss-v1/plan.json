@@ -33,8 +33,15 @@
     {
       "id": "DEC-ECONOMIC-PROOF",
       "status": "locked",
-      "decision": "Monthly and annual savings claims require a reviewed workload-volume profile with dated provenance and a repository-owned reviewed recommendation policy, bound into the report by digest, that declares workloadVolumeMaxAgeDays as an integer from 1 through 31. At persisted report generatedAt, the effective observation time is window.end when present and observedAt otherwise; it is current only when it is not future-dated and its age is within the declared bound. Missing policy, malformed or reversed windows, future times, and stale observations permit normalized unit economics only; observed evaluation spend remains separate.",
+      "decision": "Monthly and annual savings claims require a reviewed workload-volume profile with dated provenance and a repository-owned reviewed recommendation policy, bound into the report by digest, that declares workloadVolumeMaxAgeDays as an integer from 1 through 31. At trusted report generatedAt, the effective observation time is window.end when present and observedAt otherwise; it is current only when it is within the five-minute future-skew allowance and its age is within the declared bound. Missing policy, malformed or reversed windows, out-of-skew future times, and stale observations permit normalized unit economics only; observed evaluation spend remains separate.",
       "rationale": "The PR must make value legible without presenting catalog-derived estimates as observed billing, inventing monthly precision from missing traffic data, or letting an implementation choose an unbounded freshness clock.",
+      "blocks": []
+    },
+    {
+      "id": "DEC-REPORT-FRESHNESS",
+      "status": "locked",
+      "decision": "The digest-bound recommendation policy declares catalogMaxAgeHours from 1 through 168, evaluationMaxAgeHours from 1 through 24, and reportMaxAgeHours from 1 through 24. The report generator derives generatedAt from its internal orchestration clock and never accepts it from report input, a CLI flag, or an Action input; deterministic tests and offline replay may inject a reviewed fixed clock only at that boundary. Recommendation, patch, and PR authorization use their own fresh trusted clock with at most five minutes of future skew, re-evaluate every temporal bound, and require exact current source fingerprint, fixture digest or revision, evaluator version and build, catalog identity, and pricing-row bindings; missing, stale, out-of-skew, or identity-mismatched evidence abstains and cannot authorize a patch.",
+      "rationale": "Freshness is a derived authorization property, not the presence of timestamps or a producer label, and must fail closed when an imported report or any current input diverges.",
       "blocks": []
     },
     {
@@ -49,6 +56,13 @@
       "status": "locked",
       "decision": "Recommendation PRs and abstention reports include a deterministic next-assessment section derived only from reconciled repository counts, with an exact action when another eligible target exists and an explicit none-available result otherwise; the section is presentation metadata, never decision evidence, and requires no mandatory telemetry.",
       "rationale": "The evidence artifact can create internal distribution without weakening trust, overstating inventory coverage, or adding a hosted growth dependency.",
+      "blocks": []
+    },
+    {
+      "id": "DEC-FOLLOW-ON-ATTRIBUTION",
+      "status": "locked",
+      "decision": "Field attribution uses a predeclared digest-bound policy. A counted follow-on starts at or after and within 30 days of an authenticated non-bot review or referral event on a qualified recommendation PR; the event explicitly identifies the follow-on target, evidence binds the exact PR head and assessment identity, PR authors and Vetryn automation are excluded, and duplicate assessments select the earliest valid event time then canonical event ID.",
+      "rationale": "Reviewer-driven expansion must be economically legible without trusting producer labels, double counting one assessment, or adding mandatory telemetry.",
       "blocks": []
     },
     {
@@ -1184,7 +1198,8 @@
       "semanticInvariants": [
         "Savings never compensate for failed quality or hard gates.",
         "JSON and Markdown are derived from the same canonical recommendation.",
-        "Monthly and annual economics are estimates derived from reviewed representative token weights, reviewed workload volume with dated provenance, and bound catalog pricing; the digest-bound repository policy requires workloadVolumeMaxAgeDays from 1 through 31 and compares window.end or observedAt with persisted report generatedAt, while missing policy, malformed or reversed windows, future times, and stale evidence cannot produce a monthly claim.",
+        "Monthly and annual economics are estimates derived from reviewed representative token weights, reviewed workload volume with dated provenance, and bound catalog pricing; the digest-bound repository policy requires workloadVolumeMaxAgeDays from 1 through 31 and compares window.end or observedAt with trusted report generatedAt, while missing policy, malformed or reversed windows, out-of-skew future times, and stale evidence cannot produce a monthly claim.",
+        "The generator derives report generatedAt from its internal orchestration clock, never from report, CLI, or Action input; deterministic tests and offline replay may inject a reviewed fixed clock only at that boundary. Recommendation, patch, and PR authorization use their own fresh trusted clock with at most five minutes of future skew, enforce policy-declared catalog age up to 168 hours plus evaluation and report ages up to 24 hours, and require exact current source, fixture, evaluator, catalog, and pricing identities.",
         "Observed evaluation spend, shortlist estimates, projected workload economics, and optional runtime corroboration remain distinct evidence types."
       ],
       "deliverables": [
@@ -1216,7 +1231,8 @@
         "An abstention path produces a patch.",
         "A report presents monthly or annual savings without reviewed, policy-current workload-volume provenance.",
         "A report presents projected workload economics as observed provider billing.",
-        "A report omits its complete freshness inputs, digest-bound freshness policy, or a configured gate outcome and its evidence or reason."
+        "A report omits its complete freshness inputs, digest-bound freshness policy, or a configured gate outcome and its evidence or reason.",
+        "An imported report supplies its own trusted generatedAt, a patch authorizer fails to re-evaluate freshness, or a current source, fixture, evaluator, catalog, or pricing identity differs from the report."
       ]
     },
     {
@@ -1384,7 +1400,7 @@
         "Representative no-findings requires a predeclared eligibility census and direct assessment of at least ten eligible open-ended call sites across at least three FIELD-001 companies, with coverage and exclusions independently reviewed.",
         "Blocked open-ended call sites are never counted as qualified recommendations, and neither no-findings nor insufficient coverage can authorize semantic-scorer expansion.",
         "Each repository records the assessed surface and exact observed-to-bound-to-evaluated-to-recommended-to-PR-to-merged funnel with exclusions and denominators.",
-        "Field evidence records whether a qualified PR reviewer initiates or refers a follow-on call-site or repository assessment, with explicit denominators and without mandatory telemetry.",
+        "A predeclared digest-bound attribution policy counts a follow-on only when it starts at or after and within 30 days of an authenticated non-bot review or referral event on a qualified recommendation PR; the event explicitly identifies the follow-on target, evidence binds the exact PR head and assessment identity, PR authors and Vetryn automation are excluded, and duplicate assessments select the earliest valid event time then canonical event ID.",
         "Customer data and outcomes are recorded without raw prompts or outputs."
       ],
       "deliverables": ["product/plans/oss-v1/evidence/**", "docs/**"],
@@ -1401,7 +1417,7 @@
       "stopConditions": [
         "A serious quality, safety, privacy, or operational regression occurs.",
         "Savings cannot be attributed to the recommendation.",
-        "Follow-on assessment claims cannot be attributed to a qualified PR reviewer or lack their denominator.",
+        "Follow-on assessment claims lack a predeclared policy, authenticated event, exact PR or assessment binding, 30-day window proof, deterministic deduplication, or their denominator.",
         "Customer consent or data handling is unclear.",
         "A semantic-scorer expansion claim lacks sanitized evidence of valuable open-ended call sites blocked specifically by deterministic evaluation."
       ]

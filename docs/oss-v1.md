@@ -130,13 +130,23 @@ rejects absolute, traversal, backslash, and Windows drive-qualified forms.
 
 Economic projections require an optional human-reviewed workload-volume profile with a monthly request count,
 provenance, and RFC 3339 UTC observation time or window. The repository-owned reviewed recommendation policy must
-declare `workloadVolumeMaxAgeDays` as an integer from 1 through 31 and must be digest-bound into the report. At persisted
-report `generatedAt`, the effective observation time is the window end when present and `observedAt` otherwise; it
-is current only when it is not future-dated and its age is within the declared bound. Missing policy, malformed or
-reversed windows, future times, and older inputs permit per-request or per-1,000-request comparisons but cannot
-produce a monthly or annual savings claim. Current profiles combine with reviewed representative prompt/completion
-token weights and bound catalog pricing, and every resulting value is labeled an estimate rather than observed
-billing. Observed evaluation spend remains a separate measurement.
+declare `workloadVolumeMaxAgeDays` as an integer from 1 through 31 and must be digest-bound into the report. The
+generator derives persisted report `generatedAt` from its internal orchestration clock rather than accepting it
+from report input, a CLI flag, or an Action input. Production uses the Vetryn runtime clock; deterministic tests and
+offline replay may substitute a reviewed fixed clock at that boundary. The effective observation time is the window end when present and `observedAt` otherwise; it
+is current only when it is within the five-minute future-skew allowance and its age is within the declared bound.
+Missing policy, malformed or reversed windows, out-of-skew future times, and older inputs permit per-request or
+per-1,000-request comparisons but cannot produce a monthly or annual savings claim. Current profiles combine with
+reviewed representative prompt/completion token weights and bound catalog pricing, and every resulting value is
+labeled an estimate rather than observed billing. Observed evaluation spend remains a separate measurement.
+
+The same digest-bound policy declares `catalogMaxAgeHours` from 1 through 168, `evaluationMaxAgeHours` from 1
+through 24, and `reportMaxAgeHours` from 1 through 24. Recommendation, patch, and PR authorization use a fresh
+trusted clock, allow at most five minutes of future skew, and re-evaluate report, catalog/pricing, evaluation, and
+workload ages. They also require the report's source fingerprint, fixture digest or revision, evaluator version and
+build, catalog identity, and pricing row to exactly match the currently authorized inputs. Missing, stale,
+out-of-skew, or identity-mismatched evidence produces an explicit abstention and no patch; presence alone is never
+freshness proof.
 
 The canonical recommendation and abstention remain decision artifacts. Agent-install guidance and contextual
 expansion prompts are deterministic presentation-layer next actions; they cannot alter eligibility, confidence,
@@ -174,8 +184,12 @@ Before calling V1 dependable, the project should demonstrate:
 Engineering completion and field validation are separate gates. Before expanding beyond V1, require at
 least ten qualified recommendation PRs across three companies, at least a 40% merge rate, and zero
 serious escaped regressions. Field evidence also records whether recommendation PR reviewers initiate or refer a
-follow-on call-site or repository assessment, without adding mandatory telemetry. Twenty safe rollouts remain a
-later confidence milestone rather than a deterministic build gate.
+follow-on call-site or repository assessment, without adding mandatory telemetry. A predeclared policy counts only
+an assessment that starts at or after and within 30 days of an authenticated non-bot review or referral event on a
+qualified PR. The event must explicitly identify the follow-on target, evidence binds both artifacts, and a
+duplicate follow-on is assigned to the earliest valid event time then canonical event ID. PR authors, Vetryn
+automation, unmatched identities, missing event evidence, duplicates, and out-of-window records are excluded.
+Twenty safe rollouts remain a later confidence milestone rather than a deterministic build gate.
 
 An optional calibrated semantic-rubric scorer may be designed only after that field work demonstrates
 through separate sanitized evidence that deterministic evaluation blocks valuable open-ended call sites.
@@ -193,8 +207,12 @@ design.
 - JSON and Markdown are the required evidence formats. SARIF is deferred until a concrete code-scanning
   use is specified.
 - Monthly and annual economic claims require reviewed workload-volume provenance that passes the digest-bound
-  1-to-31-day repository policy at persisted report `generatedAt`. Future, malformed, reversed-window, missing-policy,
-  and stale inputs produce normalized unit economics rather than a manufactured monthly estimate.
+  1-to-31-day repository policy at trusted report `generatedAt`. Out-of-skew future, malformed, reversed-window,
+  missing-policy, and stale inputs produce normalized unit economics rather than a manufactured monthly estimate.
+- The digest-bound freshness policy also caps catalog/pricing evidence at 168 hours, evaluation evidence at 24
+  hours, and reports at 24 hours, with repository-selected values at or below those ceilings. Generation and every
+  later patch or PR authorization use a trusted clock with no more than five minutes of future skew and require
+  exact current source, fixture, evaluator, catalog, and pricing identities.
 - Root `llms.txt`, Markdown onboarding, stable JSON output, and documented exit semantics provide one
   provider-neutral installation and operation contract for coding agents. Codex- or Claude-specific pages may
   explain the same commands but cannot introduce separate product behavior.

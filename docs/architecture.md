@@ -118,11 +118,16 @@ failed cases, and structured allowlisted Vetryn reproduction operations. The dur
 caveats machine-readable, while the report renderer maps both limitation and reproduction fields to clear prose
 and exact commands. A reviewed workload-volume profile with dated provenance enables estimated monthly and annual
 economics from representative token weights and bound catalog pricing only while explicit policy derives it as
-current. The repository-owned recommendation policy is digest-bound into the report and requires a
-`workloadVolumeMaxAgeDays` value from 1 through 31. At persisted report `generatedAt`, the window end or point
-`observedAt` must not be future-dated and must remain within that bound; absent policy, malformed or reversed
-windows, future times, and stale inputs fall back to normalized unit economics. Observed evaluation spend remains
-separate.
+current. The repository-owned recommendation policy is digest-bound into the report and requires
+`workloadVolumeMaxAgeDays` from 1 through 31, `catalogMaxAgeHours` from 1 through 168,
+`evaluationMaxAgeHours` from 1 through 24, and `reportMaxAgeHours` from 1 through 24. The generator derives persisted
+report `generatedAt` from an internal orchestration clock rather than report input, CLI flags, or Action inputs;
+tests and offline replay may replace it only with a reviewed fixed clock. Generation and later patch or PR
+authorization re-evaluate all temporal evidence against their own trusted clock with at most five minutes of future skew;
+the window end or point `observedAt` must remain within the workload bound, while report, catalog/pricing, and
+evaluation times remain within their bounds. Source, fixture, evaluator, catalog, and pricing identities must
+exactly match the authorized inputs. Any temporal or identity failure prevents patch authorization, and invalid
+workload evidence falls back to normalized unit economics. Observed evaluation spend remains separate.
 
 ### Patcher and GitHub integration
 

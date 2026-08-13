@@ -2,7 +2,7 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "V1-07",
-  "revision": 2,
+  "revision": 3,
   "state": "planned",
   "attempt": 0,
   "candidate": null,
@@ -99,6 +99,13 @@
       "at": "2026-08-13T00:15:00Z",
       "actor": "davidahmann",
       "reason": "Defined the digest-bound workload freshness clock and added explicit acceptance for complete freshness and gate evidence in recommendation and abstention reports."
+    },
+    {
+      "from": "planned",
+      "to": "planned",
+      "at": "2026-08-13T00:22:00Z",
+      "actor": "davidahmann",
+      "reason": "Bound report generation and later authorization to trusted clocks, explicit catalog, evaluation, report, and workload age ceilings, and exact current evidence identities."
     }
   ]
 }
