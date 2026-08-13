@@ -151,8 +151,10 @@ extension with a key outside repository-controlled content and atomically advanc
 anchor in the same locked transaction. Authorization requires all entries to verify and the repository head to equal
 that anchor; append, deletion, truncation, fork, or rollback fails closed. A machine without the authenticated key
 and anchor treats historical receipts as replay-only. A fresh run creates a new externally anchored trust epoch from
-newly produced same-invocation receipts and never rehabilitates prior unanchored history. Report-generation receipts
-also bind report content, generator identity, original generated time, and decision inputs, preventing restamping.
+newly produced same-invocation receipts and never rehabilitates prior unanchored history. Report generation
+canonicalizes a receipt-free payload first, then writes a detached receipt as a separate log entry binding the
+payload digest, generator identity, original generated time, and decision inputs. The payload excludes the receipt
+and its ID, preventing self-reference and restamping.
 Projected workload economics never extrapolate observed eval-run spend. Catalog-bound projections, observed
 evaluation spend, and later realized billing or runtime corroboration are three distinct evidence tiers.
 Savings percentage is a 0-to-10,000 integer basis-point value derived with exact rational arithmetic and half-up

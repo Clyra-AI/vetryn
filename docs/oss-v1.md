@@ -139,9 +139,10 @@ normalized unit economics and a finite reason rather than monthly or annual valu
 recommendation policy must
 declare `workloadVolumeMaxAgeDays` as an integer from 1 through 31 and must be digest-bound into the report. The
 generator derives persisted report `generatedAt` from its internal orchestration clock rather than accepting it
-from report input, a CLI flag, or an Action input. It writes an authenticated report-generation receipt binding the
-report content digest, generator identity, original time, and every decision input, so restamping cannot refresh a
-persisted report. Production uses the Vetryn runtime clock; deterministic tests and offline replay may substitute a reviewed fixed clock at that boundary. The effective observation time is the window end when present and `observedAt` otherwise; it
+from report input, a CLI flag, or an Action input. It first canonicalizes a receipt-free report payload and computes
+its digest, then writes a detached authenticated report-generation receipt as a separate log entry binding that
+payload digest, generator identity, original time, and every decision input. The payload excludes the receipt and
+its ID, so authentication is not self-referential and restamping cannot refresh a persisted report. Production uses the Vetryn runtime clock; deterministic tests and offline replay may substitute a reviewed fixed clock at that boundary. The effective observation time is the window end when present and `observedAt` otherwise; it
 is current only when it is within the five-minute future-skew allowance and its age is within the declared bound.
 Malformed or reversed windows, out-of-skew future times, and older optional workload inputs permit per-request or
 per-1,000-request comparisons but cannot produce a monthly or annual savings claim. A missing required

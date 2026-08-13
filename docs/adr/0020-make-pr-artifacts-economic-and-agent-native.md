@@ -66,9 +66,11 @@ between decision evidence and presentation-layer next actions.
   append, deletion, truncation, fork, or rollback fails closed. A machine without the authenticated key and anchor
   treats historical receipts as replay-only. A fresh run starts a new externally anchored trust epoch containing
   only newly produced same-invocation receipts; it never makes the preceding unanchored history actionable.
-  Report-generation receipts bind
-  report content, generator identity, original generated time, and all decision inputs so restamping cannot refresh
-  a report. Other provenance requires a policy-allowlisted verifier that binds an exact anti-rollback head.
+  The generator first canonicalizes a receipt-free report payload and computes its digest. It then stores a detached
+  report-generation receipt as a separate log entry binding that payload digest, generator identity, original
+  generated time, and all decision inputs. The payload never embeds the receipt or its ID, so authentication is not
+  self-referential and restamping cannot refresh a report. Other provenance requires a policy-allowlisted verifier
+  that binds an exact anti-rollback head.
 - When that profile is valid and policy-current, reports derive estimated current and proposed monthly cost, monthly
   and annual savings, and savings percentage from it, the reviewed representative token profile, and bound catalog
   pricing. JSON stores savings percentage as integer basis points from 0 through 10,000, computed from the exact
