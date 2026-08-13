@@ -427,12 +427,7 @@ async function validatePortableFactoryProfile() {
   )?.[0];
   assert(sourceBlock, "portable Factory profile is missing canonical_factory_source");
   for (const [field, value] of Object.entries(canonicalFactorySource).filter(
-    ([field]) =>
-      ![
-        "profile_path",
-        "portable_semantic_risk_legacy_schema",
-        "portable_semantic_risk_schema",
-      ].includes(field),
+    ([field]) => field !== "profile_path",
   )) {
     assert(
       new RegExp(`^\\s{2}${escapeRegExp(field)}:\\s+${escapeRegExp(value)}$`, "mu").test(

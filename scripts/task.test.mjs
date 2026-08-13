@@ -957,6 +957,23 @@ describe("task packet compiler", () => {
     expect(missingSourcePinCompile.stderr).toContain(
       "portable Factory profile does not pin canonical commit",
     );
+    for (const portableSchemaField of [
+      "portable_semantic_risk_legacy_schema",
+      "portable_semantic_risk_schema",
+    ]) {
+      await writeFile(
+        factoryProfilePath,
+        factoryProfile.replace(
+          new RegExp(`^  ${portableSchemaField}: .*$`, "mu"),
+          `  ${portableSchemaField}: redirected/schema.json`,
+        ),
+      );
+      const redirectedSchemaCompile = runTask(root, "compile", "V1-00");
+      expect(redirectedSchemaCompile.status).toBe(1);
+      expect(redirectedSchemaCompile.stderr).toContain(
+        `portable Factory profile does not pin canonical ${portableSchemaField}`,
+      );
+    }
   }, 15_000);
 
   it("requires frozen-candidate structured review evidence for high-risk tasks", async () => {
