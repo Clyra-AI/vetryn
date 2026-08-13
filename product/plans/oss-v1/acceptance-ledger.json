@@ -172,6 +172,32 @@
       "evidenceRefs": ["ev-m0-08-repo-check-7f9e338"]
     },
     {
+      "id": "PROCESS-010",
+      "taskId": "M0-11",
+      "statement": "A repository-owned continuation skill performs a mutation-checked read-only preflight from an arbitrary checkout, discovers exactly one active or next-legal task and its canonical packet, and derives scope, capabilities, skills, commands, reviews, promotion, and protected delivery rules without machine-local identifiers or chat history.",
+      "verification": {
+        "method": "test",
+        "testLevel": "adversarial",
+        "gateId": "QG-CONTRACTS"
+      },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
+      "id": "PROCESS-011",
+      "taskId": "M0-11",
+      "statement": "Deterministic success, zero or multiple task, dirty or drifting state, missing dependency or authority, stale default-ref, and no-sibling-checkout cases prove preflight is read-only and fail closed; every later mutation requires current per-run authority and preserves non-waivable repository safety boundaries.",
+      "verification": {
+        "method": "test",
+        "testLevel": "integration",
+        "gateId": "QG-REPO-CHECK"
+      },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
       "id": "ROUTE-001",
       "taskId": "M0-09",
       "statement": "Catalog and call-site contracts model the canonical model-ID namespace as model-author identity and model execution as a separate reviewed OpenRouter route policy.",

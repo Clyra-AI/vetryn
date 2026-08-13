@@ -11,6 +11,7 @@ import { semanticRiskRefs, validateSemanticRiskEvidence } from "./semantic-risk.
 
 const repositoryRoot = path.resolve(import.meta.dirname, "..");
 const semanticRiskScript = path.join(repositoryRoot, "scripts/semantic-risk.mjs");
+const planScript = path.join(repositoryRoot, "scripts/plan.mjs");
 const temporaryRoots = [];
 
 function sha256(value) {
@@ -122,6 +123,20 @@ async function createFixture() {
   );
   await cp(path.join(repositoryRoot, "pnpm-lock.yaml"), path.join(root, "pnpm-lock.yaml"));
   await cp(path.join(repositoryRoot, ".factory"), path.join(root, ".factory"), { recursive: true });
+
+  const planPath = path.join(root, "product/plans/oss-v1/plan.json");
+  const plan = JSON.parse(await readFile(planPath, "utf8"));
+  const evaluationTask = plan.tasks.find((task) => task.id === "V1-06");
+  evaluationTask.dependsOn = evaluationTask.dependsOn.filter(
+    (dependency) => dependency.taskId !== "M0-11",
+  );
+  await writeFile(planPath, `${JSON.stringify(plan, null, 2)}\n`);
+  const planWrite = spawnSync(process.execPath, [planScript, "write"], {
+    encoding: "utf8",
+    env: { ...process.env, VETRYN_PLAN_REPO_ROOT: root },
+  });
+  expect(planWrite.status, planWrite.stderr).toBe(0);
+
   git(root, "init", "--quiet");
   git(root, "config", "user.name", "Vetryn semantic-risk fixture");
   git(root, "config", "user.email", "fixture@vetryn.invalid");

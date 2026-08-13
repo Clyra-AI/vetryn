@@ -1,0 +1,60 @@
+{
+  "$schema": "../../schemas/task-state.schema.json",
+  "schemaVersion": "1.0.0",
+  "taskId": "M0-11",
+  "revision": 0,
+  "state": "planned",
+  "attempt": 0,
+  "candidate": null,
+  "criteria": [
+    {
+      "criterionId": "PROCESS-010",
+      "status": "pending",
+      "evidenceRefs": []
+    },
+    {
+      "criterionId": "PROCESS-011",
+      "status": "pending",
+      "evidenceRefs": []
+    }
+  ],
+  "gates": [
+    {
+      "gateId": "QG-PLAN-CHECK",
+      "status": "pending",
+      "evidenceRefs": []
+    },
+    {
+      "gateId": "QG-REPO-CHECK",
+      "status": "pending",
+      "evidenceRefs": []
+    },
+    {
+      "gateId": "QG-CONTRACTS",
+      "status": "pending",
+      "evidenceRefs": []
+    },
+    {
+      "gateId": "QG-INDEPENDENT-VERIFY",
+      "status": "pending",
+      "evidenceRefs": []
+    }
+  ],
+  "reviews": [
+    {
+      "role": "maintainer",
+      "status": "pending",
+      "evidenceRefs": []
+    }
+  ],
+  "blockers": [],
+  "history": [
+    {
+      "from": null,
+      "to": "planned",
+      "at": "2026-08-13T17:32:17Z",
+      "actor": "planning-agent",
+      "reason": "Maintainer requested a portable repository-owned continuation workflow before V1-06."
+    }
+  ]
+}
