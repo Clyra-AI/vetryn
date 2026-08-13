@@ -33,14 +33,14 @@
     {
       "id": "DEC-ECONOMIC-PROOF",
       "status": "locked",
-      "decision": "Monthly and annual savings claims require a reviewed workload-volume profile with dated provenance and a repository-owned reviewed recommendation policy, bound into the report by digest, that declares workloadVolumeMaxAgeDays as an integer from 1 through 31. At trusted report generatedAt, the effective observation time is window.end when present and observedAt otherwise; it is current only when it is within the five-minute future-skew allowance and its age is within the declared bound. Missing policy, malformed or reversed windows, out-of-skew future times, and stale observations permit normalized unit economics only. Projected workload economics use reviewed representative token weights, reviewed workload volume, and bound catalog pricing; observed evaluation spend describes only the bounded eval run, and realized field value requires later billing or runtime corroboration. This supersedes only M0-09's shorthand that recommendation savings use observed evaluation cost while preserving its rule that catalog estimates are not billed-cost proof.",
+      "decision": "Monthly and annual savings claims require a reviewed workload-volume profile whose monthlyRequestCount is an integer from 1 through 1,000,000,000,000, with dated provenance, and a repository-owned reviewed recommendation policy, bound into the report by digest, that declares workloadVolumeMaxAgeDays as an integer from 1 through 31. Zero, negative, fractional, non-finite, unsafe, and oversized counts permit normalized unit economics only. At trusted report generatedAt, the effective observation time is window.end when present and observedAt otherwise; it is current only when it is within the five-minute future-skew allowance and its age is within the declared bound. Missing policy, malformed or reversed windows, out-of-skew future times, and stale observations also permit normalized unit economics only. Projected workload economics use reviewed representative token weights, reviewed workload volume, and bound catalog pricing; observed evaluation spend describes only the bounded eval run, and realized field value requires later billing or runtime corroboration. This supersedes only M0-09's shorthand that recommendation savings use observed evaluation cost while preserving its rule that catalog estimates are not billed-cost proof.",
       "rationale": "The PR must make value legible without presenting catalog-derived estimates as observed billing, inventing monthly precision from missing traffic data, or letting an implementation choose an unbounded freshness clock.",
       "blocks": []
     },
     {
       "id": "DEC-REPORT-FRESHNESS",
       "status": "locked",
-      "decision": "The digest-bound recommendation policy declares catalogMaxAgeHours from 1 through 168, evaluationMaxAgeHours from 1 through 24, and reportMaxAgeHours from 1 through 24. The report generator derives generatedAt from its internal orchestration clock and never accepts it from report input, a CLI flag, or an Action input; deterministic tests and offline replay may inject a reviewed fixed clock only at that boundary. Reports bind the current policy digest, representative-usage profile digest, workload-volume profile digest or canonical absent marker, and immutable successful catalog-refresh observation whose record commits its ID, observedAt, snapshot ID, and catalog content digest. Recommendation, patch, and PR authorization use their own fresh trusted clock with at most five minutes of future skew, re-evaluate every required temporal bound, and require exact current source fingerprint, immutable fixture digest, evaluator version and build, refresh observation and committed catalog/pricing content, policy digest, and economic-profile bindings. Missing, stale, out-of-skew, or identity-mismatched required evidence abstains and cannot authorize a patch. An absent, invalid, or stale optional workload profile permits normalized unit economics and suppresses monthly and annual projections without by itself forcing abstention.",
+      "decision": "The digest-bound recommendation policy declares catalogMaxAgeHours from 1 through 168, evaluationMaxAgeHours from 1 through 24, and reportMaxAgeHours from 1 through 24. The report generator derives generatedAt from its internal orchestration clock and never accepts it from report input, a CLI flag, or an Action input; deterministic tests and offline replay may inject a reviewed fixed clock only at that boundary. Reports bind the current policy digest, representative-usage profile digest, workload-volume profile digest or canonical absent marker, every cited candidate run's immutable execution record with runner-derived or authenticated start and completion times, and immutable successful catalog-refresh observation whose record commits its acquisition mode, ID, observedAt, snapshot ID, and catalog content digest. Recommendation, patch, and PR authorization use their own fresh trusted clock with at most five minutes of future skew, independently re-evaluate every cited run and required temporal bound, and require exact current source fingerprint, immutable fixture digest, evaluator version and build, trusted execution records, live or equivalently authenticated refresh observation and committed catalog/pricing content, policy digest, and economic-profile bindings. Equivalent external provenance is accepted only through a repository-policy-allowlisted verifier whose identity, version, and configuration digest are bound and whose verified statement binds artifact content, runner or acquisition identity, and timestamps; without one, only same-invocation runtime-derived time evidence is actionable. Caller-timestamped catalog captures and imported or caller-restamped candidate runs are replay-only and cannot authorize. Missing, stale, out-of-skew, unauthenticated, or identity-mismatched required evidence abstains and cannot authorize a patch. An absent, invalid, or stale optional workload profile permits normalized unit economics and suppresses monthly and annual projections without by itself forcing abstention.",
       "rationale": "Freshness is a derived authorization property, not the presence of timestamps or a producer label, and must fail closed when an imported report or any current input diverges.",
       "blocks": []
     },
@@ -1128,7 +1128,7 @@
         { "taskId": "M0-09", "kind": "hard" },
         { "taskId": "M0-10", "kind": "hard" }
       ],
-      "acceptanceItemIds": ["EVAL-001", "EVAL-002", "EVAL-003", "EVAL-004", "EVAL-005"],
+      "acceptanceItemIds": ["EVAL-001", "EVAL-002", "EVAL-003", "EVAL-004", "EVAL-005", "EVAL-006"],
       "scope": {
         "allowedPaths": [
           "packages/core/**",
@@ -1141,7 +1141,8 @@
       "semanticInvariants": [
         "Hard limits cannot be outweighed by aggregate quality or savings.",
         "Partial, exhausted, or privacy-unsafe runs cannot recommend.",
-        "Provider-backed execution applies the reviewed route policy at the request boundary and records router attempts and the selected provider; missing or inconsistent route evidence leaves the run incomplete."
+        "Provider-backed execution applies the reviewed route policy at the request boundary and records router attempts and the selected provider; missing or inconsistent route evidence leaves the run incomplete.",
+        "Candidate-run start and completion times come only from the canonical runner's trusted clock or authenticated external provenance; imported, caller-restamped, or otherwise unauthenticated replay evidence cannot authorize a patch or PR."
       ],
       "deliverables": ["packages/core/**", "packages/openrouter/**", "packages/cli/**"],
       "requiredTestLevels": ["unit", "contract", "integration", "e2e", "adversarial"],
@@ -1163,7 +1164,8 @@
       "stopConditions": [
         "Retries or spend are unbounded.",
         "Raw sensitive input or output enters durable artifacts.",
-        "Incomplete evidence can pass."
+        "Incomplete evidence can pass.",
+        "Provider, CLI, Action, or imported artifact input supplies an actionable candidate-run start or completion time."
       ]
     },
     {
@@ -1198,8 +1200,8 @@
       "semanticInvariants": [
         "Savings never compensate for failed quality or hard gates.",
         "JSON and Markdown are derived from the same canonical recommendation.",
-        "Monthly and annual economics are estimates derived from reviewed representative token weights, reviewed workload volume with dated provenance, and bound catalog pricing; the digest-bound repository policy requires workloadVolumeMaxAgeDays from 1 through 31 and compares window.end or observedAt with trusted report generatedAt, while missing policy, malformed or reversed windows, out-of-skew future times, and stale evidence cannot produce a monthly claim.",
-        "The generator derives report generatedAt from its internal orchestration clock, never from report, CLI, or Action input; deterministic tests and offline replay may inject a reviewed fixed clock only at that boundary. Reports bind the current policy digest, representative-usage profile digest, workload-volume profile digest or canonical absent marker, and immutable successful catalog-refresh observation that commits its ID, time, snapshot ID, and content digest. Recommendation, patch, and PR authorization use their own fresh trusted clock with at most five minutes of future skew, enforce policy-declared catalog age up to 168 hours plus evaluation and report ages up to 24 hours, and require exact current source fingerprint, immutable fixture digest, evaluator identity, successful refresh observation and committed catalog/pricing content, policy digest, and economic-profile bindings.",
+        "Monthly and annual economics are estimates derived from reviewed representative token weights, reviewed workload volume whose monthlyRequestCount is an integer from 1 through 1,000,000,000,000 with dated provenance, and bound catalog pricing; zero, negative, fractional, non-finite, unsafe, oversized, missing-policy, malformed, reversed-window, out-of-skew future, and stale evidence cannot produce a monthly claim and instead uses normalized unit economics.",
+        "The generator derives report generatedAt from its internal orchestration clock, never from report, CLI, or Action input; deterministic tests and offline replay may inject a reviewed fixed clock only at that boundary. Reports bind the current policy digest, representative-usage profile digest, workload-volume profile digest or canonical absent marker, every cited run's trusted execution record and times, and immutable successful catalog-refresh observation that commits its acquisition mode, ID, time, snapshot ID, and content digest. Recommendation, patch, and PR authorization use their own fresh trusted clock with at most five minutes of future skew, independently enforce every cited run's policy-declared evaluation age plus catalog age up to 168 hours and report age up to 24 hours, and require exact current source fingerprint, immutable fixture digest, evaluator identity, trusted execution records, live or equivalently authenticated successful refresh observation and committed catalog/pricing content, policy digest, and economic-profile bindings. Captured-response timestamps and imported or caller-restamped run times are replay-only and cannot authorize.",
         "Absent, invalid, or stale optional workload-volume evidence suppresses monthly and annual projections and uses normalized unit economics; it does not by itself make an otherwise valid recommendation abstain.",
         "Shortlist estimates and projected workload economics use bound catalog pricing but serve distinct decisions; observed evaluation spend describes only the bounded eval run, and realized field value requires later billing or runtime corroboration. These evidence tiers must never be substituted for one another."
       ],
@@ -1260,7 +1262,7 @@
       "semanticInvariants": [
         "Stale or ambiguous source never changes.",
         "Only the reviewed model pin changes unless a broader migration is explicitly unsupported.",
-        "Patch generation and application invoke the shared freshness and identity authorization validator with a fresh trusted clock and exact current policy, economic-profile, successful refresh-observation, catalog-content, immutable fixture, evaluator, and source bindings; a recommendation that was valid earlier cannot bypass current reauthorization."
+        "Patch generation and application invoke the shared freshness and identity authorization validator with a fresh trusted clock and exact current policy, economic-profile, trusted per-run execution records, live or equivalently authenticated successful refresh-observation, catalog-content, immutable fixture, evaluator, and source bindings; every cited run is checked independently and a recommendation that was valid earlier or contains replay-only time evidence cannot bypass current reauthorization."
       ],
       "deliverables": [
         "packages/typescript/**",
@@ -1336,7 +1338,7 @@
         "One documented vetryn assess command and the composite Action expose the same stable JSON and exit semantics after repository-owned setup.",
         "Agent-facing installation guidance is provider-neutral and cannot add a hosted dependency, agent-specific product behavior, or autonomous merge authority.",
         "Next-assessment actions are derived from reconciled eligible counts and cannot alter recommendation, abstention, or patch eligibility.",
-        "The CLI and Action invoke the same shared temporal and identity authorization validator immediately before draft-PR creation or update, using their own trusted invocation clock and exact current policy, economic-profile, successful refresh-observation, catalog-content, immutable fixture, evaluator, and source bindings."
+        "The CLI and Action invoke the same shared temporal and identity authorization validator immediately before draft-PR creation or update, using their own trusted invocation clock and exact current policy, economic-profile, trusted per-run execution records, live or equivalently authenticated successful refresh-observation, catalog-content, immutable fixture, evaluator, and source bindings; every cited run is checked independently and replay-only time evidence cannot authorize."
       ],
       "deliverables": [
         ".changeset/**",

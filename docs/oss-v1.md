@@ -85,7 +85,8 @@ Every recommendation PR must show:
   unavailable;
 - the reviewed workload volume and provenance used for any projection, plus the observed evaluation cost itself;
 - freshness evidence comprising the source fingerprint, immutable fixture digest, evaluator version and build,
-  evaluation completion time, report `generatedAt`, policy digest, representative-usage profile digest,
+  every cited candidate-run ID with its immutable execution-record identity, authenticated or runner-derived start
+  and completion times, report `generatedAt`, policy digest, representative-usage profile digest,
   workload-volume profile digest or canonical absent marker, and the immutable successful catalog-refresh
   observation ID whose record commits its observation time, snapshot ID, and catalog content digest;
 - all configured gates, their outcomes, and the evidence or reason supporting each outcome;
@@ -129,8 +130,11 @@ Every recommendation also carries finite explicit limitation codes and one or mo
 reproduction operations that the report renderer converts into exact commands. Candidate-run input lists reject duplicate artifact IDs; every durable repository path
 rejects absolute, traversal, backslash, and Windows drive-qualified forms.
 
-Economic projections require an optional human-reviewed workload-volume profile with a monthly request count,
-provenance, and RFC 3339 UTC observation time or window. The repository-owned reviewed recommendation policy must
+Economic projections require an optional human-reviewed workload-volume profile with `monthlyRequestCount` as an
+integer from 1 through 1,000,000,000,000, provenance, and an RFC 3339 UTC observation time or window. Zero,
+negative, fractional, non-finite, unsafe, and oversized counts are invalid optional evidence; they produce
+normalized unit economics and a finite reason rather than monthly or annual values. The repository-owned reviewed
+recommendation policy must
 declare `workloadVolumeMaxAgeDays` as an integer from 1 through 31 and must be digest-bound into the report. The
 generator derives persisted report `generatedAt` from its internal orchestration clock rather than accepting it
 from report input, a CLI flag, or an Action input. Production uses the Vetryn runtime clock; deterministic tests and
@@ -150,13 +154,23 @@ through 24, and `reportMaxAgeHours` from 1 through 24. Reports bind the policy d
 digest, workload-volume profile digest or a canonical absent marker, and the immutable successful catalog-refresh
 observation whose record commits its ID, observation time, snapshot ID, and catalog content digest. Recommendation,
 patch, and PR authorization use a fresh trusted clock, allow at most five minutes of future skew, and re-evaluate
-report, catalog/pricing, and evaluation ages. They also require the report's source fingerprint, immutable fixture
-digest, evaluator version and build, successful refresh observation and committed catalog/pricing content, policy
-digest, representative-usage profile digest, and workload-volume profile digest or absent marker to exactly match
-the currently authorized inputs. Missing, stale, out-of-skew, or identity-mismatched required decision evidence
-produces an explicit abstention and no patch; presence alone is never freshness proof. An absent, invalid, or stale
-optional workload profile suppresses only monthly and annual projections and uses normalized unit economics; it does
-not by itself make an otherwise valid recommendation abstain.
+report and catalog/pricing ages plus the completion time of every cited candidate run; no newest-run or aggregate
+timestamp can mask a stale cited run. Actionable catalog freshness requires live acquisition timed by the Vetryn
+runtime or equivalent authenticated external provenance, and every actionable candidate run binds an immutable
+execution record whose times come from the canonical runner's trusted clock or authenticated external provenance.
+Caller-timestamped catalog captures and imported or restamped candidate runs are replay-only and cannot authorize a
+patch or PR. Authorization also requires the report's source fingerprint, immutable fixture digest, evaluator
+version and build, every cited execution record, successful refresh observation and committed catalog/pricing
+content, policy digest, representative-usage profile digest, and workload-volume profile digest or absent marker to
+exactly match the currently authorized inputs. Missing, stale, out-of-skew, or identity-mismatched required decision
+evidence produces an explicit abstention and no patch; presence alone is never freshness proof. An absent, invalid,
+or stale optional workload profile suppresses only monthly and annual projections and uses normalized unit economics;
+it does not by itself make an otherwise valid recommendation abstain.
+
+Equivalent authenticated external provenance requires a verifier explicitly allowlisted by repository policy. The
+authorization binds that verifier's identity, version, and configuration digest, and its verified statement binds
+the artifact content digest, acquisition or runner identity, and timestamps. When no verifier is configured, only
+same-invocation time evidence derived by the Vetryn runtime is actionable; producer labels never authenticate time.
 
 The canonical recommendation and abstention remain decision artifacts. Agent-install guidance and contextual
 expansion prompts are deterministic presentation-layer next actions; they cannot alter eligibility, confidence,
@@ -225,9 +239,11 @@ design.
 - The digest-bound freshness policy also caps catalog/pricing evidence at 168 hours, evaluation evidence at 24
   hours, and reports at 24 hours, with repository-selected values at or below those ceilings. Generation and every
   later patch or PR authorization use a trusted clock with no more than five minutes of future skew and require
-  exact current source fingerprint, immutable fixture digest, evaluator identity, successful catalog-refresh
-  observation and committed content, policy digest, and representative-usage plus optional workload-profile
-  bindings. Invalid optional workload evidence falls back to normalized economics rather than forcing abstention.
+  exact current source fingerprint, immutable fixture digest, evaluator identity, every cited run's trusted
+  execution record, a live or equivalently authenticated successful catalog-refresh observation and committed
+  content, policy digest, and representative-usage plus optional workload-profile bindings. Replay-only timestamps
+  cannot authorize, and invalid optional workload evidence falls back to normalized economics rather than forcing
+  abstention.
 - Root `llms.txt`, Markdown onboarding, stable JSON output, and documented exit semantics provide one
   provider-neutral installation and operation contract for coding agents. Codex- or Claude-specific pages may
   explain the same commands but cannot introduce separate product behavior.

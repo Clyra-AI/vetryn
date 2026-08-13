@@ -18,8 +18,10 @@ between decision evidence and presentation-layer next actions.
 
 ## Decision
 
-- A call site may carry a human-reviewed workload-volume profile with monthly request count, provenance, and an
-  RFC 3339 UTC observation time or window. The repository-owned reviewed recommendation policy must declare
+- A call site may carry a human-reviewed workload-volume profile with `monthlyRequestCount` as an integer from 1
+  through 1,000,000,000,000, provenance, and an RFC 3339 UTC observation time or window. Zero, negative,
+  fractional, non-finite, unsafe, or oversized counts are invalid optional evidence and fall back to normalized
+  unit economics. The repository-owned reviewed recommendation policy must declare
   `workloadVolumeMaxAgeDays` as an integer from 1 through 31 and must be bound into the report by digest. At the report's
   trusted `generatedAt`, the effective observation time is the window end when a window exists and `observedAt`
   otherwise. It is current only when it is within the five-minute future-skew allowance and its age is no greater
@@ -29,17 +31,26 @@ between decision evidence and presentation-layer next actions.
   through 24, and `reportMaxAgeHours` from 1 through 24. The report binds the policy digest, representative-usage
   profile digest, and workload-volume profile digest or a canonical absent marker. It also binds the immutable
   successful catalog-refresh observation whose ID, time, snapshot ID, and content digest commit the catalog and
-  pricing evidence. The report generator derives `generatedAt` from its injected
-  trusted invocation clock and never accepts it from report input, a CLI flag, or an Action input. Production uses
-  the Vetryn runtime clock; deterministic tests and offline replay may substitute a reviewed fixed clock at the
-  orchestration boundary. Recommendation, patch, and PR authorization use their own fresh trusted clock, allow at
-  most five minutes of future skew, and re-evaluate report, catalog/pricing, and evaluation ages. The source
-  fingerprint, immutable fixture digest, evaluator version and build, successful refresh observation, catalog
-  content and pricing, policy digest, representative-usage profile digest, and workload-volume profile digest or
-  absent marker must exactly match the currently authorized inputs. Missing, stale, future, or identity-mismatched
+  pricing evidence. An actionable authorization requires live acquisition whose time the Vetryn runtime derives at
+  the acquisition boundary, or equivalent authenticated external provenance; a caller-timestamped captured response
+  is replay-only and cannot authorize a patch or PR. Each cited candidate run similarly binds an immutable execution
+  record whose start and completion times come from the canonical runner's trusted clock or authenticated external
+  provenance. Imported or caller-restamped runs are replay-only. The report generator derives `generatedAt` from
+  its injected trusted invocation clock and never accepts it from report input, a CLI flag, or an Action input.
+  Production uses the Vetryn runtime clock; deterministic tests and offline replay may substitute a reviewed fixed
+  clock at the orchestration boundary. Recommendation, patch, and PR authorization use their own fresh trusted
+  clock, allow at most five minutes of future skew, and re-evaluate report, catalog/pricing, and evaluation ages. The
+  source fingerprint, immutable fixture digest, evaluator version and build, every cited run's authenticated
+  execution record and completion time, successful refresh observation, catalog content and pricing, policy digest,
+  representative-usage profile digest, and workload-volume profile digest or absent marker must exactly match the
+  currently authorized inputs. Missing, stale, future, or identity-mismatched
   required decision evidence abstains and cannot authorize a patch. An absent, invalid, or stale optional workload
   profile suppresses only monthly and annual projections and uses normalized unit economics; it does not by itself
   make an otherwise valid recommendation abstain.
+- Equivalent authenticated external provenance is accepted only through a repository-policy-allowlisted verifier
+  whose identity, version, and configuration digest are bound into the authorization. Its verified statement must
+  bind the artifact content digest, acquisition or runner identity, and timestamps. With no configured verifier,
+  only same-invocation runtime-derived time evidence is actionable; a producer label is never authentication.
 - When that profile is valid and policy-current, reports derive estimated current and proposed monthly cost, monthly
   and annual savings, and savings percentage from it, the reviewed representative token profile, and bound catalog
   pricing. All projections are labeled estimates. Observed evaluation spend and optional runtime corroboration stay

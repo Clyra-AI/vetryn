@@ -118,7 +118,9 @@ failed cases, and structured allowlisted Vetryn reproduction operations. The dur
 caveats machine-readable, while the report renderer maps both limitation and reproduction fields to clear prose
 and exact commands. A reviewed workload-volume profile with dated provenance enables estimated monthly and annual
 economics from representative token weights and bound catalog pricing only while explicit policy derives it as
-current. The repository-owned recommendation policy is digest-bound into the report and requires
+current. Its monthly request count is a positive integer no greater than 1,000,000,000,000; zero and any malformed,
+fractional, unsafe, or oversized value fall back to normalized unit economics. The repository-owned recommendation
+policy is digest-bound into the report and requires
 `workloadVolumeMaxAgeDays` from 1 through 31, `catalogMaxAgeHours` from 1 through 168,
 `evaluationMaxAgeHours` from 1 through 24, and `reportMaxAgeHours` from 1 through 24. The generator derives persisted
 report `generatedAt` from an internal orchestration clock rather than report input, CLI flags, or Action inputs;
@@ -126,11 +128,18 @@ tests and offline replay may replace it only with a reviewed fixed clock. The re
 representative-usage profile, optional workload-volume profile or canonical absence, and immutable successful
 catalog-refresh observation by digest or identity. Generation and later patch or PR authorization re-evaluate all
 required temporal evidence against their own trusted clock with at most five minutes of future skew; report,
-catalog/pricing, and evaluation times remain within their bounds. Source fingerprint, immutable fixture digest,
-evaluator identity, successful refresh observation and committed catalog content, pricing, policy, and economic
-profile bindings must exactly match the authorized inputs. Any required temporal or identity failure prevents patch
-authorization. An absent, invalid, or stale optional workload profile falls back to normalized unit economics
-without making an otherwise valid recommendation abstain. Observed evaluation spend remains separate.
+catalog/pricing, and every cited evaluation run's completion time remain within their bounds. Actionable catalog
+freshness comes only from live acquisition timed by the Vetryn runtime or equivalent authenticated provenance;
+caller-timestamped captures are replay-only. Each actionable run binds an immutable execution record whose times
+come from the canonical runner's trusted clock or authenticated external provenance; imported or caller-restamped
+runs are replay-only. Source fingerprint, immutable fixture digest, evaluator identity, every cited run record,
+successful refresh observation and committed catalog content, pricing, policy, and economic profile bindings must
+exactly match the authorized inputs. Any required temporal or identity failure prevents patch authorization. An
+absent, invalid, or stale optional workload profile falls back to normalized unit economics without making an
+otherwise valid recommendation abstain. Observed evaluation spend remains separate.
+An external provenance verifier is usable only when repository policy allowlists its identity, version, and
+configuration digest and its verified statement binds artifact content, runner or acquisition identity, and time.
+Without such a verifier, only same-invocation runtime-derived timestamps are actionable.
 Projected workload economics never extrapolate observed eval-run spend. Catalog-bound projections, observed
 evaluation spend, and later realized billing or runtime corroboration are three distinct evidence tiers.
 
