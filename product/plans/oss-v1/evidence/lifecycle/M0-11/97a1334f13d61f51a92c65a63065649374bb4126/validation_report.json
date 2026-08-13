@@ -1,0 +1,187 @@
+{
+  "work_item_id": "M0-11",
+  "task_id": "M0-11",
+  "profile_ref": "profiles/vetryn.yaml",
+  "semantic_risk_report_ref": ".factory/artifacts/task-runs/M0-11/semantic-risk-report.json",
+  "semantic_risk_report_sha256": "sha256:8825e23c26c2007e7fd2f295065ff860a78f2dc8382cc129a2a8c1002ff7af3c",
+  "validation_contract_ref": "task-packet:oss-v1:M0-11:r0@97a1334f13d61f51a92c65a63065649374bb4126",
+  "test_intent": [
+    {
+      "behavior": "Discover and compile exactly one active or next-legal task without mutating the repository.",
+      "expected_signal": "Repeated preflight output is deterministic and the before-and-after repository snapshots match."
+    },
+    {
+      "behavior": "Resolve the continuation workflow without a sibling Factory checkout or standing authority.",
+      "expected_signal": "Installed worker packs authenticate, missing or ambiguous inputs fail closed, and later mutations remain gated by current authority."
+    }
+  ],
+  "red_evidence": [
+    {
+      "check": "focused adversarial regressions",
+      "summary": "Negative fixtures reproduced task-shape, mutable Git-hook, replacement-ref, installed-pack, and active-resume failures before their bounded fixes.",
+      "evidence_refs": [".factory/artifacts/task-runs/M0-11/semantic-risk-report.json"]
+    }
+  ],
+  "green_evidence": [
+    {
+      "check": "pnpm plan:check",
+      "summary": "The exact candidate planning graph and generated state are current.",
+      "evidence_refs": ["ev-m0-11-plan-check-97a1334"]
+    },
+    {
+      "check": "pnpm check",
+      "summary": "The exact final candidate passed all repository gates and 217 tests.",
+      "evidence_refs": ["ev-m0-11-repo-check-97a1334"]
+    },
+    {
+      "check": "pnpm test:contracts",
+      "summary": "The exact candidate passed all deterministic contract and adversarial tests.",
+      "evidence_refs": ["ev-m0-11-contracts-97a1334"]
+    }
+  ],
+  "work_proof_marker_refs": [
+    "product/plans/oss-v1/evidence/lifecycle/M0-11/97a1334f13d61f51a92c65a63065649374bb4126/work_proof_marker.json"
+  ],
+  "test_scope": [
+    ".agents/skills/vetryn-continue-next",
+    ".factory/profile.yaml",
+    "scripts/continue-next-skill.test.mjs",
+    "scripts/semantic-risk.test.mjs",
+    "scripts/task.mjs",
+    "scripts/plan.test.mjs"
+  ],
+  "checks": [
+    {
+      "name": "pnpm plan:check",
+      "status": "pass"
+    },
+    {
+      "name": "pnpm check",
+      "status": "pass"
+    },
+    {
+      "name": "pnpm test:contracts",
+      "status": "pass"
+    },
+    {
+      "name": "pnpm exec vitest run scripts/continue-next-skill.test.mjs",
+      "status": "pass"
+    },
+    {
+      "name": "git diff --check",
+      "status": "pass"
+    }
+  ],
+  "changed_paths": [
+    ".agents/skills/vetryn-continue-next/SKILL.md",
+    ".agents/skills/vetryn-continue-next/agents/openai.yaml",
+    ".agents/skills/vetryn-continue-next/references/preflight-result.schema.json",
+    ".agents/skills/vetryn-continue-next/scripts/preflight.mjs",
+    ".factory/README.md",
+    ".factory/artifacts/task-runs/M0-11/semantic-risk-integrity-marker.json",
+    ".factory/artifacts/task-runs/M0-11/semantic-risk-report.json",
+    ".factory/profile.yaml",
+    "AGENTS.md",
+    "CHANGELOG.md",
+    "CONTRIBUTING.md",
+    "WORKFLOW.md",
+    "docs/adr/0022-separate-continuation-procedure-from-run-authority.md",
+    "docs/agent-map.md",
+    "docs/implementation/oss-v1-execution.md",
+    "scripts/continue-next-skill.test.mjs",
+    "scripts/semantic-risk.test.mjs",
+    "scripts/task.mjs",
+    "scripts/plan.test.mjs"
+  ],
+  "changed_path_context": {
+    "changed_paths": [
+      ".agents/skills/vetryn-continue-next/**",
+      ".factory/profile.yaml",
+      ".factory/README.md",
+      ".factory/artifacts/task-runs/M0-11/**",
+      "AGENTS.md",
+      "CHANGELOG.md",
+      "CONTRIBUTING.md",
+      "WORKFLOW.md",
+      "docs/adr/0022-separate-continuation-procedure-from-run-authority.md",
+      "docs/agent-map.md",
+      "docs/implementation/oss-v1-execution.md",
+      "scripts/continue-next-skill.test.mjs",
+      "scripts/semantic-risk.test.mjs",
+      "scripts/task.mjs"
+    ],
+    "allowed_paths": ["product/plans/oss-v1/**", "task-packet:oss-v1:M0-11:r0"],
+    "forbidden_paths": [
+      "packages/**",
+      "examples/**",
+      "action.yml",
+      ".github/workflows/**",
+      "llms.txt"
+    ],
+    "path_violations": []
+  },
+  "result": "pass",
+  "introduced_failures": [],
+  "pre_existing_failures": [],
+  "independent_validation": {
+    "risk_class": "high",
+    "required_level": "independent_or_human",
+    "provided_levels": ["validation_gate", "adversarial", "security_review"],
+    "status": "satisfied",
+    "evidence_refs": [
+      "ev-m0-11-plan-check-97a1334",
+      "ev-m0-11-repo-check-97a1334",
+      "ev-m0-11-contracts-97a1334",
+      "product/plans/oss-v1/evidence/lifecycle/M0-11/97a1334f13d61f51a92c65a63065649374bb4126/review_report.json"
+    ],
+    "notes": "Independent bounded review of the exact candidate found no P0 or P1 issue in dependency-free startup or required promotion lifecycle evidence; protected remote CI remains a shipping gate."
+  },
+  "test_first_skipped_reason": {
+    "status": "not_skipped",
+    "reason": "Focused negative fixtures captured each behavior before the bounded implementation repair."
+  },
+  "anti_fitting_notes": [
+    "Fixtures cover zero, one, and multiple task selections rather than one fixed task ID.",
+    "Mutation checks cover tracked, untracked, ignored, Git metadata, hooks, and replacement refs.",
+    "The no-sibling replay authenticates the four installed Factory worker packs from an arbitrary checkout.",
+    "Active implementation resumes only in the safe candidate-null phase; frozen lifecycle phases fail closed."
+  ],
+  "residual_risks": [
+    "Portable pack execution is scoped to POSIX macOS and Linux for V1.",
+    "Offline preflight reports cached default-ref consistency; protected delivery verifies remote freshness later."
+  ],
+  "integrated_validation": {
+    "status": "whole_repo_ready",
+    "scope_summary": "The full repository and the arbitrary-checkout no-sibling replay passed on the exact implementation candidate.",
+    "integrated_checks": [
+      {
+        "name": "pnpm check",
+        "status": "pass",
+        "work_proof_marker_ref": "product/plans/oss-v1/evidence/lifecycle/M0-11/97a1334f13d61f51a92c65a63065649374bb4126/work_proof_marker.json"
+      }
+    ],
+    "fresh_checkout": {
+      "required": true,
+      "status": "pass",
+      "work_proof_marker_refs": [
+        "product/plans/oss-v1/evidence/lifecycle/M0-11/97a1334f13d61f51a92c65a63065649374bb4126/work_proof_marker.json"
+      ],
+      "notes": "A disposable arbitrary-path checkout produced two byte-identical ready-for-authority preflight results without a sibling Factory checkout."
+    },
+    "docs_schema_parity": {
+      "status": "pass",
+      "evidence_refs": [
+        "WORKFLOW.md",
+        "docs/agent-map.md",
+        "docs/implementation/oss-v1-execution.md"
+      ]
+    },
+    "release_readiness": {
+      "claimed": false,
+      "status": "not_applicable",
+      "work_proof_marker_refs": [],
+      "notes": "This process task does not publish a package."
+    }
+  },
+  "promotion_decision": "ready_for_pr"
+}

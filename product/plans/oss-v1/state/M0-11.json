@@ -2,41 +2,41 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "M0-11",
-  "revision": 3,
+  "revision": 4,
   "state": "accepted",
   "attempt": 1,
   "candidate": {
     "baseCommit": "372d27edbabd8f2ef9213bda2fc235cd421042e9",
-    "commit": "c821baf3f86e836ad680e71a8a34c34a1b65b650",
+    "commit": "97a1334f13d61f51a92c65a63065649374bb4126",
     "executor": "implementation-agent"
   },
   "criteria": [
     {
       "criterionId": "PROCESS-010",
       "status": "pass",
-      "evidenceRefs": ["ev-m0-11-contracts-c821baf"]
+      "evidenceRefs": ["ev-m0-11-contracts-97a1334"]
     },
     {
       "criterionId": "PROCESS-011",
       "status": "pass",
-      "evidenceRefs": ["ev-m0-11-repo-check-c821baf"]
+      "evidenceRefs": ["ev-m0-11-repo-check-97a1334"]
     }
   ],
   "gates": [
     {
       "gateId": "QG-PLAN-CHECK",
       "status": "pass",
-      "evidenceRefs": ["ev-m0-11-plan-check-c821baf"]
+      "evidenceRefs": ["ev-m0-11-plan-check-97a1334"]
     },
     {
       "gateId": "QG-REPO-CHECK",
       "status": "pass",
-      "evidenceRefs": ["ev-m0-11-repo-check-c821baf"]
+      "evidenceRefs": ["ev-m0-11-repo-check-97a1334"]
     },
     {
       "gateId": "QG-CONTRACTS",
       "status": "pass",
-      "evidenceRefs": ["ev-m0-11-contracts-c821baf"]
+      "evidenceRefs": ["ev-m0-11-contracts-97a1334"]
     },
     {
       "gateId": "QG-INDEPENDENT-VERIFY",
@@ -80,6 +80,13 @@
       "at": "2026-08-13T22:20:46Z",
       "actor": "davidahmann",
       "reason": "Maintainer rebound acceptance to the exact final candidate after the bounded promotion-tail and adapter-authentication fixes passed all command gates and independent P0/P1 review."
+    },
+    {
+      "from": "accepted",
+      "to": "accepted",
+      "at": "2026-08-13T22:50:48Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer rebound acceptance to the exact current candidate after the final two current-head P1 fixes passed focused regressions, the full repository gate, and bounded independent P0/P1 review."
     }
   ]
 }
