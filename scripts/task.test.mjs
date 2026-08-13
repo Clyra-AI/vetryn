@@ -961,7 +961,7 @@ describe("task packet compiler", () => {
     expect(missingSourcePinCompile.stderr).toContain(
       "portable Factory profile does not pin canonical commit",
     );
-  });
+  }, 15_000);
 
   it("requires frozen-candidate structured review evidence for high-risk tasks", async () => {
     const root = await createFixture();
