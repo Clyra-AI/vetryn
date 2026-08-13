@@ -19,12 +19,12 @@
     "producer_class": "peer_agent"
   },
   "current_work": {
-    "validation_run_id": "validation:2026-08-13T20:55:39Z:M0-11",
-    "candidate_digest": "sha256:8c1ff982d1d43638bc299311712875aeff5ed210ed27f20c16495ce00cbc5a9d",
+    "validation_run_id": "validation:2026-08-13T21:29:57Z:M0-11",
+    "candidate_digest": "sha256:5313614c723d0840c2241375400695eadc522b71b24c7baf57ba3b368b6c656c",
     "work_proof_markers": [
       {
-        "ref": "product/plans/oss-v1/evidence/lifecycle/M0-11/953c9fc2af05e99005921cb059cc976febc0be03/work_proof_marker.json",
-        "sha256": "sha256:059982f5c3ddfc853edd03202bf975cbd9082eeecfe383d8e1575d11af15f47b"
+        "ref": "product/plans/oss-v1/evidence/lifecycle/M0-11/ff3093990745850bb80b2aab56b4466b39da9da8/work_proof_marker.json",
+        "sha256": "sha256:2806cc1850bb9c70591b25c1e0a10682b1ffb68c3c6bac657df1deeecea1fee7"
       }
     ]
   },
@@ -42,12 +42,12 @@
     "Protected delivery remains responsible for remote freshness and merged-main CI."
   ],
   "evidence_refs": [
-    "ev-m0-11-repo-check-953c9fc",
-    "ev-m0-11-contracts-953c9fc",
-    "product/plans/oss-v1/evidence/lifecycle/M0-11/953c9fc2af05e99005921cb059cc976febc0be03/validation_report.json"
+    "ev-m0-11-repo-check-ff30939",
+    "ev-m0-11-contracts-ff30939",
+    "product/plans/oss-v1/evidence/lifecycle/M0-11/ff3093990745850bb80b2aab56b4466b39da9da8/validation_report.json"
   ],
   "work_proof_marker_refs": [
-    "product/plans/oss-v1/evidence/lifecycle/M0-11/953c9fc2af05e99005921cb059cc976febc0be03/work_proof_marker.json"
+    "product/plans/oss-v1/evidence/lifecycle/M0-11/ff3093990745850bb80b2aab56b4466b39da9da8/work_proof_marker.json"
   ],
   "approval_effect": {
     "promotion_decision": "ready_for_pr",
@@ -70,5 +70,5 @@
     ],
     "system_model_summary": "Canonical repository state selects one task; authenticated installed workers execute only after current per-run maintainer authority."
   },
-  "created_at": "2026-08-13T21:01:33Z"
+  "created_at": "2026-08-13T21:29:57Z"
 }

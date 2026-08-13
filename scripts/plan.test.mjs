@@ -896,12 +896,12 @@ describe("implementation plan validator", () => {
     );
     expect(state).toMatchObject({
       taskId: "M0-11",
-      revision: 1,
+      revision: 2,
       state: "accepted",
       attempt: 1,
       candidate: {
         baseCommit: "372d27edbabd8f2ef9213bda2fc235cd421042e9",
-        commit: "953c9fc2af05e99005921cb059cc976febc0be03",
+        commit: "ff3093990745850bb80b2aab56b4466b39da9da8",
         executor: "implementation-agent",
       },
     });

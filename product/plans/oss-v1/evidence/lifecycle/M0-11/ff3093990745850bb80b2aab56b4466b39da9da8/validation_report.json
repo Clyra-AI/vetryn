@@ -4,7 +4,7 @@
   "profile_ref": "profiles/vetryn.yaml",
   "semantic_risk_report_ref": ".factory/artifacts/task-runs/M0-11/semantic-risk-report.json",
   "semantic_risk_report_sha256": "sha256:8825e23c26c2007e7fd2f295065ff860a78f2dc8382cc129a2a8c1002ff7af3c",
-  "validation_contract_ref": "task-packet:oss-v1:M0-11:r0@953c9fc2af05e99005921cb059cc976febc0be03",
+  "validation_contract_ref": "task-packet:oss-v1:M0-11:r0@ff3093990745850bb80b2aab56b4466b39da9da8",
   "test_intent": [
     {
       "behavior": "Discover and compile exactly one active or next-legal task without mutating the repository.",
@@ -26,21 +26,21 @@
     {
       "check": "pnpm plan:check",
       "summary": "The exact candidate planning graph and generated state are current.",
-      "evidence_refs": ["ev-m0-11-plan-check-953c9fc"]
+      "evidence_refs": ["ev-m0-11-plan-check-ff30939"]
     },
     {
       "check": "pnpm check",
-      "summary": "The exact candidate passed all repository gates and 210 tests.",
-      "evidence_refs": ["ev-m0-11-repo-check-953c9fc"]
+      "summary": "The exact corrected candidate passed all repository gates and 212 tests.",
+      "evidence_refs": ["ev-m0-11-repo-check-ff30939"]
     },
     {
       "check": "pnpm test:contracts",
       "summary": "The exact candidate passed all deterministic contract and adversarial tests.",
-      "evidence_refs": ["ev-m0-11-contracts-953c9fc"]
+      "evidence_refs": ["ev-m0-11-contracts-ff30939"]
     }
   ],
   "work_proof_marker_refs": [
-    "product/plans/oss-v1/evidence/lifecycle/M0-11/953c9fc2af05e99005921cb059cc976febc0be03/work_proof_marker.json"
+    "product/plans/oss-v1/evidence/lifecycle/M0-11/ff3093990745850bb80b2aab56b4466b39da9da8/work_proof_marker.json"
   ],
   "test_scope": [
     ".agents/skills/vetryn-continue-next",
@@ -112,10 +112,10 @@
     "provided_levels": ["validation_gate", "adversarial", "security_review"],
     "status": "satisfied",
     "evidence_refs": [
-      "ev-m0-11-plan-check-953c9fc",
-      "ev-m0-11-repo-check-953c9fc",
-      "ev-m0-11-contracts-953c9fc",
-      "product/plans/oss-v1/evidence/lifecycle/M0-11/953c9fc2af05e99005921cb059cc976febc0be03/review_report.json"
+      "ev-m0-11-plan-check-ff30939",
+      "ev-m0-11-repo-check-ff30939",
+      "ev-m0-11-contracts-ff30939",
+      "product/plans/oss-v1/evidence/lifecycle/M0-11/ff3093990745850bb80b2aab56b4466b39da9da8/review_report.json"
     ],
     "notes": "Independent exact-candidate validation and review found no remaining P0 or P1 issue; protected remote CI remains a shipping gate."
   },
@@ -140,14 +140,14 @@
       {
         "name": "pnpm check",
         "status": "pass",
-        "work_proof_marker_ref": "product/plans/oss-v1/evidence/lifecycle/M0-11/953c9fc2af05e99005921cb059cc976febc0be03/work_proof_marker.json"
+        "work_proof_marker_ref": "product/plans/oss-v1/evidence/lifecycle/M0-11/ff3093990745850bb80b2aab56b4466b39da9da8/work_proof_marker.json"
       }
     ],
     "fresh_checkout": {
       "required": true,
       "status": "pass",
       "work_proof_marker_refs": [
-        "product/plans/oss-v1/evidence/lifecycle/M0-11/953c9fc2af05e99005921cb059cc976febc0be03/work_proof_marker.json"
+        "product/plans/oss-v1/evidence/lifecycle/M0-11/ff3093990745850bb80b2aab56b4466b39da9da8/work_proof_marker.json"
       ],
       "notes": "A disposable arbitrary-path checkout produced two byte-identical ready-for-authority preflight results without a sibling Factory checkout."
     },

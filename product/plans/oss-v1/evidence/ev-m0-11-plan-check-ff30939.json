@@ -1,12 +1,12 @@
 {
   "$schema": "../../schemas/evidence.schema.json",
   "schemaVersion": "1.0.0",
-  "id": "ev-m0-11-plan-check-953c9fc",
+  "id": "ev-m0-11-plan-check-ff30939",
   "taskId": "M0-11",
   "type": "command-run",
   "actor": "codex-local-validation",
-  "commit": "953c9fc2af05e99005921cb059cc976febc0be03",
-  "createdAt": "2026-08-13T20:55:39Z",
+  "commit": "ff3093990745850bb80b2aab56b4466b39da9da8",
+  "createdAt": "2026-08-13T21:29:57Z",
   "result": {
     "status": "pass",
     "checks": [
