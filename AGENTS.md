@@ -22,6 +22,9 @@ These instructions apply to the entire repository.
   relying on the new scope, gates, or acceptance criteria.
 - Treat `WORKFLOW.md` as the repository operating contract. Compile one explicit task with
   `pnpm --silent task:compile -- TASK-ID` before implementation or verification.
+- For a medium- or high-risk packet, author the semantic-risk draft in `.factory/tmp/`, then run
+  `pnpm --silent semantic-risk:preflight -- TASK-ID` from a clean baseline before the first product edit. Use only
+  the packet's exact report and marker refs; bound-candidate validation verifies both against the pinned schema.
 - Use `docs/agent-map.md` to navigate repository responsibilities, route work to the right skill, and
   evaluate planned skill activation. It is guidance, not a second backlog and never expands a compiled
   task packet.
@@ -46,4 +49,7 @@ These instructions apply to the entire repository.
   tooling rather than editing the roll-up directly.
 - Keep Factory-compatible planning artifacts separate from Vetryn product-domain schemas. Transient
   claims, worktrees, prompts, raw logs, credentials, and grants belong in ignored `.factoryd/` state.
+- When invoking an installed Factory skill, pass the full profile at `../factory/profiles/vetryn.yaml` and first
+  verify the sibling Factory checkout is at `.factory/profile.yaml`'s pinned commit. The portable Vetryn profile is
+  the repo-native adapter and digest anchor, not a replacement for Factory's complete skill profile.
 - Run `pnpm check` before declaring work complete.

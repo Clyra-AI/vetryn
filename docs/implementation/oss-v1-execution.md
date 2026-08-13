@@ -73,6 +73,17 @@ task and risk, allowed and forbidden paths, scope exclusions, baseline/red-first
 chain, lifecycle gates, retry budget, runtime pins, Factory compatibility, policy references, documentation and
 release intent, and item-level acceptance-result requirements.
 
+For medium- and high-risk work, the packet requires `semantic_risk_report_ref` and
+`semantic_risk_baseline_marker_ref` at two task-bound targets under `.factory/artifacts/task-runs/`. The agent
+authors only the report body in ignored `.factory/tmp/`; `pnpm --silent semantic-risk:preflight -- TASK-ID`
+requires a clean baseline, fills trusted metadata, validates the byte-pinned Factory schema, and writes the report
+and marker atomically per file before product editing. A partial pair remains fail closed. Bound-candidate packet
+validation then reads both artifacts from the exact candidate blobs and checks schema, digests, task/risk/profile
+identity, source ancestry, and review convergence. The V1 repo-native adapter deliberately rejects every
+`authorized` external action: offline tasks use only `blocked` or `not_applicable`, and live authority remains a
+separately designed field-operation boundary. The two exact targets are appended to runner `allowed_paths` without
+changing canonical product scope.
+
 `required_worker_chain` names generic Factory workers. `required_domain_review_chain` separately names the
 repository skill required by an active domain gate; `QG-TRUST-REVIEW` therefore emits `vetryn-trust-review`, sets
 `trust_review_required`, and requires a candidate-bound `trust_review_report`. A generic code review cannot satisfy
@@ -108,7 +119,10 @@ release/documentation intent, and source metadata. Only packet revision, lifecyc
 status-evidence bytes may differ as a promotion tail while the candidate remains exact.
 Canonical objects use structural equality: object member order is irrelevant, but array order remains part of the
 contract.
-The packet's immutable digest map contains only the product contract, plan, and lockfile. Ledger and task-state
+The packet's immutable digest map contains the product contract, plan, lockfile, portable Factory profile, and
+vendored semantic-risk schema. The profile pins the canonical Factory commit and digests for
+`profiles/vetryn.yaml` and that byte-identical schema; profile or schema drift invalidates an active packet.
+Ledger and task-state
 paths remain explicit canonical inputs whose current contracts are validated directly. An acceptance item may
 carry either the exact current ledger tail or an empty `planned` tail frozen before a canonical `accepted`
 promotion; invented status or evidence references and blocked or deferred canonical outcomes hidden behind a stale

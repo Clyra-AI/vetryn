@@ -1,6 +1,6 @@
 project: vetryn
 product_name: Vetryn
-profile_version: "0.2"
+profile_version: "0.3"
 adoption_profile: standard
 status: repo_native_execution_ready
 source_contract: docs/oss-v1.md
@@ -38,4 +38,93 @@ review_policy:
   candidate_change_invalidates_validation_and_review: true
   promotion_tail: state_ledger_evidence_and_generated_progress_only
   remote_codex: separate_latest_head_residual_gate
+implementation_risk:
+  risk_tiers:
+    low: local deterministic behavior with no persisted state, authority change, credential, network, remote mutation, or public contract effect
+    medium: stateful or public-contract behavior with bounded local effects and no live credentialed or remote action
+    high: any change matching high_risk_change_classes below
+  high_risk_change_classes:
+    - provider_intent
+    - authentication_identity_authorization
+    - billing_or_security_controls
+    - persistence_or_evidence
+    - model_or_command_execution
+    - approval_sandbox_or_release_policy
+    - data_migration_or_deletion
+    - github_or_provider_status
+    - credential_or_network
+    - metered_spend
+    - destructive_behavior
+    - high_blast_radius_external_side_effect
+  medium_high_required_outputs:
+    - artifact_lifecycle_matrix
+    - authorization_boundary_trace
+    - normative_adversarial_matrix
+  high_required_outputs:
+    - external_effect_preflight
+    - persistence_threat_matrix
+  artifact_lifecycle_fields:
+    - artifact
+    - producer_or_authority
+    - mutable_owner
+    - states
+    - freshness
+    - integrity
+    - authenticity
+    - actionable_states
+    - transitions_and_recovery
+  authorization_boundary_stages:
+    - input_validation
+    - reuse_or_persistence
+    - plan_authorization
+    - workspace_mutation
+    - command_execution
+    - remote_effect
+    - external_status
+  external_effect_actions:
+    - agent_runner
+    - model
+    - repository_command
+    - package_registry
+    - provider_sandbox
+    - github
+    - provider_status
+  high_risk_surfaces:
+    - provider_manifest_or_event
+    - installation_or_authorization
+    - persistence_or_evidence
+    - agent_runner_or_model
+    - repository_command_or_workspace_mutation
+    - provider_sandbox
+    - github_delivery
+    - provider_status
+  persistence_threats:
+    - integrity
+    - authenticity
+    - freshness
+    - completeness
+    - ordering
+    - anti_rollback
+  review_convergence:
+    pre_implementation_design_pass: true
+    exact_candidate_review_after_validation: true
+    same_subsystem_p1_round_limit: 2
+    standalone_p2_policy_ref: commit_push.codex_review.standalone_p2_exception
+  required_transition_classes:
+    - provider_authority_vs_consumer_authority
+    - model_namespace_vs_effective_execution_provider
+    - replay_only_vs_actionable_evidence
+    - recommendation_vs_patch
+    - local_branch_vs_remote_branch
+    - draft_pr_vs_merge
+    - optional_inputs_vs_required_inputs
+  required_transition_semantics: any transition matching required_transition_classes below
 canonical_factory_profile: profiles/vetryn.yaml
+canonical_factory_source:
+  repository: https://github.com/Clyra-AI/factory
+  commit: 54725330eb8c891edade37adbd682997ab8cc078
+  profile_sha256: 79ee1bb3dbb673fe017f38317c60382dd6236be0d02792d5c091725fc153779f
+  implementation_risk_sha256: 92aef4b6eb6705414b2556ec8fb6d5767656ad2e17b849f994048d8393a7750b
+  semantic_risk_schema: schemas/artifacts/semantic-risk-report.schema.json
+  semantic_risk_schema_sha256: 6dc9198a8a522118127ac497393f857449803e6533f1ede82b03355640b75dfa
+  portable_semantic_risk_schema: product/plans/schemas/semantic-risk-report.schema.json

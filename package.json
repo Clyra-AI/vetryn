@@ -26,6 +26,7 @@
     "pack:check": "pnpm --recursive --if-present pack:check",
     "plan:check": "node scripts/plan.mjs check",
     "plan:write": "node scripts/plan.mjs write",
+    "semantic-risk:preflight": "node scripts/semantic-risk.mjs preflight",
     "task:compile": "node scripts/task.mjs compile",
     "task:next": "node scripts/task.mjs next",
     "test": "vitest run",

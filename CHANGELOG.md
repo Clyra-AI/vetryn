@@ -70,6 +70,9 @@
 
 ### Changed
 
+- Bound medium- and high-risk task packets to a pinned Factory implementation-risk profile, a repo-native clean
+  baseline preflight, exact report and marker targets, bound-candidate artifact validation, and an offline V1 rule
+  that rejects external-action authorization.
 - Simplified OSS V1 delivery to a proportional single-maintainer policy: exact-candidate command evidence and CI
   remain required, while CODEOWNERS and reviewer-evidence records are advisory. Historical evidence inputs no
   longer become invalid solely because a later plan or lockfile revision changes.
