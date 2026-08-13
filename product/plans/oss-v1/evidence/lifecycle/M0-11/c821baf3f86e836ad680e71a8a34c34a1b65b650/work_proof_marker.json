@@ -1,0 +1,53 @@
+{
+  "marker_id": "M0-11-c821baf-pnpm-check",
+  "command": "pnpm check",
+  "cwd": ".",
+  "workspace_ref": "codex/m0-11-portable-continuation",
+  "git_sha": "c821baf3f86e836ad680e71a8a34c34a1b65b650",
+  "exit_code": 0,
+  "stdout_digest": "sha256:e20120326704b78aa53d75070ccae34dce3b3c729eb699b62900658e1c5e6c43",
+  "stderr_digest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "raw_log_refs": [],
+  "execution_status": "pass",
+  "observed_at": "2026-08-13T22:20:46Z",
+  "runner_id": "codex-local:validation-gate",
+  "generated_by": "trusted_runner",
+  "workspace_proof": {
+    "isolation_model": "exact_git_candidate",
+    "clean_checkout_verified": true,
+    "base_ref": "372d27edbabd8f2ef9213bda2fc235cd421042e9",
+    "branch_name": "codex/m0-11-portable-continuation",
+    "allowed_paths": [
+      ".agents/skills/vetryn-continue-next/**",
+      ".factory/profile.yaml",
+      ".factory/README.md",
+      ".factory/artifacts/task-runs/M0-11/**",
+      "AGENTS.md",
+      "CHANGELOG.md",
+      "CONTRIBUTING.md",
+      "WORKFLOW.md",
+      "docs/adr/0022-separate-continuation-procedure-from-run-authority.md",
+      "docs/agent-map.md",
+      "docs/implementation/oss-v1-execution.md",
+      "product/plans/oss-v1/**",
+      "scripts/continue-next-skill.test.mjs",
+      "scripts/semantic-risk.test.mjs",
+      "scripts/task.mjs"
+    ],
+    "forbidden_paths": [
+      "packages/**",
+      "examples/**",
+      "action.yml",
+      ".github/workflows/**",
+      "llms.txt"
+    ],
+    "retry_preservation": {
+      "preserve_workspace_on_retry": true,
+      "checkpoint_ref": "c821baf3f86e836ad680e71a8a34c34a1b65b650"
+    },
+    "cleanup_policy": {
+      "remove_after_terminal_state": "after merged-main verification",
+      "preserve_on_failure": true
+    }
+  }
+}

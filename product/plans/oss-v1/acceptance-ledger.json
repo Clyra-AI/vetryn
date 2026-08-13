@@ -182,7 +182,7 @@
       },
       "waivable": false,
       "status": "accepted",
-      "evidenceRefs": ["ev-m0-11-contracts-ff30939"]
+      "evidenceRefs": ["ev-m0-11-contracts-c821baf"]
     },
     {
       "id": "PROCESS-011",
@@ -195,7 +195,7 @@
       },
       "waivable": false,
       "status": "accepted",
-      "evidenceRefs": ["ev-m0-11-repo-check-ff30939"]
+      "evidenceRefs": ["ev-m0-11-repo-check-c821baf"]
     },
     {
       "id": "ROUTE-001",
