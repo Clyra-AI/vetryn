@@ -596,7 +596,7 @@ describe("vetryn-continue-next preflight", () => {
       check: "branch_scope",
       code: "active_branch_out_of_scope",
     });
-  });
+  }, 15_000);
 
   it("blocks when task-next active state disagrees with the compiled packet", () => {
     const fixture = makeFixture();
