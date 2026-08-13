@@ -34,7 +34,7 @@ delivery truth.
 | `examples/openrouter-typescript/` | Golden repository, reviewed cases, mock provider, scenarios, and expected artifacts | Offline, deterministic, redacted, and semantically asserted                      |
 | `product/plans/oss-v1/`           | Task DAG, state, acceptance, evidence, and generated progress                       | Change through the plan workflow; never edit generated progress directly         |
 | `.agents/skills/`                 | Vetryn-specific reusable agent workflows                                            | Add only through the skill maturity and activation policy below                  |
-| `.factory/`                       | Portable Factory adapter and policy summary                                         | Keep Factory optional and external to the product                                |
+| `.factory/`                       | Portable Factory adapter, policy, and task-bound semantic-risk evidence             | Keep Factory optional and external to the product; write only packet targets     |
 | `.factoryd/`                      | Transient Factory execution state                                                   | Ignored; never a source of repository truth                                      |
 | `.github/`                        | CI, security, contribution, and later composite Action workflows                    | Preserve least privilege and pin third-party Actions                             |
 
@@ -47,7 +47,10 @@ or compiled task authorizes it.
 2. Run `pnpm plan:check` and `pnpm --silent task:next`.
 3. Select one legal task and run `pnpm --silent task:compile -- TASK-ID`.
 4. Treat the packet's paths, capabilities, invariants, gates, and stop conditions as hard boundaries.
-5. Route the work through the applicable skill below.
+5. For medium- or high-risk work, author the ignored semantic-risk draft and run
+   `pnpm --silent semantic-risk:design -- TASK-ID` from a clean candidate snapshot. Prefer doing this before
+   product edits; never interpret the repository-owned integrity marker as independent authority or chronology.
+6. Route the work through the applicable skill below.
 
 If no legal task covers the requested work, do not borrow scope from a future task. Propose a narrow plan or
 process change for maintainer review. A planning or product-contract amendment remains a proposal until it is
@@ -55,14 +58,14 @@ reviewed and merged to `main`; resync and compile downstream implementation from
 
 ## Current skill routing
 
-| Situation                                                                          | Skill                                    | Authority boundary                                                                   |
-| ---------------------------------------------------------------------------------- | ---------------------------------------- | ------------------------------------------------------------------------------------ |
-| Implement one ready or in-progress compiled task                                   | `vetryn-implement-task`                  | May change only packet-authorized implementation paths; cannot accept its work       |
-| Verify an exact candidate commit                                                   | `vetryn-verify-task`                     | Recommended independent check; cannot repair or promote the candidate                |
-| Promote locally validated work                                                     | `vetryn-promote-task`                    | Maintainer-controlled canonical state, ledger, evidence, and generated progress only |
-| Build or review the V1-02 offline golden repository                                | `vetryn-golden-scenario`                 | Offline synthetic fixtures and semantic assertions only; cannot accept or merge      |
-| Review V1-06+ evaluation, recommendation, or patch trust semantics                 | `vetryn-trust-review`                    | Candidate-bound adversarial review only; cannot implement, promote, or merge         |
-| Execute, validate, review, commit, push, or release through generic infrastructure | The corresponding external Factory skill | Factory supplies delivery automation; active command gates remain required           |
+| Situation                                                                          | Skill                                                                                                                            | Authority boundary                                                                   |
+| ---------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| Implement one ready or in-progress compiled task                                   | `vetryn-implement-task`                                                                                                          | May change only packet-authorized implementation paths; cannot accept its work       |
+| Verify an exact candidate commit                                                   | `vetryn-verify-task`                                                                                                             | Recommended independent check; cannot repair or promote the candidate                |
+| Promote locally validated work                                                     | `vetryn-promote-task`                                                                                                            | Maintainer-controlled canonical state, ledger, evidence, and generated progress only |
+| Build or review the V1-02 offline golden repository                                | `vetryn-golden-scenario`                                                                                                         | Offline synthetic fixtures and semantic assertions only; cannot accept or merge      |
+| Review V1-06+ evaluation, recommendation, or patch trust semantics                 | `vetryn-trust-review`                                                                                                            | Candidate-bound adversarial review only; cannot implement, promote, or merge         |
+| Execute, validate, review, commit, push, or release through generic infrastructure | The corresponding external Factory skill, with `profile=../factory/profiles/vetryn.yaml` at the portable profile's pinned commit | Factory supplies delivery automation; active command gates remain required           |
 
 An agent must not use a skill name as authority for an action the compiled packet, repository policy, or human
 authorization does not permit.

@@ -1,4 +1,5 @@
 import { cp, mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import process from "node:process";
@@ -53,6 +54,11 @@ async function createFixture() {
     { recursive: true },
   );
   await cp(path.join(repositoryRoot, "pnpm-lock.yaml"), path.join(root, "pnpm-lock.yaml"));
+  await mkdir(path.join(root, ".factory"));
+  await cp(
+    path.join(repositoryRoot, ".factory/profile.yaml"),
+    path.join(root, ".factory/profile.yaml"),
+  );
   await normalizeV1Fixture(root);
   return root;
 }
@@ -79,13 +85,160 @@ function runPlan(root, command) {
   });
 }
 
+function canonicalJson(value) {
+  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(",")}]`;
+  if (value && typeof value === "object")
+    return `{${Object.keys(value)
+      .sort()
+      .map((key) => `${JSON.stringify(key)}:${canonicalJson(value[key])}`)
+      .join(",")}}`;
+  return JSON.stringify(value);
+}
+
+function sha256(value) {
+  return `sha256:${createHash("sha256").update(value).digest("hex")}`;
+}
+
+async function writeSemanticRiskEvidence(root, packet, sourceRevision) {
+  const timestamp = "2026-08-10T00:00:00.000Z";
+  const report = {
+    artifact_type: "semantic_risk_report",
+    schema_version: "0.2",
+    task_id: packet.task_id,
+    work_item_id: packet.task_id,
+    risk_class: packet.risk_class,
+    profile_ref: ".factory/profile.yaml",
+    source_revision: sourceRevision,
+    phase: "implementation_design",
+    artifact_lifecycle_matrix: [
+      {
+        artifact: "semantic-risk fixture",
+        producer_or_authority: "test fixture",
+        mutable_owner: "test fixture",
+        states: ["generated", "persisted"],
+        freshness: "candidate-bound fixture",
+        integrity: "SHA-256 binding",
+        authenticity: "deterministic test runner",
+        actionable_states: [],
+        transitions_and_recovery: ["Reject stale or tampered fixture evidence."],
+      },
+    ],
+    authorization_boundary_trace: [
+      "input_validation",
+      "reuse_or_persistence",
+      "plan_authorization",
+      "workspace_mutation",
+      "command_execution",
+      "remote_effect",
+      "external_status",
+    ].map((stage) => ({
+      stage,
+      authority: "test packet",
+      input: "deterministic fixture",
+      decision: "not_applicable",
+      denied_behavior: "fail closed",
+    })),
+    normative_adversarial_matrix: [
+      {
+        invariant: "Evidence remains candidate-bound.",
+        positive: "Exact fixture passes.",
+        missing: "Missing evidence fails.",
+        stale: "Stale source fails.",
+        contradictory: "Contradictory evidence fails.",
+        tampered: "Digest mismatch fails.",
+        transition_or_recovery: "Regenerate from a clean baseline.",
+        concurrency: "Independent fixture roots do not collide.",
+      },
+    ],
+    review_convergence: {
+      implementation_design_pass: "pass",
+      same_subsystem_p1_rounds_seen: 0,
+      decision: "proceed",
+    },
+    residual_risks: [],
+    created_at: timestamp,
+  };
+  if (packet.risk_class === "high") {
+    report.external_effect_preflight = {
+      actions: [
+        "agent_runner",
+        "model",
+        "repository_command",
+        "package_registry",
+        "provider_sandbox",
+        "github",
+        "provider_status",
+      ].map((action) => ({
+        action,
+        disposition: "not_applicable",
+        authority_ref: null,
+        invalid_authority_effect: { calls: 0, spend_usd: 0, writes: 0 },
+      })),
+    };
+    report.persistence_threat_matrix = [
+      "integrity",
+      "authenticity",
+      "freshness",
+      "completeness",
+      "ordering",
+      "anti_rollback",
+    ].map((threat) => ({
+      threat,
+      attack_cases: [`Reject ${threat} violation.`],
+      expected_disposition: "reject",
+    }));
+  }
+  const contentDigest = sha256(canonicalJson(report));
+  const marker = {
+    artifact_type: "semantic_risk_integrity_marker",
+    schema_version: "0.2",
+    command: `pnpm --silent semantic-risk:design -- ${packet.task_id}`,
+    git_sha: sourceRevision,
+    exit_code: 0,
+    execution_status: "pass",
+    started_at: timestamp,
+    finished_at: timestamp,
+    authorized_task_bindings: [
+      {
+        task_id: packet.task_id,
+        profile_ref: ".factory/profile.yaml",
+        semantic_risk_report_ref: packet.semantic_risk_report_ref,
+        source_revision: sourceRevision,
+        semantic_content_sha256: contentDigest,
+        observed_changed_paths: [packet.semantic_risk_report_ref],
+      },
+    ],
+  };
+  const markerBytes = `${JSON.stringify(marker, null, 2)}\n`;
+  report.baseline_evidence = {
+    work_proof_marker_ref: packet.semantic_risk_integrity_marker_ref,
+    work_proof_marker_sha256: sha256(markerBytes),
+  };
+  await mkdir(path.dirname(path.join(root, packet.semantic_risk_report_ref)), { recursive: true });
+  await writeFile(path.join(root, packet.semantic_risk_integrity_marker_ref), markerBytes);
+  await writeFixtureJson(root, packet.semantic_risk_report_ref, report);
+}
+
 function createGitCandidate(root) {
   for (const arguments_ of [
     ["init", "--quiet"],
     ["config", "user.name", "Vetryn test fixture"],
     ["config", "user.email", "fixture@vetryn.invalid"],
-    ["add", "docs", "product", "pnpm-lock.yaml"],
+    ["add", ".factory", "docs", "product", "pnpm-lock.yaml"],
     ["commit", "--quiet", "-m", "fixture candidate"],
+  ]) {
+    const result = spawnSync("git", ["-C", root, ...arguments_], { encoding: "utf8" });
+    expect(result.status, result.stderr).toBe(0);
+  }
+  const result = spawnSync("git", ["-C", root, "rev-parse", "HEAD"], { encoding: "utf8" });
+  expect(result.status, result.stderr).toBe(0);
+  return result.stdout.trim();
+}
+
+function commitGitChanges(root, message, ...paths) {
+  for (const arguments_ of [
+    ["add", ...paths],
+    ["commit", "--quiet", "-m", message],
   ]) {
     const result = spawnSync("git", ["-C", root, ...arguments_], { encoding: "utf8" });
     expect(result.status, result.stderr).toBe(0);
@@ -692,12 +845,22 @@ describe("task packet compiler", () => {
       task_id: "V1-00",
       risk_class: "medium",
       worker_type: "task-executor",
+      semantic_risk_report_ref: ".factory/artifacts/task-runs/V1-00/semantic-risk-report.json",
+      semantic_risk_integrity_marker_ref:
+        ".factory/artifacts/task-runs/V1-00/semantic-risk-integrity-marker.json",
       retry_budget: { max_attempts: 2, current_attempt: 1, remaining_attempts: 1 },
       execution: {
         executorMayAccept: false,
         verifierMustDifferFromExecutor: false,
         maintainerApprovalRequired: true,
         progressIsGenerated: true,
+      },
+      factory_compatibility: {
+        factory_contract_version: "1.0",
+        canonical_factory_source: {
+          repository: "https://github.com/Clyra-AI/factory",
+          profile_path: "profiles/vetryn.yaml",
+        },
       },
     });
     expect(packet.source.productContractDigest).toBe(
@@ -707,7 +870,12 @@ describe("task packet compiler", () => {
       "docs/oss-v1.md",
       "product/plans/oss-v1/plan.json",
       "pnpm-lock.yaml",
+      ".factory/profile.yaml",
+      "product/plans/schemas/semantic-risk-report-v0.1.schema.json",
+      "product/plans/schemas/semantic-risk-report-v0.2.schema.json",
     ]);
+    expect(packet.allowed_paths).toContain(packet.semantic_risk_report_ref);
+    expect(packet.allowed_paths).toContain(packet.semantic_risk_integrity_marker_ref);
     expect(packet.allowed_paths).toContain("vitest.config.ts");
     expect(packet.required_worker_chain).toEqual(packet.execution.factorySkills);
     expect(packet.required_worker_chain).toEqual([
@@ -768,7 +936,60 @@ describe("task packet compiler", () => {
     const unboundValidation = runTask(root, "validate", "unbound-packet.json");
     expect(unboundValidation.status).toBe(1);
     expect(unboundValidation.stderr).toContain("lifecycle preflight requires a bound candidate");
-  });
+
+    const factoryProfilePath = path.join(root, ".factory/profile.yaml");
+    const factoryProfile = await readFile(factoryProfilePath, "utf8");
+    await writeFile(
+      factoryProfilePath,
+      factoryProfile.replace("    - destructive_behavior", "    - non_destructive_behavior"),
+    );
+    const downgradedProfileCompile = runTask(root, "compile", "V1-00");
+    expect(downgradedProfileCompile.status).toBe(1);
+    expect(downgradedProfileCompile.stderr).toContain(
+      "portable Factory implementation_risk does not match the pinned canonical policy",
+    );
+    await writeFile(
+      factoryProfilePath,
+      factoryProfile.replace(/^ {2}commit: [0-9a-f]{40}$/mu, "  revision: omitted"),
+    );
+    const missingSourcePinCompile = runTask(root, "compile", "V1-00");
+    expect(missingSourcePinCompile.status).toBe(1);
+    expect(missingSourcePinCompile.stderr).toContain(
+      "portable Factory profile does not pin canonical commit",
+    );
+    for (const portableSchemaField of [
+      "portable_semantic_risk_legacy_schema",
+      "portable_semantic_risk_schema",
+    ]) {
+      await writeFile(
+        factoryProfilePath,
+        factoryProfile.replace(
+          new RegExp(`^  ${portableSchemaField}: .*$`, "mu"),
+          `  ${portableSchemaField}: redirected/schema.json`,
+        ),
+      );
+      const redirectedSchemaCompile = runTask(root, "compile", "V1-00");
+      expect(redirectedSchemaCompile.status).toBe(1);
+      expect(redirectedSchemaCompile.stderr).toContain(
+        `portable Factory profile does not pin canonical ${portableSchemaField}`,
+      );
+    }
+    await writeFile(
+      factoryProfilePath,
+      `${factoryProfile}\nimplementation_risk:\n  enabled: false\n`,
+    );
+    const duplicateRiskBlockCompile = runTask(root, "compile", "V1-00");
+    expect(duplicateRiskBlockCompile.status).toBe(1);
+    expect(duplicateRiskBlockCompile.stderr).toContain("portable Factory profile is invalid YAML");
+
+    await writeFile(
+      factoryProfilePath,
+      `${factoryProfile}\ncanonical_factory_profile: redirected/profile.yaml\n`,
+    );
+    const duplicateProfilePinCompile = runTask(root, "compile", "V1-00");
+    expect(duplicateProfilePinCompile.status).toBe(1);
+    expect(duplicateProfilePinCompile.stderr).toContain("portable Factory profile is invalid YAML");
+  }, 15_000);
 
   it("requires frozen-candidate structured review evidence for high-risk tasks", async () => {
     const root = await createFixture();
@@ -798,6 +1019,7 @@ describe("task packet compiler", () => {
     );
     expect(packet.stop_conditions).toEqual(
       expect.arrayContaining([
+        expect.stringContaining("semantic_risk_report"),
         expect.stringContaining("review_report"),
         expect.stringContaining("candidate changes"),
       ]),
@@ -808,6 +1030,7 @@ describe("task packet compiler", () => {
     addFormats(ajv);
     const validate = ajv.compile(schema);
     const unsafe = globalThis.structuredClone(packet);
+    delete unsafe.semantic_risk_report_ref;
     unsafe.required_worker_chain = unsafe.required_worker_chain.filter(
       (worker) => worker !== "code-review",
     );
@@ -824,6 +1047,7 @@ describe("task packet compiler", () => {
     expect(validate.errors).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ instancePath: "/required_worker_chain", keyword: "const" }),
+        expect.objectContaining({ instancePath: "", keyword: "required" }),
         expect.objectContaining({
           instancePath: "/lifecycle_gates/code_review_required",
           keyword: "const",
@@ -871,7 +1095,17 @@ describe("task packet compiler", () => {
     plan.tasks[plan.tasks.findIndex((candidate) => candidate.id === "V1-05")] = originalTask;
     await writeFixtureJson(root, planPath, plan);
     expect(runPlan(root, "write").status).toBe(0);
-    const candidateCommit = createGitCandidate(root);
+    const sourceRevision = createGitCandidate(root);
+
+    const preflightResult = runTask(root, "compile", "V1-05");
+    expect(preflightResult.status, preflightResult.stderr).toBe(0);
+    const preflightPacket = JSON.parse(preflightResult.stdout);
+    await writeSemanticRiskEvidence(root, preflightPacket, sourceRevision);
+    const candidateCommit = commitGitChanges(
+      root,
+      "commit semantic-risk evidence",
+      ".factory/artifacts",
+    );
 
     const statePath = "product/plans/oss-v1/state/V1-05.json";
     const state = await readFixtureJson(root, statePath);
@@ -916,7 +1150,12 @@ describe("task packet compiler", () => {
         "package.json",
         "pnpm-lock.yaml",
         "vitest.config.ts",
+        ".factory/artifacts/task-runs/V1-05/semantic-risk-report.json",
+        ".factory/artifacts/task-runs/V1-05/semantic-risk-integrity-marker.json",
       ]),
+    );
+    expect(packet.semantic_risk_report_ref).toBe(
+      ".factory/artifacts/task-runs/V1-05/semantic-risk-report.json",
     );
     expect(packet.changelog_intent).toMatchObject({
       impact: "required",
@@ -934,6 +1173,41 @@ describe("task packet compiler", () => {
     expect(Object.keys(packet.lifecycle_evidence_refs)).toEqual(packet.lifecycle_evidence_required);
     expect(packet.packet_validation_command).toBe("node scripts/task.mjs validate {packet_path}");
     await writeFixtureJson(root, "candidate-packet.json", packet);
+    const validCandidate = runTask(root, "validate", "candidate-packet.json");
+    expect(validCandidate.status, validCandidate.stderr).toBe(0);
+
+    const semanticReport = await readFile(path.join(root, packet.semantic_risk_report_ref), "utf8");
+    await writeFile(
+      path.join(root, packet.semantic_risk_report_ref),
+      semanticReport.replace(sourceRevision, "f".repeat(40)),
+    );
+    const workingTreeTamper = runTask(root, "validate", "candidate-packet.json");
+    expect(workingTreeTamper.status, workingTreeTamper.stderr).toBe(0);
+    await writeFile(path.join(root, packet.semantic_risk_report_ref), semanticReport);
+
+    const factoryProfilePath = path.join(root, ".factory/profile.yaml");
+    const factoryProfile = await readFile(factoryProfilePath, "utf8");
+    await writeFile(factoryProfilePath, `${factoryProfile}\n# unreviewed policy drift\n`);
+    const staleProfileValidation = runTask(root, "validate", "candidate-packet.json");
+    expect(staleProfileValidation.status).toBe(1);
+    expect(staleProfileValidation.stderr).toContain(
+      "source digest is stale for .factory/profile.yaml",
+    );
+    await writeFile(factoryProfilePath, factoryProfile);
+    expect(runTask(root, "validate", "candidate-packet.json").status).toBe(0);
+
+    const legacySchemaPath = path.join(
+      root,
+      "product/plans/schemas/semantic-risk-report-v0.1.schema.json",
+    );
+    const legacySchema = await readFile(legacySchemaPath, "utf8");
+    await writeFile(legacySchemaPath, `${legacySchema}\n`);
+    const staleLegacySchemaValidation = runTask(root, "validate", "candidate-packet.json");
+    expect(staleLegacySchemaValidation.status).toBe(1);
+    expect(staleLegacySchemaValidation.stderr).toContain(
+      "portable semantic-risk legacy schema does not match the pinned canonical Factory schema",
+    );
+    await writeFile(legacySchemaPath, legacySchema);
     expect(runTask(root, "validate", "candidate-packet.json").status).toBe(0);
 
     const rewrittenPacketId = globalThis.structuredClone(packet);

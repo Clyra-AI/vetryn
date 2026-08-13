@@ -22,23 +22,36 @@ access.
 4. Use `$vetryn-implement-task` for implementation. Use `$vetryn-verify-task` for an additional independent check
    when available, and `$vetryn-promote-task` for maintainer-controlled state promotion.
 
+For medium- and high-risk tasks, the packet declares exact report and integrity-marker targets under
+`.factory/artifacts/task-runs/<task-id>/`. Author the report body as the ignored
+`.factory/tmp/task-runs/<task-id>/semantic-risk-report.draft.json`, then run
+`pnpm --silent semantic-risk:design -- TASK-ID` from a clean candidate snapshot, preferably before product edits.
+The repo-native command validates the pinned-schema report and writes a content- and source-bound integrity marker;
+it does not authenticate chronology, independent review, approval, or execution authority. Bound-candidate packet
+validation rechecks schema, digests, task/risk/profile identity, source ancestry, and convergence. The V1 adapter rejects
+`authorized` external actions; offline work records them only as `blocked` or `not_applicable`. The compiler adds
+only those two operational paths without changing canonical product scope.
+
 Planning and product-contract changes on a feature branch are proposals, not implementation authority. Merge them
 through review to `main`, resync the downstream branch, and compile the task from canonical `main` before relying
 on new scope, gates, or acceptance criteria.
 
 Factory's `task-executor`, `validation-gate`, `code-review`, and `commit-push` skills provide generic execution,
 validation, structured local review, and GitHub delivery behavior. Factory is an external development tool, not a
-product dependency or git submodule.
+product dependency or git submodule. Invoke installed Factory skills with the complete profile at
+`../factory/profiles/vetryn.yaml` after verifying that checkout matches the commit pinned in `.factory/profile.yaml`;
+the portable profile is the local adapter and digest anchor.
 
 ## Evidence and promotion
 
 During implementation, add deterministic success, failure, ambiguity, and stale-input tests that match the task.
 Run focused checks, then every active command gate in the packet. Do not claim planned gates as passing.
 
-Evidence is compact, redacted, and bound to the exact candidate and command gate it proves. Recorded plan and
-lockfile digests preserve the inputs observed at execution time; they are historical provenance, so a later
-unrelated plan edit does not invalidate accepted evidence. For high-risk work, freeze the candidate after command
-validation and run Factory `code-review` before promotion or the first push. The review report must bind that exact
+Evidence is compact, redacted, and bound to the exact candidate and command gate it proves. Recorded plan,
+lockfile, and portable Factory-profile digests preserve the policy inputs observed at execution time. A changed
+Factory profile invalidates the active packet and requires recompilation; unrelated plan edits may preserve a
+frozen task's evidence under the packet validator's existing rules. For high-risk work, freeze the candidate after
+command validation and run Factory `code-review` before promotion or the first push. The review report must bind that exact
 candidate and validation report. Re-run both validation and local review after any product- or contract-bearing
 candidate change.
 

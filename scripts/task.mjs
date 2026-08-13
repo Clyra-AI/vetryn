@@ -8,6 +8,9 @@ import { isDeepStrictEqual } from "node:util";
 
 import Ajv2020 from "ajv/dist/2020.js";
 import addFormats from "ajv-formats";
+import { parseDocument } from "yaml";
+
+import { semanticRiskRefs, validateSemanticRiskEvidence } from "./semantic-risk.mjs";
 
 const root = path.resolve(
   process.env.VETRYN_PLAN_REPO_ROOT ?? path.resolve(import.meta.dirname, ".."),
@@ -18,9 +21,27 @@ const sourcePaths = {
   plan: "product/plans/oss-v1/plan.json",
   ledger: "product/plans/oss-v1/acceptance-ledger.json",
   progress: "product/plans/oss-v1/progress.json",
+  factoryProfile: ".factory/profile.yaml",
+  semanticRiskLegacySchema: "product/plans/schemas/semantic-risk-report-v0.1.schema.json",
+  semanticRiskSchema: "product/plans/schemas/semantic-risk-report-v0.2.schema.json",
 };
 
 const workerEvidenceRequired = ["work_proof_marker", "command_evidence", "acceptance_results"];
+const canonicalFactorySource = {
+  repository: "https://github.com/Clyra-AI/factory",
+  commit: "e34a383eb5243a47d1779763226ebadeecd64858",
+  profile_path: "profiles/vetryn.yaml",
+  profile_sha256: "9839833f777c42348a2feef1af880278d7b7846ba070b6ba2255cddc4fee15ec",
+  implementation_risk_sha256: "8e0b07fcdaad805a4a232c823ba5b1ca2f29cbf4bd4d28121a8ab753c81c601d",
+  semantic_risk_legacy_schema: "schemas/artifacts/semantic-risk-report-v0.1.schema.json",
+  semantic_risk_legacy_schema_sha256:
+    "6dc9198a8a522118127ac497393f857449803e6533f1ede82b03355640b75dfa",
+  portable_semantic_risk_legacy_schema:
+    "product/plans/schemas/semantic-risk-report-v0.1.schema.json",
+  semantic_risk_schema: "schemas/artifacts/semantic-risk-report-v0.2.schema.json",
+  semantic_risk_schema_sha256: "b24c5028566b7da75df74a45d0efe48387c112b438048148a2f9e5bf47c3b3ee",
+  portable_semantic_risk_schema: "product/plans/schemas/semantic-risk-report-v0.2.schema.json",
+};
 const baseFactorySkills = ["task-executor", "validation-gate"];
 const baseLifecycleEvidenceRequired = [
   "validation_report",
@@ -37,6 +58,24 @@ function factorySkillsForTask(task) {
     ...(task.risk.level === "high" ? ["code-review"] : []),
     "commit-push",
   ];
+}
+
+function semanticRiskReportRefForTask(task) {
+  if (task.risk.level === "low") return null;
+  return semanticRiskRefs(task.id).reportRef;
+}
+
+function semanticRiskIntegrityMarkerRefForTask(task) {
+  if (task.risk.level === "low") return null;
+  return semanticRiskRefs(task.id).integrityMarkerRef;
+}
+
+function allowedPathsForTask(task) {
+  const semanticRiskReportRef = semanticRiskReportRefForTask(task);
+  const semanticRiskIntegrityMarkerRef = semanticRiskIntegrityMarkerRefForTask(task);
+  return semanticRiskReportRef
+    ? [...task.scope.allowedPaths, semanticRiskReportRef, semanticRiskIntegrityMarkerRef]
+    : task.scope.allowedPaths;
 }
 
 function lifecycleGatesForTask(task, trustReviewRequired) {
@@ -142,6 +181,11 @@ function stopConditionsForTask(task, highRiskTask, trustReviewRequired) {
     "A required validation command fails.",
     "The compiled packet or its source digests drift before handoff.",
     "A lifecycle artifact is used while its ref is unbound or does not contain the exact candidate commit.",
+    ...(task.risk.level !== "low"
+      ? [
+          "Implementation proceeds without a schema-valid semantic_risk_report and content-bound integrity marker at their exact packet refs, or either target is outside allowed_paths.",
+        ]
+      : []),
     ...(highRiskTask
       ? [
           "The candidate reaches promotion or push without a candidate-bound passing review_report.",
@@ -310,9 +354,10 @@ const runtimePins = {
 const factoryCompatibility = {
   factory_contract_version: "1.0",
   profile_ref: ".factory/profile.yaml",
-  skill_vocabulary_version: "2026-06-09",
+  skill_vocabulary_version: "2026-08-13",
   skill_inventory_ref: "docs/agent-map.md#current-skill-routing",
   generated_by: "vetryn-task-compiler",
+  canonical_factory_source: canonicalFactorySource,
   deprecated_worker_policy: "block_active_aliases",
   deprecated_worker_aliases: [
     {
@@ -345,6 +390,68 @@ async function readJson(relativePath) {
 async function digest(relativePath) {
   const contents = await readFile(path.join(root, relativePath));
   return createHash("sha256").update(contents).digest("hex");
+}
+
+function textDigest(contents) {
+  return createHash("sha256").update(contents).digest("hex");
+}
+
+async function validatePortableFactoryProfile() {
+  const profile = await readFile(path.join(root, sourcePaths.factoryProfile), "utf8");
+  const profileDocument = parseDocument(profile, { uniqueKeys: true });
+  assert(
+    profileDocument.errors.length === 0,
+    `portable Factory profile is invalid YAML: ${profileDocument.errors[0]?.message ?? "unknown error"}`,
+  );
+  const profileData = profileDocument.toJS();
+  assert(
+    profileData && typeof profileData === "object" && !Array.isArray(profileData),
+    "portable Factory profile must be a YAML mapping",
+  );
+  assert(
+    (await digest(sourcePaths.semanticRiskLegacySchema)) ===
+      canonicalFactorySource.semantic_risk_legacy_schema_sha256,
+    "portable semantic-risk legacy schema does not match the pinned canonical Factory schema",
+  );
+  assert(
+    (await digest(sourcePaths.semanticRiskSchema)) ===
+      canonicalFactorySource.semantic_risk_schema_sha256,
+    "portable semantic-risk schema does not match the pinned canonical Factory schema",
+  );
+  const riskBlock = profile.match(
+    /^implementation_risk:\n.*?(?=^[A-Za-z_][A-Za-z0-9_]*:|(?![\s\S]))/msu,
+  )?.[0];
+  assert(
+    riskBlock && profileData.implementation_risk,
+    "portable Factory profile is missing implementation_risk",
+  );
+  assert(
+    textDigest(`${riskBlock.trimEnd()}\n`) === canonicalFactorySource.implementation_risk_sha256,
+    "portable Factory implementation_risk does not match the pinned canonical policy",
+  );
+  assert(
+    profileData.canonical_factory_profile === canonicalFactorySource.profile_path,
+    "portable Factory profile does not pin canonical profile_path",
+  );
+  const expectedSource = Object.fromEntries(
+    Object.entries(canonicalFactorySource).filter(([field]) => field !== "profile_path"),
+  );
+  assert(
+    profileData.canonical_factory_source &&
+      typeof profileData.canonical_factory_source === "object" &&
+      !Array.isArray(profileData.canonical_factory_source),
+    "portable Factory profile is missing canonical_factory_source",
+  );
+  for (const [field, value] of Object.entries(expectedSource)) {
+    assert(
+      profileData.canonical_factory_source[field] === value,
+      `portable Factory profile does not pin canonical ${field}`,
+    );
+  }
+  assert(
+    isDeepStrictEqual(profileData.canonical_factory_source, expectedSource),
+    "portable Factory profile does not exactly pin canonical_factory_source",
+  );
 }
 
 function readAtCommit(commit, relativePath) {
@@ -450,9 +557,17 @@ async function compile(taskId) {
   const deliveryIntent = deliveryIntentForTask(task, plan.productContract);
   const highRiskTask = task.risk.level === "high";
   const trustReviewRequired = task.requiredGates.includes("QG-TRUST-REVIEW");
+  await validatePortableFactoryProfile();
   const factorySkills = factorySkillsForTask(task);
   const lifecycleEvidenceRequired = lifecycleEvidenceForTask(task, trustReviewRequired);
-  const sourceFiles = [plan.productContract, sourcePaths.plan, "pnpm-lock.yaml"];
+  const sourceFiles = [
+    plan.productContract,
+    sourcePaths.plan,
+    "pnpm-lock.yaml",
+    sourcePaths.factoryProfile,
+    sourcePaths.semanticRiskLegacySchema,
+    sourcePaths.semanticRiskSchema,
+  ];
   const sourceDigests = Object.fromEntries(
     await Promise.all(
       sourceFiles.map(async (file) => [
@@ -463,13 +578,13 @@ async function compile(taskId) {
   );
   const packet = {
     $schema: "https://vetryn.dev/schemas/planning/task-packet-v1.json",
-    schemaVersion: "1.0.0",
+    schemaVersion: "1.1.0",
     packetId: `${plan.planId}:${taskId}:r${state.revision}`,
     task_id: task.id,
     objective: task.objective,
     risk_class: task.risk.level,
     worker_type: "task-executor",
-    allowed_paths: task.scope.allowedPaths,
+    allowed_paths: allowedPathsForTask(task),
     forbidden_paths: task.scope.forbiddenPaths,
     scope_exclusions: scopeExclusionsForTask(task),
     acceptance_checks: acceptanceItems.map((item) => item.statement),
@@ -499,6 +614,12 @@ async function compile(taskId) {
     alignment_gate_ref: "docs/implementation/oss-v1-execution.md#agent-roles-and-handoff",
     plan_drift_policy_ref: "WORKFLOW.md#select-and-compile-work",
     factory_compatibility: factoryCompatibility,
+    ...(semanticRiskReportRefForTask(task)
+      ? {
+          semantic_risk_report_ref: semanticRiskReportRefForTask(task),
+          semantic_risk_integrity_marker_ref: semanticRiskIntegrityMarkerRefForTask(task),
+        }
+      : {}),
     acceptance_ledger_ref: sourcePaths.ledger,
     acceptance_item_ids: task.acceptanceItemIds,
     acceptance_result_requirements: acceptanceResultRequirements,
@@ -590,6 +711,7 @@ async function compile(taskId) {
 
 async function validatePacket(packet, { requireBoundCandidate }) {
   validateCanonicalPlan();
+  await validatePortableFactoryProfile();
   const schema = await readJson("product/plans/schemas/task-packet.schema.json");
   const ajv = new Ajv2020({ allErrors: true, strict: true, allowUnionTypes: true });
   addFormats(ajv);
@@ -633,7 +755,17 @@ async function validatePacket(packet, { requireBoundCandidate }) {
   assertSame(packet.task, taskView(canonicalTask), "task");
   assertSame(packet.objective, canonicalTask.objective, "objective");
   assertSame(packet.risk_class, canonicalTask.risk.level, "risk_class");
-  assertSame(packet.allowed_paths, canonicalTask.scope.allowedPaths, "allowed_paths");
+  assertSame(packet.allowed_paths, allowedPathsForTask(canonicalTask), "allowed_paths");
+  assertSame(
+    packet.semantic_risk_report_ref,
+    semanticRiskReportRefForTask(canonicalTask) ?? undefined,
+    "semantic_risk_report_ref",
+  );
+  assertSame(
+    packet.semantic_risk_integrity_marker_ref,
+    semanticRiskIntegrityMarkerRefForTask(canonicalTask) ?? undefined,
+    "semantic_risk_integrity_marker_ref",
+  );
   assertSame(packet.forbidden_paths, canonicalTask.scope.forbiddenPaths, "forbidden_paths");
   assertSame(packet.validation_commands, canonicalValidationCommands, "validation_commands");
   assertSame(packet.acceptance_item_ids, canonicalTask.acceptanceItemIds, "acceptance_item_ids");
@@ -867,7 +999,14 @@ async function validatePacket(packet, { requireBoundCandidate }) {
       "canonical acceptance policy has drifted from candidate",
     );
   }
-  const expectedSourceFiles = [plan.productContract, sourcePaths.plan, "pnpm-lock.yaml"];
+  const expectedSourceFiles = [
+    plan.productContract,
+    sourcePaths.plan,
+    "pnpm-lock.yaml",
+    sourcePaths.factoryProfile,
+    sourcePaths.semanticRiskLegacySchema,
+    sourcePaths.semanticRiskSchema,
+  ];
   assertSame(
     Object.keys(packet.source.digests).toSorted(),
     expectedSourceFiles.toSorted(),
@@ -878,7 +1017,7 @@ async function validatePacket(packet, { requireBoundCandidate }) {
     packet.source.digests[plan.productContract],
     "source.productContractDigest",
   );
-  for (const sourceFile of [plan.productContract, sourcePaths.plan, "pnpm-lock.yaml"]) {
+  for (const sourceFile of expectedSourceFiles) {
     if (packet.currentState.candidate?.commit)
       assert(
         packet.source.digests[sourceFile] ===
@@ -891,8 +1030,10 @@ async function validatePacket(packet, { requireBoundCandidate }) {
         `source digest is stale for ${sourceFile}`,
       );
   }
-  if (requireBoundCandidate)
+  if (requireBoundCandidate) {
     assert(packet.currentState.candidate?.commit, "lifecycle preflight requires a bound candidate");
+    await validateSemanticRiskEvidence({ root, packet });
+  }
   assertLifecycleEvidenceBindings(packet);
 }
 

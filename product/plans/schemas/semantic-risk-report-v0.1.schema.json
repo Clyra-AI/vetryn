@@ -1,0 +1,283 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "artifact_type",
+    "schema_version",
+    "task_id",
+    "work_item_id",
+    "risk_class",
+    "profile_ref",
+    "source_revision",
+    "baseline_evidence",
+    "phase",
+    "artifact_lifecycle_matrix",
+    "authorization_boundary_trace",
+    "normative_adversarial_matrix",
+    "review_convergence",
+    "residual_risks",
+    "created_at"
+  ],
+  "properties": {
+    "artifact_type": {"const": "semantic_risk_report"},
+    "schema_version": {"const": "0.1"},
+    "task_id": {"type": "string", "pattern": "^\\S+$"},
+    "work_item_id": {"type": "string", "pattern": "^\\S+$"},
+    "risk_class": {"type": "string", "enum": ["medium", "high"]},
+    "profile_ref": {
+      "type": "string",
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[^\\s#]+$"
+    },
+    "source_revision": {"type": "string", "pattern": "^[0-9a-fA-F]{40}$"},
+    "baseline_evidence": {
+      "type": "object",
+      "required": ["work_proof_marker_ref", "work_proof_marker_sha256"],
+      "properties": {
+        "work_proof_marker_ref": {
+          "type": "string",
+          "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[^\\s#]+$"
+        },
+        "work_proof_marker_sha256": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "phase": {"const": "pre_implementation"},
+    "artifact_lifecycle_matrix": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "artifact",
+          "producer_or_authority",
+          "mutable_owner",
+          "states",
+          "freshness",
+          "integrity",
+          "authenticity",
+          "actionable_states",
+          "transitions_and_recovery"
+        ],
+        "properties": {
+          "artifact": {"type": "string", "pattern": "\\S"},
+          "producer_or_authority": {"type": "string", "pattern": "\\S"},
+          "mutable_owner": {"type": "string", "pattern": "\\S"},
+          "states": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "enum": ["generated", "persisted", "imported", "replay_only", "actionable"]
+            }
+          },
+          "freshness": {"type": "string", "pattern": "\\S"},
+          "integrity": {"type": "string", "pattern": "\\S"},
+          "authenticity": {"type": "string", "pattern": "\\S"},
+          "actionable_states": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {"type": "string", "enum": ["generated", "persisted", "imported", "replay_only", "actionable"]}
+          },
+          "transitions_and_recovery": {
+            "type": "array",
+            "minItems": 1,
+            "items": {"type": "string", "pattern": "\\S"}
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "authorization_boundary_trace": {
+      "type": "array",
+      "minItems": 7,
+      "maxItems": 7,
+      "uniqueItems": true,
+      "allOf": [
+        {"contains": {"type": "object", "properties": {"stage": {"const": "input_validation"}}, "required": ["stage"]}},
+        {"contains": {"type": "object", "properties": {"stage": {"const": "reuse_or_persistence"}}, "required": ["stage"]}},
+        {"contains": {"type": "object", "properties": {"stage": {"const": "plan_authorization"}}, "required": ["stage"]}},
+        {"contains": {"type": "object", "properties": {"stage": {"const": "workspace_mutation"}}, "required": ["stage"]}},
+        {"contains": {"type": "object", "properties": {"stage": {"const": "command_execution"}}, "required": ["stage"]}},
+        {"contains": {"type": "object", "properties": {"stage": {"const": "remote_effect"}}, "required": ["stage"]}},
+        {"contains": {"type": "object", "properties": {"stage": {"const": "external_status"}}, "required": ["stage"]}}
+      ],
+      "items": {
+        "type": "object",
+        "required": ["stage", "authority", "input", "decision", "denied_behavior"],
+        "properties": {
+          "stage": {
+            "type": "string",
+            "enum": [
+              "input_validation",
+              "reuse_or_persistence",
+              "plan_authorization",
+              "workspace_mutation",
+              "command_execution",
+              "remote_effect",
+              "external_status"
+            ]
+          },
+          "authority": {"type": "string", "pattern": "\\S"},
+          "input": {"type": "string", "pattern": "\\S"},
+          "decision": {"type": "string", "enum": ["allow", "deny", "not_applicable"]},
+          "denied_behavior": {"type": "string", "pattern": "\\S"}
+        },
+        "additionalProperties": false
+      }
+    },
+    "normative_adversarial_matrix": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "invariant",
+          "positive",
+          "missing",
+          "stale",
+          "contradictory",
+          "tampered",
+          "transition_or_recovery",
+          "concurrency"
+        ],
+        "properties": {
+          "invariant": {"type": "string", "pattern": "\\S"},
+          "positive": {"type": "string", "pattern": "\\S"},
+          "missing": {"type": "string", "pattern": "\\S"},
+          "stale": {"type": "string", "pattern": "\\S"},
+          "contradictory": {"type": "string", "pattern": "\\S"},
+          "tampered": {"type": "string", "pattern": "\\S"},
+          "transition_or_recovery": {"type": "string", "pattern": "\\S"},
+          "concurrency": {"type": "string", "pattern": "\\S"}
+        },
+        "additionalProperties": false
+      }
+    },
+    "external_effect_preflight": {
+      "type": "object",
+      "required": ["actions"],
+      "properties": {
+        "actions": {
+          "type": "array",
+          "minItems": 7,
+          "maxItems": 7,
+          "allOf": [
+            {"contains": {"type": "object", "properties": {"action": {"const": "agent_runner"}}, "required": ["action"]}},
+            {"contains": {"type": "object", "properties": {"action": {"const": "model"}}, "required": ["action"]}},
+            {"contains": {"type": "object", "properties": {"action": {"const": "repository_command"}}, "required": ["action"]}},
+            {"contains": {"type": "object", "properties": {"action": {"const": "package_registry"}}, "required": ["action"]}},
+            {"contains": {"type": "object", "properties": {"action": {"const": "provider_sandbox"}}, "required": ["action"]}},
+            {"contains": {"type": "object", "properties": {"action": {"const": "github"}}, "required": ["action"]}},
+            {"contains": {"type": "object", "properties": {"action": {"const": "provider_status"}}, "required": ["action"]}}
+          ],
+          "items": {
+            "type": "object",
+            "required": ["action", "disposition", "authority_ref", "invalid_authority_effect"],
+            "properties": {
+              "action": {
+                "type": "string",
+                "enum": ["agent_runner", "model", "repository_command", "package_registry", "provider_sandbox", "github", "provider_status"]
+              },
+              "disposition": {"type": "string", "enum": ["authorized", "blocked", "not_applicable"]},
+              "authority_ref": {"type": ["string", "null"]},
+              "invalid_authority_effect": {
+                "type": "object",
+                "required": ["calls", "spend_usd", "writes"],
+                "properties": {
+                  "calls": {"const": 0},
+                  "spend_usd": {"const": 0},
+                  "writes": {"const": 0}
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false,
+            "allOf": [
+              {
+                "if": {"properties": {"disposition": {"const": "authorized"}}, "required": ["disposition"]},
+                "then": {
+                  "properties": {
+                    "authority_ref": {
+                      "type": "string",
+                      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[^\\s#]+$"
+                    }
+                  }
+                },
+                "else": {"properties": {"authority_ref": {"type": "null"}}}
+              }
+            ]
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "persistence_threat_matrix": {
+      "type": "array",
+      "minItems": 6,
+      "maxItems": 6,
+      "uniqueItems": true,
+      "allOf": [
+        {"contains": {"type": "object", "properties": {"threat": {"const": "integrity"}}, "required": ["threat"]}},
+        {"contains": {"type": "object", "properties": {"threat": {"const": "authenticity"}}, "required": ["threat"]}},
+        {"contains": {"type": "object", "properties": {"threat": {"const": "freshness"}}, "required": ["threat"]}},
+        {"contains": {"type": "object", "properties": {"threat": {"const": "completeness"}}, "required": ["threat"]}},
+        {"contains": {"type": "object", "properties": {"threat": {"const": "ordering"}}, "required": ["threat"]}},
+        {"contains": {"type": "object", "properties": {"threat": {"const": "anti_rollback"}}, "required": ["threat"]}}
+      ],
+      "items": {
+        "type": "object",
+        "required": ["threat", "attack_cases", "expected_disposition"],
+        "properties": {
+          "threat": {"type": "string", "enum": ["integrity", "authenticity", "freshness", "completeness", "ordering", "anti_rollback"]},
+          "attack_cases": {"type": "array", "minItems": 1, "items": {"type": "string", "pattern": "\\S"}},
+          "expected_disposition": {"type": "string", "enum": ["accept", "reject", "abstain", "recover"]}
+        },
+        "additionalProperties": false
+      }
+    },
+    "review_convergence": {
+      "type": "object",
+      "required": ["pre_implementation_design_pass", "same_subsystem_p1_rounds_seen", "decision"],
+      "properties": {
+        "pre_implementation_design_pass": {"type": "string", "enum": ["pass", "blocked"]},
+        "same_subsystem_p1_rounds_seen": {"type": "integer", "minimum": 0, "maximum": 2},
+        "decision": {"type": "string", "enum": ["proceed", "redesign"]}
+      },
+      "additionalProperties": false
+    },
+    "residual_risks": {"type": "array", "items": {"type": "string"}},
+    "created_at": {"type": "string", "format": "date-time"}
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"risk_class": {"const": "high"}}, "required": ["risk_class"]},
+      "then": {"required": ["external_effect_preflight", "persistence_threat_matrix"]}
+    },
+    {
+      "if": {
+        "properties": {
+          "review_convergence": {
+            "type": "object",
+            "properties": {"pre_implementation_design_pass": {"const": "blocked"}},
+            "required": ["pre_implementation_design_pass"]
+          }
+        },
+        "required": ["review_convergence"]
+      },
+      "then": {
+        "properties": {
+          "review_convergence": {
+            "type": "object",
+            "properties": {"decision": {"const": "redesign"}},
+            "required": ["decision"]
+          }
+        }
+      }
+    }
+  ],
+  "additionalProperties": false
+}

@@ -26,6 +26,7 @@
     "pack:check": "pnpm --recursive --if-present pack:check",
     "plan:check": "node scripts/plan.mjs check",
     "plan:write": "node scripts/plan.mjs write",
+    "semantic-risk:design": "node scripts/semantic-risk.mjs design",
     "task:compile": "node scripts/task.mjs compile",
     "task:next": "node scripts/task.mjs next",
     "test": "vitest run",
@@ -50,6 +51,7 @@
     "prettier": "3.9.6",
     "typescript": "6.0.3",
     "typescript-eslint": "8.66.0",
-    "vitest": "4.1.10"
+    "vitest": "4.1.10",
+    "yaml": "2.9.0"
   }
 }

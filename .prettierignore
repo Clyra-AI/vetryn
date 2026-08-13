@@ -3,3 +3,5 @@ coverage/
 dist/
 node_modules/
 pnpm-lock.yaml
+product/plans/schemas/semantic-risk-report-v0.1.schema.json
+product/plans/schemas/semantic-risk-report-v0.2.schema.json
