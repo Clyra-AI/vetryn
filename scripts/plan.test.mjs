@@ -890,16 +890,20 @@ describe("implementation plan validator", () => {
     expect(v106.dependsOn).toContainEqual({ taskId: "M0-11", kind: "hard" });
     expect(ledger.items.filter((item) => item.taskId === "M0-11")).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ id: "PROCESS-010", status: "planned", waivable: false }),
-        expect.objectContaining({ id: "PROCESS-011", status: "planned", waivable: false }),
+        expect.objectContaining({ id: "PROCESS-010", status: "accepted", waivable: false }),
+        expect.objectContaining({ id: "PROCESS-011", status: "accepted", waivable: false }),
       ]),
     );
     expect(state).toMatchObject({
       taskId: "M0-11",
-      revision: 0,
-      state: "planned",
-      attempt: 0,
-      candidate: null,
+      revision: 1,
+      state: "accepted",
+      attempt: 1,
+      candidate: {
+        baseCommit: "372d27edbabd8f2ef9213bda2fc235cd421042e9",
+        commit: "953c9fc2af05e99005921cb059cc976febc0be03",
+        executor: "implementation-agent",
+      },
     });
   });
 

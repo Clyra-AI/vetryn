@@ -1,0 +1,74 @@
+{
+  "artifact_type": "review_report",
+  "schema_version": "0.1",
+  "task_id": "M0-11",
+  "work_item_id": "M0-11",
+  "review_type": "architecture",
+  "review_scope": [
+    ".agents/skills/vetryn-continue-next",
+    ".factory/profile.yaml",
+    "scripts/continue-next-skill.test.mjs",
+    "scripts/task.mjs",
+    "docs/adr/0022-separate-continuation-procedure-from-run-authority.md"
+  ],
+  "reviewer_class": "peer_agent",
+  "reviewer_id": "independent-reviewer:codex-local",
+  "producer": {
+    "worker": "code-review",
+    "producer_id": "independent-reviewer:codex-local",
+    "producer_class": "peer_agent"
+  },
+  "current_work": {
+    "validation_run_id": "validation:2026-08-13T20:55:39Z:M0-11",
+    "candidate_digest": "sha256:8c1ff982d1d43638bc299311712875aeff5ed210ed27f20c16495ce00cbc5a9d",
+    "work_proof_markers": [
+      {
+        "ref": "product/plans/oss-v1/evidence/lifecycle/M0-11/953c9fc2af05e99005921cb059cc976febc0be03/work_proof_marker.json",
+        "sha256": "sha256:059982f5c3ddfc853edd03202bf975cbd9082eeecfe383d8e1575d11af15f47b"
+      }
+    ]
+  },
+  "risk_class": "high",
+  "context_isolation": {
+    "allowed_sources": ["task_packet", "diff", "repo_contracts", "tests", "validation_report"],
+    "disallowed_sources": ["private_builder_notes", "unpromoted_chat_reasoning"],
+    "builder_notes_authoritative": false
+  },
+  "findings": [],
+  "verdict": "approved",
+  "required_fixes": [],
+  "residual_risks": [
+    "POSIX-only portable-pack execution is explicit and returns a typed unsupported-platform result elsewhere.",
+    "Protected delivery remains responsible for remote freshness and merged-main CI."
+  ],
+  "evidence_refs": [
+    "ev-m0-11-repo-check-953c9fc",
+    "ev-m0-11-contracts-953c9fc",
+    "product/plans/oss-v1/evidence/lifecycle/M0-11/953c9fc2af05e99005921cb059cc976febc0be03/validation_report.json"
+  ],
+  "work_proof_marker_refs": [
+    "product/plans/oss-v1/evidence/lifecycle/M0-11/953c9fc2af05e99005921cb059cc976febc0be03/work_proof_marker.json"
+  ],
+  "approval_effect": {
+    "promotion_decision": "ready_for_pr",
+    "approvals_granted": ["architecture_review_passed", "security_review_passed"],
+    "blocks_promotion": false
+  },
+  "systems_questions": {
+    "state_impact": [
+      "Adds one read-only preflight result and leaves mutation authority outside the skill."
+    ],
+    "source_of_truth_changes": [
+      "The repository-local Factory profile and continuation ADR become the portable execution contract."
+    ],
+    "feedback_plan": ["Protected CI validates the PR; the next run reports the newly legal task."],
+    "blast_radius": [
+      "Agent workflow and delivery policy only; packages, examples, and workflows are unchanged."
+    ],
+    "rollback_or_deletion_test": [
+      "Removing the skill makes preflight fail closed without affecting product behavior."
+    ],
+    "system_model_summary": "Canonical repository state selects one task; authenticated installed workers execute only after current per-run maintainer authority."
+  },
+  "created_at": "2026-08-13T21:01:33Z"
+}

@@ -2,37 +2,41 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "M0-11",
-  "revision": 0,
-  "state": "planned",
-  "attempt": 0,
-  "candidate": null,
+  "revision": 1,
+  "state": "accepted",
+  "attempt": 1,
+  "candidate": {
+    "baseCommit": "372d27edbabd8f2ef9213bda2fc235cd421042e9",
+    "commit": "953c9fc2af05e99005921cb059cc976febc0be03",
+    "executor": "implementation-agent"
+  },
   "criteria": [
     {
       "criterionId": "PROCESS-010",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-11-contracts-953c9fc"]
     },
     {
       "criterionId": "PROCESS-011",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-11-repo-check-953c9fc"]
     }
   ],
   "gates": [
     {
       "gateId": "QG-PLAN-CHECK",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-11-plan-check-953c9fc"]
     },
     {
       "gateId": "QG-REPO-CHECK",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-11-repo-check-953c9fc"]
     },
     {
       "gateId": "QG-CONTRACTS",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-11-contracts-953c9fc"]
     },
     {
       "gateId": "QG-INDEPENDENT-VERIFY",
@@ -55,6 +59,13 @@
       "at": "2026-08-13T17:32:17Z",
       "actor": "planning-agent",
       "reason": "Maintainer requested a portable repository-owned continuation workflow before V1-06."
+    },
+    {
+      "from": "planned",
+      "to": "accepted",
+      "at": "2026-08-13T21:01:33Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer accepted the exact candidate after all non-waivable command gates passed and independent exact-candidate review found no P0 or P1 issue under ADR 0009."
     }
   ]
 }
