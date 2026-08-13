@@ -68,6 +68,11 @@ const CANONICAL_RESUME_POLICY_PATHS = [
   "scripts/semantic-risk.mjs",
   "scripts/task.mjs",
 ];
+const ADAPTER_DEPENDENCY_PATHS = ["prettier.config.mjs", "scripts/semantic-risk.mjs"];
+const PROMOTION_TAIL_SHARED_PATHS = [
+  "product/plans/oss-v1/acceptance-ledger.json",
+  "product/plans/oss-v1/progress.json",
+];
 const REQUIRED_PROFILE_FIELDS = new Map([
   ["project", "nonempty_string"],
   ["product_name", "nonempty_string"],
@@ -862,7 +867,8 @@ function verifyFactoryPacks(root, profile) {
   };
 }
 
-function runNodeTwice(root, scriptRef, args, check) {
+function runNodeTwice(root, profile, scriptRef, args, check) {
+  authenticateAdapterDependencies(root, profile);
   const script = resolveInside(root, scriptRef, check);
   const options = {
     cwd: root,
@@ -871,11 +877,22 @@ function runNodeTwice(root, scriptRef, args, check) {
     check,
   };
   const first = run(process.execPath, [script, ...args], options);
+  authenticateAdapterDependencies(root, profile);
   const second = run(process.execPath, [script, ...args], options);
   if (!isDeepStrictEqual(first, second)) {
     throw new PreflightBlock(`${check}_nondeterministic`, check);
   }
   return first;
+}
+
+function authenticateAdapterDependencies(root, profile) {
+  for (const relative of [
+    profile.task_adapter.plan_script,
+    profile.task_adapter.task_script,
+    ...ADAPTER_DEPENDENCY_PATHS,
+  ]) {
+    trackedHeadBytes(root, relative, "adapter_dependencies");
+  }
 }
 
 function parseJsonOutput(result, check) {
@@ -889,6 +906,7 @@ function parseJsonOutput(result, check) {
 function deriveTask(root, profile) {
   runNodeTwice(
     root,
+    profile,
     profile.task_adapter.plan_script,
     profile.task_adapter.plan_check_args,
     "plan_check",
@@ -896,6 +914,7 @@ function deriveTask(root, profile) {
   const next = parseJsonOutput(
     runNodeTwice(
       root,
+      profile,
       profile.task_adapter.task_script,
       profile.task_adapter.next_args,
       "task_next",
@@ -941,6 +960,7 @@ function deriveTask(root, profile) {
   const compile = parseJsonOutput(
     runNodeTwice(
       root,
+      profile,
       profile.task_adapter.task_script,
       [...profile.task_adapter.compile_args, taskId],
       "task_compile",
@@ -1194,6 +1214,247 @@ function assertCanonicalResumePolicy(root, snapshot, canonicalDefault) {
   }
 }
 
+function changedPathsAcrossCommits(root, base, head, check) {
+  const commits = git(root, ["rev-list", "--reverse", "--topo-order", `${base}..${head}`], {
+    check,
+  })
+    .stdout.split("\n")
+    .filter(Boolean);
+  const changedPaths = new Set();
+  for (const commit of commits) {
+    if (!SHA_PATTERN.test(commit)) throw new PreflightBlock("invalid_branch_history", check);
+    const [resolvedCommit, firstParent] = git(root, ["rev-list", "--parents", "-n", "1", commit], {
+      check,
+    })
+      .stdout.trim()
+      .split(" ");
+    if (resolvedCommit !== commit || !firstParent || !SHA_PATTERN.test(firstParent)) {
+      throw new PreflightBlock("invalid_branch_history", check);
+    }
+    for (const changedPath of git(
+      root,
+      [
+        "diff",
+        "--name-only",
+        "--no-renames",
+        "--no-ext-diff",
+        "--no-textconv",
+        "-z",
+        `${firstParent}..${commit}`,
+        "--",
+      ],
+      { check },
+    )
+      .stdout.split("\0")
+      .filter(Boolean)) {
+      changedPaths.add(changedPath);
+    }
+  }
+  return { changedPaths, commits };
+}
+
+function promotionJson(root, relative) {
+  try {
+    return JSON.parse(trackedHeadBytes(root, relative, "canonical_policy").toString("utf8"));
+  } catch (error) {
+    if (error instanceof PreflightBlock) throw error;
+    throw new PreflightBlock("invalid_promotion_artifact", "canonical_policy");
+  }
+}
+
+function promotionTailPathAllowed(root, relative, taskId, candidateCommit, evidenceRefs) {
+  if (
+    PROMOTION_TAIL_SHARED_PATHS.includes(relative) ||
+    relative === `product/plans/oss-v1/state/${taskId}.json`
+  ) {
+    return true;
+  }
+  const evidenceRoot = "product/plans/oss-v1/evidence/";
+  if (!relative.startsWith(evidenceRoot)) return false;
+  if (!relative.startsWith(`${evidenceRoot}lifecycle/`)) {
+    return [...evidenceRefs].some(
+      (evidenceRef) => relative === `${evidenceRoot}${evidenceRef}.json`,
+    );
+  }
+  const currentLifecycleRoot = `${evidenceRoot}lifecycle/${taskId}/${candidateCommit}/`;
+  const currentNames = new Set([
+    "canonical_promotion.json",
+    "review_report.json",
+    "validation_report.json",
+    "work_proof_marker.json",
+  ]);
+  if (relative.startsWith(currentLifecycleRoot)) {
+    return currentNames.has(relative.slice(currentLifecycleRoot.length));
+  }
+  const historicalPromotion = new RegExp(
+    `^${evidenceRoot}lifecycle/${taskId}/[0-9a-f]{40}/canonical_promotion\\.json$`,
+    "u",
+  );
+  if (!historicalPromotion.test(relative)) return false;
+  try {
+    lstatSync(path.join(root, relative));
+    return false;
+  } catch {
+    return true;
+  }
+}
+
+function validateAcceptedPromotionArtifacts(root, state) {
+  const candidate = state.candidate;
+  if (
+    !Array.isArray(state.criteria) ||
+    state.criteria.length === 0 ||
+    new Set(state.criteria.map((criterion) => criterion?.criterionId)).size !==
+      state.criteria.length ||
+    state.criteria.some(
+      (criterion) =>
+        typeof criterion?.criterionId !== "string" ||
+        !criterion.criterionId ||
+        criterion.status !== "pass" ||
+        !Array.isArray(criterion.evidenceRefs) ||
+        criterion.evidenceRefs.length === 0 ||
+        new Set(criterion.evidenceRefs).size !== criterion.evidenceRefs.length,
+    )
+  ) {
+    throw new PreflightBlock("invalid_promotion_criteria", "canonical_policy");
+  }
+  const evidenceRefs = new Set(
+    [...state.criteria, ...state.gates]
+      .filter((record) => record.status === "pass" || record.status === "approved")
+      .flatMap((record) => record.evidenceRefs),
+  );
+  if (evidenceRefs.size === 0) {
+    throw new PreflightBlock("invalid_promotion_evidence", "canonical_policy");
+  }
+  const ledger = promotionJson(root, "product/plans/oss-v1/acceptance-ledger.json");
+  const taskItems = Array.isArray(ledger.items)
+    ? ledger.items.filter((item) => item?.taskId === state.taskId)
+    : [];
+  const criteriaById = new Map(
+    state.criteria.map((criterion) => [criterion.criterionId, criterion]),
+  );
+  if (
+    taskItems.length !== state.criteria.length ||
+    new Set(taskItems.map((item) => item?.id)).size !== taskItems.length ||
+    taskItems.some((item) => !criteriaById.has(item?.id)) ||
+    taskItems.some((item) => {
+      const criterion = criteriaById.get(item.id);
+      return (
+        item.status !== "accepted" ||
+        !Array.isArray(item.evidenceRefs) ||
+        item.evidenceRefs.length === 0 ||
+        !isDeepStrictEqual(item.evidenceRefs, criterion.evidenceRefs)
+      );
+    })
+  ) {
+    throw new PreflightBlock("invalid_promotion_ledger", "canonical_policy");
+  }
+  const progress = promotionJson(root, "product/plans/oss-v1/progress.json");
+  const progressTask = Array.isArray(progress.tasks)
+    ? progress.tasks.find((task) => task?.taskId === state.taskId)
+    : null;
+  if (
+    !progressTask ||
+    progressTask.state !== "accepted" ||
+    progressTask.acceptedCriteria !== state.criteria.length ||
+    progressTask.totalCriteria !== state.criteria.length
+  ) {
+    throw new PreflightBlock("invalid_promotion_progress", "canonical_policy");
+  }
+  for (const evidenceRef of evidenceRefs) {
+    const evidence = promotionJson(root, `product/plans/oss-v1/evidence/${evidenceRef}.json`);
+    if (
+      evidence.id !== evidenceRef ||
+      evidence.taskId !== state.taskId ||
+      evidence.commit !== candidate.commit ||
+      evidence.result?.status !== "pass"
+    ) {
+      throw new PreflightBlock("invalid_promotion_evidence", "canonical_policy");
+    }
+  }
+  const promotionRef = `product/plans/oss-v1/evidence/lifecycle/${state.taskId}/${candidate.commit}/canonical_promotion.json`;
+  const promotion = promotionJson(root, promotionRef);
+  if (
+    promotion.taskId !== state.taskId ||
+    promotion.candidateCommit !== candidate.commit ||
+    promotion.decision !== "accepted" ||
+    !Array.isArray(promotion.evidenceRefs) ||
+    [...evidenceRefs].some((evidenceRef) => !promotion.evidenceRefs.includes(evidenceRef))
+  ) {
+    throw new PreflightBlock("invalid_canonical_promotion", "canonical_policy");
+  }
+  return evidenceRefs;
+}
+
+function assertAcceptedPromotionTail(root, snapshot, canonicalDefault) {
+  if (!snapshot.branch) {
+    throw new PreflightBlock("worker_promotion_tail_not_authenticated", "canonical_policy");
+  }
+  const stateRefs = git(root, ["ls-files", "-z", "--", "product/plans/oss-v1/state/*.json"], {
+    check: "canonical_policy",
+  })
+    .stdout.split("\0")
+    .filter(Boolean);
+  const matches = [];
+  for (const stateRef of stateRefs) {
+    const state = promotionJson(root, stateRef);
+    const candidate = state?.candidate;
+    if (
+      state?.state !== "accepted" ||
+      typeof state?.taskId !== "string" ||
+      !candidate ||
+      candidate.baseCommit !== canonicalDefault ||
+      typeof candidate.commit !== "string" ||
+      !SHA_PATTERN.test(candidate.commit) ||
+      candidate.commit === canonicalDefault
+    ) {
+      continue;
+    }
+    const defaultAncestor = git(
+      root,
+      ["merge-base", "--is-ancestor", canonicalDefault, candidate.commit],
+      { accepted: [0, 1], check: "canonical_policy" },
+    );
+    const candidateAncestor = git(
+      root,
+      ["merge-base", "--is-ancestor", candidate.commit, snapshot.head],
+      { accepted: [0, 1], check: "canonical_policy" },
+    );
+    if (defaultAncestor.status !== 0 || candidateAncestor.status !== 0) continue;
+    const evidenceRefs = validateAcceptedPromotionArtifacts(root, state);
+    const tail = changedPathsAcrossCommits(
+      root,
+      candidate.commit,
+      snapshot.head,
+      "canonical_policy",
+    );
+    if (
+      tail.commits.length > 0 &&
+      tail.changedPaths.has(stateRef) &&
+      tail.changedPaths.has("product/plans/oss-v1/acceptance-ledger.json") &&
+      [...tail.changedPaths].every((relative) =>
+        promotionTailPathAllowed(root, relative, state.taskId, candidate.commit, evidenceRefs),
+      )
+    ) {
+      matches.push(state.taskId);
+    }
+  }
+  if (matches.length !== 1) {
+    throw new PreflightBlock("worker_promotion_tail_not_authenticated", "canonical_policy");
+  }
+}
+
+function assertWorkerReauthenticationPolicy(root, snapshot, canonicalDefault) {
+  try {
+    assertCanonicalResumePolicy(root, snapshot, canonicalDefault);
+  } catch (error) {
+    if (!(error instanceof PreflightBlock) || error.code !== "branch_policy_inputs_not_canonical") {
+      throw error;
+    }
+    assertAcceptedPromotionTail(root, snapshot, canonicalDefault);
+  }
+}
+
 function assertBranchState(root, profile, snapshot, derived, canonicalDefault) {
   if (derived.source === "next_legal") {
     if (snapshot.branch !== profile.default_branch || snapshot.head !== canonicalDefault) {
@@ -1356,9 +1617,12 @@ async function preflight({ workerPacksOnly = false } = {}) {
     result.repository.canonicalInputsDigest = canonicalInputsDigest(root, profile);
     addCheck(result, "profile", "pass", "profile_authenticated");
     addCheck(result, "canonical_inputs", "pass", "canonical_inputs_authenticated");
+    authenticateAdapterDependencies(root, profile);
+    addCheck(result, "adapter_dependencies", "pass", "adapter_dependencies_authenticated");
 
     const canonicalDefault = resolveCanonicalDefault(root, profile);
-    assertCanonicalResumePolicy(root, before, canonicalDefault);
+    if (workerPacksOnly) assertWorkerReauthenticationPolicy(root, before, canonicalDefault);
+    else assertCanonicalResumePolicy(root, before, canonicalDefault);
     addCheck(result, "canonical_policy", "pass", "canonical_policy_authenticated");
 
     result.resolved.factoryPacks = verifyFactoryPacks(root, profile);

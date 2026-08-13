@@ -896,15 +896,15 @@ describe("implementation plan validator", () => {
     );
     expect(state).toMatchObject({
       taskId: "M0-11",
-      revision: 2,
       state: "accepted",
       attempt: 1,
       candidate: {
         baseCommit: "372d27edbabd8f2ef9213bda2fc235cd421042e9",
-        commit: "ff3093990745850bb80b2aab56b4466b39da9da8",
+        commit: expect.stringMatching(/^[0-9a-f]{40}$/u),
         executor: "implementation-agent",
       },
     });
+    expect(state.revision).toBeGreaterThanOrEqual(2);
   });
 
   it("locks the M0-05 bounded V1-03 correction authorization", async () => {

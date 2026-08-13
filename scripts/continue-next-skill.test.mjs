@@ -374,9 +374,11 @@ function makeFixture(options = {}) {
   write(root, "MAINTAINERS.md", "- fixture-maintainer\n");
   write(root, "docs/oss-v1.md", "# Fixture product\n");
   write(root, "docs/architecture.md", "# Fixture architecture\n");
+  write(root, "prettier.config.mjs", "export default {};\n");
   write(root, "product/plans/oss-v1/plan.json", "{}\n");
   write(root, "product/plans/schemas/task-packet.schema.json", "{}\n");
   write(root, "scripts/plan.mjs", fakePlanScript);
+  write(root, "scripts/semantic-risk.mjs", "export const semanticRiskRefs = () => ({});\n");
   write(root, "scripts/task.mjs", fakeTaskScript);
   write(root, "index-target.txt", "initial\n");
   write(
@@ -650,6 +652,26 @@ describe("vetryn-continue-next preflight", () => {
     });
   });
 
+  it.each(["--assume-unchanged", "--skip-worktree"])(
+    "authenticates adapter imports hidden by %s before execution",
+    (indexFlag) => {
+      const fixture = makeFixture();
+      git(fixture.root, "update-index", indexFlag, "scripts/semantic-risk.mjs");
+      writeFileSync(
+        path.join(fixture.root, "scripts/semantic-risk.mjs"),
+        "throw new Error('hidden adapter mutation executed');\n",
+      );
+      expect(git(fixture.root, "status", "--short")).toBe("");
+
+      const result = runPreflight(fixture);
+      expect(result.status).toBe(2);
+      expect(result.json.blockers).toContainEqual({
+        check: "adapter_dependencies",
+        code: "required_file_differs_from_head",
+      });
+    },
+  );
+
   it.each([
     ["no_legal_task", { activeTasks: [], nextLegalTasks: [], mutation: null, race: null }],
     [
@@ -785,6 +807,161 @@ describe("vetryn-continue-next preflight", () => {
     const replaced = runPreflight(fixture, {}, [], ["--worker-packs-only"]);
     expect(replaced.status).toBe(2);
     expect(replaced.json.blockers.some((blocker) => blocker.check === "factory_packs")).toBe(true);
+  });
+
+  it("allows only an accepted candidate's bounded promotion tail during worker reauthentication", () => {
+    const fixture = makeFixture();
+    const baseCommit = git(fixture.root, "rev-parse", "main");
+    git(fixture.root, "switch", "-c", "codex/promoted-fixture");
+    write(fixture.root, "src/implementation.txt", "candidate\n");
+    git(fixture.root, "add", "src/implementation.txt");
+    git(fixture.root, "commit", "-m", "candidate implementation");
+    const candidateCommit = git(fixture.root, "rev-parse", "HEAD");
+    const taskId = "TASK-ALPHA";
+    const evidenceRef = "ev-task-alpha-check";
+    write(
+      fixture.root,
+      `product/plans/oss-v1/state/${taskId}.json`,
+      `${JSON.stringify({
+        taskId,
+        state: "accepted",
+        candidate: { baseCommit, commit: candidateCommit, executor: "fixture-executor" },
+        criteria: [{ criterionId: "PROCESS-TEST", status: "pass", evidenceRefs: [evidenceRef] }],
+        gates: [{ gateId: "QG-TEST", status: "pass", evidenceRefs: [evidenceRef] }],
+      })}\n`,
+    );
+    write(
+      fixture.root,
+      "product/plans/oss-v1/acceptance-ledger.json",
+      `${JSON.stringify({
+        items: [{ id: "PROCESS-TEST", taskId, status: "accepted", evidenceRefs: [evidenceRef] }],
+      })}\n`,
+    );
+    write(
+      fixture.root,
+      "product/plans/oss-v1/progress.json",
+      `${JSON.stringify({
+        tasks: [{ taskId, state: "accepted", acceptedCriteria: 1, totalCriteria: 1 }],
+      })}\n`,
+    );
+    write(
+      fixture.root,
+      `product/plans/oss-v1/evidence/${evidenceRef}.json`,
+      `${JSON.stringify({
+        id: evidenceRef,
+        taskId,
+        commit: candidateCommit,
+        result: { status: "pass" },
+      })}\n`,
+    );
+    write(
+      fixture.root,
+      `product/plans/oss-v1/evidence/lifecycle/${taskId}/${candidateCommit}/canonical_promotion.json`,
+      `${JSON.stringify({
+        taskId,
+        candidateCommit,
+        decision: "accepted",
+        evidenceRefs: [evidenceRef],
+      })}\n`,
+    );
+    git(fixture.root, "add", "product/plans/oss-v1");
+    git(fixture.root, "commit", "-m", "promote candidate");
+
+    const authenticated = runPreflight(fixture, {}, [], ["--worker-packs-only"]);
+    expect(authenticated.status).toBe(0);
+    expect(authenticated.json.status).toBe("workers_authenticated");
+
+    write(
+      fixture.root,
+      "product/plans/oss-v1/evidence/ev-other-task.json",
+      `${JSON.stringify({
+        id: "ev-other-task",
+        taskId: "TASK-OTHER",
+        commit: candidateCommit,
+        result: { status: "pass" },
+      })}\n`,
+    );
+    git(fixture.root, "add", "product/plans/oss-v1/evidence/ev-other-task.json");
+    git(fixture.root, "commit", "-m", "add unrelated promotion evidence");
+    const rejected = runPreflight(fixture, {}, [], ["--worker-packs-only"]);
+    expect(rejected.status).toBe(2);
+    expect(rejected.json.blockers).toContainEqual({
+      check: "canonical_policy",
+      code: "worker_promotion_tail_not_authenticated",
+    });
+  });
+
+  it("rejects inconsistent promotion ledger during worker reauthentication", () => {
+    const fixture = makeFixture();
+    const baseCommit = git(fixture.root, "rev-parse", "main");
+    git(fixture.root, "switch", "-c", "codex/invalid-promotion");
+    git(fixture.root, "commit", "--allow-empty", "-m", "candidate implementation");
+    const candidateCommit = git(fixture.root, "rev-parse", "HEAD");
+    const taskId = "TASK-ALPHA";
+    write(
+      fixture.root,
+      `product/plans/oss-v1/state/${taskId}.json`,
+      `${JSON.stringify({
+        taskId,
+        state: "accepted",
+        candidate: { baseCommit, commit: candidateCommit, executor: "fixture-executor" },
+        criteria: [
+          { criterionId: "PROCESS-ONE", status: "pass", evidenceRefs: ["ev-check"] },
+          { criterionId: "PROCESS-TWO", status: "pass", evidenceRefs: ["ev-check"] },
+        ],
+        gates: [],
+      })}\n`,
+    );
+    write(
+      fixture.root,
+      "product/plans/oss-v1/acceptance-ledger.json",
+      `${JSON.stringify({
+        items: [
+          {
+            id: "PROCESS-ONE",
+            taskId,
+            status: "accepted",
+            evidenceRefs: ["ev-check"],
+          },
+        ],
+      })}\n`,
+    );
+    write(
+      fixture.root,
+      "product/plans/oss-v1/progress.json",
+      `${JSON.stringify({
+        tasks: [{ taskId, state: "accepted", acceptedCriteria: 2, totalCriteria: 2 }],
+      })}\n`,
+    );
+    write(
+      fixture.root,
+      "product/plans/oss-v1/evidence/ev-check.json",
+      `${JSON.stringify({
+        id: "ev-check",
+        taskId,
+        commit: candidateCommit,
+        result: { status: "pass" },
+      })}\n`,
+    );
+    write(
+      fixture.root,
+      `product/plans/oss-v1/evidence/lifecycle/${taskId}/${candidateCommit}/canonical_promotion.json`,
+      `${JSON.stringify({
+        taskId,
+        candidateCommit,
+        decision: "accepted",
+        evidenceRefs: ["ev-check"],
+      })}\n`,
+    );
+    git(fixture.root, "add", "product/plans/oss-v1");
+    git(fixture.root, "commit", "-m", "record inconsistent promotion");
+
+    const rejected = runPreflight(fixture, {}, [], ["--worker-packs-only"]);
+    expect(rejected.status).toBe(2);
+    expect(rejected.json.blockers).toContainEqual({
+      check: "canonical_policy",
+      code: "invalid_promotion_ledger",
+    });
   });
 
   it.each(["profile", "manifest", "verifier"])(
