@@ -128,6 +128,8 @@ the window end or point `observedAt` must remain within the workload bound, whil
 evaluation times remain within their bounds. Source, fixture, evaluator, catalog, and pricing identities must
 exactly match the authorized inputs. Any temporal or identity failure prevents patch authorization, and invalid
 workload evidence falls back to normalized unit economics. Observed evaluation spend remains separate.
+Projected workload economics never extrapolate observed eval-run spend. Catalog-bound projections, observed
+evaluation spend, and later realized billing or runtime corroboration are three distinct evidence tiers.
 
 ### Patcher and GitHub integration
 

@@ -2,7 +2,7 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "V1-07",
-  "revision": 3,
+  "revision": 4,
   "state": "planned",
   "attempt": 0,
   "candidate": null,
@@ -106,6 +106,13 @@
       "at": "2026-08-13T00:22:00Z",
       "actor": "davidahmann",
       "reason": "Bound report generation and later authorization to trusted clocks, explicit catalog, evaluation, report, and workload age ceilings, and exact current evidence identities."
+    },
+    {
+      "from": "planned",
+      "to": "planned",
+      "at": "2026-08-13T00:34:00Z",
+      "actor": "davidahmann",
+      "reason": "Separated catalog-bound workload projections, observed evaluation spend, and realized field value, and scoped V1-07 to a shared authorization validator whose downstream invocation is accepted separately."
     }
   ]
 }

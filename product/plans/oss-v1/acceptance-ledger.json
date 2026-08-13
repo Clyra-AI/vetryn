@@ -538,7 +538,7 @@
     {
       "id": "RECOMMEND-005",
       "taskId": "V1-07",
-      "statement": "A report claims estimated monthly or annual savings only from a human-reviewed workload-volume profile with request count, provenance, and RFC 3339 UTC observation time or window plus a digest-bound repository recommendation policy declaring workloadVolumeMaxAgeDays from 1 through 31. The generator derives report generatedAt from its internal orchestration clock rather than report, CLI, or Action input; deterministic tests and offline replay may inject a reviewed fixed clock only at that boundary. At the trusted clock, window.end or observedAt is within the five-minute future-skew allowance and the declared age bound. Missing policy, malformed or reversed windows, out-of-skew future times, and stale evidence deterministically produce normalized unit economics, while observed evaluation spend stays separate and every projection is labeled as an estimate.",
+      "statement": "A report claims estimated monthly or annual savings only from a human-reviewed workload-volume profile with request count, provenance, and RFC 3339 UTC observation time or window plus a digest-bound repository recommendation policy declaring workloadVolumeMaxAgeDays from 1 through 31. The generator derives report generatedAt from its internal orchestration clock rather than report, CLI, or Action input; deterministic tests and offline replay may inject a reviewed fixed clock only at that boundary. At the trusted clock, window.end or observedAt is within the five-minute future-skew allowance and the declared age bound. Missing policy, malformed or reversed windows, out-of-skew future times, and stale evidence deterministically produce normalized unit economics. Projected workload economics use bound catalog pricing, observed evaluation spend describes only the eval run, realized field value requires later billing or runtime corroboration, and every projection is labeled as an estimate.",
       "verification": { "method": "test", "testLevel": "adversarial", "gateId": "QG-CONTRACTS" },
       "waivable": false,
       "status": "planned",
@@ -547,7 +547,7 @@
     {
       "id": "RECOMMEND-006",
       "taskId": "V1-07",
-      "statement": "Every recommendation and abstention report carries the exact source fingerprint, catalog and pricing observation time, fixture digest or revision, evaluator version and build, evaluation completion time, trusted report generatedAt, digest-bound freshness policy, and every configured gate outcome with its evidence or finite reason. The policy declares catalogMaxAgeHours from 1 through 168, evaluationMaxAgeHours from 1 through 24, and reportMaxAgeHours from 1 through 24; recommendation, patch, and PR authorization use a fresh trusted clock with at most five minutes of future skew, re-evaluate all ages, and require exact current source, fixture, evaluator, catalog, and pricing identities. Deterministic missing, malformed, stale, future, identity-mismatch, and imported-backdated-report cases abstain and cannot authorize a patch.",
+      "statement": "Every recommendation and abstention report carries the exact source fingerprint, catalog and pricing observation time, fixture digest or revision, evaluator version and build, evaluation completion time, trusted report generatedAt, digest-bound freshness policy, and every configured gate outcome with its evidence or finite reason. The policy declares catalogMaxAgeHours from 1 through 168, evaluationMaxAgeHours from 1 through 24, and reportMaxAgeHours from 1 through 24. V1-07 exposes and adversarially tests a shared authorization validator that accepts a trusted invocation clock, re-evaluates all ages with at most five minutes of future skew, and requires exact current source, fixture, evaluator, catalog, and pricing identities; PATCH-005 and ACTION-003 separately require downstream consumers to invoke it. Deterministic missing, malformed, stale, future, identity-mismatch, and imported-backdated-report cases abstain and cannot authorize a patch.",
       "verification": { "method": "test", "testLevel": "adversarial", "gateId": "QG-CONTRACTS" },
       "waivable": false,
       "status": "planned",
@@ -594,6 +594,15 @@
       "evidenceRefs": []
     },
     {
+      "id": "PATCH-005",
+      "taskId": "V1-08",
+      "statement": "Before generating or applying a patch, the patcher invokes the shared authorization validator with its own trusted invocation clock, re-evaluates report, catalog/pricing, evaluation, and workload ages, and requires exact current source, fixture, evaluator, catalog, and pricing identities. Stale, out-of-skew, imported-backdated, or identity-mismatched evidence deterministically refuses the patch even when V1-07 previously emitted a recommendation.",
+      "verification": { "method": "test", "testLevel": "adversarial", "gateId": "QG-SCENARIOS" },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
       "id": "ACTION-001",
       "taskId": "V1-09",
       "statement": "The composite Action runs the supported workflow from a clean external fixture using packed CLI artifacts.",
@@ -618,7 +627,7 @@
     {
       "id": "ACTION-003",
       "taskId": "V1-09",
-      "statement": "Failed and abstained runs publish evidence but cannot open a migration PR.",
+      "statement": "Immediately before creating or updating a draft PR, both vetryn assess and the composite Action invoke the shared authorization validator with their own trusted invocation clock and exact current source, fixture, evaluator, catalog, and pricing inputs. Failed, abstained, stale, out-of-skew, imported-backdated, or identity-mismatched runs publish explicit evidence but cannot create or update a migration PR.",
       "verification": { "method": "test", "testLevel": "adversarial", "gateId": "QG-SCENARIOS" },
       "waivable": false,
       "status": "planned",
@@ -730,7 +739,7 @@
     {
       "id": "FIELD-007",
       "taskId": "V1-10",
-      "statement": "Field evidence uses a predeclared digest-bound attribution policy and records the denominator of qualified recommendation PRs plus the attributable count whose authenticated non-bot reviewers initiate or refer a follow-on assessment. Each counted assessment starts at or after and within 30 days of the event; the event explicitly identifies its follow-on target, and evidence binds the exact qualified PR identity and head, reviewer event identity, actor and time, and follow-on repository or call-site assessment identity, digest and start time. The policy excludes PR authors, Vetryn automation, unmatched identities, missing event proof, duplicates, and out-of-window records; it assigns each duplicate follow-on to the earliest valid event time then canonical event ID and records time-to-follow-on and exclusion reasons without mandatory telemetry or raw customer content.",
+      "statement": "Field evidence uses a predeclared digest-bound attribution policy and records the denominator of qualified recommendation PRs plus the attributable count whose authenticated non-bot reviewers initiate or refer a follow-on assessment. Each counted assessment starts at or after and within 30 days of the event; the event explicitly identifies its follow-on target, and that normalized repository or call-site target exactly equals the normalized target bound into the follow-on assessment. Evidence also binds the exact qualified PR identity and head, reviewer event identity, actor and time, and follow-on assessment identity, digest and start time. The policy excludes PR authors, Vetryn automation, target mismatches, unmatched identities, missing event proof, duplicates, and out-of-window records; it assigns each duplicate follow-on to the earliest valid event time then canonical event ID and records time-to-follow-on and exclusion reasons without mandatory telemetry or raw customer content.",
       "verification": { "method": "field", "testLevel": "field", "gateId": "QG-FIELD" },
       "waivable": false,
       "status": "planned",

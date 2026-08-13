@@ -139,6 +139,10 @@ Missing policy, malformed or reversed windows, out-of-skew future times, and old
 per-1,000-request comparisons but cannot produce a monthly or annual savings claim. Current profiles combine with
 reviewed representative prompt/completion token weights and bound catalog pricing, and every resulting value is
 labeled an estimate rather than observed billing. Observed evaluation spend remains a separate measurement.
+Projected workload economics never extrapolate the bounded eval run's observed spend. Bound catalog pricing
+supports estimates; observed evaluation spend describes only the eval run; realized field value requires later
+billing or runtime corroboration. This distinction supersedes only ADR 0019's earlier shorthand that recommendation
+savings use observed evaluation cost and preserves its rule that catalog estimates are never billed-cost proof.
 
 The same digest-bound policy declares `catalogMaxAgeHours` from 1 through 168, `evaluationMaxAgeHours` from 1
 through 24, and `reportMaxAgeHours` from 1 through 24. Recommendation, patch, and PR authorization use a fresh
@@ -186,9 +190,11 @@ least ten qualified recommendation PRs across three companies, at least a 40% me
 serious escaped regressions. Field evidence also records whether recommendation PR reviewers initiate or refer a
 follow-on call-site or repository assessment, without adding mandatory telemetry. A predeclared policy counts only
 an assessment that starts at or after and within 30 days of an authenticated non-bot review or referral event on a
-qualified PR. The event must explicitly identify the follow-on target, evidence binds both artifacts, and a
-duplicate follow-on is assigned to the earliest valid event time then canonical event ID. PR authors, Vetryn
-automation, unmatched identities, missing event evidence, duplicates, and out-of-window records are excluded.
+qualified PR. The event must explicitly identify the follow-on target, evidence binds both artifacts, and the
+event's normalized repository or call-site target must exactly equal the normalized target bound into the follow-on
+assessment. A duplicate follow-on is assigned to the earliest valid event time then canonical event ID. PR authors,
+Vetryn automation, target mismatches, unmatched identities, missing event evidence, duplicates, and out-of-window
+records are excluded.
 Twenty safe rollouts remain a later confidence milestone rather than a deterministic build gate.
 
 An optional calibrated semantic-rubric scorer may be designed only after that field work demonstrates

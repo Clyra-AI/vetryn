@@ -37,7 +37,9 @@ between decision evidence and presentation-layer next actions.
 - When that profile is valid and policy-current, reports derive estimated current and proposed monthly cost, monthly
   and annual savings, and savings percentage from it, the reviewed representative token profile, and bound catalog
   pricing. All projections are labeled estimates. Observed evaluation spend and optional runtime corroboration stay
-  separate.
+  separate. For projected workload economics only, this supersedes ADR 0019's earlier shorthand that recommendation
+  savings use observed evaluation cost: observed evaluation spend describes the bounded eval run, while realized
+  field value requires later billing or runtime corroboration.
 - When workload-volume evidence is absent, invalid, or stale, reports show per-request or per-1,000-request economics
   and explain why monthly and annual claims are unavailable. Missing volume evidence does not become invented
   precision.
@@ -56,9 +58,10 @@ between decision evidence and presentation-layer next actions.
 - OSS V1 adds no mandatory telemetry. Field validation may record sanitized, consented attribution from qualified PR
   reviewers to follow-on call-site or repository assessments under a predeclared 30-day matching and deduplication
   policy. Evidence binds the qualified PR, an authenticated non-bot reviewer event that explicitly identifies the
-  follow-on target, and the assessment identity. The assessment must begin at or after the event and within 30 days;
-  duplicates select the earliest event time and then canonical event ID. Unmatched, self-authored, bot, duplicate,
-  or out-of-window records are excluded.
+  follow-on target, and the assessment identity. The event's normalized repository or call-site target must exactly
+  equal the normalized target bound into the assessment. The assessment must begin at or after the event and within
+  30 days; duplicates select the earliest event time and then canonical event ID. Target-mismatched, unmatched,
+  self-authored, bot, duplicate, or out-of-window records are excluded.
 
 ## Consequences
 
