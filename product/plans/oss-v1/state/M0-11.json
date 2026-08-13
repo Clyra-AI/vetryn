@@ -2,41 +2,41 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "M0-11",
-  "revision": 4,
+  "revision": 5,
   "state": "accepted",
   "attempt": 1,
   "candidate": {
     "baseCommit": "372d27edbabd8f2ef9213bda2fc235cd421042e9",
-    "commit": "97a1334f13d61f51a92c65a63065649374bb4126",
+    "commit": "8c947d85e5e154a8e5792dcd5a861efa4a8cf3f2",
     "executor": "implementation-agent"
   },
   "criteria": [
     {
       "criterionId": "PROCESS-010",
       "status": "pass",
-      "evidenceRefs": ["ev-m0-11-contracts-97a1334"]
+      "evidenceRefs": ["ev-m0-11-contracts-8c947d8"]
     },
     {
       "criterionId": "PROCESS-011",
       "status": "pass",
-      "evidenceRefs": ["ev-m0-11-repo-check-97a1334"]
+      "evidenceRefs": ["ev-m0-11-repo-check-8c947d8"]
     }
   ],
   "gates": [
     {
       "gateId": "QG-PLAN-CHECK",
       "status": "pass",
-      "evidenceRefs": ["ev-m0-11-plan-check-97a1334"]
+      "evidenceRefs": ["ev-m0-11-plan-check-8c947d8"]
     },
     {
       "gateId": "QG-REPO-CHECK",
       "status": "pass",
-      "evidenceRefs": ["ev-m0-11-repo-check-97a1334"]
+      "evidenceRefs": ["ev-m0-11-repo-check-8c947d8"]
     },
     {
       "gateId": "QG-CONTRACTS",
       "status": "pass",
-      "evidenceRefs": ["ev-m0-11-contracts-97a1334"]
+      "evidenceRefs": ["ev-m0-11-contracts-8c947d8"]
     },
     {
       "gateId": "QG-INDEPENDENT-VERIFY",
@@ -87,6 +87,13 @@
       "at": "2026-08-13T22:50:48Z",
       "actor": "davidahmann",
       "reason": "Maintainer rebound acceptance to the exact current candidate after the final two current-head P1 fixes passed focused regressions, the full repository gate, and bounded independent P0/P1 review."
+    },
+    {
+      "from": "accepted",
+      "to": "accepted",
+      "at": "2026-08-13T23:35:54Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer rebound acceptance to the exact final candidate after adapter package and resolution authentication, canonical profile-policy binding, and conditional trust-review evidence passed 43 focused scenarios, the full 222-test repository gate, and bounded independent P0/P1 review."
     }
   ]
 }
