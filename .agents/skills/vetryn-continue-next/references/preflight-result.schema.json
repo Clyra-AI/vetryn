@@ -1,0 +1,257 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vetryn.dev/schemas/continuation-preflight-result-v1.json",
+  "title": "Vetryn continuation preflight result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "status",
+    "mode",
+    "repository",
+    "selection",
+    "packet",
+    "resolved",
+    "authority",
+    "checks",
+    "blockers"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "1.0.0" },
+    "status": { "enum": ["ready_for_authority", "blocked"] },
+    "mode": { "type": ["string", "null"], "enum": ["start", "resume", null] },
+    "repository": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "head",
+        "currentBranch",
+        "defaultBranch",
+        "defaultRemote",
+        "clean",
+        "snapshotDigest",
+        "canonicalInputsDigest",
+        "remoteFreshness"
+      ],
+      "properties": {
+        "head": { "$ref": "#/$defs/shaOrNull" },
+        "currentBranch": { "type": ["string", "null"], "minLength": 1 },
+        "defaultBranch": { "type": ["string", "null"], "minLength": 1 },
+        "defaultRemote": { "type": ["string", "null"], "minLength": 1 },
+        "clean": { "type": "boolean" },
+        "snapshotDigest": { "$ref": "#/$defs/digestOrNull" },
+        "canonicalInputsDigest": { "$ref": "#/$defs/digestOrNull" },
+        "remoteFreshness": { "const": "not_checked_offline" }
+      }
+    },
+    "selection": {
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["taskId", "source", "state"],
+          "properties": {
+            "taskId": { "type": "string", "minLength": 1 },
+            "source": { "enum": ["active", "next_legal"] },
+            "state": { "type": "string", "minLength": 1 }
+          }
+        }
+      ]
+    },
+    "packet": {
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "packetId",
+            "digest",
+            "riskClass",
+            "allowedPaths",
+            "forbiddenPaths",
+            "validationCommands",
+            "finalValidationCommands"
+          ],
+          "properties": {
+            "packetId": { "type": "string", "minLength": 1 },
+            "digest": { "$ref": "#/$defs/digest" },
+            "riskClass": { "enum": ["low", "medium", "high"] },
+            "allowedPaths": { "$ref": "#/$defs/uniqueStrings" },
+            "forbiddenPaths": { "$ref": "#/$defs/uniqueStrings" },
+            "validationCommands": { "$ref": "#/$defs/uniqueStrings" },
+            "finalValidationCommands": { "$ref": "#/$defs/uniqueStrings" }
+          }
+        }
+      ]
+    },
+    "resolved": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "capabilities",
+        "repositorySkills",
+        "factorySkills",
+        "domainReviews",
+        "requiredReviews",
+        "lifecycleGates",
+        "promotion",
+        "delivery",
+        "factoryPacks"
+      ],
+      "properties": {
+        "capabilities": { "$ref": "#/$defs/capabilities" },
+        "repositorySkills": { "$ref": "#/$defs/uniqueStrings" },
+        "factorySkills": { "$ref": "#/$defs/uniqueStrings" },
+        "domainReviews": { "$ref": "#/$defs/uniqueStrings" },
+        "requiredReviews": { "$ref": "#/$defs/uniqueStrings" },
+        "lifecycleGates": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "localValidationRequired",
+            "ciRequired",
+            "codeReviewRequired",
+            "trustReviewRequired",
+            "codexReviewRequired",
+            "commitPushRequired",
+            "postMergeMonitorRequired",
+            "prLifecycleReportRequired",
+            "skipPolicy"
+          ],
+          "properties": {
+            "localValidationRequired": { "type": "boolean" },
+            "ciRequired": { "type": "boolean" },
+            "codeReviewRequired": { "type": "boolean" },
+            "trustReviewRequired": { "type": "boolean" },
+            "codexReviewRequired": { "type": "boolean" },
+            "commitPushRequired": { "type": "boolean" },
+            "postMergeMonitorRequired": { "type": "boolean" },
+            "prLifecycleReportRequired": { "type": "boolean" },
+            "skipPolicy": { "const": "approved_exception_required" }
+          }
+        },
+        "promotion": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["maintainerRequired", "progressGenerated", "executorMayAccept"],
+          "properties": {
+            "maintainerRequired": { "type": "boolean" },
+            "progressGenerated": { "type": "boolean" },
+            "executorMayAccept": { "type": "boolean" }
+          }
+        },
+        "delivery": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["mode", "directDefaultPush", "automaticMerge"],
+          "properties": {
+            "mode": { "type": "string", "minLength": 1 },
+            "directDefaultPush": { "const": false },
+            "automaticMerge": { "const": false }
+          }
+        },
+        "factoryPacks": {
+          "oneOf": [
+            { "type": "null" },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["contractVersion", "packSetVersion", "sourceRef", "manifestDigests"],
+              "properties": {
+                "contractVersion": { "const": "1" },
+                "packSetVersion": { "const": "1" },
+                "sourceRef": {
+                  "type": "string",
+                  "pattern": "^Clyra-AI/factory@[0-9a-f]{40}$"
+                },
+                "manifestDigests": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["task-executor", "validation-gate", "code-review", "commit-push"],
+                  "properties": {
+                    "task-executor": { "$ref": "#/$defs/digest" },
+                    "validation-gate": { "$ref": "#/$defs/digest" },
+                    "code-review": { "$ref": "#/$defs/digest" },
+                    "commit-push": { "$ref": "#/$defs/digest" }
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "currentRunGrantPresent",
+        "effectiveCapabilities",
+        "acceptedSource",
+        "rejectedSources"
+      ],
+      "properties": {
+        "status": { "const": "required_before_mutation" },
+        "currentRunGrantPresent": { "const": false },
+        "effectiveCapabilities": { "$ref": "#/$defs/capabilities" },
+        "acceptedSource": { "const": "authenticated_listed_maintainer_current_run" },
+        "rejectedSources": { "$ref": "#/$defs/uniqueStrings" }
+      }
+    },
+    "checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "status", "detail"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+          "status": { "enum": ["pass", "fail", "not_checked"] },
+          "detail": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" }
+        }
+      }
+    },
+    "blockers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["code", "check"],
+        "properties": {
+          "code": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+          "check": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "shaOrNull": {
+      "type": ["string", "null"],
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "digestOrNull": {
+      "type": ["string", "null"],
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "uniqueStrings": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true
+    },
+    "capabilities": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["network", "credentials", "provider", "githubWrite"],
+      "properties": {
+        "network": { "type": "boolean" },
+        "credentials": { "type": "boolean" },
+        "provider": { "type": "boolean" },
+        "githubWrite": { "type": "boolean" }
+      }
+    }
+  }
+}

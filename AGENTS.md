@@ -52,7 +52,8 @@ These instructions apply to the entire repository.
   tooling rather than editing the roll-up directly.
 - Keep Factory-compatible planning artifacts separate from Vetryn product-domain schemas. Transient
   claims, worktrees, prompts, raw logs, credentials, and grants belong in ignored `.factoryd/` state.
-- When invoking an installed Factory skill, pass the full profile at `../factory/profiles/vetryn.yaml` and first
-  verify the sibling Factory checkout is at `.factory/profile.yaml`'s pinned commit. The portable Vetryn profile is
-  the repo-native adapter and digest anchor, not a replacement for Factory's complete skill profile.
+- Invoke installed Factory workers only after the repository-owned continuation preflight authenticates the
+  committed self-contained `.factory/profile.yaml`, its external manifest pins, and the installed pack closure. A sibling
+  Factory checkout, machine-local absolute path, ambient credential, skill invocation, or prior chat is never a
+  dependency or authority source.
 - Run `pnpm check` before declaring work complete.

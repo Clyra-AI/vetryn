@@ -38,6 +38,9 @@ Useful commands:
 | `pnpm test:coverage` | Generate local coverage output               |
 | `pnpm check`         | Run the complete merge gate                  |
 
+Maintainers continuing canonical plan work without a supplied task ID can explicitly invoke
+`$vetryn-continue-next`. Its offline preflight is read-only and never substitutes for a current task-scoped grant.
+
 ## Contribution workflow
 
 1. Fork the repository and create a focused branch.

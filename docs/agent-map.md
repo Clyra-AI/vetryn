@@ -52,20 +52,26 @@ or compiled task authorizes it.
    product edits; never interpret the repository-owned integrity marker as independent authority or chronology.
 6. Route the work through the applicable skill below.
 
+When no task ID is supplied, explicitly invoke `vetryn-continue-next`. Its offline preflight discovers exactly one
+active task or, when none is active, exactly one next-legal task. It stops on ambiguity, drift, or incomplete local
+dependencies and returns `ready_for_authority` only after proving that the observed repository did not change.
+That result still requires a separate authenticated current-run maintainer grant before mutation.
+
 If no legal task covers the requested work, do not borrow scope from a future task. Propose a narrow plan or
 process change for maintainer review. A planning or product-contract amendment remains a proposal until it is
 reviewed and merged to `main`; resync and compile downstream implementation from that canonical state.
 
 ## Current skill routing
 
-| Situation                                                                          | Skill                                                                                                                            | Authority boundary                                                                   |
-| ---------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| Implement one ready or in-progress compiled task                                   | `vetryn-implement-task`                                                                                                          | May change only packet-authorized implementation paths; cannot accept its work       |
-| Verify an exact candidate commit                                                   | `vetryn-verify-task`                                                                                                             | Recommended independent check; cannot repair or promote the candidate                |
-| Promote locally validated work                                                     | `vetryn-promote-task`                                                                                                            | Maintainer-controlled canonical state, ledger, evidence, and generated progress only |
-| Build or review the V1-02 offline golden repository                                | `vetryn-golden-scenario`                                                                                                         | Offline synthetic fixtures and semantic assertions only; cannot accept or merge      |
-| Review V1-06+ evaluation, recommendation, or patch trust semantics                 | `vetryn-trust-review`                                                                                                            | Candidate-bound adversarial review only; cannot implement, promote, or merge         |
-| Execute, validate, review, commit, push, or release through generic infrastructure | The corresponding external Factory skill, with `profile=../factory/profiles/vetryn.yaml` at the portable profile's pinned commit | Factory supplies delivery automation; active command gates remain required           |
+| Situation                                                                          | Skill                                                                             | Authority boundary                                                                               |
+| ---------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| Discover and continue the sole active or next-legal task                           | `vetryn-continue-next`                                                            | Read-only preflight grants nothing; later stages require an authenticated per-run grant          |
+| Implement one ready or in-progress compiled task                                   | `vetryn-implement-task`                                                           | May change only packet-authorized implementation paths; cannot accept its work                   |
+| Verify an exact candidate commit                                                   | `vetryn-verify-task`                                                              | Recommended independent check; cannot repair or promote the candidate                            |
+| Promote locally validated work                                                     | `vetryn-promote-task`                                                             | Maintainer-controlled canonical state, ledger, evidence, and generated progress only             |
+| Build or review the V1-02 offline golden repository                                | `vetryn-golden-scenario`                                                          | Offline synthetic fixtures and semantic assertions only; cannot accept or merge                  |
+| Review V1-06+ evaluation, recommendation, or patch trust semantics                 | `vetryn-trust-review`                                                             | Candidate-bound adversarial review only; cannot implement, promote, or merge                     |
+| Execute, validate, review, commit, push, or release through generic infrastructure | The corresponding installed Factory pack authenticated by `.factory/profile.yaml` | Factory supplies delivery automation; active command gates and per-run authority remain required |
 
 An agent must not use a skill name as authority for an action the compiled packet, repository policy, or human
 authorization does not permit.

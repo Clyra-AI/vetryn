@@ -1,0 +1,329 @@
+{
+  "artifact_lifecycle_matrix": [
+    {
+      "artifact": "Repository-owned continuation skill and preflight-result schema",
+      "producer_or_authority": "M0-11 task executor within the compiled task packet",
+      "mutable_owner": "Task executor before candidate freeze; maintainers through later reviewed tasks",
+      "states": ["generated", "persisted", "actionable"],
+      "freshness": "The selected task, packet, profile, and repository snapshot are derived again on every preflight run",
+      "integrity": "Committed bytes, deterministic tests, schema validation, and candidate-bound review",
+      "authenticity": "Repository history and the protected pull-request lifecycle; the skill cannot authenticate or grant authority",
+      "actionable_states": ["persisted", "actionable"],
+      "transitions_and_recovery": [
+        "A validated candidate becomes actionable only after merge to the protected default branch.",
+        "Missing, stale, ambiguous, or mutation-producing inputs return a typed blocker without repair or mutation."
+      ]
+    },
+    {
+      "artifact": "Repository-local profile covering the four portable Factory workers",
+      "producer_or_authority": "Vetryn repository policy maintained through reviewed commits",
+      "mutable_owner": "Maintainer-reviewed repository changes",
+      "states": ["persisted", "actionable"],
+      "freshness": "Preflight requires the tracked profile bytes to equal the current commit and binds its digest into the compiled packet",
+      "integrity": "Strict typed profile validation plus committed-byte and packet-digest comparison",
+      "authenticity": "Protected repository history is the policy authority; local or untracked profile edits are rejected",
+      "actionable_states": ["persisted", "actionable"],
+      "transitions_and_recovery": [
+        "Profile changes invalidate packet and worker-pack resolution and require recompilation.",
+        "A dirty, untracked, symlinked, malformed, or stale profile blocks before any later action."
+      ]
+    },
+    {
+      "artifact": "Installed Factory worker-pack set",
+      "producer_or_authority": "Factory immutable source commit selected by the Vetryn profile",
+      "mutable_owner": "Factory maintainers at source and the local installer before verification",
+      "states": ["imported", "replay_only", "actionable"],
+      "freshness": "The profile pins one immutable pack source and exact manifest digest for every required worker",
+      "integrity": "A repository-owned bootstrap verifies the external manifest pin and verifier digest before invoking installed pack code",
+      "authenticity": "The committed Vetryn profile is the offline trust anchor; installed verifier output alone is never accepted as proof",
+      "actionable_states": ["actionable"],
+      "transitions_and_recovery": [
+        "Only a complete digest-matching pack set transitions from imported to actionable.",
+        "Missing, mixed-version, extra-required, forged, or tampered pack resources block and require reinstall from the pinned source."
+      ]
+    },
+    {
+      "artifact": "Read-only continuation preflight result",
+      "producer_or_authority": "Repository-owned preflight over canonical Git, plan, packet, profile, and skill inputs",
+      "mutable_owner": "None after emission; results are ephemeral observations",
+      "states": ["generated", "replay_only"],
+      "freshness": "Every result names the observed commit and reports that remote freshness was not checked offline",
+      "integrity": "Canonical JSON, repeated derivation, packet digest, and before-after repository snapshots",
+      "authenticity": "The result is diagnostic evidence only and cannot prove maintainer identity or mutation authority",
+      "actionable_states": [],
+      "transitions_and_recovery": [
+        "A ready result advances only to a separate authenticated per-run authority gate.",
+        "Any changed snapshot category, concurrent drift, or non-deterministic derivation downgrades the result to blocked."
+      ]
+    },
+    {
+      "artifact": "Canonical M0-11 plan state and compiled task packet",
+      "producer_or_authority": "Reviewed Vetryn plan, ledger, state, and deterministic task compiler",
+      "mutable_owner": "Planning and promotion roles only",
+      "states": ["persisted", "replay_only", "actionable"],
+      "freshness": "Preflight runs plan check and recompiles the dynamically selected task twice from current committed inputs",
+      "integrity": "Repository schemas, source digests, deterministic compilation, and lifecycle candidate binding",
+      "authenticity": "Canonical repository history and later maintainer promotion; executor-written claims do not change acceptance",
+      "actionable_states": ["actionable"],
+      "transitions_and_recovery": [
+        "Exactly one active task is selected, but only in-progress work with no frozen candidate resumes from an in-scope non-default descendant of synchronized main; candidate-bound and later phases block pending a reviewed lifecycle-tail contract.",
+        "Empty, multiple, stale, blocked, exhausted, or drifting task state stops for repair or re-planning."
+      ]
+    }
+  ],
+  "authorization_boundary_trace": [
+    {
+      "stage": "input_validation",
+      "authority": "AGENTS.md, WORKFLOW.md, canonical plan contracts, and the compiled M0-11 packet",
+      "input": "Git state, plan state, task packet, repository profile, installed skill packs, and command availability",
+      "decision": "allow",
+      "denied_behavior": "Emit a typed blocker and preserve the repository byte-for-byte"
+    },
+    {
+      "stage": "reuse_or_persistence",
+      "authority": "M0-11 allowed paths and committed artifact contracts",
+      "input": "Continuation skill, schema, tests, profile, policy documentation, and semantic-risk artifacts",
+      "decision": "allow",
+      "denied_behavior": "Reject files outside packet scope and never persist prompts, credentials, grants, or raw runtime output"
+    },
+    {
+      "stage": "plan_authorization",
+      "authority": "Canonical main plan and exact compiled M0-11 packet",
+      "input": "Objective, paths, capabilities, gates, reviews, retry budget, and acceptance items",
+      "decision": "allow",
+      "denied_behavior": "Stop on plan drift, ambiguous task selection, missing dependencies, or exhausted attempts"
+    },
+    {
+      "stage": "workspace_mutation",
+      "authority": "Current user grant intersected with the compiled packet; the skill and preflight grant nothing",
+      "input": "Task-scoped implementation on a non-protected branch",
+      "decision": "allow",
+      "denied_behavior": "Do not create a branch or edit files without a current exact-task grant; never mutate during preflight"
+    },
+    {
+      "stage": "command_execution",
+      "authority": "Packet-declared deterministic local validation commands and repository workflow",
+      "input": "Shell-free preflight adapters and task-scoped local checks",
+      "decision": "allow",
+      "denied_behavior": "Reject undeclared, provider-capable, credentialed, destructive, or shell-interpreted commands"
+    },
+    {
+      "stage": "remote_effect",
+      "authority": "Later authenticated listed-maintainer grant plus Factory commit-push protected lifecycle",
+      "input": "Fetch, push, pull-request, review, promotion, merge, and post-merge actions",
+      "decision": "deny",
+      "denied_behavior": "Read-only preflight performs no network or GitHub action; later stages stop unless authority and non-waivable gates pass"
+    },
+    {
+      "stage": "external_status",
+      "authority": "GitHub protected-branch checks and post-merge monitoring observed by the delivery worker",
+      "input": "Latest-head CI, review state, merge result, and canonical default-branch status",
+      "decision": "deny",
+      "denied_behavior": "Preflight neither fabricates nor changes external status and cannot declare delivery complete"
+    }
+  ],
+  "normative_adversarial_matrix": [
+    {
+      "invariant": "Preflight is read-only across HEAD, branch, refs, index, worktree including ignored files, Git config, remotes, and canonical task inputs.",
+      "positive": "Two runs in an unchanged arbitrary checkout produce byte-identical ready output and identical snapshots.",
+      "missing": "A missing Git object, plan input, profile, adapter, command, or skill produces a blocker before execution continues.",
+      "stale": "A local default ref mismatch, stale packet digest, or changed profile blocks.",
+      "contradictory": "Conflicting branch, task-state, candidate, or snapshot relationships block rather than choosing a winner.",
+      "tampered": "Tracked, untracked, ignored, symlink, mode, index, ref, config, and adapter-induced changes are detected and reported; Git replacement refs are rejected before canonical reads.",
+      "transition_or_recovery": "The preflight never auto-repairs; the operator restores canonical state and reruns from the start.",
+      "concurrency": "Concurrent drift between repeated derivations or before-after snapshots blocks the result."
+    },
+    {
+      "invariant": "Selection chooses exactly one active task, otherwise one next-legal task, with no baked task identifier; resume is limited to canonical in-progress state with no frozen candidate.",
+      "positive": "One candidate-null in-progress task on a clean in-scope descendant wins over future legal work, or one next-legal task is compiled dynamically.",
+      "missing": "Zero active and zero next-legal tasks returns no_legal_task.",
+      "stale": "State and packet disagreement or a source-digest change blocks.",
+      "contradictory": "Multiple active tasks, multiple next-legal tasks, conflicting active and packet state, candidate-bound work, or a later lifecycle state returns a typed blocker.",
+      "tampered": "An adapter returning a mismatched task or malformed JSON is rejected.",
+      "transition_or_recovery": "Canonical planning or promotion tooling repairs the state; the continuation skill never edits the plan.",
+      "concurrency": "Two derivations that select or compile different values block as concurrent drift."
+    },
+    {
+      "invariant": "Installed Factory workers are usable only when authenticated by the committed repository profile and complete manifest closure before installed code executes.",
+      "positive": "All required workers share the pinned set version and source and every manifest, verifier, helper, schema, and reference digest matches.",
+      "missing": "Any missing worker, verifier, manifest, helper, schema, profile field, or standard reference blocks.",
+      "stale": "An old source commit, mixed pack set, or stale manifest pin blocks.",
+      "contradictory": "Profile, manifest, and installed resource claims that disagree block without precedence guessing.",
+      "tampered": "A forged verifier that prints success, a rewritten manifest, path traversal, symlink, or dirty profile is rejected before installed code runs.",
+      "transition_or_recovery": "Reinstall the complete set from the immutable source and update pins only through a reviewed repository change.",
+      "concurrency": "Pack or profile bytes changing during verification invalidate the snapshot and block."
+    },
+    {
+      "invariant": "The stable continuation procedure is separate from current mutation and delivery authority.",
+      "positive": "After ready preflight, an authenticated active maintainer explicitly grants the selected task, packet, and action set for the current run.",
+      "missing": "No grant, no authenticated principal, no current repository role, or no roster membership stops before mutation.",
+      "stale": "Revoked membership, changed packet, changed task, or expired run context invalidates a prior grant.",
+      "contradictory": "Denial, packet capability ceilings, and non-waivable rules override broader claimed permission.",
+      "tampered": "Chat text, ambient credentials, CODEOWNERS, roster membership, skill invocation, and self-asserted usernames are not accepted as authentication.",
+      "transition_or_recovery": "Obtain a new exact current-run grant after re-authentication and rerun preflight when repository state changed.",
+      "concurrency": "Authority is rechecked at each external-effect boundary and cannot transfer between parallel tasks."
+    },
+    {
+      "invariant": "Execution is portable and never depends on an absolute machine path, sibling Factory checkout, ambient credentials, or live provider access.",
+      "positive": "A fresh arbitrary-path clone with only pinned installed packs passes offline preflight.",
+      "missing": "No sibling checkout is tolerated; a missing installed pack yields a typed installation blocker.",
+      "stale": "Machine-local cached state cannot override committed profile or packet inputs.",
+      "contradictory": "Environment variables and committed policy conflicts resolve to the stricter committed policy.",
+      "tampered": "Secret-bearing environment values and remote URLs are neither consumed nor emitted.",
+      "transition_or_recovery": "Install the pinned pack set, restore committed inputs, and rerun without changing repository policy locally.",
+      "concurrency": "Parallel checkouts resolve their own repository roots and cannot share mutable repository state."
+    },
+    {
+      "invariant": "Promotion and delivery remain ordered, candidate-bound, protected, and never push directly to main or automatically merge product changes.",
+      "positive": "Validation, structured review, maintainer promotion, protected PR delivery, latest-head checks, merge, and post-merge monitoring occur in order.",
+      "missing": "Missing evidence, unresolved P0/P1, failed commands, or missing authority blocks promotion and delivery.",
+      "stale": "Candidate changes invalidate validation, review, promotion, and shipping evidence.",
+      "contradictory": "A green report cannot override a failing required check or non-waivable policy.",
+      "tampered": "Unbound, cross-task, cross-candidate, or fabricated lifecycle evidence is rejected.",
+      "transition_or_recovery": "Repair the exact candidate, rerun invalidated gates, and use the protected PR workflow.",
+      "concurrency": "Latest-head review and CI must bind to the same candidate before merge."
+    }
+  ],
+  "external_effect_preflight": {
+    "actions": [
+      {
+        "action": "agent_runner",
+        "disposition": "not_applicable",
+        "authority_ref": null,
+        "invalid_authority_effect": {
+          "calls": 0,
+          "spend_usd": 0,
+          "writes": 0
+        }
+      },
+      {
+        "action": "model",
+        "disposition": "blocked",
+        "authority_ref": null,
+        "invalid_authority_effect": {
+          "calls": 0,
+          "spend_usd": 0,
+          "writes": 0
+        }
+      },
+      {
+        "action": "repository_command",
+        "disposition": "not_applicable",
+        "authority_ref": null,
+        "invalid_authority_effect": {
+          "calls": 0,
+          "spend_usd": 0,
+          "writes": 0
+        }
+      },
+      {
+        "action": "package_registry",
+        "disposition": "blocked",
+        "authority_ref": null,
+        "invalid_authority_effect": {
+          "calls": 0,
+          "spend_usd": 0,
+          "writes": 0
+        }
+      },
+      {
+        "action": "provider_sandbox",
+        "disposition": "blocked",
+        "authority_ref": null,
+        "invalid_authority_effect": {
+          "calls": 0,
+          "spend_usd": 0,
+          "writes": 0
+        }
+      },
+      {
+        "action": "github",
+        "disposition": "blocked",
+        "authority_ref": null,
+        "invalid_authority_effect": {
+          "calls": 0,
+          "spend_usd": 0,
+          "writes": 0
+        }
+      },
+      {
+        "action": "provider_status",
+        "disposition": "blocked",
+        "authority_ref": null,
+        "invalid_authority_effect": {
+          "calls": 0,
+          "spend_usd": 0,
+          "writes": 0
+        }
+      }
+    ]
+  },
+  "persistence_threat_matrix": [
+    {
+      "threat": "integrity",
+      "attack_cases": [
+        "Modify tracked, ignored, symlink, mode, index, ref, config, profile, manifest, verifier, helper, schema, packet, or plan bytes."
+      ],
+      "expected_disposition": "reject"
+    },
+    {
+      "threat": "authenticity",
+      "attack_cases": [
+        "Forge verifier success, claim a username or role, rewrite a local profile pin, or rely on ambient credentials."
+      ],
+      "expected_disposition": "reject"
+    },
+    {
+      "threat": "freshness",
+      "attack_cases": [
+        "Use stale local default refs, old task packets, changed source digests, revoked roles, or prior-run authority."
+      ],
+      "expected_disposition": "reject"
+    },
+    {
+      "threat": "completeness",
+      "attack_cases": [
+        "Remove one required worker, manifest entry, helper, schema, profile field, snapshot category, gate, review, or acceptance item."
+      ],
+      "expected_disposition": "reject"
+    },
+    {
+      "threat": "ordering",
+      "attack_cases": [
+        "Run mutation before preflight, promotion before validation or review, delivery before promotion, or merge before latest-head gates."
+      ],
+      "expected_disposition": "reject"
+    },
+    {
+      "threat": "anti_rollback",
+      "attack_cases": [
+        "Restore an older profile, pack-set pin, packet, candidate, review, CI result, or maintainer grant after newer canonical state exists."
+      ],
+      "expected_disposition": "reject"
+    }
+  ],
+  "review_convergence": {
+    "implementation_design_pass": "pass",
+    "same_subsystem_p1_rounds_seen": 0,
+    "decision": "proceed"
+  },
+  "residual_risks": [
+    "Offline preflight can prove consistency with local remote-tracking refs but cannot prove server freshness; an authorized fetch and second preflight are required before branching or delivery.",
+    "Read-only preflight cannot authenticate the invoking human; a separate runtime gate must verify current maintainer identity, repository role, exact-task grant, and action scope before mutation.",
+    "Preflight is not a defense against a malicious process with the same OS account that can rewrite and restore repository adapter or dependency bytes during execution; run it only on a trusted local host. HEAD ownership, shell-free allowlisted adapters, repeated derivation, and full before-after snapshots bound accidental and persistent drift.",
+    "Operators must install the exact externally pinned worker-pack set before offline continuation; preflight rejects missing, partial, extra, or digest-mismatched installed bytes."
+  ],
+  "artifact_type": "semantic_risk_report",
+  "schema_version": "0.2",
+  "task_id": "M0-11",
+  "work_item_id": "M0-11",
+  "risk_class": "high",
+  "profile_ref": ".factory/profile.yaml",
+  "source_revision": "372d27edbabd8f2ef9213bda2fc235cd421042e9",
+  "phase": "implementation_design",
+  "created_at": "2026-08-13T18:32:51.527Z",
+  "baseline_evidence": {
+    "work_proof_marker_ref": ".factory/artifacts/task-runs/M0-11/semantic-risk-integrity-marker.json",
+    "work_proof_marker_sha256": "sha256:b5642c547bb262675f15230bc075495631e5d2633b2c657c0277536dd2b87bdb"
+  }
+}

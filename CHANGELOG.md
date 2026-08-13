@@ -11,6 +11,8 @@
 
 ### Added
 
+- Added an explicit repository-owned continuation skill with deterministic task discovery, mutation-checked
+  offline preflight, portable Factory worker-pack verification, and a separate current-run authority boundary.
 - Added bounded representative-workload-cost OpenRouter candidate ranking, idempotent catalog-refresh,
   opt-in scheduling, immutable freshness observations, evaluator-version-bound digests, and
   complete-and-integrity-valid evidence reuse contracts to the executable V1 plan.

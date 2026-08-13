@@ -3,10 +3,20 @@ product_name: Vetryn
 profile_version: "0.3"
 adoption_profile: standard
 status: repo_native_execution_ready
+repo_root: .
+default_branch: main
 source_contract: docs/oss-v1.md
 maintainer_roster: MAINTAINERS.md
 plan_root: product/plans/oss-v1
 repository_visibility: public
+standards:
+  repo_contract: AGENTS.md
+  product_contract: docs/oss-v1.md
+  dev_guide: CONTRIBUTING.md
+  architecture_guide: docs/architecture.md
+  workflow_contract: WORKFLOW.md
+  plan_reference: product/plans/oss-v1/plan.json
+  task_adapter_contract: docs/implementation/oss-v1-execution.md
 runtime_pins:
   language: typescript
   node: "22"
@@ -22,12 +32,21 @@ trust_posture:
   github_write: explicit_listed_maintainer_authorization_and_factory_lifecycle_only
 factoryd:
   status: deferred
-  reason: TypeScript bootstrap and repo-pack compatibility are not yet proven.
+  reason: Portable installed workers are supported; the long-running Factoryd runtime remains deferred until its TypeScript workspace lifecycle is proven.
 task_adapter:
-  next: pnpm --silent task:next
-  compile: pnpm --silent task:compile -- TASK-ID
+  plan_script: scripts/plan.mjs
+  task_script: scripts/task.mjs
+  plan_check_args:
+    - check
+  next_args:
+    - next
+  compile_args:
+    - compile
+  next: "pnpm --silent task:next"
+  compile: "pnpm --silent task:compile -- TASK-ID"
   packet_schema: product/plans/schemas/task-packet.schema.json
 skills:
+  continue: .agents/skills/vetryn-continue-next/SKILL.md
   implement: .agents/skills/vetryn-implement-task/SKILL.md
   verify: .agents/skills/vetryn-verify-task/SKILL.md
   promote: .agents/skills/vetryn-promote-task/SKILL.md
@@ -39,6 +58,49 @@ review_policy:
   candidate_change_invalidates_validation_and_review: true
   promotion_tail: state_ledger_evidence_and_generated_progress_only
   remote_codex: separate_latest_head_residual_gate
+commands:
+  baseline:
+    - "pnpm format:check"
+    - "pnpm plan:check"
+  final:
+    - pnpm check
+test_matrix:
+  source: WORKFLOW.md#verification-and-evidence
+  preservation_required: true
+  tiers:
+    - tier: unit
+      status: active
+      command_refs:
+        - pnpm test
+    - tier: contract
+      status: active
+      command_refs:
+        - "pnpm test:contracts"
+    - tier: acceptance
+      status: active
+      command_refs:
+        - "pnpm plan:check"
+coverage_policy:
+  required: false
+  command_refs:
+    - "pnpm test:coverage"
+    - pnpm check
+  exception_policy: numeric coverage is advisory until V1-01; behavior changes require focused tests
+security_scanning:
+  required: true
+  scanner: CodeQL
+  workflow: .github/workflows/codeql.yml
+ci_lanes:
+  fast:
+    - "pnpm format:check"
+    - "pnpm plan:check"
+  core:
+    - pnpm check
+  risk:
+    - GitHub Actions CodeQL analyze (javascript-typescript)
+engineering_policies:
+  docs_parity: public commands, formats, policy semantics, workflow behavior, and examples update docs, schemas, fixtures, and changelog together
+  provenance_evidence: task, candidate commit, reviewed input digests, actor, role, result, and redaction state remain explicit in compact evidence
 implementation_risk:
   risk_tiers:
     low: local deterministic behavior with no persisted state, authority change, credential, network, remote mutation, or public contract effect
@@ -120,10 +182,108 @@ implementation_risk:
     - draft_pr_vs_merge
     - optional_inputs_vs_required_inputs
   required_transition_semantics: any transition matching required_transition_classes below
+architecture_policies:
+  systems_thinking: medium and high risk work records state owner, feedback, blast radius, source-of-truth impact, rollback or abstention, and downstream consumers
+  tdd: behavior and contract changes require failing tests or negative fixtures before implementation; skipped tests require structured evidence
+  adr_triggers: public contract, identity, state, privacy, or failure semantics changes require an ADR
+  reliability: persistence, filesystem mutation, provider calls, GitHub writes, and stale evidence require bounded fail-closed tests
+  failure_semantics: ambiguity, stale state, privacy risk, hard-limit failure, and insufficient evidence abstain or refuse
+code_review:
+  review_modes:
+    - diff
+    - security
+    - architecture
+  baseline_commands:
+    - "pnpm format:check"
+    - "pnpm plan:check"
+  command_anchors:
+    - pnpm check
+    - "pnpm --silent task:compile -- TASK-ID"
+  high_risk_surfaces:
+    - packages/core
+    - packages/typescript
+    - packages/cli
+    - examples/openrouter-typescript
+    - product/plans/schemas
+    - scripts/plan.mjs
+    - scripts/task.mjs
+    - .github/workflows
+    - docs/oss-v1.md
+  severity_escalators:
+    - recommendation or patch despite ambiguity, stale source, hard-limit failure, or contradictory evidence is P1
+    - raw protected prompt, output, trace, or credential in durable artifacts is P1
+    - evidence accepted with stale candidate, catalog, fixture, or policy binding is P1
+commit_push:
+  modes:
+    - commit_only
+    - push_pr
+    - land
+    - post_merge_fix
+  default_remote: origin
+  protected_branches:
+    - main
+  local_validation:
+    - pnpm check
+  command_anchors:
+    - "pnpm plan:check"
+    - pnpm check
+  required_pr_checks:
+    - discover-from-github
+  optional_checks: []
+  ci_timeout_minutes: 25
+  poll_seconds: 10
+  max_no_progress_cycles: 2
+  merge_strategy_order:
+    - squash
+    - rebase
+    - merge
+  submodule_policy:
+    factory_path: "disabled:no-factory-submodule"
+    require_clean_submodules: false
+    require_factory_commit_first: false
+    allow_parent_pointer_update_after_factory_commit: false
+  codex_review:
+    enabled: true
+    reviewer_identity: chatgpt-codex-connector
+    initial_wait_minutes: 15
+    followup_wait_minutes: 5
+    eyes_wait_minutes: 15
+    poll_seconds: 15
+    carry_forward_requires_prior_artifact: true
+    standalone_p2_exception:
+      enabled: true
+      authorization: explicit_human_task_or_pr
+      max_findings: 1
+      allowed_priorities:
+        - P2
+      require_current_head: true
+      require_green_ci: true
+      require_complete_current_head_inventory: true
+      require_no_active_eyes: true
+      require_no_changes_requested: true
+      require_no_p0_p1: true
+      require_no_unclassified: true
+      forbidden_break_classes:
+        - correctness
+        - security
+        - privacy
+        - data_loss
+        - contract
+        - concurrency
+        - evidence_integrity
+        - patch_safety
+        - release_integrity
+      evidence_ref_required: true
+  post_merge:
+    monitor_main: true
+    timeout_minutes: 25
+    hotfix_enabled: true
+    max_hotfix_loops: 2
+    hotfix_branch_pattern: codex/hotfix-{topic}-r{n}
 canonical_factory_profile: profiles/vetryn.yaml
 canonical_factory_source:
   repository: https://github.com/Clyra-AI/factory
-  commit: e34a383eb5243a47d1779763226ebadeecd64858
+  commit: c1a21e1d4b12fbde1e0d10935658d40b065b7bae
   profile_sha256: 9839833f777c42348a2feef1af880278d7b7846ba070b6ba2255cddc4fee15ec
   implementation_risk_sha256: 8e0b07fcdaad805a4a232c823ba5b1ca2f29cbf4bd4d28121a8ab753c81c601d
   semantic_risk_legacy_schema: schemas/artifacts/semantic-risk-report-v0.1.schema.json
@@ -132,3 +292,12 @@ canonical_factory_source:
   semantic_risk_schema: schemas/artifacts/semantic-risk-report-v0.2.schema.json
   semantic_risk_schema_sha256: b24c5028566b7da75df74a45d0efe48387c112b438048148a2f9e5bf47c3b3ee
   portable_semantic_risk_schema: product/plans/schemas/semantic-risk-report-v0.2.schema.json
+factory_worker_packs:
+  contract_version: "1"
+  pack_set_version: "1"
+  source_ref: Clyra-AI/factory@89aef07d38e693ee00709d1b830aad2f8274df02
+  manifest_sha256:
+    task-executor: sha256:8a4eea1be4e4b82b015564a040b03818cebbb4b56c15ede2c0b4834346000429
+    validation-gate: sha256:9bdfad96c7e3d93b3d9dbd6fd2a6334ad7ec17f9066635f0502c65e2a590b634
+    code-review: sha256:ccf539a9b7e380005e9384567be6539c01e55988b70659f67a956d5f8e4e8aa9
+    commit-push: sha256:af9c1ca8b7c03052a856de112c15c62fed2b37f8597f39cfca5f4e99736e7e33

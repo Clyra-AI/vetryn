@@ -1,24 +1,33 @@
-# Vetryn Factory adapter
+# Vetryn Factory operating profile
 
-Vetryn uses a lean repo-native planning model under `product/plans/`. This directory records the
-optional Factory adoption posture without making Factory a product dependency.
+Vetryn uses a repo-native planning model under `product/plans/`. This directory contains a self-contained profile
+with every field required by the four installed portable Factory workers, plus task-bound design evidence, without
+making Factory a product dependency. It is intentionally smaller than Factory's broader project profile because
+unconsumed Factory features are not part of Vetryn's worker contract.
 
 - Factory is not a Git submodule.
 - Factoryd runtime state belongs in ignored `.factoryd/`.
-- Repo-native task compilation is enabled; remote shipping, network, credentials, provider access, merge
-  authority, and autoship still require the canonical external Factory profile plus explicit human authority.
-- Factoryd's currently proven bootstrap template is Go CLI-specific. Vetryn will not claim runtime
-  readiness until a real TypeScript-compatible adapter validates `doctor` and dry-run behavior.
-- At adoption time, use a pinned Factory/Factoryd release or bundled commit plus an explicit local
-  development override such as `FACTORY_REPO`; do not serialize a machine-local path here.
+- Repo-native task compilation is enabled. Remote shipping, network, credentials, provider access, promotion, and
+  merge still require both packet capability and explicit current-run maintainer authority.
+- `.factory/profile.yaml` is the self-contained portable-worker profile and immutable trust anchor. It pins one
+  Factory source commit and the manifest digest of every required installed worker.
+- `$vetryn-continue-next` independently verifies committed profile bytes, every manifest pin and resource, and the
+  manifest-bound verifier before installed code executes. It never consults a sibling checkout.
+- Portable worker-pack contract v1 supports POSIX macOS and Linux with `/dev/fd`; other platforms receive the typed
+  `unsupported_platform` blocker before installed-pack I/O.
+- Factoryd remains deferred; `.factoryd/` is transient and non-authoritative.
+
+`commit_push.submodule_policy.factory_path` uses the quoted `disabled:no-factory-submodule` sentinel because the
+portable `commit-push` profile contract requires a non-empty field. Every related submodule flag is false; the
+sentinel must never be resolved or inspected as a path.
 
 Committed task-run evidence must be compact and redacted. Raw logs, claims, prompts, worktrees, grants,
 and credentials are transient runtime state.
 
-Use `pnpm --silent task:next` and `pnpm --silent task:compile -- TASK-ID` as the stable adapter surface. The canonical Factory
-specialization lives in Factory's `profiles/vetryn.yaml`; `profile.yaml` vendors the executable
-`implementation_risk` overlay and records the exact canonical Factory commit plus profile and semantic-risk
-schema digests. This does not make Factory a Vetryn product or runtime dependency.
+Use `pnpm --silent task:next` and `pnpm --silent task:compile -- TASK-ID` as the stable adapter surface. The profile
+vendors the executable policy used by task compilation, records its Factory provenance and semantic-risk schema
+digests, and pins the portable pack set. Updating any pin is a reviewed repository policy change and invalidates
+compiled packets that observed the prior profile.
 
 Compiled packets expose Factory's runner-ready task, scope, validation, worker-chain, lifecycle, evidence,
 runtime, compatibility, and acceptance-result fields directly. The executor still cannot fabricate lifecycle

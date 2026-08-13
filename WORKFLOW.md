@@ -40,9 +40,17 @@ on new scope, gates, or acceptance criteria.
 
 Factory's `task-executor`, `validation-gate`, `code-review`, and `commit-push` skills provide generic execution,
 validation, structured local review, and GitHub delivery behavior. Factory is an external development tool, not a
-product dependency or git submodule. Invoke installed Factory skills with the complete profile at
-`../factory/profiles/vetryn.yaml` after verifying that checkout matches the commit pinned in `.factory/profile.yaml`;
-the portable profile is the local adapter and digest anchor.
+product dependency, git submodule, or required sibling checkout. The self-contained `.factory/profile.yaml`
+provides every field required by the four portable workers and is their offline trust anchor. Before invoking a worker, the continuation preflight
+must verify the tracked profile bytes, its immutable Factory source and manifest pins, every installed pack
+resource, and the manifest-bound verifier. Missing or mixed packs block; local path overrides do not weaken pins.
+Portable worker-pack contract v1 is supported on POSIX macOS and Linux; unsupported platforms block before pack
+I/O and require a later reviewed execution mechanism rather than a weaker fallback.
+
+`$vetryn-continue-next` is an explicit-invocation convenience for discovering and carrying the sole legal task
+through this workflow. Its first step is the mutation-checked offline preflight. A `ready_for_authority` result is
+not permission: a current listed maintainer with current repository write authority must still issue an
+authenticated task-, packet-, run-, and action-scoped grant before any mutation or external effect.
 
 ## Evidence and promotion
 
@@ -65,7 +73,7 @@ contract-bearing bytes, invalidate the review and return to implementation. Neve
 ## Pull requests and shipping
 
 Use one task per branch and pull request. Before shipping, run `pnpm check` from a clean candidate commit. The PR
-describes the bounded change, validation, risks, and any provider or submodule notes. Use Factory `commit-push` in
+describes the bounded change, validation, risks, and any provider notes. Use Factory `commit-push` in
 `land` mode to push, monitor required CI, address concrete actionable findings, merge with maintainer authority,
 and monitor `main` afterward.
 

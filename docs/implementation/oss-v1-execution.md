@@ -124,7 +124,11 @@ contract.
 The packet's immutable digest map contains the product contract, plan, lockfile, portable Factory profile, and both
 vendored semantic-risk schemas. The v0.1 schema is retained because v0.2 references its stable field definitions.
 The profile pins the canonical Factory commit and digests for `profiles/vetryn.yaml` and both byte-identical schema
-files; profile or schema drift invalidates an active packet.
+files. It also pins the manifest digest for each installed portable worker in one immutable pack set. Profile,
+schema, or manifest-pin drift invalidates an active packet. The continuation bootstrap separately authenticates
+committed profile bytes, manifest pins, complete pack resources, and verifier bytes before it executes an installed
+verifier. Pack-set v1 is intentionally limited to POSIX macOS and Linux with `/dev/fd`; unsupported platforms fail
+with a stable blocker before installed-pack I/O and do not fall back to named-path execution.
 Ledger and task-state
 paths remain explicit canonical inputs whose current contracts are validated directly. An acceptance item may
 carry either the exact current ledger tail or an empty `planned` tail frozen before a canonical `accepted`
@@ -169,13 +173,30 @@ The later field gate requires at least ten qualified recommendation PRs across t
 least 40% merged within fourteen days, and zero serious quality, safety, privacy, or operational
 regressions. It validates the product thesis; it does not weaken per-PR correctness gates.
 
-## Factory integration stance
+## Portable continuation and Factory integration
 
-V1 does not add Factory as a git submodule. The reusable interface is the checked-in plan, state,
-ledger, evidence, and progress schemas. `.factory/profile.yaml` is a thin local policy profile, while
-`.factoryd/` is ignored transient runtime state. Factory can later consume these artifacts externally;
-Factoryd is deferred until it supports the TypeScript package graph without inheriting a Go-specific
-bootstrap contract.
+V1 does not add Factory as a git submodule or require it as a sibling checkout. The reusable interface is the
+checked-in plan, state, ledger, evidence, progress schemas, and self-contained portable-worker
+`.factory/profile.yaml`; `.factoryd/` is ignored transient runtime state. Installed portable Factory packs are usable only when the committed profile pins
+their source and exact manifests and the repository-owned bootstrap verifies the complete closure. Factoryd remains
+deferred until it supports the TypeScript package graph without inheriting a Go-specific bootstrap contract.
+
+The explicit `vetryn-continue-next` skill runs a shell-free, mutation-checked offline preflight. It derives the
+repository root, default branch, exactly one active-or-next task, compiled packet, capabilities, required skills,
+commands, reviews, promotion rules, and protected delivery lifecycle from committed repository state. It executes
+plan check, task selection, and task compilation twice for determinism and compares HEAD, branch, refs, index,
+status including ignored and untracked content, local configuration, remotes, canonical inputs, and the worktree
+before and after. Stable JSON contains no absolute path, remote URL, credential, or user identity.
+
+`ready_for_authority` means the offline inputs were coherent and unchanged. It does not authenticate a maintainer,
+prove server freshness, or authorize a branch, edit, promotion, GitHub write, merge, credential, or provider call.
+Those effects require a separately authenticated grant from a current listed maintainer for the exact run, task,
+packet, and actions. See ADR 0022.
+
+Continuation resumes only canonical `in_progress` work with `candidate: null` on a clean non-default branch that
+descends from synchronized local/remote main and whose committed diff remains inside packet scope. Candidate-bound,
+verification, review, and changes-requested phases fail closed until a separate lifecycle-tail contract defines
+which later commits may follow a frozen candidate without using a self-referential SHA.
 
 The repository-local `$vetryn-implement-task`, `$vetryn-verify-task`, `$vetryn-promote-task`, and
 `$vetryn-trust-review` skills specialize the task lifecycle. The trust skill activates for V1-06 and later
