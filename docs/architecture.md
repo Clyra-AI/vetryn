@@ -124,7 +124,7 @@ policy is digest-bound into the report and requires
 `workloadVolumeMaxAgeDays` from 1 through 31, `catalogMaxAgeHours` from 1 through 168,
 `evaluationMaxAgeHours` from 1 through 24, and `reportMaxAgeHours` from 1 through 24. The generator derives persisted
 report `generatedAt` from an internal orchestration clock rather than report input, CLI flags, or Action inputs;
-tests and offline replay may replace it only with a reviewed fixed clock. The report binds the current policy,
+tests and offline replay may replace it only with a reviewed fixed clock. A recommendation report binds the current policy,
 representative-usage profile, optional workload-volume profile or canonical absence, and immutable successful
 catalog-refresh observation by digest or identity. Generation and later patch or PR authorization re-evaluate all
 required temporal evidence against their own trusted clock with at most five minutes of future skew; report,
@@ -134,7 +134,8 @@ caller-timestamped captures are replay-only. Each actionable run binds an immuta
 come from the canonical runner's trusted clock or authenticated external provenance; imported or caller-restamped
 runs are replay-only. Source fingerprint, immutable fixture digest, evaluator identity, every cited run record,
 successful refresh observation and committed catalog content, pricing, policy, and economic profile bindings must
-exactly match the authorized inputs. Any required temporal or identity failure prevents patch authorization. An
+exactly match the authorized inputs. An abstention report carries every available or rejected identity and a finite
+reason for each unavailable required binding rather than manufacturing provenance. Any required temporal or identity failure prevents patch authorization. An
 absent, invalid, or stale optional workload profile falls back to normalized unit economics without making an
 otherwise valid recommendation abstain; missing required recommendation policy fails closed. Patch and PR
 authorization re-evaluate workload age at their own trusted invocation clock and suppress projections that have

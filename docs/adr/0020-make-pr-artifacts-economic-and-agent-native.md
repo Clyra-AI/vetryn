@@ -2,7 +2,9 @@
 
 ## Status
 
-Accepted for OSS V1 planning. Implementation remains assigned to V1-07, V1-09, and V1-10.
+Accepted for OSS V1 planning. Implementation is assigned across V1-06 through V1-10: trusted execution-time
+evidence in V1-06, economic and freshness policy in V1-07, patch-time reauthorization in V1-08, agent-native PR
+delivery in V1-09, and field attribution in V1-10.
 
 ## Context
 
@@ -28,7 +30,7 @@ between decision evidence and presentation-layer next actions.
   than the declared bound; absent policy, malformed or reversed windows, out-of-skew future times, and older
   observations forbid monthly and annual claims. A producer-supplied freshness claim is not trusted.
 - The same digest-bound policy declares `catalogMaxAgeHours` from 1 through 168, `evaluationMaxAgeHours` from 1
-  through 24, and `reportMaxAgeHours` from 1 through 24. The report binds the policy digest, representative-usage
+  through 24, and `reportMaxAgeHours` from 1 through 24. A recommendation report binds the policy digest, representative-usage
   profile digest, and workload-volume profile digest or a canonical absent marker. It also binds the immutable
   successful catalog-refresh observation whose ID, time, snapshot ID, and content digest commit the catalog and
   pricing evidence. An actionable authorization requires live acquisition whose time the Vetryn runtime derives at
@@ -43,8 +45,9 @@ between decision evidence and presentation-layer next actions.
   source fingerprint, immutable fixture digest, evaluator version and build, every cited run's authenticated
   execution record and completion time, successful refresh observation, catalog content and pricing, policy digest,
   representative-usage profile digest, and workload-volume profile digest or absent marker must exactly match the
-  currently authorized inputs. Missing, stale, future, or identity-mismatched
-  required decision evidence, including the recommendation policy itself, abstains and cannot authorize a patch. An
+  currently authorized inputs. An abstention report binds every available or rejected identity and records each
+  unavailable required binding with a finite reason; it never invents missing provenance. Missing, stale, future, or
+  identity-mismatched required decision evidence, including the recommendation policy itself, abstains and cannot authorize a patch. An
   absent, invalid, or stale optional workload profile suppresses only monthly and annual projections and uses
   normalized unit economics; it does not by itself make an otherwise valid recommendation abstain. Patch and PR
   authorization re-evaluate workload age at their own trusted invocation clock and remove projections that have
@@ -56,7 +59,7 @@ between decision evidence and presentation-layer next actions.
 - When that profile is valid and policy-current, reports derive estimated current and proposed monthly cost, monthly
   and annual savings, and savings percentage from it, the reviewed representative token profile, and bound catalog
   pricing. All projections are labeled estimates. Observed evaluation spend and optional runtime corroboration stay
-  separate. For projected workload economics only, this supersedes ADR 0019's earlier shorthand that recommendation
+  separate. For projected workload economics only, this supersedes M0-09's earlier shorthand that recommendation
   savings use observed evaluation cost: observed evaluation spend describes the bounded eval run, while realized
   field value requires later billing or runtime corroboration.
 - When workload-volume evidence is absent, invalid, or stale, reports show per-request or per-1,000-request economics

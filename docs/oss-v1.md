@@ -147,11 +147,11 @@ reviewed representative prompt/completion token weights and bound catalog pricin
 labeled an estimate rather than observed billing. Observed evaluation spend remains a separate measurement.
 Projected workload economics never extrapolate the bounded eval run's observed spend. Bound catalog pricing
 supports estimates; observed evaluation spend describes only the eval run; realized field value requires later
-billing or runtime corroboration. This distinction supersedes only ADR 0019's earlier shorthand that recommendation
+billing or runtime corroboration. This distinction supersedes only M0-09's earlier shorthand that recommendation
 savings use observed evaluation cost and preserves its rule that catalog estimates are never billed-cost proof.
 
 The same digest-bound policy declares `catalogMaxAgeHours` from 1 through 168, `evaluationMaxAgeHours` from 1
-through 24, and `reportMaxAgeHours` from 1 through 24. Reports bind the policy digest, representative-usage profile
+through 24, and `reportMaxAgeHours` from 1 through 24. Recommendation reports bind the policy digest, representative-usage profile
 digest, workload-volume profile digest or a canonical absent marker, and the immutable successful catalog-refresh
 observation whose record commits its ID, observation time, snapshot ID, and catalog content digest. Recommendation,
 patch, and PR authorization use a fresh trusted clock, allow at most five minutes of future skew, and re-evaluate
@@ -163,7 +163,9 @@ Caller-timestamped catalog captures and imported or restamped candidate runs are
 patch or PR. Authorization also requires the report's source fingerprint, immutable fixture digest, evaluator
 version and build, every cited execution record, successful refresh observation and committed catalog/pricing
 content, policy digest, representative-usage profile digest, and workload-volume profile digest or absent marker to
-exactly match the currently authorized inputs. Missing, stale, out-of-skew, or identity-mismatched required decision
+exactly match the currently authorized inputs. Abstention reports carry every available or rejected identity and a
+finite status-compatible reason for every unavailable required binding; they never invent missing provenance.
+Missing, stale, out-of-skew, or identity-mismatched required decision
 evidence produces an explicit abstention and no patch; presence alone is never freshness proof. An absent, invalid,
 or stale optional workload profile suppresses only monthly and annual projections and uses normalized unit economics;
 it does not by itself make an otherwise valid recommendation abstain. Patch and PR authorization re-evaluate the
