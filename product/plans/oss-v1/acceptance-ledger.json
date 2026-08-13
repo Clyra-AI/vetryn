@@ -496,6 +496,24 @@
       "evidenceRefs": []
     },
     {
+      "id": "EVAL-006",
+      "taskId": "V1-06",
+      "statement": "Every candidate run binds an immutable execution record whose startedAt and completedAt are derived by the canonical evaluator's trusted runtime clock rather than provider output, CLI or Action input, or imported artifact fields; deterministic tests may inject a reviewed fixed clock only at the runner boundary. Same-invocation evidence and canonical persisted repository run receipts are actionable. The evaluator atomically appends each receipt to the canonical content-addressed repository evidence log, binding the exact evaluation-input digest, artifact-content digest, runner identity, version and build, runner-derived timestamps, monotonic sequence, trust-epoch ID, and prior-head digest. In the same locked transaction, Vetryn authenticates the extension with a key held outside repository-controlled content and atomically advances its per-repository trusted exact-head anchor; reuse requires every entry authentication in that epoch to verify and the repository head to equal that anchor. The store rejects ID collisions, unauthenticated extensions, digest mismatches, gaps, forks, truncation, or rollback. A machine with no authenticated key and exact-head anchor treats historical receipts as replay-only. A fresh run creates a new externally anchored trust epoch containing only newly produced same-invocation receipts and never makes prior unanchored history actionable. Every downstream authorization re-verifies the epoch, chain, exact anchor, receipts, and current policy. Other persisted or imported evidence is actionable only when a repository-policy-allowlisted provenance verifier binds the artifact content digest, runner identity, timestamps, and exact anti-rollback head and its own identity, version, and configuration digest are authorization inputs. Caller-restamped, unauthenticated, arbitrarily imported, appended, rolled-back, or merely producer-labeled replay evidence cannot authorize a patch or PR.",
+      "verification": { "method": "test", "testLevel": "adversarial", "gateId": "QG-CONTRACTS" },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
+      "id": "EVAL-007",
+      "taskId": "V1-06",
+      "statement": "Provider-backed evaluation consumes the terminal result of the current invocation's ordered live catalog-refresh attempts, or a canonical hash-chained repository receipt backed by the trusted anti-rollback anchor or authenticated external provenance commits the complete ordered attempt lineage and proves the cited success remains the latest terminal attempt at authorization time. A success followed by failure, deletion or rollback of a later attempt, missing local anchor, an omitted attempt, a fork, or a lineage gap deterministically abstains and cannot reuse the older success; adversarial tests cover success-then-failure, deleted-failure, missing-anchor, rollback, and omitted-failure cases.",
+      "verification": { "method": "test", "testLevel": "adversarial", "gateId": "QG-CONTRACTS" },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
       "id": "RECOMMEND-001",
       "taskId": "V1-07",
       "statement": "A recommendation requires all hard gates, the configured quality threshold, minimum evidence, and a material economic opportunity.",
@@ -531,6 +549,24 @@
         "testLevel": "adversarial",
         "gateId": "QG-TRUST-REVIEW"
       },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
+      "id": "RECOMMEND-005",
+      "taskId": "V1-07",
+      "statement": "A report claims estimated monthly or annual savings only from a human-reviewed workload-volume profile whose monthlyRequestCount is an integer from 1 through 1,000,000,000,000 and that includes provenance and an RFC 3339 UTC observation time or window, plus a required digest-bound repository recommendation policy declaring workloadVolumeMaxAgeDays from 1 through 31. Missing required policy fails closed and abstains. Zero, negative, fractional, non-finite, unsafe, oversized, malformed, reversed-window, out-of-skew future, and stale optional workload inputs deterministically produce normalized unit economics with a finite reason. The generator derives report generatedAt from its internal orchestration clock rather than report, CLI, or Action input; deterministic tests and offline replay may inject a reviewed fixed clock only at that boundary. It first canonicalizes a receipt-free report payload, then stores a detached authenticated report-generation receipt as a separate exact-head-anchored log entry binding the payload digest, generator identity, version and build, original generatedAt, and every decision-input digest. The payload excludes the receipt and its ID; caller-restamping or recomputing an artifact ID cannot refresh it. At the trusted clock, window.end or observedAt is within the five-minute future-skew allowance and the declared age bound. Projected workload economics use bound catalog pricing. JSON stores savings percentage as an integer from 0 through 10,000 basis points computed from the exact rational (current - proposed) / current and rounded half up to the nearest basis point; Markdown renders the identical integer as a fixed two-decimal percentage. Zero current cost and proposed cost above current produce the finite unavailable reasons zero-current-cost and not-a-saving, with no division, infinity, or negative percentage. Observed evaluation spend describes only the eval run, realized field value requires later billing or runtime corroboration, and every projection is labeled as an estimate.",
+      "verification": { "method": "test", "testLevel": "adversarial", "gateId": "QG-CONTRACTS" },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
+      "id": "RECOMMEND-006",
+      "taskId": "V1-07",
+      "statement": "Every receipt-free recommendation report payload carries the exact source fingerprint, immutable fixture digest, evaluator version and build, every cited candidate-run ID with its immutable execution-record identity and runner-derived or authenticated start and completion times, digest-bound freshness-policy identity, representative-usage profile digest, workload-volume profile digest or canonical absent marker, immutable successful catalog-refresh observation ID whose record commits its acquisition mode, observedAt, snapshot ID, and catalog content digest, and every configured gate outcome with its evidence or finite reason. A detached authenticated report-generation receipt is stored as a separate log entry and binds the canonical payload digest, generator identity, version and build, and original generatedAt; the payload excludes the receipt and its ID. The cited success is the terminal result of the current invocation's ordered refresh attempts, or authenticated persisted provenance commits the complete ordered attempt lineage and proves that success remains the latest terminal attempt at authorization time. An abstention report carries each available identity and the exact rejected identity when one was supplied, while every unavailable required binding is represented by a finite status-compatible reason; it never invents a policy, run, refresh observation, or provenance identity. The required policy declares catalogMaxAgeHours from 1 through 168, evaluationMaxAgeHours from 1 through 24, and reportMaxAgeHours from 1 through 24. V1-07 exposes and adversarially tests a shared authorization validator that accepts a trusted invocation clock, checks every cited run independently, re-evaluates all required ages with at most five minutes of future skew, rejects superseded successes, unauthenticated append, deleted or rolled-back attempts, restamped reports, and omitted attempts, and requires exact current source, fixture, evaluator, execution records, detached report receipt, refresh observation and terminal attempt lineage, catalog/pricing content, required policy, and representative-usage bindings; PATCH-005 and ACTION-003 separately require downstream consumers to invoke it. Actionable persisted evidence is carried by a canonical authenticated hash-chained receipt whose repository log head exactly equals the Vetryn-controlled anchor and is re-verified against current policy, or by a repository-policy-allowlisted provenance verifier whose identity, version, configuration digest, exact anti-rollback head, and statement binding artifact content, producer identity, timestamps, and complete ordered catalog-attempt lineage are authorization inputs. A machine without an authenticated local key and exact-head anchor treats historical repository receipts as replay-only. A fresh run creates a new externally anchored trust epoch containing only newly produced same-invocation receipts and cannot rehabilitate earlier unanchored history. Caller-timestamped captures and arbitrarily imported, appended, rolled-back, restamped, or caller-restamped evidence is replay-only. Deterministic missing-policy, failed-refresh-without-observation, success-then-failure, deleted-failure, unauthenticated-append, missing-anchor, rollback, omitted-failure, lineage-gap, missing, malformed, stale-single-run, future, identity-mismatch, imported-backdated-report, restamped-report, forged-refresh-time, mutable-fixture-revision, changed-policy, changed-profile, self-referential-receipt, and unverified-provenance cases emit status-valid abstentions and cannot authorize a patch. Missing, invalid, or stale optional workload evidence instead uses an authenticated presentation revision that binds the immutable recommendation digest, original workload profile digest or absence marker, fresh authorization time, canonical rejection reason, and normalized economics. The revision may only remove monthly and annual projections and cannot alter recommendation eligibility, confidence, gates, or evidence; substitution with a different valid profile requires a new recommendation.",
+      "verification": { "method": "test", "testLevel": "adversarial", "gateId": "QG-CONTRACTS" },
       "waivable": false,
       "status": "planned",
       "evidenceRefs": []
@@ -576,6 +612,15 @@
       "evidenceRefs": []
     },
     {
+      "id": "PATCH-005",
+      "taskId": "V1-08",
+      "statement": "Before generating or applying a patch, the patcher invokes the shared authorization validator with its own trusted invocation clock, independently re-evaluates the authenticated report-generation receipt, live or equivalently authenticated catalog/pricing evidence including terminal refresh-attempt lineage, every cited candidate run, and optional workload age, and requires exact current source fingerprint, immutable fixture digest, evaluator identity, trusted execution records, latest successful catalog-refresh observation and committed catalog/pricing content, required policy digest, and representative-usage profile digest. Required evidence mismatches refuse the patch. The patcher never rewrites the immutable recommendation. If its originally bound workload profile is now absent, invalid, or stale, the patcher creates and authenticates a presentation revision binding the recommendation digest, original workload profile digest, fresh authorization time, canonical rejection reason, and normalized economics. The revision removes projections only and cannot change recommendation eligibility, confidence, gates, or evidence; substitution with a different valid workload profile requires a new recommendation. Success-then-failure, omitted-failure, lineage-gap, stale-single-run, replay-only, out-of-skew, imported-backdated, forged-refresh-time, missing or changed policy, or identity-mismatched required evidence deterministically refuses the patch even when V1-07 previously emitted a recommendation.",
+      "verification": { "method": "test", "testLevel": "adversarial", "gateId": "QG-SCENARIOS" },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
       "id": "ACTION-001",
       "taskId": "V1-09",
       "statement": "The composite Action runs the supported workflow from a clean external fixture using packed CLI artifacts.",
@@ -600,7 +645,7 @@
     {
       "id": "ACTION-003",
       "taskId": "V1-09",
-      "statement": "Failed and abstained runs publish evidence but cannot open a migration PR.",
+      "statement": "Immediately before creating or updating a draft PR, both vetryn assess and the composite Action invoke the shared authorization validator with their own trusted invocation clock and exact authenticated report-generation receipt, current source fingerprint, immutable fixture digest, evaluator identity, every cited trusted execution record, live or equivalently authenticated latest successful catalog-refresh observation with complete terminal attempt lineage and committed catalog/pricing content, required policy digest, and representative-usage profile digest. They independently re-evaluate optional workload evidence without rewriting the immutable recommendation. If the originally bound profile is now absent, invalid, or stale, they create and authenticate a presentation revision binding the recommendation digest, original profile digest, fresh authorization time, canonical rejection reason, and normalized economics; the revision removes projections only. A different valid profile requires a new recommendation. Failed, abstained, success-then-failure, omitted-failure, lineage-gap, stale-single-run, replay-only, out-of-skew, imported-backdated, forged-refresh-time, missing or changed policy, or identity-mismatched required evidence publishes explicit evidence but cannot create or update a migration PR.",
       "verification": { "method": "test", "testLevel": "adversarial", "gateId": "QG-SCENARIOS" },
       "waivable": false,
       "status": "planned",
@@ -629,6 +674,24 @@
       "taskId": "V1-09",
       "statement": "Action evidence reconciles supported files, parse failures, source observations, manifest-bound call sites, evaluation readiness, recommendations, abstentions, and draft PRs without claiming a complete runtime inventory.",
       "verification": { "method": "test", "testLevel": "e2e", "gateId": "QG-SCENARIOS" },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
+      "id": "ACTION-007",
+      "taskId": "V1-09",
+      "statement": "From a clean external fixture with a reviewed manifest and eval suite, one documented vetryn assess command runs the supported orchestration path and the composite Action invokes that same path with explicit GitHub mode for draft-PR creation. Before any provider call, both paths load and validate the required repository recommendation policy and all other deterministic prerequisites; a missing or malformed required policy emits an explicit abstention, makes zero provider calls, and incurs no provider spend. Stable JSON, documented exit semantics, Markdown-first onboarding, and root llms.txt provide behaviorally identical installation and operation guidance for Codex, Claude, and other coding agents.",
+      "verification": { "method": "test", "testLevel": "e2e", "gateId": "QG-PACK-SMOKE" },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
+      "id": "ACTION-008",
+      "taskId": "V1-09",
+      "statement": "Every recommendation PR and abstention report derives its next-assessment section from reconciled eligible call-site or repository-funnel counts: it renders an exact action when another eligible target exists and explicitly reports none otherwise; it never changes decision or patch eligibility, implies complete runtime inventory, or requires mandatory telemetry.",
+      "verification": { "method": "test", "testLevel": "adversarial", "gateId": "QG-SCENARIOS" },
       "waivable": false,
       "status": "planned",
       "evidenceRefs": []
@@ -686,6 +749,15 @@
       "id": "FIELD-006",
       "taskId": "V1-10",
       "statement": "Each design-partner repository records the exact assessed-surface funnel from supported observations through manifest binding, evaluation readiness, recommendation, pull request, and merge, including denominators and exclusion reasons.",
+      "verification": { "method": "field", "testLevel": "field", "gateId": "QG-FIELD" },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
+      "id": "FIELD-007",
+      "taskId": "V1-10",
+      "statement": "Field evidence uses a predeclared digest-bound attribution policy and records the denominator of qualified recommendation PRs plus the attributable count whose authenticated non-bot reviewers initiate or refer a follow-on assessment. Each counted assessment starts at or after and within 30 days of the event, with start time derived from the assessment's trusted invocation clock or authenticated external provenance rather than an imported producer timestamp. The event explicitly identifies its follow-on target, and that normalized repository or call-site target exactly equals the normalized target bound into the follow-on assessment. Evidence also binds the exact qualified PR identity and head, reviewer event identity, actor and time, and follow-on assessment identity, digest, start time, and start-time provenance. The policy adversarially rejects backdating and excludes PR authors, Vetryn automation, target mismatches, unmatched identities, missing event or start provenance, duplicates, and out-of-window records; it assigns each duplicate follow-on to the earliest valid event time then canonical event ID and records time-to-follow-on and exclusion reasons without mandatory telemetry or raw customer content.",
       "verification": { "method": "field", "testLevel": "field", "gateId": "QG-FIELD" },
       "waivable": false,
       "status": "planned",

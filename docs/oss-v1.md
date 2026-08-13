@@ -64,6 +64,13 @@ confidently.
 5. `vetryn recommend` creates a machine-readable and Markdown evidence report.
 6. The GitHub workflow opens or updates a draft PR changing one verified model literal.
 
+After a repository has a reviewed manifest and eval suite, one documented `vetryn assess` command orchestrates
+evaluation, recommendation, reporting, and verified patch preparation. The composite GitHub Action invokes the same
+path and may open the draft PR only in an explicit GitHub-enabled mode with the required permissions. The individual
+commands remain available for inspection and replay. Both orchestration paths validate the required repository
+recommendation policy and other deterministic prerequisites before any provider call. Missing or malformed required
+policy emits an explicit abstention with zero provider calls and no provider spend.
+
 ## PR evidence contract
 
 Every recommendation PR must show:
@@ -75,9 +82,23 @@ Every recommendation PR must show:
 - fixture revision, evaluator version, seed, attempts, and sample count;
 - quality, cost, latency, error, and variance deltas;
 - failed or regressed cases with redaction controls;
-- all configured gates and their outcomes;
-- confidence and explicit limitations; and
-- exact commands required to reproduce the result.
+- estimated current and proposed monthly cost, monthly and annual savings, and savings percentage when reviewed
+  workload-volume evidence is policy-current; otherwise normalized unit economics and the reason a monthly claim is
+  unavailable;
+- the reviewed workload volume and provenance used for any projection, plus the observed evaluation cost itself;
+- freshness evidence comprising the source fingerprint, immutable fixture digest, evaluator version and build,
+  every cited candidate-run ID with its immutable execution-record identity, authenticated or runner-derived start
+  and completion times, report `generatedAt`, policy digest, representative-usage profile digest,
+  workload-volume profile digest or canonical absent marker, and the immutable successful catalog-refresh
+  observation ID whose record commits its observation time, snapshot ID, and catalog content digest;
+- all configured gates, their outcomes, and the evidence or reason supporting each outcome;
+- confidence and explicit limitations;
+- exact commands required to reproduce the result; and
+- a next-assessment section derived from reconciled repository counts, with an exact action when another eligible
+  target exists and an explicit none-available result otherwise, without implying complete runtime inventory.
+
+Every abstention report carries the applicable provenance, economics, freshness, gate outcomes, and limitations
+from the same contract, plus a finite reason for abstention and no patch plan.
 
 ## Domain artifact contract
 
@@ -111,6 +132,73 @@ Every recommendation also carries finite explicit limitation codes and one or mo
 reproduction operations that the report renderer converts into exact commands. Candidate-run input lists reject duplicate artifact IDs; every durable repository path
 rejects absolute, traversal, backslash, and Windows drive-qualified forms.
 
+Economic projections require an optional human-reviewed workload-volume profile with `monthlyRequestCount` as an
+integer from 1 through 1,000,000,000,000, provenance, and an RFC 3339 UTC observation time or window. Zero,
+negative, fractional, non-finite, unsafe, and oversized counts are invalid optional evidence; they produce
+normalized unit economics and a finite reason rather than monthly or annual values. The repository-owned reviewed
+recommendation policy must
+declare `workloadVolumeMaxAgeDays` as an integer from 1 through 31 and must be digest-bound into the report. The
+generator derives persisted report `generatedAt` from its internal orchestration clock rather than accepting it
+from report input, a CLI flag, or an Action input. It first canonicalizes a receipt-free report payload and computes
+its digest, then writes a detached authenticated report-generation receipt as a separate log entry binding that
+payload digest, generator identity, original time, and every decision input. The payload excludes the receipt and
+its ID, so authentication is not self-referential and restamping cannot refresh a persisted report. Production uses the Vetryn runtime clock; deterministic tests and offline replay may substitute a reviewed fixed clock at that boundary. The effective observation time is the window end when present and `observedAt` otherwise; it
+is current only when it is within the five-minute future-skew allowance and its age is within the declared bound.
+Malformed or reversed windows, out-of-skew future times, and older optional workload inputs permit per-request or
+per-1,000-request comparisons but cannot produce a monthly or annual savings claim. A missing required
+recommendation policy fails closed and abstains. Current profiles combine with
+reviewed representative prompt/completion token weights and bound catalog pricing, and every resulting value is
+labeled an estimate rather than observed billing. Observed evaluation spend remains a separate measurement.
+Projected workload economics never extrapolate the bounded eval run's observed spend. Bound catalog pricing
+supports estimates; observed evaluation spend describes only the eval run; realized field value requires later
+billing or runtime corroboration. This distinction supersedes only M0-09's earlier shorthand that recommendation
+savings use observed evaluation cost and preserves its rule that catalog estimates are never billed-cost proof.
+
+The same digest-bound policy declares `catalogMaxAgeHours` from 1 through 168, `evaluationMaxAgeHours` from 1
+through 24, and `reportMaxAgeHours` from 1 through 24. Recommendation reports bind the policy digest, representative-usage profile
+digest, workload-volume profile digest or a canonical absent marker, and the immutable successful catalog-refresh
+observation whose record commits its ID, observation time, snapshot ID, and catalog content digest. Recommendation,
+patch, and PR authorization use a fresh trusted clock, allow at most five minutes of future skew, and re-evaluate
+report and catalog/pricing ages plus the completion time of every cited candidate run; no newest-run or aggregate
+timestamp can mask a stale cited run. The cited successful refresh must be the terminal result of the current
+invocation's ordered refresh attempts, or authenticated provenance must commit the complete ordered lineage and
+prove that success remains the latest terminal attempt; a newer failure or omitted attempt fails closed. Actionable
+catalog freshness requires live acquisition timed by the Vetryn runtime, a canonical persisted repository receipt,
+or equivalent authenticated external provenance, and every actionable candidate run binds an immutable execution
+record whose times come from the canonical runner's trusted clock, a canonical persisted receipt, or authenticated
+external provenance. Caller-timestamped catalog captures and arbitrary imported or restamped candidate runs are replay-only and cannot authorize a
+patch or PR. Authorization also requires the report's source fingerprint, immutable fixture digest, evaluator
+version and build, every cited execution record, successful refresh observation and committed catalog/pricing
+content, policy digest, representative-usage profile digest, and original workload-volume profile digest or absent
+marker to match the recommendation inputs. Abstention reports carry every available or rejected identity and a
+finite status-compatible reason for every unavailable required binding; they never invent missing provenance.
+Missing, stale, out-of-skew, or identity-mismatched required decision
+evidence produces an explicit abstention and no patch; presence alone is never freshness proof. An absent, invalid,
+or stale optional workload profile suppresses only monthly and annual projections and uses normalized unit economics;
+it does not by itself make an otherwise valid recommendation abstain. Patch and PR authorization do not rewrite that
+decision artifact. If an originally current workload profile expires, Vetryn creates a separately authenticated
+presentation revision binding the recommendation digest, original profile digest, fresh authorization time,
+canonical rejection reason, and normalized economics. The revision may remove projections only; another valid
+profile requires a new recommendation.
+
+Savings percentage uses exact rational arithmetic and is stored as integer basis points from 0 through 10,000,
+rounded half up to the nearest basis point; Markdown renders that same integer as a fixed two-decimal percentage.
+When current estimated cost is zero or proposed cost exceeds current cost, percentage is unavailable with the finite
+reason `zero-current-cost` or `not-a-saving` instead of division by zero, infinity, or a negative percentage.
+
+Same-invocation evidence and canonical persisted repository receipts are actionable. For cross-invocation reuse,
+Vetryn authenticates every hash-chain extension with a key outside repository-controlled content and atomically
+advances its exact-head per-repository anchor in the same locked transaction. Authorization requires every entry to
+verify and the repository head to equal that anchor; append, deletion, truncation, fork, or rollback fails closed. A
+fresh machine without the authenticated key and anchor treats historical receipts as replay-only. A new run creates
+a new externally anchored trust epoch containing only newly produced same-invocation receipts; it never authenticates
+or makes prior unanchored history actionable. Other provenance requires a policy-allowlisted verifier that binds an
+exact anti-rollback head.
+
+The canonical recommendation and abstention remain decision artifacts. Agent-install guidance and contextual
+expansion prompts are deterministic presentation-layer next actions; they cannot alter eligibility, confidence,
+gate outcomes, or patch authorization.
+
 ## Non-goals
 
 OSS V1 is not a gateway, production proxy, dynamic router, prompt-management system, synthetic eval
@@ -136,12 +224,22 @@ Before calling V1 dependable, the project should demonstrate:
 - zero source rewrites outside the bound model literal in the fixture corpus;
 - deterministic replay for deterministic scorers and stable semantic artifact digests;
 - a clear `insufficient-evidence` outcome for undersized or contradictory suites;
-- less than 30 minutes from installation to the first local comparison on the golden path.
+- less than 30 minutes from installation to the first local comparison on the golden path; and
+- one documented CLI orchestration command or composite Action invocation after the reviewed manifest and eval suite
+  are configured, with stable JSON output and documented exit semantics.
 
 Engineering completion and field validation are separate gates. Before expanding beyond V1, require at
 least ten qualified recommendation PRs across three companies, at least a 40% merge rate, and zero
-serious escaped regressions. Twenty safe rollouts remain a later confidence milestone rather than a
-deterministic build gate.
+serious escaped regressions. Field evidence also records whether recommendation PR reviewers initiate or refer a
+follow-on call-site or repository assessment, without adding mandatory telemetry. A predeclared policy counts only
+an assessment that starts at or after and within 30 days of an authenticated non-bot review or referral event on a
+qualified PR. The event must explicitly identify the follow-on target, evidence binds both artifacts, and the
+event's normalized repository or call-site target must exactly equal the normalized target bound into the follow-on
+assessment. The assessment start time must come from its trusted invocation clock or authenticated external
+provenance, never an imported producer timestamp. A duplicate follow-on is assigned to the earliest valid event time
+then canonical event ID. PR authors, Vetryn automation, backdated starts, target mismatches, unmatched identities,
+missing event evidence, duplicates, and out-of-window records are excluded.
+Twenty safe rollouts remain a later confidence milestone rather than a deterministic build gate.
 
 An optional calibrated semantic-rubric scorer may be designed only after that field work demonstrates
 through separate sanitized evidence that deterministic evaluation blocks valuable open-ended call sites.
@@ -158,6 +256,24 @@ design.
   structural discovery fingerprint, confidence, and patchability reason.
 - JSON and Markdown are the required evidence formats. SARIF is deferred until a concrete code-scanning
   use is specified.
+- Monthly and annual economic claims require reviewed workload-volume provenance that passes the digest-bound
+  1-to-31-day repository policy at report generation and every later patch or PR authorization. Out-of-skew future,
+  malformed, reversed-window, and stale optional workload inputs produce normalized unit economics rather than a
+  manufactured monthly estimate; a missing required recommendation policy abstains.
+- The digest-bound freshness policy also caps catalog/pricing evidence at 168 hours, evaluation evidence at 24
+  hours, and reports at 24 hours, with repository-selected values at or below those ceilings. Generation and every
+  later patch or PR authorization use a trusted clock with no more than five minutes of future skew and require
+  exact current source fingerprint, immutable fixture digest, evaluator identity, every cited run's trusted
+  execution record, a live or equivalently authenticated successful catalog-refresh observation and committed
+  content, policy digest, and representative-usage plus optional workload-profile bindings. Replay-only timestamps
+  cannot authorize, and invalid optional workload evidence falls back to normalized economics rather than forcing
+  abstention.
+- Root `llms.txt`, Markdown onboarding, stable JSON output, and documented exit semantics provide one
+  provider-neutral installation and operation contract for coding agents. Codex- or Claude-specific pages may
+  explain the same commands but cannot introduce separate product behavior.
+- Recommendation PRs and abstention reports include a next-assessment section derived only from reconciled
+  repository counts. It renders an exact action when an eligible target exists and explicitly reports none otherwise.
+  This is presentation metadata, not recommendation evidence, and Vetryn ships no mandatory growth telemetry.
 - New packages are extracted only when their milestone begins; empty placeholder packages are not
   created.
 - `Rollout`, optional judges, Python, hosted execution, and production canaries are outside OSS V1.

@@ -2,7 +2,7 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "V1-09",
-  "revision": 7,
+  "revision": 16,
   "state": "planned",
   "attempt": 0,
   "candidate": null,
@@ -34,6 +34,16 @@
     },
     {
       "criterionId": "ACTION-006",
+      "status": "pending",
+      "evidenceRefs": []
+    },
+    {
+      "criterionId": "ACTION-007",
+      "status": "pending",
+      "evidenceRefs": []
+    },
+    {
+      "criterionId": "ACTION-008",
       "status": "pending",
       "evidenceRefs": []
     }
@@ -144,6 +154,69 @@
       "at": "2026-08-12T10:04:24Z",
       "actor": "davidahmann",
       "reason": "Required the Action to publish an exact assessed-surface funnel without claiming complete runtime inventory."
+    },
+    {
+      "from": "planned",
+      "to": "planned",
+      "at": "2026-08-12T23:30:00Z",
+      "actor": "davidahmann",
+      "reason": "Added one-command or Action activation, provider-neutral coding-agent instructions, stable machine semantics, and reconciled next-assessment actions."
+    },
+    {
+      "from": "planned",
+      "to": "planned",
+      "at": "2026-08-13T00:34:00Z",
+      "actor": "davidahmann",
+      "reason": "Required the CLI and Action to reauthorize freshness and exact evidence identities immediately before creating or updating a draft migration PR."
+    },
+    {
+      "from": "planned",
+      "to": "planned",
+      "at": "2026-08-13T00:43:00Z",
+      "actor": "davidahmann",
+      "reason": "Extended PR-time reauthorization to current policy and profile digests, immutable fixture content, and successful catalog-refresh evidence without treating optional workload absence as a hard failure."
+    },
+    {
+      "from": "planned",
+      "to": "planned",
+      "at": "2026-08-13T00:58:00Z",
+      "actor": "davidahmann",
+      "reason": "Required live or authenticated catalog time evidence and independent trusted-time validation for every cited candidate run before draft-PR writes."
+    },
+    {
+      "from": "planned",
+      "to": "planned",
+      "at": "2026-08-13T01:12:00Z",
+      "actor": "davidahmann",
+      "reason": "Required PR-time workload-age revalidation and normalized rerendering when projections expire after report generation."
+    },
+    {
+      "from": "planned",
+      "to": "planned",
+      "at": "2026-08-13T01:38:00Z",
+      "actor": "davidahmann",
+      "reason": "Required PR-time proof that the cited catalog success is the latest terminal refresh attempt with no omitted failure."
+    },
+    {
+      "from": "planned",
+      "to": "planned",
+      "at": "2026-08-13T02:00:00Z",
+      "actor": "davidahmann",
+      "reason": "Required assess and Action orchestration to reject missing or malformed required policy before any provider call or spend."
+    },
+    {
+      "from": "planned",
+      "to": "planned",
+      "at": "2026-08-13T02:50:00Z",
+      "actor": "davidahmann",
+      "reason": "Required PR-time workload expiry to use a bound projection-removal presentation revision without mutating the recommendation."
+    },
+    {
+      "from": "planned",
+      "to": "planned",
+      "at": "2026-08-13T03:00:00Z",
+      "actor": "davidahmann",
+      "reason": "Clarified that PR authorization verifies the detached receipt over the canonical receipt-free report payload."
     }
   ]
 }

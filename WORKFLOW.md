@@ -22,6 +22,10 @@ access.
 4. Use `$vetryn-implement-task` for implementation. Use `$vetryn-verify-task` for an additional independent check
    when available, and `$vetryn-promote-task` for maintainer-controlled state promotion.
 
+Planning and product-contract changes on a feature branch are proposals, not implementation authority. Merge them
+through review to `main`, resync the downstream branch, and compile the task from canonical `main` before relying
+on new scope, gates, or acceptance criteria.
+
 Factory's `task-executor`, `validation-gate`, `code-review`, and `commit-push` skills provide generic execution,
 validation, structured local review, and GitHub delivery behavior. Factory is an external development tool, not a
 product dependency or git submodule.

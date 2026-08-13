@@ -2,7 +2,7 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "V1-08",
-  "revision": 0,
+  "revision": 7,
   "state": "planned",
   "attempt": 0,
   "candidate": null,
@@ -24,6 +24,11 @@
     },
     {
       "criterionId": "PATCH-004",
+      "status": "pending",
+      "evidenceRefs": []
+    },
+    {
+      "criterionId": "PATCH-005",
       "status": "pending",
       "evidenceRefs": []
     }
@@ -80,6 +85,55 @@
       "at": "2026-08-10T00:30:00Z",
       "actor": "planning-agent",
       "reason": "Task created by the canonical OSS V1 plan."
+    },
+    {
+      "from": "planned",
+      "to": "planned",
+      "at": "2026-08-13T00:34:00Z",
+      "actor": "davidahmann",
+      "reason": "Required patch generation and application to reauthorize freshness and exact evidence identities at their own invocation time."
+    },
+    {
+      "from": "planned",
+      "to": "planned",
+      "at": "2026-08-13T00:43:00Z",
+      "actor": "davidahmann",
+      "reason": "Extended patch reauthorization to current policy and profile digests, immutable fixture content, and successful catalog-refresh evidence without treating optional workload absence as a hard failure."
+    },
+    {
+      "from": "planned",
+      "to": "planned",
+      "at": "2026-08-13T00:58:00Z",
+      "actor": "davidahmann",
+      "reason": "Required live or authenticated catalog time evidence and independent trusted-time validation for every cited candidate run before patching."
+    },
+    {
+      "from": "planned",
+      "to": "planned",
+      "at": "2026-08-13T01:12:00Z",
+      "actor": "davidahmann",
+      "reason": "Required patch-time workload-age revalidation and suppression of projections that expire after report generation."
+    },
+    {
+      "from": "planned",
+      "to": "planned",
+      "at": "2026-08-13T01:38:00Z",
+      "actor": "davidahmann",
+      "reason": "Required patch-time proof that the cited catalog success is not superseded by a newer failed or omitted refresh attempt."
+    },
+    {
+      "from": "planned",
+      "to": "planned",
+      "at": "2026-08-13T02:50:00Z",
+      "actor": "davidahmann",
+      "reason": "Required patch-time workload expiry to use a bound projection-removal presentation revision without mutating the recommendation."
+    },
+    {
+      "from": "planned",
+      "to": "planned",
+      "at": "2026-08-13T03:00:00Z",
+      "actor": "davidahmann",
+      "reason": "Clarified that patch authorization verifies the detached receipt over the canonical receipt-free report payload."
     }
   ]
 }

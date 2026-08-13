@@ -16,9 +16,12 @@ compiled task packet always take precedence over this map.
 | How is a task implemented, verified, promoted, and merged? | `WORKFLOW.md`                                             |
 | Which repository skill applies?                            | This document and `.agents/skills/`                       |
 | What is current progress?                                  | Generated `product/plans/oss-v1/progress.json`            |
+| How do coding agents install and invoke Vetryn?            | Root `llms.txt` and onboarding docs after V1-09           |
 
 `ROADMAP.md` is a human summary. Chat history, ignored files, local prompts, and generated progress never grant
-task scope, capabilities, acceptance, review, or merge authority.
+task scope, capabilities, acceptance, review, or merge authority. Neither do consumer-facing `llms.txt` or agent
+onboarding docs: those surfaces explain how to invoke Vetryn but cannot override repository policy or reviewed
+delivery truth.
 
 ## Repository map
 
@@ -47,7 +50,8 @@ or compiled task authorizes it.
 5. Route the work through the applicable skill below.
 
 If no legal task covers the requested work, do not borrow scope from a future task. Propose a narrow plan or
-process change for maintainer review.
+process change for maintainer review. A planning or product-contract amendment remains a proposal until it is
+reviewed and merged to `main`; resync and compile downstream implementation from that canonical state.
 
 ## Current skill routing
 
@@ -118,6 +122,7 @@ schemas, CI, or hooks.
 | Exact execution, evidence, review, and merge procedure  | `WORKFLOW.md`                                           |
 | Reusable bounded workflow                               | `.agents/skills/<name>/SKILL.md`                        |
 | Mechanically enforceable invariant                      | Schema, script, test, CI, or hook                       |
+| Consumer coding-agent install and invocation guidance   | Root `llms.txt` and Markdown docs                       |
 | Machine-specific preference or transient execution note | User-level Codex configuration or ignored runtime state |
 
 Add a committed nested `AGENTS.md` only when a subtree has durable rules that genuinely differ from or refine

@@ -2,7 +2,7 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "V1-07",
-  "revision": 0,
+  "revision": 11,
   "state": "planned",
   "attempt": 0,
   "candidate": null,
@@ -24,6 +24,16 @@
     },
     {
       "criterionId": "RECOMMEND-004",
+      "status": "pending",
+      "evidenceRefs": []
+    },
+    {
+      "criterionId": "RECOMMEND-005",
+      "status": "pending",
+      "evidenceRefs": []
+    },
+    {
+      "criterionId": "RECOMMEND-006",
       "status": "pending",
       "evidenceRefs": []
     }
@@ -75,6 +85,83 @@
       "at": "2026-08-10T00:30:00Z",
       "actor": "planning-agent",
       "reason": "Task created by the canonical OSS V1 plan."
+    },
+    {
+      "from": "planned",
+      "to": "planned",
+      "at": "2026-08-12T23:30:00Z",
+      "actor": "davidahmann",
+      "reason": "Required defensible monthly economics, evidence freshness, normalized fallback economics, and separate observed evaluation spend in the recommendation artifact."
+    },
+    {
+      "from": "planned",
+      "to": "planned",
+      "at": "2026-08-13T00:15:00Z",
+      "actor": "davidahmann",
+      "reason": "Defined the digest-bound workload freshness clock and added explicit acceptance for complete freshness and gate evidence in recommendation and abstention reports."
+    },
+    {
+      "from": "planned",
+      "to": "planned",
+      "at": "2026-08-13T00:22:00Z",
+      "actor": "davidahmann",
+      "reason": "Bound report generation and later authorization to trusted clocks, explicit catalog, evaluation, report, and workload age ceilings, and exact current evidence identities."
+    },
+    {
+      "from": "planned",
+      "to": "planned",
+      "at": "2026-08-13T00:34:00Z",
+      "actor": "davidahmann",
+      "reason": "Separated catalog-bound workload projections, observed evaluation spend, and realized field value, and scoped V1-07 to a shared authorization validator whose downstream invocation is accepted separately."
+    },
+    {
+      "from": "planned",
+      "to": "planned",
+      "at": "2026-08-13T00:43:00Z",
+      "actor": "davidahmann",
+      "reason": "Bound freshness to current policy and economic-profile digests, immutable fixture content, and a successful catalog-refresh observation while preserving normalized economics for absent optional workload evidence."
+    },
+    {
+      "from": "planned",
+      "to": "planned",
+      "at": "2026-08-13T00:58:00Z",
+      "actor": "davidahmann",
+      "reason": "Required trusted catalog and per-run time provenance, independent freshness checks for every cited run, and bounded positive monthly request counts."
+    },
+    {
+      "from": "planned",
+      "to": "planned",
+      "at": "2026-08-13T01:12:00Z",
+      "actor": "davidahmann",
+      "reason": "Made the recommendation policy required and fail-closed while keeping missing or stale workload-volume evidence an optional normalized-economics fallback."
+    },
+    {
+      "from": "planned",
+      "to": "planned",
+      "at": "2026-08-13T01:24:00Z",
+      "actor": "davidahmann",
+      "reason": "Made recommendation evidence status-discriminated so missing-policy and failed-refresh cases emit explicit abstentions without inventing unavailable identities."
+    },
+    {
+      "from": "planned",
+      "to": "planned",
+      "at": "2026-08-13T01:38:00Z",
+      "actor": "davidahmann",
+      "reason": "Required terminal refresh-attempt lineage and defined deterministic basis-point percentage arithmetic with finite unavailable outcomes."
+    },
+    {
+      "from": "planned",
+      "to": "planned",
+      "at": "2026-08-13T02:50:00Z",
+      "actor": "davidahmann",
+      "reason": "Separated immutable recommendation evidence from authenticated presentation revisions used when optional workload projections expire."
+    },
+    {
+      "from": "planned",
+      "to": "planned",
+      "at": "2026-08-13T03:00:00Z",
+      "actor": "davidahmann",
+      "reason": "Defined report authentication as a detached receipt over a canonical receipt-free payload to eliminate self-reference."
     }
   ]
 }

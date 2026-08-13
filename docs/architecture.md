@@ -116,18 +116,72 @@ site's declared reviewed eval-suite artifact, that suite's call site, fixture di
 Recommendation artifacts include provenance, finite status-compatible reason codes, confidence, limitations,
 failed cases, and structured allowlisted Vetryn reproduction operations. The durable limitation codes make report
 caveats machine-readable, while the report renderer maps both limitation and reproduction fields to clear prose
-and exact commands.
+and exact commands. A reviewed workload-volume profile with dated provenance enables estimated monthly and annual
+economics from representative token weights and bound catalog pricing only while explicit policy derives it as
+current. Its monthly request count is a positive integer no greater than 1,000,000,000,000; zero and any malformed,
+fractional, unsafe, or oversized value fall back to normalized unit economics. The repository-owned recommendation
+policy is digest-bound into the report and requires
+`workloadVolumeMaxAgeDays` from 1 through 31, `catalogMaxAgeHours` from 1 through 168,
+`evaluationMaxAgeHours` from 1 through 24, and `reportMaxAgeHours` from 1 through 24. The generator derives persisted
+report `generatedAt` from an internal orchestration clock rather than report input, CLI flags, or Action inputs;
+tests and offline replay may replace it only with a reviewed fixed clock. A recommendation report binds the current policy,
+representative-usage profile, optional workload-volume profile or canonical absence, and immutable successful
+catalog-refresh observation by digest or identity. The cited success is the terminal result of the current
+invocation's ordered refresh attempts, or authenticated provenance commits the complete ordered lineage and proves
+it is still the latest terminal attempt; a newer failure or omitted attempt fails closed. Generation and later patch or PR authorization re-evaluate all
+required temporal evidence against their own trusted clock with at most five minutes of future skew; report,
+catalog/pricing, and every cited evaluation run's completion time remain within their bounds. Actionable catalog
+freshness comes only from live acquisition timed by the Vetryn runtime, a canonical persisted repository receipt,
+or equivalent authenticated provenance;
+caller-timestamped captures are replay-only. Each actionable run binds an immutable execution record whose times
+come from the canonical runner's trusted clock, a canonical persisted repository receipt written by that runner, or
+authenticated external provenance; arbitrary imports and caller-restamped runs are replay-only. Source fingerprint,
+immutable fixture digest, evaluator identity, every cited run record,
+successful refresh observation and committed catalog content, pricing, policy, and economic profile bindings must
+exactly match the authorized inputs. An abstention report carries every available or rejected identity and a finite
+reason for each unavailable required binding rather than manufacturing provenance. Any required temporal or identity failure prevents patch authorization. An
+absent, invalid, or stale optional workload profile falls back to normalized unit economics without making an
+otherwise valid recommendation abstain; missing required recommendation policy fails closed. Patch and PR
+authorization never mutate the immutable recommendation. If its originally valid workload profile has expired, they
+require a separately authenticated presentation revision binding the recommendation, original profile, fresh clock,
+rejection reason, and normalized economics; the revision may only remove projections. Observed evaluation spend
+remains separate.
+Same-invocation evidence is actionable. For cross-invocation reuse, Vetryn authenticates each repository-log
+extension with a key outside repository-controlled content and atomically advances an exact-head per-repository
+anchor in the same locked transaction. Authorization requires all entries to verify and the repository head to equal
+that anchor; append, deletion, truncation, fork, or rollback fails closed. A machine without the authenticated key
+and anchor treats historical receipts as replay-only. A fresh run creates a new externally anchored trust epoch from
+newly produced same-invocation receipts and never rehabilitates prior unanchored history. Report generation
+canonicalizes a receipt-free payload first, then writes a detached receipt as a separate log entry binding the
+payload digest, generator identity, original generated time, and decision inputs. The payload excludes the receipt
+and its ID, preventing self-reference and restamping.
+Projected workload economics never extrapolate observed eval-run spend. Catalog-bound projections, observed
+evaluation spend, and later realized billing or runtime corroboration are three distinct evidence tiers.
+Savings percentage is a 0-to-10,000 integer basis-point value derived with exact rational arithmetic and half-up
+rounding; Markdown renders the same value with two decimal places. Zero-current-cost and non-saving comparisons use
+finite unavailable reasons rather than division, infinity, or a negative percentage.
 
 ### Patcher and GitHub integration
 
 The patcher verifies that the patch plan exactly matches its recommendation and source fingerprint, then changes
 only the bound literal. The GitHub integration
 opens a draft PR from that patch, is idempotent per call site and candidate, and never merges or deploys.
+The PR renderer appends a deterministic next action derived from the reconciled assessed-surface funnel, such as
+reviewing another eligible call site, and explicitly reports that none is available when the reconciled count is
+zero. This presentation metadata cannot affect recommendation or patch eligibility.
 Provider-backed assessment is manual by default. A repository may opt into a schedule, but unchanged
 catalog and evaluation-input digests skip paid candidate execution only when prior evidence is complete,
 integrity-valid, and reusable under current policy. The evaluation-input digest includes the evaluator
 executable identity, so a tool version or build/commit revision change invalidates reuse. Failed, partial,
 exhausted, privacy-unsafe, or otherwise non-reusable evidence never suppresses a later bounded retry.
+
+Consumer activation uses one documented `vetryn assess` orchestration command after a reviewed manifest and eval
+suite exist. The composite Action invokes the same path and adds draft-PR creation only in an explicit
+GitHub-enabled mode. Root `llms.txt`, Markdown instructions, stable JSON, and documented exit semantics expose the
+same provider-neutral contract to Codex, Claude, and other coding agents without requiring a hosted control plane
+or agent-specific runtime integration. Both paths validate the required recommendation policy and other
+deterministic prerequisites before any provider call; missing or malformed required policy abstains without provider
+spend.
 
 ## Package direction
 
