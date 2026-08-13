@@ -591,6 +591,10 @@ describe("vetryn-continue-next preflight", () => {
     write(outOfScope.root, "secrets/forbidden.txt", "forbidden\n");
     git(outOfScope.root, "add", "secrets/forbidden.txt");
     git(outOfScope.root, "commit", "-m", "add forbidden path");
+    rmSync(path.join(outOfScope.root, "secrets/forbidden.txt"));
+    git(outOfScope.root, "add", "-u", "secrets/forbidden.txt");
+    git(outOfScope.root, "commit", "-m", "remove forbidden path");
+    expect(git(outOfScope.root, "diff", "--name-only", "main..HEAD")).not.toContain("secrets/");
     const outOfScopeResult = runPreflight(outOfScope);
     expect(outOfScopeResult.json.blockers).toContainEqual({
       check: "branch_scope",

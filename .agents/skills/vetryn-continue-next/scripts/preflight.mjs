@@ -1100,24 +1100,44 @@ function pathMatchesScopePattern(candidate, pattern) {
 }
 
 function assertActiveBranchScope(root, base, head, packet) {
-  const changedPaths = git(
-    root,
-    [
-      "diff",
-      "--name-only",
-      "--no-renames",
-      "--no-ext-diff",
-      "--no-textconv",
-      "-z",
-      `${base}..${head}`,
-      "--",
-    ],
-    { check: "branch_scope" },
-  )
-    .stdout.split("\0")
+  const commits = git(root, ["rev-list", "--reverse", "--topo-order", `${base}..${head}`], {
+    check: "branch_scope",
+  })
+    .stdout.split("\n")
     .filter(Boolean);
+  const changedPaths = new Set();
+  for (const commit of commits) {
+    if (!SHA_PATTERN.test(commit))
+      throw new PreflightBlock("invalid_branch_history", "branch_scope");
+    const [resolvedCommit, firstParent] = git(root, ["rev-list", "--parents", "-n", "1", commit], {
+      check: "branch_scope",
+    })
+      .stdout.trim()
+      .split(" ");
+    if (resolvedCommit !== commit || !firstParent || !SHA_PATTERN.test(firstParent)) {
+      throw new PreflightBlock("invalid_branch_history", "branch_scope");
+    }
+    for (const changedPath of git(
+      root,
+      [
+        "diff",
+        "--name-only",
+        "--no-renames",
+        "--no-ext-diff",
+        "--no-textconv",
+        "-z",
+        `${firstParent}..${commit}`,
+        "--",
+      ],
+      { check: "branch_scope" },
+    )
+      .stdout.split("\0")
+      .filter(Boolean)) {
+      changedPaths.add(changedPath);
+    }
+  }
   if (
-    changedPaths.some(
+    [...changedPaths].some(
       (changedPath) =>
         packet.forbidden_paths.some((pattern) => pathMatchesScopePattern(changedPath, pattern)) ||
         !packet.allowed_paths.some((pattern) => pathMatchesScopePattern(changedPath, pattern)),
