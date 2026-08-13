@@ -263,7 +263,7 @@ function makeAdapterPackages(root) {
     {
       name: "fixture-a",
       version: "1.0.0",
-      path: "node_modules/fixture-a",
+      path: "node_modules/.pnpm/fixture-a@1.0.0/node_modules/fixture-a",
       dependencies: ["fixture-b"],
       files: {
         "package.json": `${JSON.stringify({
@@ -279,7 +279,7 @@ function makeAdapterPackages(root) {
     {
       name: "fixture-b",
       version: "1.0.0",
-      path: "node_modules/fixture-b",
+      path: "node_modules/.pnpm/fixture-b@1.0.0/node_modules/fixture-b",
       dependencies: [],
       files: {
         "package.json": `${JSON.stringify({
@@ -299,6 +299,14 @@ function makeAdapterPackages(root) {
     record.treeDigest = adapterPackageTreeDigest(path.join(root, record.path));
     delete record.files;
   }
+  symlinkSync(
+    ".pnpm/fixture-a@1.0.0/node_modules/fixture-a",
+    path.join(root, "node_modules/fixture-a"),
+  );
+  symlinkSync(
+    "../../fixture-b@1.0.0/node_modules/fixture-b",
+    path.join(root, "node_modules/.pnpm/fixture-a@1.0.0/node_modules/fixture-b"),
+  );
   return { packages: records, roots: ["fixture-a"] };
 }
 
@@ -349,6 +357,10 @@ implementation_risk:
     - authorization
   required_transition_classes:
     - planned_to_active
+security_scanning:
+  required: true
+  scanner: CodeQL
+  workflow: .github/workflows/codeql.yml
 code_review:
   review_modes:
     - diff
@@ -453,6 +465,7 @@ function makeFixture(options = {}) {
   write(root, "WORKFLOW.md", "# Fixture workflow\n");
   write(root, "CONTRIBUTING.md", "# Fixture dev guide\n");
   write(root, "MAINTAINERS.md", "- fixture-maintainer\n");
+  write(root, ".github/workflows/codeql.yml", "name: fixture-codeql\n");
   write(root, "docs/oss-v1.md", "# Fixture product\n");
   write(root, "docs/architecture.md", "# Fixture architecture\n");
   write(root, "prettier.config.mjs", "export default {};\n");
@@ -594,7 +607,7 @@ describe("vetryn-continue-next preflight", () => {
     const sentinel = path.join(fixture.sandbox, "ignored-package-executed");
     write(
       fixture.root,
-      "node_modules/fixture-b/index.js",
+      "node_modules/.pnpm/fixture-b@1.0.0/node_modules/fixture-b/index.js",
       `import { writeFileSync } from "node:fs";\nwriteFileSync(${JSON.stringify(sentinel)}, "fixture-b");\nexport const fixtureB = true;\n`,
     );
 
@@ -606,6 +619,48 @@ describe("vetryn-continue-next preflight", () => {
     });
     expect(existsSync(sentinel)).toBe(false);
   });
+
+  it.each(["root", "transitive"])(
+    "rejects a retargeted %s package-resolution link before adapter execution",
+    (linkKind) => {
+      const fixture = makeFixture();
+      const sentinel = path.join(fixture.sandbox, `${linkKind}-resolution-executed`);
+      const evilRoot = "node_modules/.pnpm/evil@1.0.0/node_modules/evil";
+      write(
+        fixture.root,
+        `${evilRoot}/package.json`,
+        `${JSON.stringify({
+          name: linkKind === "root" ? "fixture-a" : "fixture-b",
+          version: "1.0.0",
+          type: "module",
+          exports: "./index.js",
+        })}\n`,
+      );
+      write(
+        fixture.root,
+        `${evilRoot}/index.js`,
+        `import { writeFileSync } from "node:fs";\nwriteFileSync(${JSON.stringify(sentinel)}, "evil");\n`,
+      );
+      const link =
+        linkKind === "root"
+          ? path.join(fixture.root, "node_modules/fixture-a")
+          : path.join(fixture.root, "node_modules/.pnpm/fixture-a@1.0.0/node_modules/fixture-b");
+      rmSync(link);
+      const target =
+        linkKind === "root"
+          ? ".pnpm/evil@1.0.0/node_modules/evil"
+          : "../../evil@1.0.0/node_modules/evil";
+      symlinkSync(target, link);
+
+      const result = runPreflight(fixture);
+      expect(result.status).toBe(2);
+      expect(result.json.blockers).toContainEqual({
+        check: "adapter_dependencies",
+        code: "adapter_package_resolution_mismatch",
+      });
+      expect(existsSync(sentinel)).toBe(false);
+    },
+  );
 
   it("resumes one active candidate ahead of next-legal work", () => {
     const fixture = makeFixture();
@@ -765,33 +820,34 @@ describe("vetryn-continue-next preflight", () => {
     });
   });
 
-  it.each(["docs/oss-v1.md", ".agents/skills/vetryn-implement-task/SKILL.md"])(
-    "rejects branch-controlled profile policy input %s",
-    (policyPath) => {
-      const fixture = makeFixture();
-      git(fixture.root, "switch", "-c", "codex/branch-controlled-profile-policy");
-      setBehavior(fixture, {
-        activeTasks: [{ taskId: "TASK-ACTIVE", state: "in_progress" }],
-        nextLegalTasks: [],
-        mutation: null,
-        race: null,
-        compiledState: null,
-        candidateBound: false,
-      });
-      writeFileSync(path.join(fixture.root, policyPath), "\nbranch policy override\n", {
-        flag: "a",
-      });
-      git(fixture.root, "add", policyPath);
-      git(fixture.root, "commit", "-m", "change declared policy input");
+  it.each([
+    "docs/oss-v1.md",
+    ".agents/skills/vetryn-implement-task/SKILL.md",
+    ".github/workflows/codeql.yml",
+  ])("rejects branch-controlled profile policy input %s", (policyPath) => {
+    const fixture = makeFixture();
+    git(fixture.root, "switch", "-c", "codex/branch-controlled-profile-policy");
+    setBehavior(fixture, {
+      activeTasks: [{ taskId: "TASK-ACTIVE", state: "in_progress" }],
+      nextLegalTasks: [],
+      mutation: null,
+      race: null,
+      compiledState: null,
+      candidateBound: false,
+    });
+    writeFileSync(path.join(fixture.root, policyPath), "\nbranch policy override\n", {
+      flag: "a",
+    });
+    git(fixture.root, "add", policyPath);
+    git(fixture.root, "commit", "-m", "change declared policy input");
 
-      const result = runPreflight(fixture);
-      expect(result.status).toBe(2);
-      expect(result.json.blockers).toContainEqual({
-        check: "canonical_policy",
-        code: "branch_policy_inputs_not_canonical",
-      });
-    },
-  );
+    const result = runPreflight(fixture);
+    expect(result.status).toBe(2);
+    expect(result.json.blockers).toContainEqual({
+      check: "canonical_policy",
+      code: "branch_policy_inputs_not_canonical",
+    });
+  });
 
   it.each(["--assume-unchanged", "--skip-worktree"])(
     "authenticates adapter imports hidden by %s before execution",

@@ -31,7 +31,8 @@ Offline preflight also cannot prove that a server-side ref or repository role re
   consulted.
 - The same tracked profile declares the repository adapter's complete runtime package graph. Before every adapter
   invocation, preflight reauthenticates the tracked package and lock manifests plus every declared installed
-  package tree, including transitive dependencies; ignored `node_modules` content is never trusted by name alone.
+  package tree and the direct and transitive resolution links Node will follow; ignored `node_modules` content is
+  never trusted by name alone.
 - Resume policy is derived from all profile-declared standards, skills, adapter files, package inputs, and the
   fixed plan/compiler surfaces on synchronized canonical main. Promotion reauthentication derives generic and
   domain-review requirements from that task's canonical risk and gates before accepting lifecycle evidence.

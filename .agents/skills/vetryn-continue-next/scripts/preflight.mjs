@@ -697,6 +697,9 @@ function parseProfile(root) {
   if (profile.source_contract !== undefined) {
     trackedHeadBytes(root, profile.source_contract, "profile");
   }
+  if (profile.security_scanning?.workflow !== undefined) {
+    trackedHeadBytes(root, profile.security_scanning.workflow, "profile");
+  }
   for (const reference of Object.values(profile.standards)) {
     if (typeof reference !== "string") throw new PreflightBlock("invalid_standard_ref", "profile");
     trackedHeadBytes(root, reference, "profile");
@@ -813,6 +816,9 @@ function profileDeclaredPolicyPaths(profile) {
     ...Object.values(profile.skills),
   ]);
   if (profile.source_contract !== undefined) paths.add(profile.source_contract);
+  if (profile.security_scanning?.workflow !== undefined) {
+    paths.add(profile.security_scanning.workflow);
+  }
   return [...paths].sort((left, right) => left.localeCompare(right));
 }
 
@@ -1196,9 +1202,41 @@ function adapterPackageTree(root, record) {
 }
 
 function authenticateAdapterPackages(root, profile) {
+  const packageRoots = new Map();
   for (const record of profile.task_adapter.dependency_packages) {
+    packageRoots.set(record.name, resolveAdapterPackageRoot(root, record.path));
     if (adapterPackageTree(root, record) !== record.tree_digest) {
       throw new PreflightBlock("adapter_package_digest_mismatch", "adapter_dependencies");
+    }
+  }
+  const authenticateResolutionLink = (relative, expectedPackage) => {
+    const pieces = portablePath(relative);
+    const target = path.join(root, ...pieces);
+    let stat;
+    try {
+      stat = lstatSync(target);
+    } catch {
+      throw new PreflightBlock("adapter_package_resolution_missing", "adapter_dependencies");
+    }
+    if (!stat.isSymbolicLink()) {
+      throw new PreflightBlock("adapter_package_resolution_not_link", "adapter_dependencies");
+    }
+    let resolved;
+    try {
+      resolved = realpathSync(target);
+    } catch {
+      throw new PreflightBlock("adapter_package_resolution_missing", "adapter_dependencies");
+    }
+    if (resolved !== packageRoots.get(expectedPackage)) {
+      throw new PreflightBlock("adapter_package_resolution_mismatch", "adapter_dependencies");
+    }
+  };
+  for (const rootName of profile.task_adapter.dependency_roots) {
+    authenticateResolutionLink(`node_modules/${rootName}`, rootName);
+  }
+  for (const record of profile.task_adapter.dependency_packages) {
+    for (const dependency of record.dependencies) {
+      authenticateResolutionLink(`${path.posix.dirname(record.path)}/${dependency}`, dependency);
     }
   }
 }
