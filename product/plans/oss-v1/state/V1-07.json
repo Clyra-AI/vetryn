@@ -2,7 +2,7 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "V1-07",
-  "revision": 4,
+  "revision": 5,
   "state": "planned",
   "attempt": 0,
   "candidate": null,
@@ -113,6 +113,13 @@
       "at": "2026-08-13T00:34:00Z",
       "actor": "davidahmann",
       "reason": "Separated catalog-bound workload projections, observed evaluation spend, and realized field value, and scoped V1-07 to a shared authorization validator whose downstream invocation is accepted separately."
+    },
+    {
+      "from": "planned",
+      "to": "planned",
+      "at": "2026-08-13T00:43:00Z",
+      "actor": "davidahmann",
+      "reason": "Bound freshness to current policy and economic-profile digests, immutable fixture content, and a successful catalog-refresh observation while preserving normalized economics for absent optional workload evidence."
     }
   ]
 }

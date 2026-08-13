@@ -2,7 +2,7 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "V1-10",
-  "revision": 7,
+  "revision": 8,
   "state": "planned",
   "attempt": 0,
   "candidate": null,
@@ -129,6 +129,13 @@
       "at": "2026-08-13T00:34:00Z",
       "actor": "davidahmann",
       "reason": "Required exact normalized equality between the referral event target and the follow-on assessment target before attribution."
+    },
+    {
+      "from": "planned",
+      "to": "planned",
+      "at": "2026-08-13T00:43:00Z",
+      "actor": "davidahmann",
+      "reason": "Required trusted assessment-start provenance and explicit backdating rejection for reviewer-attributed follow-on evidence."
     }
   ]
 }

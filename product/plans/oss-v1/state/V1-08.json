@@ -2,7 +2,7 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "V1-08",
-  "revision": 1,
+  "revision": 2,
   "state": "planned",
   "attempt": 0,
   "candidate": null,
@@ -92,6 +92,13 @@
       "at": "2026-08-13T00:34:00Z",
       "actor": "davidahmann",
       "reason": "Required patch generation and application to reauthorize freshness and exact evidence identities at their own invocation time."
+    },
+    {
+      "from": "planned",
+      "to": "planned",
+      "at": "2026-08-13T00:43:00Z",
+      "actor": "davidahmann",
+      "reason": "Extended patch reauthorization to current policy and profile digests, immutable fixture content, and successful catalog-refresh evidence without treating optional workload absence as a hard failure."
     }
   ]
 }

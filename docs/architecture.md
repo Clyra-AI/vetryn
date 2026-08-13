@@ -122,12 +122,15 @@ current. The repository-owned recommendation policy is digest-bound into the rep
 `workloadVolumeMaxAgeDays` from 1 through 31, `catalogMaxAgeHours` from 1 through 168,
 `evaluationMaxAgeHours` from 1 through 24, and `reportMaxAgeHours` from 1 through 24. The generator derives persisted
 report `generatedAt` from an internal orchestration clock rather than report input, CLI flags, or Action inputs;
-tests and offline replay may replace it only with a reviewed fixed clock. Generation and later patch or PR
-authorization re-evaluate all temporal evidence against their own trusted clock with at most five minutes of future skew;
-the window end or point `observedAt` must remain within the workload bound, while report, catalog/pricing, and
-evaluation times remain within their bounds. Source, fixture, evaluator, catalog, and pricing identities must
-exactly match the authorized inputs. Any temporal or identity failure prevents patch authorization, and invalid
-workload evidence falls back to normalized unit economics. Observed evaluation spend remains separate.
+tests and offline replay may replace it only with a reviewed fixed clock. The report binds the current policy,
+representative-usage profile, optional workload-volume profile or canonical absence, and immutable successful
+catalog-refresh observation by digest or identity. Generation and later patch or PR authorization re-evaluate all
+required temporal evidence against their own trusted clock with at most five minutes of future skew; report,
+catalog/pricing, and evaluation times remain within their bounds. Source fingerprint, immutable fixture digest,
+evaluator identity, successful refresh observation and committed catalog content, pricing, policy, and economic
+profile bindings must exactly match the authorized inputs. Any required temporal or identity failure prevents patch
+authorization. An absent, invalid, or stale optional workload profile falls back to normalized unit economics
+without making an otherwise valid recommendation abstain. Observed evaluation spend remains separate.
 Projected workload economics never extrapolate observed eval-run spend. Catalog-bound projections, observed
 evaluation spend, and later realized billing or runtime corroboration are three distinct evidence tiers.
 

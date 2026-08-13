@@ -84,9 +84,10 @@ Every recommendation PR must show:
   workload-volume evidence is policy-current; otherwise normalized unit economics and the reason a monthly claim is
   unavailable;
 - the reviewed workload volume and provenance used for any projection, plus the observed evaluation cost itself;
-- freshness evidence comprising the source fingerprint, catalog/pricing observation time, fixture digest or
-  revision, evaluator version and build, evaluation completion time, report `generatedAt`, and the digest-bound
-  policy used to derive freshness;
+- freshness evidence comprising the source fingerprint, immutable fixture digest, evaluator version and build,
+  evaluation completion time, report `generatedAt`, policy digest, representative-usage profile digest,
+  workload-volume profile digest or canonical absent marker, and the immutable successful catalog-refresh
+  observation ID whose record commits its observation time, snapshot ID, and catalog content digest;
 - all configured gates, their outcomes, and the evidence or reason supporting each outcome;
 - confidence and explicit limitations;
 - exact commands required to reproduce the result; and
@@ -145,12 +146,17 @@ billing or runtime corroboration. This distinction supersedes only ADR 0019's ea
 savings use observed evaluation cost and preserves its rule that catalog estimates are never billed-cost proof.
 
 The same digest-bound policy declares `catalogMaxAgeHours` from 1 through 168, `evaluationMaxAgeHours` from 1
-through 24, and `reportMaxAgeHours` from 1 through 24. Recommendation, patch, and PR authorization use a fresh
-trusted clock, allow at most five minutes of future skew, and re-evaluate report, catalog/pricing, evaluation, and
-workload ages. They also require the report's source fingerprint, fixture digest or revision, evaluator version and
-build, catalog identity, and pricing row to exactly match the currently authorized inputs. Missing, stale,
-out-of-skew, or identity-mismatched evidence produces an explicit abstention and no patch; presence alone is never
-freshness proof.
+through 24, and `reportMaxAgeHours` from 1 through 24. Reports bind the policy digest, representative-usage profile
+digest, workload-volume profile digest or a canonical absent marker, and the immutable successful catalog-refresh
+observation whose record commits its ID, observation time, snapshot ID, and catalog content digest. Recommendation,
+patch, and PR authorization use a fresh trusted clock, allow at most five minutes of future skew, and re-evaluate
+report, catalog/pricing, and evaluation ages. They also require the report's source fingerprint, immutable fixture
+digest, evaluator version and build, successful refresh observation and committed catalog/pricing content, policy
+digest, representative-usage profile digest, and workload-volume profile digest or absent marker to exactly match
+the currently authorized inputs. Missing, stale, out-of-skew, or identity-mismatched required decision evidence
+produces an explicit abstention and no patch; presence alone is never freshness proof. An absent, invalid, or stale
+optional workload profile suppresses only monthly and annual projections and uses normalized unit economics; it does
+not by itself make an otherwise valid recommendation abstain.
 
 The canonical recommendation and abstention remain decision artifacts. Agent-install guidance and contextual
 expansion prompts are deterministic presentation-layer next actions; they cannot alter eligibility, confidence,
@@ -192,9 +198,10 @@ follow-on call-site or repository assessment, without adding mandatory telemetry
 an assessment that starts at or after and within 30 days of an authenticated non-bot review or referral event on a
 qualified PR. The event must explicitly identify the follow-on target, evidence binds both artifacts, and the
 event's normalized repository or call-site target must exactly equal the normalized target bound into the follow-on
-assessment. A duplicate follow-on is assigned to the earliest valid event time then canonical event ID. PR authors,
-Vetryn automation, target mismatches, unmatched identities, missing event evidence, duplicates, and out-of-window
-records are excluded.
+assessment. The assessment start time must come from its trusted invocation clock or authenticated external
+provenance, never an imported producer timestamp. A duplicate follow-on is assigned to the earliest valid event time
+then canonical event ID. PR authors, Vetryn automation, backdated starts, target mismatches, unmatched identities,
+missing event evidence, duplicates, and out-of-window records are excluded.
 Twenty safe rollouts remain a later confidence milestone rather than a deterministic build gate.
 
 An optional calibrated semantic-rubric scorer may be designed only after that field work demonstrates
@@ -218,7 +225,9 @@ design.
 - The digest-bound freshness policy also caps catalog/pricing evidence at 168 hours, evaluation evidence at 24
   hours, and reports at 24 hours, with repository-selected values at or below those ceilings. Generation and every
   later patch or PR authorization use a trusted clock with no more than five minutes of future skew and require
-  exact current source, fixture, evaluator, catalog, and pricing identities.
+  exact current source fingerprint, immutable fixture digest, evaluator identity, successful catalog-refresh
+  observation and committed content, policy digest, and representative-usage plus optional workload-profile
+  bindings. Invalid optional workload evidence falls back to normalized economics rather than forcing abstention.
 - Root `llms.txt`, Markdown onboarding, stable JSON output, and documented exit semantics provide one
   provider-neutral installation and operation contract for coding agents. Codex- or Claude-specific pages may
   explain the same commands but cannot introduce separate product behavior.

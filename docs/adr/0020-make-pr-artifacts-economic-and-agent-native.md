@@ -26,14 +26,20 @@ between decision evidence and presentation-layer next actions.
   than the declared bound; absent policy, malformed or reversed windows, out-of-skew future times, and older
   observations forbid monthly and annual claims. A producer-supplied freshness claim is not trusted.
 - The same digest-bound policy declares `catalogMaxAgeHours` from 1 through 168, `evaluationMaxAgeHours` from 1
-  through 24, and `reportMaxAgeHours` from 1 through 24. The report generator derives `generatedAt` from its injected
+  through 24, and `reportMaxAgeHours` from 1 through 24. The report binds the policy digest, representative-usage
+  profile digest, and workload-volume profile digest or a canonical absent marker. It also binds the immutable
+  successful catalog-refresh observation whose ID, time, snapshot ID, and content digest commit the catalog and
+  pricing evidence. The report generator derives `generatedAt` from its injected
   trusted invocation clock and never accepts it from report input, a CLI flag, or an Action input. Production uses
   the Vetryn runtime clock; deterministic tests and offline replay may substitute a reviewed fixed clock at the
-  orchestration boundary. Recommendation and patch authorization use their own fresh trusted clock, allow at most
-  five minutes of future skew, and re-evaluate report, catalog/pricing, evaluation, and workload ages. The source
-  fingerprint, fixture digest or revision, evaluator version and build, catalog identity, and pricing row must
-  exactly match the currently authorized inputs. Missing, stale, future, or identity-mismatched evidence abstains
-  and cannot authorize a patch.
+  orchestration boundary. Recommendation, patch, and PR authorization use their own fresh trusted clock, allow at
+  most five minutes of future skew, and re-evaluate report, catalog/pricing, and evaluation ages. The source
+  fingerprint, immutable fixture digest, evaluator version and build, successful refresh observation, catalog
+  content and pricing, policy digest, representative-usage profile digest, and workload-volume profile digest or
+  absent marker must exactly match the currently authorized inputs. Missing, stale, future, or identity-mismatched
+  required decision evidence abstains and cannot authorize a patch. An absent, invalid, or stale optional workload
+  profile suppresses only monthly and annual projections and uses normalized unit economics; it does not by itself
+  make an otherwise valid recommendation abstain.
 - When that profile is valid and policy-current, reports derive estimated current and proposed monthly cost, monthly
   and annual savings, and savings percentage from it, the reviewed representative token profile, and bound catalog
   pricing. All projections are labeled estimates. Observed evaluation spend and optional runtime corroboration stay
@@ -59,9 +65,10 @@ between decision evidence and presentation-layer next actions.
   reviewers to follow-on call-site or repository assessments under a predeclared 30-day matching and deduplication
   policy. Evidence binds the qualified PR, an authenticated non-bot reviewer event that explicitly identifies the
   follow-on target, and the assessment identity. The event's normalized repository or call-site target must exactly
-  equal the normalized target bound into the assessment. The assessment must begin at or after the event and within
-  30 days; duplicates select the earliest event time and then canonical event ID. Target-mismatched, unmatched,
-  self-authored, bot, duplicate, or out-of-window records are excluded.
+  equal the normalized target bound into the assessment. The assessment start time comes from the assessment's
+  trusted invocation clock or authenticated external provenance, never an imported producer timestamp, and must be
+  at or after the event and within 30 days. Duplicates select the earliest event time and then canonical event ID.
+  Backdated, target-mismatched, unmatched, self-authored, bot, duplicate, or out-of-window records are excluded.
 
 ## Consequences
 
