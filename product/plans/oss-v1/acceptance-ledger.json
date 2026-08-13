@@ -187,7 +187,7 @@
     {
       "id": "PROCESS-011",
       "taskId": "M0-11",
-      "statement": "Deterministic success, zero or multiple task, dirty or drifting state, missing dependency or authority, stale default-ref, and no-sibling-checkout cases prove preflight is read-only and fail closed; every later mutation requires current per-run authority and preserves non-waivable repository safety boundaries.",
+      "statement": "Deterministic success, zero or multiple task, dirty or drifting state, missing dependency or authority, stale default-ref, and no-sibling-checkout cases prove preflight is read-only and fail closed; every later mutation requires current per-run authority from an active listed maintainer and preserves non-waivable repository safety boundaries.",
       "verification": {
         "method": "test",
         "testLevel": "integration",

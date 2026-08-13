@@ -37,11 +37,13 @@ These instructions apply to the entire repository.
 - Create a repository skill only when the activation and maturity rules in `docs/agent-map.md` are met and
   an explicit task permits `.agents/**`. If a trigger is reached without legal scope, stop and request a
   narrow process task rather than adding the skill inside unrelated implementation work.
-- OSS V1 uses the single-maintainer policy in `docs/adr/0009-single-maintainer-v1-delivery.md`. Required command
-  gates and repository CI are release blockers; named reviewer records and `CODEOWNERS` are advisory until the
-  team deliberately restores multi-maintainer review. The maintainer may accept and merge an exact candidate after
-  the active command gates pass. This does not permit direct pushes to `main`, automatic product merges, or a
-  waiver of privacy, fail-closed, or provider-safety requirements.
+- OSS V1 uses the maintainer-led policy in `docs/adr/0009-single-maintainer-v1-delivery.md`; the active roster is
+  `MAINTAINERS.md`. Required command gates and repository CI are release blockers; named reviewer records and
+  `CODEOWNERS` are advisory until the team deliberately restores mandatory multi-party review. Any listed
+  maintainer with current repository write authority may explicitly authorize a bounded run and may accept and
+  merge an exact candidate after the active command gates pass. Roster membership is not standing permission and
+  does not permit direct pushes to `main`, automatic product merges, or a waiver of privacy, fail-closed, or
+  provider-safety requirements.
 - Evidence is immutable historical provenance: it must bind to its exact candidate and declared gate, be compact
   and redacted, and pass its recorded command. Recorded plan and lockfile digests identify the inputs observed at
   the time; later unrelated planning changes do not invalidate that evidence. Re-run the active commands whenever

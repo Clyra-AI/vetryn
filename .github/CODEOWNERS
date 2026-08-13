@@ -1,2 +1,3 @@
-# Informational ownership routing only during OSS V1 single-maintainer delivery.
+# Informational ownership routing only during OSS V1 maintainer-led delivery.
 # See docs/adr/0009-single-maintainer-v1-delivery.md.
+* @davidahmann @RyshMan

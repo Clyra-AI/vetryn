@@ -860,15 +860,21 @@ describe("implementation plan validator", () => {
     });
     expect(task.scope.allowedPaths).toEqual([
       ".agents/skills/vetryn-continue-next/**",
+      ".github/CODEOWNERS",
       ".factory/profile.yaml",
       ".factory/README.md",
       "AGENTS.md",
       "CHANGELOG.md",
+      "CONTRIBUTING.md",
+      "MAINTAINERS.md",
       "WORKFLOW.md",
+      "docs/adr/0009-single-maintainer-v1-delivery.md",
+      "docs/adr/0010-require-local-and-domain-review-evidence.md",
       "docs/adr/0022-separate-continuation-procedure-from-run-authority.md",
       "docs/agent-map.md",
       "docs/implementation/oss-v1-execution.md",
       "product/plans/oss-v1/**",
+      "product/plans/README.md",
       "scripts/continue-next-skill.test.mjs",
       "scripts/plan.test.mjs",
       "scripts/semantic-risk.test.mjs",
@@ -876,9 +882,10 @@ describe("implementation plan validator", () => {
       "scripts/task.test.mjs",
     ]);
     expect(task.scope.forbiddenPaths).toEqual(
-      expect.arrayContaining(["packages/**", ".github/**", "llms.txt"]),
+      expect.arrayContaining(["packages/**", ".github/workflows/**", "llms.txt"]),
     );
     expect(task.semanticInvariants.join(" ")).toContain("per-run grants");
+    expect(task.semanticInvariants.join(" ")).toContain("MAINTAINERS.md");
     expect(task.semanticInvariants.join(" ")).toContain("sibling Factory checkout");
     expect(v106.dependsOn).toContainEqual({ taskId: "M0-11", kind: "hard" });
     expect(ledger.items.filter((item) => item.taskId === "M0-11")).toEqual(

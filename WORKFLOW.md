@@ -3,11 +3,13 @@
 This is the repository operating contract for humans, coding agents, and external Factory tooling. Product truth is
 `docs/oss-v1.md`; delivery truth is the reviewed JSON in `product/plans/oss-v1/`.
 
-## OSS V1 single-maintainer mode
+## OSS V1 maintainer-led mode
 
-ADR 0009 keeps the V1 build moving with one maintainer. Passing active command gates, `pnpm check`, and normal
-repository CI are required. Named reviewer records and `CODEOWNERS` are useful feedback channels, not acceptance
-or merge blockers. The maintainer explicitly owns task acceptance and PR merge decisions.
+ADR 0009 keeps the V1 build moving with the small active roster in `MAINTAINERS.md`. Passing active command gates,
+`pnpm check`, and normal repository CI are required. Named reviewer records and `CODEOWNERS` are useful feedback
+channels, not acceptance or merge blockers. Any listed maintainer with current GitHub write authority may grant
+explicit per-run permissions and owns task acceptance and PR merge decisions for that run. The roster, a skill,
+or a prior conversation never supplies standing authority.
 
 This is not a reduction in product safety: strict schemas, fail-closed recommendation behavior, redaction,
 deterministic tests, CodeQL, dependency review, and explicit provider access remain required. Field work still
@@ -55,7 +57,7 @@ command validation and run Factory `code-review` before promotion or the first p
 candidate and validation report. Re-run both validation and local review after any product- or contract-bearing
 candidate change.
 
-With explicit maintainer approval, promotion changes only that task's state, ledger status/evidence, new compact
+With explicit approval from an active maintainer, promotion changes only that task's state, ledger status/evidence, new compact
 evidence, and generated progress. First commit the reviewed candidate and its evidence, then run `pnpm plan:write`
 and commit the generated progress. Inspect the full promotion tail before shipping; if it contains product or
 contract-bearing bytes, invalidate the review and return to implementation. Never edit `progress.json` directly.

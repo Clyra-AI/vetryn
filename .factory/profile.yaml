@@ -4,6 +4,7 @@ profile_version: "0.3"
 adoption_profile: standard
 status: repo_native_execution_ready
 source_contract: docs/oss-v1.md
+maintainer_roster: MAINTAINERS.md
 plan_root: product/plans/oss-v1
 repository_visibility: public
 runtime_pins:
@@ -18,7 +19,7 @@ trust_posture:
   provider_access: explicit_task_scoped_approval
   github_review_read: advisory_for_oss_v1_single_maintainer_delivery
   bootstrap_owner_review: disabled_by_adr_0009
-  github_write: explicit_maintainer_authorization_and_factory_lifecycle_only
+  github_write: explicit_listed_maintainer_authorization_and_factory_lifecycle_only
 factoryd:
   status: deferred
   reason: TypeScript bootstrap and repo-pack compatibility are not yet proven.

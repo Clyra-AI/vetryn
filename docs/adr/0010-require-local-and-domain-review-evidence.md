@@ -5,7 +5,7 @@
 
 ## Context
 
-Vetryn's single-maintainer policy keeps named human reviewer records advisory, but high-risk implementation still
+Vetryn's maintainer-led policy keeps named human reviewer records advisory, but high-risk implementation still
 benefits from a frozen-candidate adversarial code review. Evaluation, recommendation, and patch tasks also need a
 domain-specific trust review that checks abstention, provenance, privacy, compatibility, and hard limits. Treating
 both checks as prose would let an executable task packet complete without producing the corresponding evidence.
