@@ -11,7 +11,8 @@ verified model-upgrade draft PR.
 
 Task state advances only when evidence applies to the exact candidate commit and active command gates pass. Field
 evidence from real repositories remains a separate product-validation gate and must not be replaced by synthetic
-CI results or agent assertions. Named reviewer records are advisory during ADR-0009 single-maintainer V1 delivery.
+CI results or agent assertions. Named reviewer records are advisory during ADR-0009 maintainer-led V1 delivery;
+the reviewed active roster is `MAINTAINERS.md` at the repository root.
 
 `pnpm --silent task:compile -- TASK-ID` emits both Vetryn's canonical task/state/gate view and the explicit
 runner-ready fields required by Factory's `task-executor`. Worker-owned evidence is separated from CI, review,

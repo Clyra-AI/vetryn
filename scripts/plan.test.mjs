@@ -18,6 +18,7 @@ const v1TaskId = "V1-00";
 const downstreamV1TaskIds = [
   "M0-09",
   "M0-10",
+  "M0-11",
   "V1-05",
   "V1-06",
   "V1-07",
@@ -841,6 +842,67 @@ afterEach(async () => {
 });
 
 describe("implementation plan validator", () => {
+  it("locks portable continuation behind one bounded process task", async () => {
+    const plan = await readFixtureJson(repositoryRoot, "product/plans/oss-v1/plan.json");
+    const ledger = await readFixtureJson(
+      repositoryRoot,
+      "product/plans/oss-v1/acceptance-ledger.json",
+    );
+    const state = await readFixtureJson(repositoryRoot, "product/plans/oss-v1/state/M0-11.json");
+    const task = plan.tasks.find((candidate) => candidate.id === "M0-11");
+    const v106 = plan.tasks.find((candidate) => candidate.id === "V1-06");
+
+    expect(task).toMatchObject({
+      risk: { level: "high" },
+      dependsOn: [{ taskId: "M0-10", kind: "hard" }],
+      acceptanceItemIds: ["PROCESS-010", "PROCESS-011"],
+      capabilities: { network: false, credentials: false, provider: false, githubWrite: false },
+    });
+    expect(task.scope.allowedPaths).toEqual([
+      ".agents/skills/vetryn-continue-next/**",
+      ".github/CODEOWNERS",
+      ".factory/profile.yaml",
+      ".factory/README.md",
+      "AGENTS.md",
+      "CHANGELOG.md",
+      "CONTRIBUTING.md",
+      "MAINTAINERS.md",
+      "WORKFLOW.md",
+      "docs/adr/0009-single-maintainer-v1-delivery.md",
+      "docs/adr/0010-require-local-and-domain-review-evidence.md",
+      "docs/adr/0022-separate-continuation-procedure-from-run-authority.md",
+      "docs/agent-map.md",
+      "docs/implementation/oss-v1-execution.md",
+      "product/plans/oss-v1/**",
+      "product/plans/README.md",
+      "scripts/continue-next-skill.test.mjs",
+      "scripts/plan.test.mjs",
+      "scripts/semantic-risk.test.mjs",
+      "scripts/task.mjs",
+      "scripts/task.test.mjs",
+    ]);
+    expect(task.scope.forbiddenPaths).toEqual(
+      expect.arrayContaining(["packages/**", ".github/workflows/**", "llms.txt"]),
+    );
+    expect(task.semanticInvariants.join(" ")).toContain("per-run grants");
+    expect(task.semanticInvariants.join(" ")).toContain("MAINTAINERS.md");
+    expect(task.semanticInvariants.join(" ")).toContain("sibling Factory checkout");
+    expect(v106.dependsOn).toContainEqual({ taskId: "M0-11", kind: "hard" });
+    expect(ledger.items.filter((item) => item.taskId === "M0-11")).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: "PROCESS-010", status: "planned", waivable: false }),
+        expect.objectContaining({ id: "PROCESS-011", status: "planned", waivable: false }),
+      ]),
+    );
+    expect(state).toMatchObject({
+      taskId: "M0-11",
+      revision: 0,
+      state: "planned",
+      attempt: 0,
+      candidate: null,
+    });
+  });
+
   it("locks the M0-05 bounded V1-03 correction authorization", async () => {
     const planPath = "product/plans/oss-v1/plan.json";
     const ledgerPath = "product/plans/oss-v1/acceptance-ledger.json";

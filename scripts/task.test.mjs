@@ -17,6 +17,7 @@ const v1TaskId = "V1-00";
 const downstreamV1TaskIds = [
   "M0-09",
   "M0-10",
+  "M0-11",
   "V1-05",
   "V1-06",
   "V1-07",
@@ -743,6 +744,56 @@ afterEach(async () => {
 });
 
 describe("task packet compiler", () => {
+  it("compiles portable continuation as a bounded high-risk process packet", async () => {
+    const root = await createFixture();
+    const planPath = "product/plans/oss-v1/plan.json";
+    const plan = await readFixtureJson(root, planPath);
+    plan.tasks.find((task) => task.id === "M0-11").dependsOn = [];
+    await writeFixtureJson(root, planPath, plan);
+
+    const statePath = "product/plans/oss-v1/state/M0-11.json";
+    const state = await readFixtureJson(root, statePath);
+    Object.assign(state, {
+      state: "in_progress",
+      attempt: 1,
+      history: [
+        ...state.history,
+        {
+          from: "planned",
+          to: "in_progress",
+          at: "2026-08-13T17:32:17Z",
+          actor: "task-test-fixture",
+          reason: "Exercise the portable continuation packet.",
+        },
+      ],
+    });
+    await writeFixtureJson(root, statePath, state);
+    const writeResult = runPlan(root, "write");
+    expect(writeResult.status, writeResult.stderr).toBe(0);
+
+    const result = runTask(root, "compile", "M0-11");
+    expect(result.status, result.stderr).toBe(0);
+    const packet = JSON.parse(result.stdout);
+    expect(packet).toMatchObject({
+      task_id: "M0-11",
+      risk_class: "high",
+      required_worker_chain: ["task-executor", "validation-gate", "code-review", "commit-push"],
+      required_domain_review_chain: [],
+      lifecycle_gates: {
+        code_review_required: true,
+        trust_review_required: false,
+      },
+      currentState: { state: "in_progress", candidate: null },
+    });
+    expect(packet.allowed_paths).toContain(".agents/skills/vetryn-continue-next/**");
+    expect(packet.task.capabilities).toEqual({
+      network: false,
+      credentials: false,
+      provider: false,
+      githubWrite: false,
+    });
+  });
+
   it("isolates task fixtures from promoted canonical V1-00 lifecycle data", async () => {
     const root = await createFixture();
     const evidenceId = "ev-v1-promoted-review-fixture";

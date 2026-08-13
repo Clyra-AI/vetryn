@@ -70,6 +70,8 @@
 
 ### Changed
 
+- Expanded the active maintainer roster to `@davidahmann` and `@RyshMan`, with either maintainer able to grant
+  explicit task-scoped authorization and deliver through the protected workflow without weakening required gates.
 - Bound medium- and high-risk task packets to Factory's versioned implementation-design contract, exact report and
   integrity-marker targets, bound-candidate artifact validation, and an offline V1 rule that rejects external-action
   authorization. The repository-owned marker proves content integrity only, not chronology, approval, or authority.

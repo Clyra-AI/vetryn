@@ -34,8 +34,8 @@ flowchart LR
 ```
 
 A task is ready only when every hard, contract, or field dependency is accepted. An executor may submit a
-candidate and evidence but cannot accept its own task. During the ADR-0009 single-maintainer V1 mode, the
-maintainer promotes an exact candidate after its active command gates pass. Named human reviewer records remain
+candidate and evidence but cannot accept its own task. During the ADR-0009 maintainer-led V1 mode, an active
+maintainer from `MAINTAINERS.md` promotes an exact candidate after its active command gates pass. Named human reviewer records remain
 advisory. A high-risk packet's candidate-bound local structured review is a required process gate, and
 `QG-TRUST-REVIEW` invokes the repository's domain-specific semantic review. Two failed attempts with the same
 failure fingerprint stop automatic repair and require maintainer triage.
@@ -60,8 +60,8 @@ not executable. The full repository lifecycle is in `WORKFLOW.md`.
 Agents should work on one task per branch/PR. Parallel work is permitted only when the DAG allows it
 and paths do not overlap. A task brief is disposable; canonical state and evidence are committed.
 
-ADR 0009 makes named reviewer records and `CODEOWNERS` advisory for the OSS V1 build. The maintainer's explicit
-approval plus exact-candidate command evidence controls promotion. High-risk work also requires a frozen-candidate
+ADR 0009 makes named reviewer records and `CODEOWNERS` advisory for the OSS V1 build. Explicit task-scoped
+approval from any active maintainer plus exact-candidate command evidence controls promotion. High-risk work also requires a frozen-candidate
 Factory `code-review` report after validation, and an active `QG-TRUST-REVIEW` requires the Vetryn semantic review.
 Neither report substitutes for CI or deterministic command evidence.
 
