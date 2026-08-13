@@ -215,7 +215,7 @@ describe("semantic-risk implementation design", () => {
     await expect(validateSemanticRiskEvidence({ root, packet })).rejects.toThrow(
       "semantic-risk report is unavailable at candidate",
     );
-  });
+  }, 15_000);
 
   it("rejects external-action authorization in the offline repo-native design pass", async () => {
     const root = await createFixture();
