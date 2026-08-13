@@ -32,16 +32,19 @@ It does not authenticate the invoking user, prove the server is current, or auth
    frozen candidate, on the clean in-scope descendant identified by preflight. Candidate-bound and later review
    phases stop until a separately reviewed lifecycle-tail contract exists. Compile the selected task again before
    editing.
-6. Use the repository implementation skill and the verified installed Factory `task-executor`. Stay inside the
-   packet paths and capabilities. Do not accept, promote, or ship from the executor role.
-7. Run every packet-declared command through `validation-gate`. For high-risk work, run `code-review` against the
-   exact validated candidate. Run every packet-required repository domain review. Any product- or contract-bearing
-   change invalidates validation and review evidence.
+6. Immediately before each installed Factory worker invocation, run
+   `node .agents/skills/vetryn-continue-next/scripts/preflight.mjs --worker-packs-only` from a clean checkpoint.
+   Require `workers_authenticated`, the same source and manifest digests as the full preflight, and no intervening
+   pack mutation before invocation. Then use the repository implementation skill and `task-executor`. Stay inside
+   the packet paths and capabilities. Do not accept, promote, or ship from the executor role.
+7. Reauthenticate the worker packs the same way before `validation-gate` and, for high-risk work, `code-review`.
+   Run every packet-declared command and required repository domain review. Any product- or contract-bearing change
+   invalidates validation and review evidence.
 8. Only after all non-waivable gates pass, use `vetryn-promote-task` with the authenticated maintainer grant. Inspect
    the promotion tail; it may contain only task state, ledger/evidence, and generated progress.
-9. Use the verified installed Factory `commit-push` in the packet's protected PR lifecycle. Respect current-head
-   CI and review policy, merge only under the authenticated grant, monitor the default branch, then report the newly
-   legal task.
+9. Reauthenticate once more immediately before using installed Factory `commit-push` in the packet's protected PR
+   lifecycle. Respect current-head CI and review policy, merge only under the authenticated grant, monitor the
+   default branch, then report the newly legal task.
 
 Read `references/preflight-result.schema.json` when consuming or integrating the output contract. Do not copy
 Factory worker logic into this skill; use only packs authenticated by the committed Vetryn profile and preflight.

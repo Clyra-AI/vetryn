@@ -18,8 +18,11 @@
   ],
   "properties": {
     "schemaVersion": { "const": "1.0.0" },
-    "status": { "enum": ["ready_for_authority", "blocked"] },
-    "mode": { "type": ["string", "null"], "enum": ["start", "resume", null] },
+    "status": { "enum": ["ready_for_authority", "workers_authenticated", "blocked"] },
+    "mode": {
+      "type": ["string", "null"],
+      "enum": ["start", "resume", "worker_reauthentication", null]
+    },
     "repository": {
       "type": "object",
       "additionalProperties": false,

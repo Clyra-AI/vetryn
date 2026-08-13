@@ -58,6 +58,16 @@ const ZERO_DIGEST = `sha256:${"0".repeat(64)}`;
 const ZERO_SOURCE_REF = `Clyra-AI/factory@${"0".repeat(40)}`;
 const SAFE_IDENTIFIER_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._/-]*$/u;
 const SAFE_ARGUMENT_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._/:=-]*$/u;
+const CANONICAL_RESUME_POLICY_PATHS = [
+  ".factory/profile.yaml",
+  "prettier.config.mjs",
+  "product/plans/oss-v1/acceptance-ledger.json",
+  "product/plans/oss-v1/plan.json",
+  "product/plans/schemas",
+  "scripts/plan.mjs",
+  "scripts/semantic-risk.mjs",
+  "scripts/task.mjs",
+];
 const REQUIRED_PROFILE_FIELDS = new Map([
   ["project", "nonempty_string"],
   ["product_name", "nonempty_string"],
@@ -1147,7 +1157,7 @@ function assertActiveBranchScope(root, base, head, packet) {
   }
 }
 
-function assertBranchState(root, profile, snapshot, derived) {
+function resolveCanonicalDefault(root, profile) {
   const localRef = `refs/heads/${profile.default_branch}`;
   const remoteRef = `refs/remotes/${profile.commit_push.default_remote}/${profile.default_branch}`;
   const local = git(root, ["rev-parse", "--verify", localRef], {
@@ -1161,8 +1171,32 @@ function assertBranchState(root, profile, snapshot, derived) {
   if (!SHA_PATTERN.test(local) || !SHA_PATTERN.test(remote) || local !== remote) {
     throw new PreflightBlock("stale_default_ref", "branch_state");
   }
+  return local;
+}
+
+function assertCanonicalResumePolicy(root, snapshot, canonicalDefault) {
+  if (!snapshot.branch || snapshot.branch === null) return;
+  const comparison = git(
+    root,
+    [
+      "diff",
+      "--quiet",
+      "--no-ext-diff",
+      "--no-textconv",
+      `${canonicalDefault}..${snapshot.head}`,
+      "--",
+      ...CANONICAL_RESUME_POLICY_PATHS,
+    ],
+    { accepted: [0, 1], check: "canonical_policy" },
+  );
+  if (comparison.status === 1) {
+    throw new PreflightBlock("branch_policy_inputs_not_canonical", "canonical_policy");
+  }
+}
+
+function assertBranchState(root, profile, snapshot, derived, canonicalDefault) {
   if (derived.source === "next_legal") {
-    if (snapshot.branch !== profile.default_branch || snapshot.head !== local) {
+    if (snapshot.branch !== profile.default_branch || snapshot.head !== canonicalDefault) {
       throw new PreflightBlock("next_task_requires_default_branch", "branch_state");
     }
     return "start";
@@ -1176,11 +1210,11 @@ function assertBranchState(root, profile, snapshot, derived) {
   ) {
     throw new PreflightBlock("frozen_candidate_resume_unsupported", "branch_state");
   }
-  git(root, ["merge-base", "--is-ancestor", local, snapshot.head], {
+  git(root, ["merge-base", "--is-ancestor", canonicalDefault, snapshot.head], {
     errorCode: "active_branch_not_default_descendant",
     check: "branch_state",
   });
-  assertActiveBranchScope(root, local, snapshot.head, derived.packet);
+  assertActiveBranchScope(root, canonicalDefault, snapshot.head, derived.packet);
   return "resume";
 }
 
@@ -1289,7 +1323,7 @@ function lifecycleSummary(gates) {
   };
 }
 
-async function preflight() {
+async function preflight({ workerPacksOnly = false } = {}) {
   const result = resultTemplate();
   if (!portableFactoryPlatformSupported()) {
     addBlocker(result, new PreflightBlock("unsupported_platform", "platform"));
@@ -1323,43 +1357,52 @@ async function preflight() {
     addCheck(result, "profile", "pass", "profile_authenticated");
     addCheck(result, "canonical_inputs", "pass", "canonical_inputs_authenticated");
 
+    const canonicalDefault = resolveCanonicalDefault(root, profile);
+    assertCanonicalResumePolicy(root, before, canonicalDefault);
+    addCheck(result, "canonical_policy", "pass", "canonical_policy_authenticated");
+
     result.resolved.factoryPacks = verifyFactoryPacks(root, profile);
     addCheck(result, "factory_packs", "pass", "factory_packs_authenticated");
 
-    const derived = deriveTask(root, profile);
-    result.selection = {
-      taskId: derived.taskId,
-      source: derived.source,
-      state: derived.packet.currentState.state,
-    };
-    result.packet = packetSummary(derived.packet);
-    addCheck(result, "plan_check", "pass", "plan_check_deterministic");
-    addCheck(result, "task_next", "pass", "task_next_deterministic");
-    addCheck(result, "task_selection", "pass", "sole_task_selected");
-    addCheck(result, "task_compile", "pass", "task_packet_deterministic");
+    if (workerPacksOnly) {
+      result.mode = "worker_reauthentication";
+      addCheck(result, "worker_invocation", "pass", "factory_packs_ready_for_invocation");
+    } else {
+      const derived = deriveTask(root, profile);
+      result.selection = {
+        taskId: derived.taskId,
+        source: derived.source,
+        state: derived.packet.currentState.state,
+      };
+      result.packet = packetSummary(derived.packet);
+      addCheck(result, "plan_check", "pass", "plan_check_deterministic");
+      addCheck(result, "task_next", "pass", "task_next_deterministic");
+      addCheck(result, "task_selection", "pass", "sole_task_selected");
+      addCheck(result, "task_compile", "pass", "task_packet_deterministic");
 
-    result.resolved.repositorySkills = resolveRepositorySkills(root, profile, derived.packet);
-    result.resolved.factorySkills = derived.packet.required_worker_chain;
-    result.resolved.domainReviews = derived.packet.required_domain_review_chain;
-    result.resolved.requiredReviews = derived.packet.requiredReviews;
-    result.resolved.capabilities = derived.packet.task.capabilities;
-    result.resolved.lifecycleGates = lifecycleSummary(derived.packet.lifecycle_gates);
-    result.resolved.promotion = {
-      maintainerRequired: derived.packet.execution.maintainerApprovalRequired,
-      progressGenerated: derived.packet.execution.progressIsGenerated,
-      executorMayAccept: derived.packet.execution.executorMayAccept,
-    };
-    result.resolved.delivery = {
-      mode: derived.packet.execution.deliveryPermissions.mode,
-      directDefaultPush: false,
-      automaticMerge: false,
-    };
-    addCheck(result, "skills", "pass", "required_skills_resolved");
+      result.resolved.repositorySkills = resolveRepositorySkills(root, profile, derived.packet);
+      result.resolved.factorySkills = derived.packet.required_worker_chain;
+      result.resolved.domainReviews = derived.packet.required_domain_review_chain;
+      result.resolved.requiredReviews = derived.packet.requiredReviews;
+      result.resolved.capabilities = derived.packet.task.capabilities;
+      result.resolved.lifecycleGates = lifecycleSummary(derived.packet.lifecycle_gates);
+      result.resolved.promotion = {
+        maintainerRequired: derived.packet.execution.maintainerApprovalRequired,
+        progressGenerated: derived.packet.execution.progressIsGenerated,
+        executorMayAccept: derived.packet.execution.executorMayAccept,
+      };
+      result.resolved.delivery = {
+        mode: derived.packet.execution.deliveryPermissions.mode,
+        directDefaultPush: false,
+        automaticMerge: false,
+      };
+      addCheck(result, "skills", "pass", "required_skills_resolved");
 
-    resolveCommands(root, derived.packet);
-    addCheck(result, "commands", "pass", "required_commands_resolved");
-    result.mode = assertBranchState(root, profile, before, derived);
-    addCheck(result, "branch_state", "pass", "branch_state_current");
+      resolveCommands(root, derived.packet);
+      addCheck(result, "commands", "pass", "required_commands_resolved");
+      result.mode = assertBranchState(root, profile, before, derived, canonicalDefault);
+      addCheck(result, "branch_state", "pass", "branch_state_current");
+    }
   } catch (error) {
     addBlocker(
       result,
@@ -1392,7 +1435,7 @@ async function preflight() {
   }
 
   if (result.blockers.length === 0) {
-    result.status = "ready_for_authority";
+    result.status = workerPacksOnly ? "workers_authenticated" : "ready_for_authority";
     addCheck(result, "authority", "not_checked", "current_run_authority_required");
   }
   result.checks.sort((left, right) => left.id.localeCompare(right.id));
@@ -1426,8 +1469,20 @@ function isDirectInvocation() {
 }
 
 if (isDirectInvocation()) {
-  const result = await preflight();
+  const argumentsAfterScript = process.argv.slice(2);
+  const workerPacksOnly =
+    argumentsAfterScript.length === 1 && argumentsAfterScript[0] === "--worker-packs-only";
+  const result =
+    argumentsAfterScript.length === 0 || workerPacksOnly
+      ? await preflight({ workerPacksOnly })
+      : (() => {
+          const invalid = resultTemplate();
+          addBlocker(invalid, new PreflightBlock("invalid_preflight_arguments", "preflight"));
+          return invalid;
+        })();
   validateOutput(result);
   process.stdout.write(`${canonicalJson(result)}\n`);
-  process.exitCode = result.status === "ready_for_authority" ? 0 : 2;
+  process.exitCode = ["ready_for_authority", "workers_authenticated"].includes(result.status)
+    ? 0
+    : 2;
 }

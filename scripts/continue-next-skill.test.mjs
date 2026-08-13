@@ -422,19 +422,24 @@ function setBehavior(fixture, value, message = "update fixture behavior") {
   }
 }
 
-function runPreflight(fixture, extraEnv = {}, nodeArguments = []) {
+function runPreflight(fixture, extraEnv = {}, nodeArguments = [], scriptArguments = []) {
   const script = path.join(fixture.root, skillRef, "scripts/preflight.mjs");
-  const result = command(fixture.root, process.execPath, [...nodeArguments, script], {
-    allowFailure: true,
-    env: {
-      AWS_SECRET_ACCESS_KEY: "must-not-leak-aws",
-      CODEX_HOME: fixture.codexHome,
-      FACTORY_WORKER_SKILLS_ROOT: fixture.skillsRoot,
-      GITHUB_TOKEN: "must-not-leak-github",
-      OPENAI_API_KEY: "must-not-leak-openai",
-      ...extraEnv,
+  const result = command(
+    fixture.root,
+    process.execPath,
+    [...nodeArguments, script, ...scriptArguments],
+    {
+      allowFailure: true,
+      env: {
+        AWS_SECRET_ACCESS_KEY: "must-not-leak-aws",
+        CODEX_HOME: fixture.codexHome,
+        FACTORY_WORKER_SKILLS_ROOT: fixture.skillsRoot,
+        GITHUB_TOKEN: "must-not-leak-github",
+        OPENAI_API_KEY: "must-not-leak-openai",
+        ...extraEnv,
+      },
     },
-  });
+  );
   return { ...result, json: JSON.parse(result.stdout) };
 }
 
@@ -620,6 +625,31 @@ describe("vetryn-continue-next preflight", () => {
     });
   });
 
+  it("rejects branch-controlled compiler and plan policy before deriving resumed scope", () => {
+    const fixture = makeFixture();
+    git(fixture.root, "switch", "-c", "codex/branch-controlled-policy");
+    setBehavior(fixture, {
+      activeTasks: [{ taskId: "TASK-ACTIVE", state: "in_progress" }],
+      nextLegalTasks: [],
+      mutation: null,
+      race: null,
+      compiledState: null,
+      candidateBound: false,
+    });
+    writeFileSync(path.join(fixture.root, "scripts/task.mjs"), "\n// broaden scope\n", {
+      flag: "a",
+    });
+    git(fixture.root, "add", "scripts/task.mjs");
+    git(fixture.root, "commit", "-m", "change branch compiler policy");
+
+    const result = runPreflight(fixture);
+    expect(result.status).toBe(2);
+    expect(result.json.blockers).toContainEqual({
+      check: "canonical_policy",
+      code: "branch_policy_inputs_not_canonical",
+    });
+  });
+
   it.each([
     ["no_legal_task", { activeTasks: [], nextLegalTasks: [], mutation: null, race: null }],
     [
@@ -733,6 +763,28 @@ describe("vetryn-continue-next preflight", () => {
     const result = runPreflight(fixture);
     expect(result.status).toBe(2);
     expect(result.json.blockers.some((blocker) => blocker.check === "factory_packs")).toBe(true);
+  });
+
+  it("reauthenticates the exact installed pack set immediately before worker invocation", () => {
+    const fixture = makeFixture();
+    const authenticated = runPreflight(fixture, {}, [], ["--worker-packs-only"]);
+    expect(authenticated.status).toBe(0);
+    expect(authenticated.json).toMatchObject({
+      status: "workers_authenticated",
+      mode: "worker_reauthentication",
+      selection: null,
+      packet: null,
+      resolved: { factoryPacks: expect.any(Object) },
+    });
+
+    writeFileSync(
+      path.join(fixture.skillsRoot, "task-executor/resources/helper.txt"),
+      "tampered\n",
+      { flag: "a" },
+    );
+    const replaced = runPreflight(fixture, {}, [], ["--worker-packs-only"]);
+    expect(replaced.status).toBe(2);
+    expect(replaced.json.blockers.some((blocker) => blocker.check === "factory_packs")).toBe(true);
   });
 
   it.each(["profile", "manifest", "verifier"])(
