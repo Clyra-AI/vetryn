@@ -222,4 +222,57 @@ describe("vetryn-continue-next preflight", () => {
     );
     expect(instructions).toContain("Stop on any other state");
   });
+
+  it("closes an authorized task and reports the next legal task", async () => {
+    const instructions = await readFile(
+      path.resolve(import.meta.dirname, "../.agents/skills/vetryn-continue-next/SKILL.md"),
+      "utf8",
+    );
+    expect(instructions).toContain("one canonical promotion-only DeliveryHead");
+    expect(instructions).toContain(
+      "The task is not complete until the protected merge is verified",
+    );
+    expect(instructions).toContain("next task is reported");
+  });
+
+  it("binds validation to one ProductCandidate and keeps promotion tails small", async () => {
+    const [implementation, promotion, verification, trust, workflow] = await Promise.all(
+      [
+        ".agents/skills/vetryn-implement-task/SKILL.md",
+        ".agents/skills/vetryn-promote-task/SKILL.md",
+        ".agents/skills/vetryn-verify-task/SKILL.md",
+        ".agents/skills/vetryn-trust-review/SKILL.md",
+        "WORKFLOW.md",
+      ].map((file) => readFile(path.resolve(import.meta.dirname, "..", file), "utf8")),
+    );
+    expect(implementation).toContain("ProductCandidate");
+    expect(implementation).toContain("one bounded repair pass");
+    expect(promotion).toContain("one promotion-only **DeliveryHead**");
+    expect(promotion).toContain("Do not rerun the full");
+    expect(verification).toContain("promotion-only DeliveryHead");
+    expect(trust).toContain("promotion-only DeliveryHead");
+    expect(workflow).toContain("one new standalone P2");
+  });
+
+  it("keeps the implementation review checklist focused on observed defect classes", async () => {
+    const checklist = await readFile(
+      path.resolve(
+        import.meta.dirname,
+        "../.agents/skills/vetryn-implement-task/references/review-patterns.md",
+      ),
+      "utf8",
+    );
+    for (const pattern of [
+      "Producer and consumer",
+      "External effects",
+      "Filesystem boundary",
+      "Multi-file persistence",
+      "Concurrency and retries",
+      "Economics and statistics",
+      "Untrusted input",
+    ]) {
+      expect(checklist).toContain(pattern);
+    }
+    expect(checklist).toContain("not permission to broaden packet scope");
+  });
 });

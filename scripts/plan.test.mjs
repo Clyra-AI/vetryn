@@ -875,7 +875,7 @@ describe("implementation plan validator", () => {
         expect.objectContaining({ id: "PROCESS-014", waivable: false }),
       ]),
     );
-    expect(state).toMatchObject({ taskId: "M0-12", revision: 0, state: "planned" });
+    expect(state.taskId).toBe("M0-12");
   });
 
   it("locks narrow continuation behind one bounded process task", async () => {

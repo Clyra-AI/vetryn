@@ -53,7 +53,8 @@ mutation, promotion, GitHub, merge, credential, or provider authority; those rem
 During implementation, add deterministic success, failure, ambiguity, and stale-input tests that match the task.
 Run focused checks, then every active command gate in the packet. Do not claim planned gates as passing.
 
-Evidence is compact, redacted, and bound to the exact candidate and command gate it proves. Recorded plan,
+The **ProductCandidate** is the final commit containing product, contract, test, fixture, or task-scoped
+documentation changes. Evidence is compact, redacted, and bound to that exact candidate and command gate it proves. Recorded plan,
 lockfile, and portable Factory-profile digests preserve the policy inputs observed at execution time. A changed
 Factory profile invalidates the active packet and requires recompilation; unrelated plan edits may preserve a
 frozen task's evidence under the packet validator's existing rules. For high-risk work, freeze the candidate after
@@ -61,22 +62,26 @@ command validation and run Factory `code-review` before promotion or the first p
 candidate and validation report. Re-run both validation and local review after any product- or contract-bearing
 candidate change.
 
-With explicit approval from an active maintainer, promotion changes only that task's state, ledger status/evidence, new compact
-evidence, and generated progress. First commit the reviewed candidate and its evidence, then run `pnpm plan:write`
-and commit the generated progress. Inspect the full promotion tail before shipping; if it contains product or
-contract-bearing bytes, invalidate the review and return to implementation. Never edit `progress.json` directly.
+With explicit approval from an active maintainer, run `pnpm plan:write` and create one promotion-only
+**DeliveryHead** containing only that task's canonical state, ledger status/evidence, compact lifecycle evidence,
+generated progress, and other packet-declared promotion artifacts. Never edit `progress.json` directly. Run the
+small plan/tail structural checks, not the full product or domain-review suite again. If the tail contains product,
+contract, test, fixture, or task-scoped documentation bytes, invalidate inheritance and return to implementation.
 
 ## Pull requests and shipping
 
-Use one task per branch and pull request. Before shipping, run `pnpm check` from a clean candidate commit. The PR
+Use one task per branch and pull request. Run `pnpm check` on the clean ProductCandidate. The PR
 describes the bounded change, validation, risks, and any provider or submodule notes. Use Factory `commit-push` in
 `land` mode to push, monitor required CI, address concrete actionable findings, merge with maintainer authority,
 and monitor `main` afterward.
 
-Review feedback remains valuable. Address P0/P1 and concrete correctness, security, privacy, data-loss, or
-contract issues. Remote Codex is a separate latest-head residual gate and does not satisfy the local structured
-review. A maintainer may use the Factory standalone-P2 disposition only when its documented conditions are met.
-Do not delay a small V1 task for speculative, duplicative, or non-actionable review churn.
+Review feedback remains valuable. Collect findings visible for a ProductCandidate into one batch, make at most one
+bounded repair pass, and rerun exact-candidate gates and required reviews once. P0/P1 and concrete correctness,
+security, privacy, data-loss, contract, or other non-waivable issues block. Remote Codex does not replace local
+structured review. After the completed repair generation, one new standalone P2 may use the Factory disposition
+only with explicit ADR-0009 maintainer classification; it does not automatically start another product cycle.
+Promotion-only bytes do not require another full local review generation. Do not delay a small V1 task for
+speculative, duplicative, or non-actionable churn.
 
 ## Provider and field work
 

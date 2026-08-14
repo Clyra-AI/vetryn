@@ -1,0 +1,35 @@
+{
+  "$schema": "../../schemas/evidence.schema.json",
+  "schemaVersion": "1.0.0",
+  "id": "ev-m0-12-contracts-918758d",
+  "taskId": "M0-12",
+  "type": "command-run",
+  "actor": "validation-gate",
+  "commit": "918758d80d24e20353129770f90bf094e53533b4",
+  "createdAt": "2026-08-14T11:47:32Z",
+  "result": {
+    "status": "pass",
+    "checks": [
+      {
+        "name": "pnpm test:contracts",
+        "status": "pass",
+        "summary": "All 233 deterministic tests passed, including ProductCandidate, DeliveryHead, task closure, and observed defect-pattern guidance assertions."
+      }
+    ]
+  },
+  "inputs": {
+    "planDigest": "sha256:ffd63d66b30eb4212c8eb88a8dcac03c43f9294a39211997618e15ba72fe0670",
+    "lockfileDigest": "sha256:0d73c2bc837d2f12314c6fb3b2f28c4389a3887a5fdda7b6898913b2b20c91d9"
+  },
+  "gateBinding": {
+    "gateId": "QG-CONTRACTS",
+    "kind": "command",
+    "command": "pnpm test:contracts"
+  },
+  "review": null,
+  "redaction": {
+    "status": "not_applicable",
+    "containsRawModelOutput": false,
+    "containsSecrets": false
+  }
+}

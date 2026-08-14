@@ -5,7 +5,7 @@ description: Independently review Vetryn evaluation, recommendation, and patch c
 
 # Review Vetryn trust semantics
 
-Use this skill after implementation and deterministic validation have produced one frozen candidate. It adds
+Use this skill after implementation and deterministic validation have produced one frozen ProductCandidate. It adds
 domain-specific adversarial review to Factory's generic `code-review`; it never replaces command gates.
 
 ## Inputs
@@ -41,7 +41,9 @@ applicable. Stop if an input is missing, stale, mutable, unredacted, or not boun
 
 Produce a candidate-bound structured review report with a `pass` or `changes_requested` verdict. A pass requires
 no unresolved blocker and must cite the exact validation report and executed deterministic evidence. Any
-product- or contract-bearing candidate change invalidates the report and requires validation and review again.
+product-, contract-, test-, fixture-, or task-scoped documentation change invalidates the report and requires
+validation and review again. A deterministic canonical promotion-only DeliveryHead may inherit the report without
+another semantic review.
 
 Do not implement or repair findings while acting as reviewer. Do not accept or promote a task, merge, use live
 provider access, read credentials, write to GitHub, or treat an LLM judgment as deterministic evidence. During

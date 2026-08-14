@@ -2,7 +2,7 @@
 
 - **Status:** Accepted
 - **Date:** 2026-08-10
-- **Amended:** 2026-08-13
+- **Amended:** 2026-08-14
 
 ## Context
 
@@ -40,6 +40,14 @@ change.
   that need it.
 - Provider access remains explicit and task-scoped. No policy change permits ambient secrets, automatic live-model
   calls, direct `main` pushes, or automated product merges.
+- Validation and required reviews bind the ProductCandidate, defined as the final product, contract, test, fixture,
+  or task-scoped documentation commit. A deterministic promotion-only DeliveryHead may inherit that evidence when
+  its tail contains only canonical state, ledger, compact lifecycle evidence, generated progress, and other
+  packet-declared promotion artifacts.
+- Automated findings are batched once per ProductCandidate. P0/P1 and non-waivable findings block. After one
+  completed repair generation, a maintainer may explicitly record one newly surfaced standalone P2 as delivery
+  debt and merge without another product-review generation; this never applies to privacy, fail-closed,
+  provider-safety, evidence-integrity, or another non-waivable requirement.
 
 ## Consequences
 

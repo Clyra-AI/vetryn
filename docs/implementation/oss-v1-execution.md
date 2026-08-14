@@ -49,13 +49,18 @@ not executable. The full repository lifecycle is in `WORKFLOW.md`.
 
 1. **Planner** selects a ready task, confirms locked decisions and scope, and creates a bounded task
    brief from the canonical JSON.
-2. **Executor** implements only allowed paths, runs the smallest relevant tests, and records the
-   candidate commit and command evidence.
+2. **Executor** implements only allowed paths, runs the smallest relevant tests, and records one exact
+   ProductCandidate commit and command evidence.
 3. **Verifier** independently reruns active gates when available and checks candidate binding, redaction, and
    scope. It does not repair or promote the candidate.
 4. **Trust reviewer** reviews high-risk semantics when `QG-TRUST-REVIEW` is active: no patch on
    ambiguity, stale source, insufficient evidence, compatibility failure, privacy risk, or hard-limit failure.
 5. **Maintainer** accepts, requests changes, or records an explicit waiver where the ledger allows it.
+
+Validation and required reviews bind the ProductCandidate. Promotion creates one DeliveryHead containing only
+canonical state, ledger, compact lifecycle evidence, generated progress, and packet-declared promotion artifacts.
+The deterministic tail check permits those artifacts to inherit ProductCandidate evidence without rerunning the
+full product or domain-review suite. Any product-bearing tail returns to implementation.
 
 Agents should work on one task per branch/PR. Parallel work is permitted only when the DAG allows it
 and paths do not overlap. A task brief is disposable; canonical state and evidence are committed.
@@ -186,5 +191,7 @@ repository.
 `$vetryn-continue-next` adds only repository discovery and routing. Its script requires a clean checkout, runs the
 existing plan check, chooses exactly one active task or otherwise one next-legal task, compiles the packet, and
 checks that HEAD and worktree status did not change. The procedure then delegates to the packet-selected skills.
-The developer host and installed skills are trusted local inputs; the helper is not a security sandbox, does not
-require a sibling Factory checkout, and cannot supply mutation or delivery authority.
+The delegated lifecycle batches one ProductCandidate review generation, creates one promotion-only DeliveryHead,
+lands it through the protected PR, verifies `main`, and reports the next legal task when the current-run grant
+authorizes those actions. The developer host and installed skills are trusted local inputs; the helper is not a
+security sandbox, does not require a sibling Factory checkout, and cannot supply mutation or delivery authority.
