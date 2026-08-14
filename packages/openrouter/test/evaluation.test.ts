@@ -540,6 +540,37 @@ describe("bounded deterministic evaluation", () => {
     expect(JSON.stringify(result)).not.toContain("customer-secret");
   });
 
+  it("detects protected numeric and boolean JSON primitives before redaction", async () => {
+    const primitiveCases = cases.map((evaluationCase) => ({
+      ...evaluationCase,
+      protectedSegments: ["12345", "true"],
+    }));
+    const options = baseOptions(await acquireCurrentCatalogRefresh());
+    const result = await evaluateOpenRouterCandidate({
+      ...options,
+      cases: primitiveCases,
+      evalSuite: {
+        ...evalSuite,
+        fixtureDigest: createEvaluationCaseDigest(primitiveCases),
+      },
+      transport: {
+        async execute(request) {
+          return {
+            ...(await transport().execute(request)),
+            output: {
+              classification: request.caseId === "support-001" ? "billing" : "returns",
+              leakedFlag: true,
+              leakedId: 12345,
+            },
+          };
+        },
+      },
+    });
+
+    expect(result.candidateRun.gateOutcomes).toMatchObject({ privacy: "fail", quality: "pass" });
+    expect(JSON.stringify(result)).not.toContain("12345");
+  });
+
   it("fails quality when the reviewed suite is below the call-site minimum", async () => {
     const options = baseOptions(await acquireCurrentCatalogRefresh());
     const result = await evaluateOpenRouterCandidate({
@@ -590,6 +621,40 @@ describe("bounded deterministic evaluation", () => {
       baselineMetrics: { costUsd: "0.6" },
       gateOutcomes: { cost: "pass" },
       metrics: { costUsd: "0.54" },
+      status: "complete",
+    });
+
+    const subPicodollarCatalog = {
+      ...rawCatalog,
+      data: rawCatalog.data.map((model) =>
+        model.id === callSite.currentModel
+          ? { ...model, pricing: { completion: "0", prompt: "0.000000000000255" } }
+          : model.id === "openai/gpt-4o-mini"
+            ? { ...model, pricing: { completion: "0", prompt: "0.00000000000023" } }
+            : model,
+      ),
+    };
+    const preciseOptions = baseOptions(await acquireCurrentCatalogRefresh(subPicodollarCatalog));
+    const preciseResult = await evaluateOpenRouterCandidate({
+      ...preciseOptions,
+      callSite: {
+        ...callSite,
+        gates: { ...callSite.gates, minSavingsPercent: 10 },
+      },
+      transport: {
+        async execute(request) {
+          return {
+            ...(await transport().execute(request)),
+            usage: { completionTokens: 0, promptTokens: 1 },
+          };
+        },
+      },
+    });
+
+    expect(preciseResult.candidateRun).toMatchObject({
+      baselineMetrics: { costUsd: "0.00000000000051" },
+      gateOutcomes: { cost: "fail" },
+      metrics: { costUsd: "0.00000000000046" },
       status: "complete",
     });
   });

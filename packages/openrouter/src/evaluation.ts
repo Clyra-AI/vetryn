@@ -427,7 +427,7 @@ export async function evaluateOpenRouterCandidate(
     options.candidateModel,
   );
   let requestsStarted = 0;
-  let spend = 0;
+  let spend: ExactDecimal = { scale: 0, units: 0n };
   let committedBudgetUnits = 0n;
   const maxSpendUnits = decimalUnitsFloor(limits.maxSpendUsd);
   let exhausted = false;
@@ -483,7 +483,7 @@ export async function evaluateOpenRouterCandidate(
           ) {
             throw new EvaluationTransportError("invalid-output");
           }
-          spend += requestCost(normalized.usage, model);
+          spend = addExactDecimals(spend, requestCost(normalized.usage, model));
           results[jobIndex] = normalized;
           break;
         } catch (error: unknown) {
@@ -512,7 +512,7 @@ export async function evaluateOpenRouterCandidate(
     jobs,
     limits,
     observedProviderRequests: requestsStarted,
-    observedSpendUsd: spend,
+    observedSpendUsd: formatExactDecimal(spend),
     results,
     sampling,
     scorer,
@@ -549,7 +549,7 @@ function buildCandidateRun(options: {
   jobs: readonly Job[];
   limits: ReturnType<typeof parseLimits>;
   observedProviderRequests: number;
-  observedSpendUsd: number;
+  observedSpendUsd: string;
   results: readonly (EvaluatedRequest | undefined)[];
   sampling: ReturnType<typeof parseSampling>;
   scorer: ReturnType<typeof parseScorer>;
@@ -590,7 +590,7 @@ function buildCandidateRun(options: {
       limits: options.limits,
       observed: {
         providerRequestCount: options.observedProviderRequests,
-        spendUsd: formatDecimal(options.observedSpendUsd),
+        spendUsd: options.observedSpendUsd,
       },
       sampling: {
         maxOutputTokens: options.sampling.maxOutputTokens,
@@ -947,8 +947,11 @@ function metrics(
     .toSorted((left, right) => left - right);
   return {
     caseCount: cases.length,
-    costUsd: formatDecimal(
-      results.reduce((sum, result) => sum + requestCost(result.usage, model), 0),
+    costUsd: formatExactDecimal(
+      results.reduce<ExactDecimal>(
+        (sum, result) => addExactDecimals(sum, requestCost(result.usage, model)),
+        { scale: 0, units: 0n },
+      ),
     ),
     errorCount: 0,
     failedCaseIds,
@@ -1053,7 +1056,11 @@ function containsProtectedSegment(
   if (typeof value === "string") {
     return protectedSegments.some((segment) => value.includes(segment));
   }
-  if (value === null || typeof value !== "object") return false;
+  if (value === null || typeof value === "number" || typeof value === "boolean") {
+    const lexicalValue = value === null ? "null" : String(value);
+    return protectedSegments.some((segment) => lexicalValue.includes(segment));
+  }
+  if (typeof value !== "object") return false;
   if (visited.has(value)) return false;
   visited.add(value);
   if (Array.isArray(value)) {
@@ -1066,15 +1073,46 @@ function containsProtectedSegment(
   );
 }
 
+interface ExactDecimal {
+  readonly scale: number;
+  readonly units: bigint;
+}
+
 function requestCost(
   usage: EvaluationTransportResult["usage"],
   model: CatalogSnapshot["models"][number],
-): number {
-  return (
-    (usage.promptTokens * Number(model.inputPricePerMillionUsd) +
-      usage.completionTokens * Number(model.outputPricePerMillionUsd)) /
-    1_000_000
+): ExactDecimal {
+  return addExactDecimals(
+    multiplyDecimal(model.inputPricePerMillionUsd, usage.promptTokens, 6),
+    multiplyDecimal(model.outputPricePerMillionUsd, usage.completionTokens, 6),
   );
+}
+
+function multiplyDecimal(value: string, multiplier: number, extraScale = 0): ExactDecimal {
+  const [whole = "0", fraction = ""] = value.split(".");
+  return {
+    scale: fraction.length + extraScale,
+    units: BigInt(`${whole}${fraction}`) * BigInt(multiplier),
+  };
+}
+
+function addExactDecimals(left: ExactDecimal, right: ExactDecimal): ExactDecimal {
+  const scale = Math.max(left.scale, right.scale);
+  return {
+    scale,
+    units:
+      left.units * 10n ** BigInt(scale - left.scale) +
+      right.units * 10n ** BigInt(scale - right.scale),
+  };
+}
+
+function formatExactDecimal(value: ExactDecimal): string {
+  if (value.units === 0n) return "0";
+  if (value.scale === 0) return value.units.toString();
+  const digits = value.units.toString().padStart(value.scale + 1, "0");
+  const whole = digits.slice(0, -value.scale);
+  const fraction = digits.slice(-value.scale).replace(/0+$/u, "");
+  return fraction.length === 0 ? whole : `${whole}.${fraction}`;
 }
 
 const BUDGET_DECIMAL_PLACES = 12;
