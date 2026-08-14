@@ -105,6 +105,7 @@ describe("vetryn-continue-next preflight", () => {
   it.each([
     [{ activeTasks: [], nextLegalTasks: [] }, "no_legal_task"],
     [{ activeTasks: [], nextLegalTasks: ["V1-43", "V1-44"] }, "ambiguous_legal_tasks"],
+    [{ activeTasks: null, nextLegalTasks: ["V1-43"] }, "invalid_task_next_output"],
     [
       {
         activeTasks: [

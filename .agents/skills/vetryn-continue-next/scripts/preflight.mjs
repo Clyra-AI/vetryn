@@ -47,8 +47,10 @@ function snapshot(run, root) {
 }
 
 function selectTask(next) {
-  const active = Array.isArray(next.activeTasks) ? next.activeTasks : [];
-  const legal = Array.isArray(next.nextLegalTasks) ? next.nextLegalTasks : [];
+  if (!Array.isArray(next.activeTasks) || !Array.isArray(next.nextLegalTasks))
+    throw new PreflightBlock("invalid_task_next_output");
+  const active = next.activeTasks;
+  const legal = next.nextLegalTasks;
   if (active.length > 1) throw new PreflightBlock("ambiguous_active_tasks");
   if (active.length === 1) {
     const record = active[0];
@@ -59,7 +61,7 @@ function selectTask(next) {
   if (legal.length === 0) throw new PreflightBlock("no_legal_task");
   if (legal.length > 1) throw new PreflightBlock("ambiguous_legal_tasks");
   if (typeof legal[0] !== "string") throw new PreflightBlock("invalid_legal_task");
-  return { source: "next_legal", taskId: legal[0], state: "planned" };
+  return { source: "next_legal", taskId: legal[0], state: null };
 }
 
 function routing(packet) {
@@ -108,8 +110,11 @@ export function runPreflight({ cwd = process.cwd(), run = defaultRun } = {}) {
       "invalid_task_packet",
     );
     if (packet.task_id !== selection.taskId) throw new PreflightBlock("compiled_task_mismatch");
-    if (selection.source === "active" && packet.currentState?.state !== selection.state)
+    if (typeof packet.currentState?.state !== "string")
+      throw new PreflightBlock("invalid_task_packet");
+    if (selection.source === "active" && packet.currentState.state !== selection.state)
       throw new PreflightBlock("active_state_mismatch");
+    selection.state = packet.currentState.state;
 
     result = {
       schemaVersion: "1",
