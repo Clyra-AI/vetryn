@@ -158,19 +158,25 @@ describe("OpenRouter TypeScript golden scenario", () => {
         ),
       ),
     );
-    const refresh = await refreshOpenRouterCatalog({
-      acquisition: "live-api",
-      refreshId: "golden-live-refresh",
-      store: new ScenarioCatalogStore(),
-    });
-    if (refresh.status !== "success") throw new Error("golden live refresh must succeed");
-    const currentCatalogRefresh = createCurrentCatalogRefresh({
-      invocationId: "golden-invocation",
-      refresh,
-    });
+    const acquireCurrentCatalogRefresh = async () => {
+      const refresh = await refreshOpenRouterCatalog({
+        acquisition: "live-api",
+        refreshId: "golden-live-refresh",
+        store: new ScenarioCatalogStore(),
+      });
+      if (refresh.status !== "success") throw new Error("golden live refresh must succeed");
+      return createCurrentCatalogRefresh({
+        invocationId: "golden-invocation",
+        refresh,
+      });
+    };
+    const currentCatalogRefreshes = await Promise.all([
+      acquireCurrentCatalogRefresh(),
+      acquireCurrentCatalogRefresh(),
+    ]);
     vi.unstubAllGlobals();
     vi.useRealTimers();
-    const run = async () => {
+    const run = async (currentCatalogRefresh: (typeof currentCatalogRefreshes)[number]) => {
       const times = ["2026-08-10T00:00:01.000Z", "2026-08-10T00:00:02.000Z"];
       return evaluateOpenRouterCandidate({
         callSite: manifest.callSites[0],
@@ -210,7 +216,10 @@ describe("OpenRouter TypeScript golden scenario", () => {
       });
     };
 
-    const [first, second] = await Promise.all([run(), run()]);
+    const [first, second] = await Promise.all(currentCatalogRefreshes.map(run));
+    if (first === undefined || second === undefined) {
+      throw new Error("golden evaluation requires two independent current tokens");
+    }
     expect(first).toEqual(second);
     expect(first.candidateRun).toMatchObject({
       gateOutcomes: {
