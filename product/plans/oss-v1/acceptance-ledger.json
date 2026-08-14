@@ -181,8 +181,8 @@
         "gateId": "QG-CONTRACTS"
       },
       "waivable": false,
-      "status": "accepted",
-      "evidenceRefs": ["ev-m0-11-contracts-2b0c955"]
+      "status": "planned",
+      "evidenceRefs": []
     },
     {
       "id": "PROCESS-011",
@@ -194,8 +194,8 @@
         "gateId": "QG-REPO-CHECK"
       },
       "waivable": false,
-      "status": "accepted",
-      "evidenceRefs": ["ev-m0-11-repo-check-2b0c955"]
+      "status": "planned",
+      "evidenceRefs": []
     },
     {
       "id": "ROUTE-001",

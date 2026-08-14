@@ -5,8 +5,9 @@ description: Discover and continue Vetryn's sole active or next-legal repository
 
 # Continue the next Vetryn task
 
-Run `node .agents/skills/vetryn-continue-next/scripts/preflight.mjs` from anywhere inside the
-repository. Stop unless it returns `ready_for_authority`.
+From anywhere inside the repository, run
+`node "$(git rev-parse --show-toplevel)/.agents/skills/vetryn-continue-next/scripts/preflight.mjs"`.
+Stop unless it returns `ready_for_authority`.
 
 The preflight is read-only. It discovers the repository root, requires a clean checkout, runs the
 existing plan check, selects exactly one active task or otherwise exactly one next-legal task, compiles
@@ -17,16 +18,22 @@ After a passing preflight:
 
 1. Require an explicit grant for this run from a current maintainer. Intersect that grant with the
    compiled packet and repository policy; denial and non-waivable rules win.
-2. Invoke the packet's implementation skill and Factory `task-executor` within `allowed_paths`; stop on
-   every packet blocker, failed command, or forbidden capability.
-3. Run every packet validation command and Factory `validation-gate` on the frozen candidate.
-4. Run each packet-required local or domain review, including Factory `code-review` when declared.
+2. Route from `selection.state` before invoking a worker. For `planned`, `ready`, `in_progress`, or
+   `changes_requested`, continue through the packet's implementation skill and Factory `task-executor`.
+   For `verification_pending`, preserve the frozen candidate and resume at validation. For
+   `review_pending`, preserve the frozen candidate and resume at required reviews only after confirming
+   its existing validation evidence still binds that candidate. Stop on any other state.
+3. When routed through implementation, stay within `allowed_paths`; stop on every packet blocker, failed
+   command, or forbidden capability.
+4. Unless resuming at review, run every packet validation command and Factory `validation-gate` on the
+   frozen candidate.
+5. Run each packet-required local or domain review, including Factory `code-review` when declared.
    Candidate changes invalidate validation and review.
-5. Invoke the packet's promotion skill only after required gates pass and the current-run grant includes
+6. Invoke the packet's promotion skill only after required gates pass and the current-run grant includes
    maintainer promotion. That skill owns promotion checkpoints and the single handoff to Factory `commit-push`
    for protected landing; do not invoke the land lifecycle a second time. Delivery still requires the grant to
    include branch, PR, merge, and GitHub writes.
-6. After that lifecycle completes, resync the default branch and rerun `pnpm --silent task:next` to report the
+7. After that lifecycle completes, resync the default branch and rerun `pnpm --silent task:next` to report the
    newly legal task.
 
 Never infer positive authority from this skill, the packet, `MAINTAINERS.md`, `CODEOWNERS`, prior chat, or

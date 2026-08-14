@@ -198,4 +198,28 @@ describe("vetryn-continue-next preflight", () => {
     expect(instructions).toContain("single handoff to Factory `commit-push`");
     expect(instructions).toContain("do not invoke the land lifecycle a second time");
   });
+
+  it("documents a repository-location-independent preflight command", async () => {
+    const instructions = await readFile(
+      path.resolve(import.meta.dirname, "../.agents/skills/vetryn-continue-next/SKILL.md"),
+      "utf8",
+    );
+    expect(instructions).toContain(
+      'node "$(git rev-parse --show-toplevel)/.agents/skills/vetryn-continue-next/scripts/preflight.mjs"',
+    );
+  });
+
+  it("resumes active tasks from their current lifecycle stage", async () => {
+    const instructions = await readFile(
+      path.resolve(import.meta.dirname, "../.agents/skills/vetryn-continue-next/SKILL.md"),
+      "utf8",
+    );
+    expect(instructions).toContain(
+      "For `verification_pending`, preserve the frozen candidate and resume at validation",
+    );
+    expect(instructions).toContain(
+      "`review_pending`, preserve the frozen candidate and resume at required reviews",
+    );
+    expect(instructions).toContain("Stop on any other state");
+  });
 });
