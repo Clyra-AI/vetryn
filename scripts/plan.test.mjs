@@ -1625,6 +1625,12 @@ describe("implementation plan validator", () => {
       ["agent-workflow"],
     ],
     [
+      "canonical acceptance ledger path",
+      ["product/plans/oss-v1/acceptance-ledger.json"],
+      ["agent-workflow"],
+    ],
+    ["canonical plan path", ["product/plans/oss-v1/plan.json"], ["agent-workflow"]],
+    [
       "task-state schema path",
       ["product/plans/schemas/task-state.schema.json"],
       ["agent-workflow"],

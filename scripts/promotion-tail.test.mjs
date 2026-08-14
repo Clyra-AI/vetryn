@@ -304,6 +304,42 @@ describe("promotion-tail validator", () => {
     expect(result.status, result.stderr).toBe(0);
   });
 
+  it("accepts passing evidence cited only by an approved review", async () => {
+    const fixture = await createFixture();
+    const reviewEvidenceId = `ev-m0-14-review-${fixture.candidate.slice(0, 7)}`;
+    const delivery = await amend(fixture.root, async () => {
+      const statePath = `${fixture.planRoot}/state/${taskId}.json`;
+      const state = await readJson(fixture.root, statePath);
+      state.reviews = [
+        { role: "maintainer", status: "approved", evidenceRefs: [reviewEvidenceId] },
+      ];
+      await writeJson(fixture.root, statePath, state);
+      await writeJson(
+        fixture.root,
+        `${fixture.planRoot}/evidence/${reviewEvidenceId}.json`,
+        evidence(reviewEvidenceId, fixture.candidate),
+      );
+    });
+    const result = run(fixture.root, fixture.candidate, delivery);
+    expect(result.status, result.stderr).toBe(0);
+  });
+
+  it.each(["baseCommit", "executor"])(
+    "rejects an accepted-task rebind that changes candidate %s",
+    async (field) => {
+      const fixture = await createAcceptedRebindFixture();
+      const delivery = await amend(fixture.root, async () => {
+        const statePath = `${fixture.planRoot}/state/${taskId}.json`;
+        const state = await readJson(fixture.root, statePath);
+        state.candidate[field] = field === "baseCommit" ? "f".repeat(40) : "other-agent";
+        await writeJson(fixture.root, statePath, state);
+      });
+      const result = run(fixture.root, fixture.candidate, delivery);
+      expect(result.status).toBe(1);
+      expect(result.stderr).toContain("promotion state changed candidate attribution");
+    },
+  );
+
   it.each([
     [
       "product bytes",

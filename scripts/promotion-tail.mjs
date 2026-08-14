@@ -242,10 +242,17 @@ function assertLifecycleArtifact(name, document, taskId, candidate) {
     );
 }
 
-function assertPromotionState(state, task, taskId, productCandidate) {
+function assertPromotionState(candidateState, state, task, taskId, productCandidate) {
   assert(state.taskId === taskId, "promotion state is for another task");
   assert(state.state === "accepted", "promotion state is not accepted");
   assert(state.candidate?.commit === productCandidate, "promotion state changed the candidate");
+  if (candidateState.candidate !== null) {
+    assert(
+      state.candidate?.baseCommit === candidateState.candidate?.baseCommit &&
+        state.candidate?.executor === candidateState.candidate?.executor,
+      "promotion state changed candidate attribution",
+    );
+  }
   assert(
     Array.isArray(state.blockers) && state.blockers.length === 0,
     "promotion state has blockers",
@@ -424,8 +431,9 @@ export function checkPromotionTail({ root, taskId, productCandidate, deliveryHea
   const candidateLedger = jsonAt(root, productCandidate, ledgerPath);
   const promotedLedger = jsonAt(root, deliveryHead, ledgerPath);
   assertLedgerTail(candidateLedger, promotedLedger, taskId);
+  const candidateState = jsonAt(root, productCandidate, statePath);
   const state = jsonAt(root, deliveryHead, statePath);
-  assertPromotionState(state, task, taskId, productCandidate);
+  assertPromotionState(candidateState, state, task, taskId, productCandidate);
   assertPromotedLedger(promotedLedger, state, taskId);
   assertProgress(
     jsonAt(root, productCandidate, progressPath),
@@ -439,6 +447,7 @@ export function checkPromotionTail({ root, taskId, productCandidate, deliveryHea
   const referencedEvidence = new Set([
     ...state.criteria.flatMap((criterion) => criterion.evidenceRefs),
     ...state.gates.flatMap((gate) => gate.evidenceRefs),
+    ...state.reviews.flatMap((review) => review.evidenceRefs),
   ]);
   for (const [relativePath, document] of addedFlatEvidence) {
     assert(
