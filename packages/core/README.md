@@ -20,5 +20,11 @@ evidence cannot support a recommendation.
 Failed or incomplete runs may retain bounded failed attempts with `selectedProvider: null`. A complete run, or any
 observation containing a successful attempt, cannot use a null selection.
 
+Every candidate run also names an immutable `evaluation-execution-record`. The runner owns its start and completion
+times; provider output and CLI input cannot supply them. `assertCandidateRunExecutionRecord` verifies the run ID,
+evaluation-input digest, runner identity, timestamps, and canonical candidate-run content digest. Provenance records
+the configured concurrency, request, retry, timeout, and spend limits plus observed request count and spend without
+persisting prompts or outputs.
+
 This is an incompatible pre-release contract migration from `providerPolicy` and catalog `provider`. Regenerate
 checked-in manifests, catalog snapshots, and candidate-run fixtures before evaluation.

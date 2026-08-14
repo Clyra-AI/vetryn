@@ -1,0 +1,25 @@
+{
+  "attempts": [
+    {
+      "observation": {
+        "acquisition": "captured-response",
+        "artifactType": "openrouter-catalog-refresh-observation",
+        "contentDigest": "sha256:972277189e55dec9cb42c63f0545dec87fa93a63d74622faf7dfaea4fd972d6d",
+        "errorCode": null,
+        "id": "golden-catalog-observation",
+        "normalizerVersion": "1.0.0",
+        "observedAt": "2026-08-10T00:00:00.000Z",
+        "reusedSnapshot": false,
+        "schemaVersion": "1.0.0",
+        "snapshotId": "catalog-snapshot:openrouter--sha256-972277189e55dec9cb42c63f0545dec87fa93a63d74622faf7dfaea4fd972d6d",
+        "source": "openrouter",
+        "sourceRef": "repository-captured-response",
+        "status": "success"
+      },
+      "ordinal": 1
+    }
+  ],
+  "invocationId": "golden-refresh",
+  "schemaVersion": "1.0.0",
+  "terminalOrdinal": 1
+}

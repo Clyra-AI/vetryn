@@ -1,14 +1,14 @@
 {
   "acquisition": "captured-response",
   "artifactType": "openrouter-catalog-refresh-observation",
-  "contentDigest": "sha256:d436f3d8b9981bf44431927803abb1d248c4fd1d7a60850467a44cda2bc8f70c",
+  "contentDigest": "sha256:972277189e55dec9cb42c63f0545dec87fa93a63d74622faf7dfaea4fd972d6d",
   "errorCode": null,
   "id": "golden-catalog-observation",
   "normalizerVersion": "1.0.0",
   "observedAt": "2026-08-10T00:00:00.000Z",
   "reusedSnapshot": false,
   "schemaVersion": "1.0.0",
-  "snapshotId": "catalog-snapshot:openrouter--sha256-d436f3d8b9981bf44431927803abb1d248c4fd1d7a60850467a44cda2bc8f70c",
+  "snapshotId": "catalog-snapshot:openrouter--sha256-972277189e55dec9cb42c63f0545dec87fa93a63d74622faf7dfaea4fd972d6d",
   "source": "openrouter",
   "sourceRef": "repository-captured-response",
   "status": "success"

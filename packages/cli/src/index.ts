@@ -19,11 +19,21 @@ import {
 } from "@vetryn/core";
 import {
   FileCatalogStore,
+  createCurrentCatalogRefresh,
+  createOpenRouterEvaluationTransport,
   refreshOpenRouterCatalog,
   resolveCandidates,
   type CandidateShortlist,
+  type CurrentCatalogRefresh,
+  type EvaluationClock,
+  type EvaluationTransport,
   type RefreshCatalogResult,
 } from "@vetryn/openrouter";
+
+import { evaluateFiles } from "./evaluation-files.js";
+
+export { FileExecutionReceiptStore } from "./evidence-store.js";
+export { evaluateFiles } from "./evaluation-files.js";
 
 export const VERSION = "0.0.0";
 const MAX_REPOSITORY_INPUT_BYTES = 20_000_000;
@@ -89,6 +99,16 @@ export interface CatalogShortlistFileOptions {
   readonly manifestPath: string;
   readonly observationPath: string;
   readonly snapshotPath: string;
+}
+
+export interface CliDependencies {
+  readonly catalogRefreshFactory?: (options: {
+    readonly catalogStorePath: string;
+    readonly invocationId: string;
+    readonly refreshId: string;
+  }) => Promise<CurrentCatalogRefresh>;
+  readonly clock?: EvaluationClock;
+  readonly evaluationTransportFactory?: (apiKey: string) => EvaluationTransport;
 }
 
 export async function refreshCatalogFile({
@@ -392,7 +412,7 @@ export function getDiagnostics(): Diagnostics {
   };
 }
 
-export function createProgram(): Command {
+export function createProgram(dependencies: CliDependencies = {}): Command {
   const program = new Command();
 
   program
@@ -501,6 +521,108 @@ export function createProgram(): Command {
         });
         process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
         if (result.status === "failure") process.exitCode = 1;
+      },
+    );
+
+  program
+    .command("eval")
+    .description("Run one bounded current-versus-candidate evaluation and persist its receipt.")
+    .requiredOption("--manifest <path>", "Path to the reviewed call-site manifest.")
+    .requiredOption("--call-site <id>", "Human-owned call-site ID.")
+    .requiredOption("--suite <path>", "Path to the reviewed eval-suite artifact.")
+    .requiredOption("--fixture <path>", "Path to reviewed JSONL evaluation cases.")
+    .requiredOption(
+      "--catalog-store <path>",
+      "Repository path for current-invocation catalog evidence.",
+    )
+    .requiredOption("--refresh-id <id>", "Unique ID for the live catalog refresh attempt.")
+    .requiredOption("--candidate <model>", "Canonical candidate model ID.")
+    .requiredOption("--run-id <id>", "Stable ID for this immutable execution record.")
+    .requiredOption("--trust-epoch <id>", "Externally anchored trust-epoch ID.")
+    .requiredOption("--evidence-store <path>", "Repository path for authenticated receipts.")
+    .requiredOption("--anchor <path>", "External exact-head anchor path outside the repository.")
+    .requiredOption(
+      "--receipt-key-file <path>",
+      "External HMAC key file for receipt authentication.",
+    )
+    .requiredOption("--provider-key-file <path>", "Explicit OpenRouter API key file.")
+    .requiredOption("--output <path>", "Destination for the redacted evaluation artifacts.")
+    .option("--root <path>", "Repository root for the receipt trust boundary.", process.cwd())
+    .option("--evaluator-build <ref>", "Evaluator build or commit reference.", "package:0.0.0")
+    .action(
+      async (options: {
+        anchor: string;
+        callSite: string;
+        candidate: string;
+        catalogStore: string;
+        evaluatorBuild: string;
+        evidenceStore: string;
+        fixture: string;
+        manifest: string;
+        output: string;
+        providerKeyFile: string;
+        receiptKeyFile: string;
+        refreshId: string;
+        root: string;
+        runId: string;
+        suite: string;
+        trustEpoch: string;
+      }) => {
+        const providerKey = (await readBoundedTextFile(options.providerKeyFile)).trim();
+        const receiptKey = Buffer.from((await readBoundedTextFile(options.receiptKeyFile)).trim());
+        const currentCatalogRefresh = await (dependencies.catalogRefreshFactory?.({
+          catalogStorePath: options.catalogStore,
+          invocationId: options.runId,
+          refreshId: options.refreshId,
+        }) ??
+          (async () => {
+            const refresh = await refreshOpenRouterCatalog({
+              acquisition: "live-api",
+              refreshId: options.refreshId,
+              store: new FileCatalogStore(options.catalogStore),
+            });
+            if (refresh.status !== "success") {
+              throw new Error("The current invocation's terminal catalog refresh failed.");
+            }
+            return createCurrentCatalogRefresh({
+              attempts: [{ observation: refresh.observation, ordinal: 1 }],
+              invocationId: options.runId,
+              snapshot: refresh.snapshot,
+              terminalOrdinal: 1,
+            });
+          })());
+        const result = await evaluateFiles({
+          anchorPath: options.anchor,
+          callSiteId: options.callSite,
+          candidateModel: options.candidate,
+          clock: dependencies.clock ?? { now: () => new Date().toISOString() },
+          currentCatalogRefresh,
+          evaluatorBuild: options.evaluatorBuild,
+          evalSuitePath: options.suite,
+          evidencePath: options.evidenceStore,
+          executionRecordId: `execution-record:${options.runId}`,
+          fixturePath: options.fixture,
+          key: receiptKey,
+          manifestPath: options.manifest,
+          outputPath: options.output,
+          repositoryRoot: options.root,
+          transport:
+            dependencies.evaluationTransportFactory?.(providerKey) ??
+            createOpenRouterEvaluationTransport({ apiKey: providerKey }),
+          trustEpochId: options.trustEpoch,
+        });
+        process.stdout.write(
+          `${JSON.stringify(
+            {
+              candidateRunId: result.candidateRun.id,
+              executionRecordId: result.executionRecord.id,
+              output: options.output,
+              status: result.candidateRun.status,
+            },
+            null,
+            2,
+          )}\n`,
+        );
       },
     );
 

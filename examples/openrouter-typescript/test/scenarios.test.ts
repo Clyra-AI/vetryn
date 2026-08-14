@@ -10,6 +10,8 @@ import {
   type CatalogSnapshot as CoreCatalogSnapshot,
 } from "../../../packages/core/src/index.js";
 import {
+  createCurrentCatalogRefresh,
+  evaluateOpenRouterCandidate,
   normalizeOpenRouterCatalog,
   refreshOpenRouterCatalog,
   resolveCandidates,
@@ -124,6 +126,83 @@ const parseJsonLines = (value: string): EvalCase[] =>
     .map((line) => JSON.parse(line) as EvalCase);
 
 describe("OpenRouter TypeScript golden scenario", () => {
+  it("replays a deterministic bounded baseline-versus-candidate evaluation offline", async () => {
+    const [manifest, evalSuite, catalog, lineage, evalCaseText] = await Promise.all([
+      readJson<{ callSites: readonly unknown[] }>("fixtures/manifest.json"),
+      readJson<unknown>("fixtures/eval-suite.json"),
+      readJson<CoreCatalogSnapshot>("fixtures/catalog-snapshot.json"),
+      readJson<{
+        attempts: Parameters<typeof createCurrentCatalogRefresh>[0]["attempts"];
+        invocationId: string;
+        terminalOrdinal: number;
+      }>("fixtures/catalog-refresh-lineage.json"),
+      readFile(fixtureFile("fixtures/support-classification.evals.jsonl"), "utf8"),
+    ]);
+    const cases = parseJsonLines(evalCaseText).map((evaluationCase) => ({
+      expected: { classification: evaluationCase.expectedClass },
+      id: evaluationCase.id,
+      input: `Synthetic input for ${evaluationCase.id}`,
+      protectedSegments: ["never-persist-this"],
+    }));
+    const expected = new Map(
+      cases.map((evaluationCase) => [evaluationCase.id, evaluationCase.expected.classification]),
+    );
+    const run = async () => {
+      const times = ["2026-08-10T00:00:01.000Z", "2026-08-10T00:00:02.000Z"];
+      return evaluateOpenRouterCandidate({
+        callSite: manifest.callSites[0],
+        candidateModel: "openai/gpt-4o-mini",
+        cases,
+        clock: { now: () => times.shift() ?? "2026-08-10T00:00:02.000Z" },
+        currentCatalogRefresh: createCurrentCatalogRefresh({
+          attempts: lineage.attempts,
+          invocationId: lineage.invocationId,
+          snapshot: catalog,
+          terminalOrdinal: lineage.terminalOrdinal,
+        }),
+        evalSuite,
+        evaluator: { build: "git:golden", id: "vetryn-evaluator", version: "0.0.0" },
+        executionRecordId: "execution-record:support-classification-golden",
+        fixtureDigest: fixtureDigest(evalCaseText),
+        limits: { concurrency: 4, maxRequests: 100, maxSpendUsd: "1", retries: 1, timeoutMs: 1000 },
+        sampling: { attempts: 1, maxOutputTokens: 128, seed: 42, temperature: 0 },
+        scorer: {
+          configurationDigest: fixtureDigest("deterministic-assertions:1.0.0"),
+          id: "deterministic-assertions",
+          version: "1.0.0",
+        },
+        transport: {
+          async execute(request) {
+            return {
+              latencyMs: request.model === "openai/gpt-4.1-mini" ? 600 : 300,
+              output: { classification: expected.get(request.caseId) },
+              route: {
+                attempts: [{ providerName: "Azure", statusCode: 200 }],
+                selectedProvider: { providerName: "Azure" },
+              },
+              usage: { completionTokens: 1, promptTokens: 9 },
+            };
+          },
+        },
+      });
+    };
+
+    const [first, second] = await Promise.all([run(), run()]);
+    expect(first).toEqual(second);
+    expect(first.candidateRun).toMatchObject({
+      gateOutcomes: {
+        context: "pass",
+        cost: "pass",
+        latency: "pass",
+        privacy: "pass",
+        quality: "pass",
+      },
+      status: "complete",
+    });
+    expect(JSON.stringify(first)).not.toContain("Synthetic input");
+    expect(JSON.stringify(first)).not.toContain("never-persist-this");
+  });
+
   it("binds a scanner-friendly source call to a human-reviewed manifest and 30 reviewed synthetic cases", async () => {
     const [application, manifest, manifestInput, evalSuite, evalCaseText] = await Promise.all([
       readFile(fixtureFile("src/support-classification.ts"), "utf8"),

@@ -48,7 +48,7 @@ const rawCatalogSchema = z
   })
   .passthrough();
 
-const refreshObservationSchema = z
+export const refreshObservationSchema = z
   .object({
     artifactType: z.literal("openrouter-catalog-refresh-observation"),
     acquisition: z.enum(["captured-response", "live-api"]),
@@ -99,6 +99,8 @@ const refreshObservationSchema = z
   });
 
 export type RefreshObservation = z.infer<typeof refreshObservationSchema>;
+
+export * from "./evaluation.js";
 
 export interface CatalogExclusion {
   readonly modelId: string;

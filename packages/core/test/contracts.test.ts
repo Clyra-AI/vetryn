@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   VETRYN_ARTIFACT_SCHEMA_VERSION,
+  assertCandidateRunExecutionRecord,
   assertCandidateRunPolicy,
   assertEvaluationInputDigest,
   assertPatchPlanEvidence,
@@ -14,8 +15,10 @@ import {
   callSiteSchema,
   createArtifactId,
   createCatalogContentDigest,
+  createCandidateRunContentDigest,
   evalSuiteSchema,
   parsePatchPlan,
+  parseEvaluationExecutionRecord,
   parseRecommendation,
   parseVetrynArtifact,
 } from "../src/index.js";
@@ -149,6 +152,7 @@ const candidateRun = {
   confidenceFloor: 0.8,
   evaluationInputDigest: digest("d"),
   evalSuiteId: evalSuite.id,
+  executionRecordId: "execution-record:support-classification-openai-gpt-4o",
   fixtureDigest: evalSuite.fixtureDigest,
   id: "candidate-run:support-classification-openai-gpt-4o",
   gateOutcomes: {
@@ -172,6 +176,17 @@ const candidateRun = {
     evaluator: {
       build: "git:348aa41",
       version: "0.1.0",
+    },
+    limits: {
+      concurrency: 4,
+      maxRequests: 100,
+      maxSpendUsd: "1",
+      retries: 2,
+      timeoutMs: 30000,
+    },
+    observed: {
+      providerRequestCount: 30,
+      spendUsd: "0.03",
     },
     sampling: {
       maxOutputTokens: 128,
@@ -415,6 +430,38 @@ describe("V1 artifact contracts", () => {
     expect(() => parseVetrynArtifact({ ...candidateRun, credential: "secret" })).toThrow(
       /unrecognized key/i,
     );
+  });
+
+  it("binds candidate runs to immutable runner-owned execution records", () => {
+    const record = parseEvaluationExecutionRecord({
+      artifactContentDigest: createCandidateRunContentDigest(candidateRun),
+      artifactType: "evaluation-execution-record",
+      candidateRunId: candidateRun.id,
+      catalogRefreshLineageDigest: digest("f"),
+      completedAt: candidateRun.provenance.completedAt,
+      evaluationInputDigest: candidateRun.evaluationInputDigest,
+      id: candidateRun.executionRecordId,
+      runner: { id: "vetryn-evaluator", ...candidateRun.provenance.evaluator },
+      schemaVersion: VETRYN_ARTIFACT_SCHEMA_VERSION,
+      startedAt: candidateRun.provenance.startedAt,
+    });
+
+    expect(assertCandidateRunExecutionRecord(candidateRun, record)).toEqual(record);
+    expect(() =>
+      assertCandidateRunExecutionRecord(candidateRun, {
+        ...record,
+        completedAt: "2026-08-10T00:02:00.000Z",
+      }),
+    ).toThrow(/timestamps/i);
+    expect(() =>
+      assertCandidateRunExecutionRecord(candidateRun, {
+        ...record,
+        artifactContentDigest: digest("0"),
+      }),
+    ).toThrow(/content/i);
+    const withoutRecord = { ...candidateRun } as Partial<typeof candidateRun>;
+    Reflect.deleteProperty(withoutRecord, "executionRecordId");
+    expect(() => parseVetrynArtifact(withoutRecord)).toThrow(/executionRecordId/i);
   });
 
   it("rejects stale evaluation evidence before it can support a recommendation", () => {
