@@ -53,3 +53,14 @@ if (refresh.status === "success") {
 
 Reproducible evaluation must consume the stored snapshot together with its successful refresh observation,
 never ambient live catalog state. Candidate shortlists bind both evidence IDs and the authenticated observation time.
+
+`evaluateOpenRouterCandidate` runs the reviewed baseline and candidate over the same cases with bounded concurrency,
+requests, retries, timeout, and spend. Deterministic required-fact and output-shape checks combine with hard quality,
+cost, latency, context, privacy, and route-evidence gates. Raw inputs and outputs remain transient. Partial, exhausted,
+invalid-route, or missing-metadata runs are incomplete and cannot support a recommendation.
+
+Actionable evaluation accepts only a `CurrentCatalogRefresh` created in memory by the canonical acquisition path.
+Serialized or caller-labeled lineage cannot be substituted. The lineage is complete, ordinal, terminal-success
+evidence and is later authenticated in the repository receipt chain. Tests inject an offline transport; production
+uses `createOpenRouterEvaluationTransport` with an explicitly supplied key and applies the reviewed route policy at
+the request boundary.

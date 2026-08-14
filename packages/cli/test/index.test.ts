@@ -19,6 +19,7 @@ describe("createProgram", () => {
     expect(program.commands.map((command) => command.name())).toContain("doctor");
     expect(program.commands.map((command) => command.name())).toContain("manifest");
     expect(program.commands.map((command) => command.name())).toContain("catalog");
+    expect(program.commands.map((command) => command.name())).toContain("eval");
     expect(program.commands.map((command) => command.name())).toContain("scan");
   });
 });

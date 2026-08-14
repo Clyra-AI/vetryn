@@ -48,6 +48,11 @@ if OpenRouter's live catalog later changes. Catalog `modelAuthor` values describ
 separately pins the Azure route with fallbacks disabled, parameter support required, data collection denied, and ZDR
 required; a complete run must additionally record redacted router attempts and exactly one selected provider.
 
+The checked-in `catalog-refresh-lineage.json` is replay-only documentation for the deterministic scenario. The
+provider-backed `vetryn eval` command does not accept it as actionable input: it performs its own live catalog
+refresh and keeps that current-invocation capability in memory. Scenario tests inject an offline transport at the
+same boundary, then assert the redacted candidate run and authenticated receipt without credentials or network I/O.
+
 The JSON scan result includes a reconciled assessment funnel for supported direct OpenAI-compatible TypeScript
 calls. Its denominators distinguish files considered and parsed from patchable and non-patchable observations.
 
