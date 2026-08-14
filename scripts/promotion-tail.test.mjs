@@ -169,6 +169,11 @@ async function createFixture() {
     evidence_refs: [`${lifecycleRoot}/validation_report.json`],
     findings: [],
     required_fixes: [],
+    approval_effect: {
+      promotion_decision: "ready_for_pr",
+      approvals_granted: ["candidate-bound-review"],
+      blocks_promotion: false,
+    },
   });
   await writeJson(root, `${lifecycleRoot}/trust_review_report.json`, {
     artifactType: "vetryn-trust-review-report",
@@ -431,8 +436,16 @@ describe("promotion-tail validator", () => {
   });
 
   it.each([
-    ["blocking findings", (artifact) => artifact.findings.push({ priority: "P1" })],
+    ["open findings", (artifact) => artifact.findings.push({ severity: "P1", status: "open" })],
     ["required fixes", (artifact) => artifact.required_fixes.push("repair the blocker")],
+    [
+      "a blocking approval effect",
+      (artifact) => (artifact.approval_effect.blocks_promotion = true),
+    ],
+    [
+      "a blocked promotion decision",
+      (artifact) => (artifact.approval_effect.promotion_decision = "blocked"),
+    ],
   ])("rejects an approved review report with %s", async (_name, mutate) => {
     const fixture = await createFixture();
     const relativePath = `${fixture.planRoot}/evidence/lifecycle/${taskId}/${fixture.candidate}/review_report.json`;
@@ -444,5 +457,17 @@ describe("promotion-tail validator", () => {
     const result = run(fixture.root, fixture.candidate, delivery);
     expect(result.status).toBe(1);
     expect(result.stderr).toContain("review_report");
+  });
+
+  it("accepts an approved review report that retains a resolved finding", async () => {
+    const fixture = await createFixture();
+    const relativePath = `${fixture.planRoot}/evidence/lifecycle/${taskId}/${fixture.candidate}/review_report.json`;
+    const delivery = await amend(fixture.root, async () => {
+      const artifact = await readJson(fixture.root, relativePath);
+      artifact.findings.push({ severity: "P1", status: "resolved" });
+      await writeJson(fixture.root, relativePath, artifact);
+    });
+    const result = run(fixture.root, fixture.candidate, delivery);
+    expect(result.status, result.stderr).toBe(0);
   });
 });

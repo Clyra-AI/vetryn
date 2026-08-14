@@ -190,12 +190,18 @@ function assertLifecycleArtifact(name, document, taskId, candidate) {
   if (name === "review_report") {
     assert(document.verdict === "approved", "review_report is not approved");
     assert(
-      Array.isArray(document.findings) && document.findings.length === 0,
+      Array.isArray(document.findings) &&
+        document.findings.every((finding) => finding?.status !== "open"),
       "review_report has unresolved findings",
     );
     assert(
       Array.isArray(document.required_fixes) && document.required_fixes.length === 0,
       "review_report has required fixes",
+    );
+    assert(
+      document.approval_effect?.blocks_promotion === false &&
+        document.approval_effect.promotion_decision !== "blocked",
+      "review_report blocks promotion",
     );
   }
   if (name === "trust_review_report") {
