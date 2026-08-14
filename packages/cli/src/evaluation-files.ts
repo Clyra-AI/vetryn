@@ -116,6 +116,7 @@ export async function evaluateFiles(options: EvaluateFilesOptions): Promise<Eval
     trustEpochId: options.trustEpochId,
   });
   const result = { ...artifacts, receipt };
+  await assertEvaluationOutputPath(options);
   await writeJsonAtomically(options.outputPath, result);
   return result;
 }
