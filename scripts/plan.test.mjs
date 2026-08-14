@@ -1618,6 +1618,13 @@ describe("implementation plan validator", () => {
   it.each([
     ["protected exact path", ["scripts/task.mjs"], ["agent-workflow"]],
     ["maintainer authority path", ["MAINTAINERS.md"], ["agent-workflow"]],
+    ["security workflow path", [".github/workflows/codeql.yml"], ["agent-workflow"]],
+    [
+      "dependency security workflow path",
+      [".github/workflows/dependency-review.yml"],
+      ["agent-workflow"],
+    ],
+    ["supply-chain workflow path", [".github/workflows/scorecard.yml"], ["agent-workflow"]],
     [
       "credential and evidence implementation path",
       ["packages/cli/src/evidence-store.ts"],
