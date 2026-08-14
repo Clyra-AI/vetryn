@@ -52,7 +52,7 @@ These instructions apply to the entire repository.
   tooling rather than editing the roll-up directly.
 - Keep Factory-compatible planning artifacts separate from Vetryn product-domain schemas. Transient
   claims, worktrees, prompts, raw logs, credentials, and grants belong in ignored `.factoryd/` state.
-- When invoking an installed Factory skill, pass the full profile at `../factory/profiles/vetryn.yaml` and first
-  verify the sibling Factory checkout is at `.factory/profile.yaml`'s pinned commit. The portable Vetryn profile is
-  the repo-native adapter and digest anchor, not a replacement for Factory's complete skill profile.
+- Invoke generic Factory workers by installed skill name using the compiled task packet and repository policy.
+  Factory is a trusted local development tool, not a product dependency or sibling checkout requirement; Vetryn
+  does not authenticate the developer host or installed worker bytes.
 - Run `pnpm check` before declaring work complete.

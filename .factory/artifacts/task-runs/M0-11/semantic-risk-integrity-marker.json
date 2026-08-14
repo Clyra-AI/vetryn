@@ -1,0 +1,20 @@
+{
+  "artifact_type": "semantic_risk_integrity_marker",
+  "schema_version": "0.2",
+  "command": "pnpm --silent semantic-risk:design -- M0-11",
+  "git_sha": "243c8b0d152523d93934446364270ca7157a4632",
+  "exit_code": 0,
+  "execution_status": "pass",
+  "started_at": "2026-08-14T00:14:02.362Z",
+  "finished_at": "2026-08-14T00:14:02.363Z",
+  "authorized_task_bindings": [
+    {
+      "task_id": "M0-11",
+      "profile_ref": ".factory/profile.yaml",
+      "semantic_risk_report_ref": ".factory/artifacts/task-runs/M0-11/semantic-risk-report.json",
+      "source_revision": "243c8b0d152523d93934446364270ca7157a4632",
+      "semantic_content_sha256": "sha256:7ec64bcf527cc3d3205d6ca079dae3586ada865d40e742da1fa794f65ee177d8",
+      "observed_changed_paths": [".factory/artifacts/task-runs/M0-11/semantic-risk-report.json"]
+    }
+  ]
+}

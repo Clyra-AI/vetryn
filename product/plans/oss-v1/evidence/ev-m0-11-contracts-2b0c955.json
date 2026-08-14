@@ -1,0 +1,31 @@
+{
+  "$schema": "../../schemas/evidence.schema.json",
+  "schemaVersion": "1.0.0",
+  "id": "ev-m0-11-contracts-2b0c955",
+  "taskId": "M0-11",
+  "type": "command-run",
+  "actor": "codex-local-validation",
+  "commit": "2b0c95533758c087e9da8e1b0b3df6d0c6acc709",
+  "createdAt": "2026-08-14T00:46:49Z",
+  "result": {
+    "status": "pass",
+    "checks": [
+      {
+        "name": "pnpm test:contracts",
+        "status": "pass",
+        "summary": "All 192 tests passed, including checkout-binding and single-land-owner regressions."
+      }
+    ]
+  },
+  "inputs": {
+    "planDigest": "sha256:1c759a5f00ef6e2afdd4214e595947231da0d6f5ce63135b162e98c48223f056",
+    "lockfileDigest": "sha256:0d73c2bc837d2f12314c6fb3b2f28c4389a3887a5fdda7b6898913b2b20c91d9"
+  },
+  "gateBinding": { "gateId": "QG-CONTRACTS", "kind": "command", "command": "pnpm test:contracts" },
+  "review": null,
+  "redaction": {
+    "status": "not_applicable",
+    "containsRawModelOutput": false,
+    "containsSecrets": false
+  }
+}

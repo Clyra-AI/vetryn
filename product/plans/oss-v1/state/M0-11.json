@@ -2,37 +2,41 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "M0-11",
-  "revision": 0,
-  "state": "planned",
-  "attempt": 0,
-  "candidate": null,
+  "revision": 6,
+  "state": "accepted",
+  "attempt": 2,
+  "candidate": {
+    "baseCommit": "a4d0849c7e4ce37c78511526933ae9b1d193f8c3",
+    "commit": "161971b22e0270e71f26a757aed7786caa6e598f",
+    "executor": "implementation-agent"
+  },
   "criteria": [
     {
       "criterionId": "PROCESS-010",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-11-contracts-161971b"]
     },
     {
       "criterionId": "PROCESS-011",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-11-repo-check-161971b"]
     }
   ],
   "gates": [
     {
       "gateId": "QG-PLAN-CHECK",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-11-plan-check-161971b"]
     },
     {
       "gateId": "QG-REPO-CHECK",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-11-repo-check-161971b"]
     },
     {
       "gateId": "QG-CONTRACTS",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-11-contracts-161971b"]
     }
   ],
   "reviews": [
@@ -50,6 +54,48 @@
       "at": "2026-08-13T17:32:17Z",
       "actor": "planning-agent",
       "reason": "Maintainer requested a portable repository-owned continuation workflow before V1-06."
+    },
+    {
+      "from": "planned",
+      "to": "in_progress",
+      "at": "2026-08-14T00:10:00Z",
+      "actor": "implementation-agent",
+      "reason": "Begin the reviewed narrow helper implementation from canonical main."
+    },
+    {
+      "from": "in_progress",
+      "to": "accepted",
+      "at": "2026-08-14T00:33:46Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer accepted the exact candidate after all active command gates and the required candidate-bound architecture review passed under ADR 0009."
+    },
+    {
+      "from": "accepted",
+      "to": "in_progress",
+      "at": "2026-08-14T00:44:11Z",
+      "actor": "implementation-agent",
+      "reason": "Latest-head Codex review found an inherited plan-root override and duplicate land-lifecycle routing; prior candidate evidence was invalidated for the bounded repair."
+    },
+    {
+      "from": "in_progress",
+      "to": "accepted",
+      "at": "2026-08-14T00:46:49Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer accepted the repaired exact candidate after every active command gate passed and both latest-head review findings were closed."
+    },
+    {
+      "from": "accepted",
+      "to": "in_progress",
+      "at": "2026-08-14T01:00:23Z",
+      "actor": "implementation-agent",
+      "reason": "Latest-head Codex review found lifecycle-stage routing and location-independent invocation gaps; prior candidate evidence was invalidated for the bounded repair."
+    },
+    {
+      "from": "in_progress",
+      "to": "accepted",
+      "at": "2026-08-14T01:08:23Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer accepted the exact lifecycle-routing repair after all active command gates and the candidate-bound architecture review passed."
     }
   ]
 }

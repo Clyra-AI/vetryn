@@ -1,0 +1,218 @@
+{
+  "artifact_lifecycle_matrix": [
+    {
+      "artifact": "Repository-owned continuation helper",
+      "producer_or_authority": "M0-11 task executor within the compiled packet",
+      "mutable_owner": "Task executor before candidate freeze",
+      "states": ["generated", "persisted"],
+      "freshness": "The helper derives the task and packet on every run",
+      "integrity": "Committed source plus deterministic contract and integration tests",
+      "authenticity": "Protected repository history; helper output grants no authority",
+      "actionable_states": [],
+      "transitions_and_recovery": [
+        "A clean read-only result may proceed only after a separate current-run maintainer grant."
+      ]
+    }
+  ],
+  "authorization_boundary_trace": [
+    {
+      "stage": "input_validation",
+      "authority": "Repository plan and task commands",
+      "input": "Git status, active or next-legal task, and compiled packet",
+      "decision": "allow",
+      "denied_behavior": "Stop on dirty, missing, ambiguous, failed, or changing input"
+    },
+    {
+      "stage": "reuse_or_persistence",
+      "authority": "Compiled M0-11 allowed paths",
+      "input": "Skill, helper script, tests, ADR, and aligned operating docs",
+      "decision": "allow",
+      "denied_behavior": "Do not persist credentials, grants, raw logs, or runtime state"
+    },
+    {
+      "stage": "plan_authorization",
+      "authority": "Canonical M0-11 task packet",
+      "input": "Scope, capabilities, commands, reviews, and stop conditions",
+      "decision": "allow",
+      "denied_behavior": "Stop rather than broaden task scope or reinterpret policy"
+    },
+    {
+      "stage": "workspace_mutation",
+      "authority": "Separate explicit current-run maintainer grant",
+      "input": "Task-scoped implementation after preflight",
+      "decision": "deny",
+      "denied_behavior": "The read-only preflight never edits files or creates branches"
+    },
+    {
+      "stage": "command_execution",
+      "authority": "Repository-owned plan and task entrypoints",
+      "input": "plan:check, task:next, and task:compile",
+      "decision": "allow",
+      "denied_behavior": "Do not invoke network, provider, credential, or shipping commands"
+    },
+    {
+      "stage": "remote_effect",
+      "authority": "Later protected-delivery workflow plus current-run maintainer grant",
+      "input": "Push, pull request, review, promotion, and merge",
+      "decision": "deny",
+      "denied_behavior": "Preflight performs no GitHub write, provider call, or merge"
+    },
+    {
+      "stage": "external_status",
+      "authority": "Repository CI and protected branch state",
+      "input": "Latest-head checks, review state, merge, and post-merge status",
+      "decision": "deny",
+      "denied_behavior": "Preflight neither fabricates nor changes external status"
+    }
+  ],
+  "normative_adversarial_matrix": [
+    {
+      "invariant": "Preflight only discovers one task, compiles its packet, and leaves HEAD and worktree status unchanged.",
+      "positive": "One active or next-legal task produces a compact ready-for-authority result.",
+      "missing": "No eligible task returns a blocker.",
+      "stale": "Repository-command failure returns a blocker.",
+      "contradictory": "Multiple active or next-legal tasks return an ambiguity blocker.",
+      "tampered": "A dirty checkout or changed post-command Git snapshot returns a blocker.",
+      "transition_or_recovery": "Restore a clean coherent repository and rerun; the helper never repairs state.",
+      "concurrency": "A changed HEAD or status between the before and after snapshots blocks."
+    },
+    {
+      "invariant": "Procedure and authority remain separate.",
+      "positive": "A current listed maintainer grants the exact later action set for the current run.",
+      "missing": "Absent current-run authority stops before mutation.",
+      "stale": "A changed task or packet requires a new grant.",
+      "contradictory": "A denial or non-waivable policy overrides broader permission.",
+      "tampered": "Roster text, CODEOWNERS, skills, chat history, and ambient credentials are not authority.",
+      "transition_or_recovery": "Obtain a new bounded grant after restoring current repository state.",
+      "concurrency": "Each task run requires its own authority and cannot inherit another run's grant."
+    }
+  ],
+  "external_effect_preflight": {
+    "actions": [
+      {
+        "action": "agent_runner",
+        "disposition": "not_applicable",
+        "authority_ref": null,
+        "invalid_authority_effect": {
+          "calls": 0,
+          "spend_usd": 0,
+          "writes": 0
+        }
+      },
+      {
+        "action": "model",
+        "disposition": "not_applicable",
+        "authority_ref": null,
+        "invalid_authority_effect": {
+          "calls": 0,
+          "spend_usd": 0,
+          "writes": 0
+        }
+      },
+      {
+        "action": "repository_command",
+        "disposition": "not_applicable",
+        "authority_ref": null,
+        "invalid_authority_effect": {
+          "calls": 0,
+          "spend_usd": 0,
+          "writes": 0
+        }
+      },
+      {
+        "action": "package_registry",
+        "disposition": "blocked",
+        "authority_ref": null,
+        "invalid_authority_effect": {
+          "calls": 0,
+          "spend_usd": 0,
+          "writes": 0
+        }
+      },
+      {
+        "action": "provider_sandbox",
+        "disposition": "blocked",
+        "authority_ref": null,
+        "invalid_authority_effect": {
+          "calls": 0,
+          "spend_usd": 0,
+          "writes": 0
+        }
+      },
+      {
+        "action": "github",
+        "disposition": "blocked",
+        "authority_ref": null,
+        "invalid_authority_effect": {
+          "calls": 0,
+          "spend_usd": 0,
+          "writes": 0
+        }
+      },
+      {
+        "action": "provider_status",
+        "disposition": "blocked",
+        "authority_ref": null,
+        "invalid_authority_effect": {
+          "calls": 0,
+          "spend_usd": 0,
+          "writes": 0
+        }
+      }
+    ]
+  },
+  "persistence_threat_matrix": [
+    {
+      "threat": "integrity",
+      "attack_cases": ["Repository state changes during preflight."],
+      "expected_disposition": "reject"
+    },
+    {
+      "threat": "authenticity",
+      "attack_cases": ["Helper output is presented as maintainer authority."],
+      "expected_disposition": "reject"
+    },
+    {
+      "threat": "freshness",
+      "attack_cases": ["A prior preflight result is reused after repository change."],
+      "expected_disposition": "reject"
+    },
+    {
+      "threat": "completeness",
+      "attack_cases": ["Task routing omits packet scope, commands, reviews, or lifecycle."],
+      "expected_disposition": "reject"
+    },
+    {
+      "threat": "ordering",
+      "attack_cases": ["Mutation or delivery begins before explicit authority and validation."],
+      "expected_disposition": "reject"
+    },
+    {
+      "threat": "anti_rollback",
+      "attack_cases": ["A stale task selection is used after plan state changes."],
+      "expected_disposition": "reject"
+    }
+  ],
+  "review_convergence": {
+    "implementation_design_pass": "pass",
+    "same_subsystem_p1_rounds_seen": 0,
+    "decision": "proceed"
+  },
+  "residual_risks": [
+    "The helper trusts the developer host and installed local tools and is not a security sandbox.",
+    "Remote freshness and later mutation authority are intentionally handled by the existing delivery workflow."
+  ],
+  "artifact_type": "semantic_risk_report",
+  "schema_version": "0.2",
+  "task_id": "M0-11",
+  "work_item_id": "M0-11",
+  "risk_class": "high",
+  "profile_ref": ".factory/profile.yaml",
+  "source_revision": "243c8b0d152523d93934446364270ca7157a4632",
+  "phase": "implementation_design",
+  "created_at": "2026-08-14T00:14:02.363Z",
+  "baseline_evidence": {
+    "work_proof_marker_ref": ".factory/artifacts/task-runs/M0-11/semantic-risk-integrity-marker.json",
+    "work_proof_marker_sha256": "sha256:9f537e32ab791864444f9f0763dc3ed064264841eaa48751fd476dd8f237258d"
+  }
+}

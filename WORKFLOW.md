@@ -40,9 +40,13 @@ on new scope, gates, or acceptance criteria.
 
 Factory's `task-executor`, `validation-gate`, `code-review`, and `commit-push` skills provide generic execution,
 validation, structured local review, and GitHub delivery behavior. Factory is an external development tool, not a
-product dependency or git submodule. Invoke installed Factory skills with the complete profile at
-`../factory/profiles/vetryn.yaml` after verifying that checkout matches the commit pinned in `.factory/profile.yaml`;
-the portable profile is the local adapter and digest anchor.
+product dependency, git submodule, or sibling-checkout requirement. Invoke an installed Factory skill by name and
+specialize it from the compiled packet and repository policy. The local developer runtime and installed skills are
+trusted development inputs; Vetryn does not attempt to sandbox the host or authenticate installed worker bytes.
+
+`$vetryn-continue-next` is a convenience wrapper over this workflow. Its read-only preflight discovers exactly one
+active or next-legal task, compiles the packet, and reports the required routing. The result grants no branch,
+mutation, promotion, GitHub, merge, credential, or provider authority; those remain explicit current-run grants.
 
 ## Evidence and promotion
 

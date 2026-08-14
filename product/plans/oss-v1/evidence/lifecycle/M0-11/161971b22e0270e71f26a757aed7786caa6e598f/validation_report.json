@@ -1,0 +1,101 @@
+{
+  "work_item_id": "M0-11",
+  "task_id": "M0-11",
+  "profile_ref": "profiles/vetryn.yaml",
+  "semantic_risk_report_ref": ".factory/artifacts/task-runs/M0-11/semantic-risk-report.json",
+  "semantic_risk_report_sha256": "sha256:3f312c8b3100ce3abd55b04f9ea64e9148ab2f1e0e37dfd3660b35b169bec7da",
+  "validation_contract_ref": "product/plans/oss-v1/plan.json#M0-11",
+  "test_intent": [
+    {
+      "behavior": "Resume an active task from its current lifecycle stage.",
+      "expected_signal": "Verification and review states preserve the frozen candidate and skip completed earlier stages."
+    },
+    {
+      "behavior": "Run the documented preflight command from a nested repository directory.",
+      "expected_signal": "The command resolves the repository root before loading the helper."
+    }
+  ],
+  "red_evidence": [
+    {
+      "check": "latest-head Codex review on PR #34",
+      "summary": "Review identified lifecycle-stage routing and location-independent invocation gaps; both are closed in this candidate."
+    }
+  ],
+  "green_evidence": [
+    {
+      "check": "pnpm check",
+      "summary": "The complete repository gate passed with 194 tests.",
+      "evidence_refs": ["ev-m0-11-repo-check-161971b"]
+    },
+    {
+      "check": "pnpm test:contracts",
+      "summary": "All contract and focused regression tests passed.",
+      "evidence_refs": ["ev-m0-11-contracts-161971b"]
+    }
+  ],
+  "work_proof_marker_refs": [
+    "product/plans/oss-v1/evidence/lifecycle/M0-11/161971b22e0270e71f26a757aed7786caa6e598f/work_proof_marker.json"
+  ],
+  "test_scope": [
+    ".agents/skills/vetryn-continue-next/SKILL.md",
+    "scripts/continue-next-skill.test.mjs"
+  ],
+  "checks": [
+    { "name": "pnpm plan:check", "status": "pass" },
+    { "name": "pnpm check", "status": "pass" },
+    { "name": "pnpm test:contracts", "status": "pass" },
+    { "name": "pnpm --silent task:compile -- M0-11", "status": "pass" }
+  ],
+  "result": "pass",
+  "introduced_failures": [],
+  "pre_existing_failures": [],
+  "independent_validation": {
+    "risk_class": "high",
+    "required_level": "independent_or_human",
+    "provided_levels": ["validation_gate", "adversarial", "human_validation_approval"],
+    "status": "satisfied",
+    "evidence_refs": [
+      "ev-m0-11-plan-check-161971b",
+      "ev-m0-11-repo-check-161971b",
+      "ev-m0-11-contracts-161971b"
+    ],
+    "notes": "Latest-head findings were reproduced and repaired; protected remote gates rerun after push."
+  },
+  "test_first_skipped_reason": {
+    "status": "not_skipped",
+    "reason": "Both remote review findings were captured as focused regressions before the repaired candidate was frozen."
+  },
+  "anti_fitting_notes": [
+    "The stage-routing assertions distinguish implementation, validation, and review states.",
+    "The documented command is exercised from the nested docs directory."
+  ],
+  "residual_risks": ["ADR 0022 intentionally trusts the developer host and installed tools."],
+  "integrated_validation": {
+    "status": "task_only",
+    "scope_summary": "The whole repository passed locally after the bounded review repair.",
+    "integrated_checks": [
+      {
+        "name": "pnpm check",
+        "status": "pass",
+        "work_proof_marker_ref": "product/plans/oss-v1/evidence/lifecycle/M0-11/161971b22e0270e71f26a757aed7786caa6e598f/work_proof_marker.json"
+      }
+    ],
+    "fresh_checkout": {
+      "required": false,
+      "status": "not_required",
+      "work_proof_marker_refs": [],
+      "notes": "GitHub CI supplies clean-checkout replay."
+    },
+    "docs_schema_parity": {
+      "status": "pass",
+      "evidence_refs": [".agents/skills/vetryn-continue-next/SKILL.md", "WORKFLOW.md"]
+    },
+    "release_readiness": {
+      "claimed": false,
+      "status": "not_applicable",
+      "work_proof_marker_refs": [],
+      "notes": "No package release."
+    }
+  },
+  "promotion_decision": "ready_for_pr"
+}

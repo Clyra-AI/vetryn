@@ -1,0 +1,38 @@
+{
+  "artifactType": "vetryn-work-proof-marker",
+  "schemaVersion": "1.0.0",
+  "taskId": "M0-11",
+  "candidateCommit": "161971b22e0270e71f26a757aed7786caa6e598f",
+  "baseCommit": "a4d0849c7e4ce37c78511526933ae9b1d193f8c3",
+  "runner": "codex-exec-tool",
+  "workspaceRef": "codex/m0-11-narrow-helper",
+  "cleanCandidateVerified": true,
+  "observedAt": "2026-08-14T01:05:57Z",
+  "commands": [
+    {
+      "command": "pnpm plan:check",
+      "exitCode": 0,
+      "status": "pass"
+    },
+    {
+      "command": "pnpm check",
+      "exitCode": 0,
+      "status": "pass"
+    },
+    {
+      "command": "pnpm test:contracts",
+      "exitCode": 0,
+      "status": "pass"
+    },
+    {
+      "command": "pnpm --silent task:compile -- M0-11",
+      "exitCode": 0,
+      "status": "pass"
+    }
+  ],
+  "redaction": {
+    "containsRawModelOutput": false,
+    "containsSecrets": false,
+    "rawLogsPersisted": false
+  }
+}

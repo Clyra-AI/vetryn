@@ -1,0 +1,70 @@
+{
+  "artifact_type": "review_report",
+  "schema_version": "0.1",
+  "task_id": "M0-11",
+  "work_item_id": "M0-11",
+  "review_type": "architecture",
+  "review_scope": [
+    ".agents/skills/vetryn-continue-next/SKILL.md",
+    ".agents/skills/vetryn-continue-next/scripts/preflight.mjs",
+    "scripts/continue-next-skill.test.mjs"
+  ],
+  "reviewer_class": "peer_agent",
+  "reviewer_id": "codex-local:single-maintainer-session",
+  "producer": {
+    "worker": "code-review",
+    "producer_id": "codex-local:single-maintainer-session",
+    "producer_class": "peer_agent"
+  },
+  "current_work": {
+    "validation_run_id": "validation:2026-08-14T00:46:49Z:M0-11",
+    "candidate_digest": "sha256:7a0fa2c202a2e034f8b9137bd794046e2f57721773d9f10389b954dc23540bc2",
+    "work_proof_markers": [
+      {
+        "ref": "product/plans/oss-v1/evidence/lifecycle/M0-11/2b0c95533758c087e9da8e1b0b3df6d0c6acc709/work_proof_marker.json",
+        "sha256": "sha256:6f05170aad13c1b7b8cc59baf18fbb2096527ea0ed83baae76814670de0b11bd"
+      }
+    ]
+  },
+  "risk_class": "high",
+  "context_isolation": {
+    "allowed_sources": [
+      "task_packet",
+      "candidate_diff",
+      "repo_contracts",
+      "tests",
+      "validation_report",
+      "latest_head_review"
+    ],
+    "disallowed_sources": ["private_builder_notes", "unpromoted_chat_reasoning"],
+    "builder_notes_authoritative": false
+  },
+  "findings": [],
+  "verdict": "approved",
+  "required_fixes": [],
+  "residual_risks": ["ADR 0022 intentionally trusts the developer host and installed tools."],
+  "evidence_refs": [
+    "product/plans/oss-v1/evidence/lifecycle/M0-11/2b0c95533758c087e9da8e1b0b3df6d0c6acc709/validation_report.json",
+    "ev-m0-11-repo-check-2b0c955",
+    "ev-m0-11-contracts-2b0c955",
+    "https://github.com/Clyra-AI/vetryn/pull/34#discussion_r3780165942",
+    "https://github.com/Clyra-AI/vetryn/pull/34#discussion_r3780165947"
+  ],
+  "work_proof_marker_refs": [
+    "product/plans/oss-v1/evidence/lifecycle/M0-11/2b0c95533758c087e9da8e1b0b3df6d0c6acc709/work_proof_marker.json"
+  ],
+  "approval_effect": {
+    "promotion_decision": "ready_for_pr",
+    "approvals_granted": ["architecture_review_passed"],
+    "blocks_promotion": false
+  },
+  "systems_questions": {
+    "state_impact": ["Preflight reads only the discovered checkout."],
+    "source_of_truth_changes": ["The promotion skill owns the sole protected-delivery handoff."],
+    "feedback_plan": ["Push the repaired head and rerun CI and Codex review."],
+    "blast_radius": ["Only continuation routing changes."],
+    "rollback_or_deletion_test": ["Removing the skill restores manual task selection."],
+    "system_model_summary": "The helper binds child plan commands to its discovered checkout and delegates the protected land lifecycle exactly once through promotion."
+  },
+  "created_at": "2026-08-14T00:46:49Z"
+}
