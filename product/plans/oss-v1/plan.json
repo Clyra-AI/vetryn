@@ -1067,7 +1067,7 @@
       "id": "M0-13",
       "milestone": "M0",
       "title": "Close late-review trust and delivery gaps",
-      "objective": "Repair the concrete late Codex findings from PRs 38 through 40 in one bounded high-risk task, add an executable promotion-tail gate, and make late-review convergence terminal without weakening trust or delivery policy.",
+      "objective": "Repair the concrete late Codex findings from PRs 38 through 40 in one bounded high-risk task and make late-review convergence terminal without weakening trust or delivery policy.",
       "risk": {
         "level": "high",
         "domains": ["credentials", "evaluation-cost", "evidence-integrity", "delivery-policy"]
@@ -1078,7 +1078,6 @@
         "allowedPaths": [
           ".agents/skills/vetryn-continue-next/**",
           ".agents/skills/vetryn-implement-task/**",
-          ".agents/skills/vetryn-promote-task/**",
           ".changeset/**",
           ".factory/profile.yaml",
           "AGENTS.md",
@@ -1088,15 +1087,10 @@
           "docs/adr/0023-close-late-review-trust-and-delivery-gaps.md",
           "docs/implementation/oss-v1-execution.md",
           "docs/oss-v1.md",
-          "package.json",
           "packages/cli/**",
           "packages/openrouter/**",
           "product/plans/oss-v1/**",
-          "scripts/plan.mjs",
-          "scripts/plan.test.mjs",
           "scripts/continue-next-skill.test.mjs",
-          "scripts/promotion-tail.mjs",
-          "scripts/promotion-tail.test.mjs",
           "scripts/task.mjs",
           "scripts/task.test.mjs",
           "scripts/verify_installed_worker_packs.py"
@@ -1114,16 +1108,13 @@
         "Receipt-signing credentials are canonicalized and rejected when repository-controlled before credential or provider I/O; symlink aliases cannot bypass the boundary.",
         "Observed spend includes every billable provider response even when normalization fails and retries continue, and prompt plus completion usage cannot exceed the selected model context window.",
         "Candidate-run identity includes exact execution identity so distinct evaluations cannot collide while identical inputs remain deterministic within one execution.",
-        "One executable promotion-tail command validates ProductCandidate through DeliveryHead and rejects product bytes, cross-task state or ledger edits, mutable prior evidence, missing generated progress, and undeclared artifacts.",
         "A task lifecycle permits at most one repair generation after the first complete finding batch; the entire post-repair batch has one terminal disposition, with every P0 or P1 blocking and only one eligible standalone P2 recordable as delivery debt.",
         "Late post-merge Codex findings are audited once; a late P0 or P1 creates corrective work and a late P2 is recorded as debt without pretending the earlier merge was reviewed cleanly.",
-        "New unaccepted tasks that change approval, evidence inheritance, persistence, credentials, security controls, or release policy cannot declare medium or low risk.",
         "The task stays offline, uses no provider credentials or spend, and does not broaden Vetryn recommendation semantics beyond the seven reviewed findings."
       ],
       "deliverables": [
         ".agents/skills/vetryn-continue-next/**",
         ".agents/skills/vetryn-implement-task/**",
-        ".agents/skills/vetryn-promote-task/**",
         ".changeset/**",
         ".factory/profile.yaml",
         "AGENTS.md",
@@ -1133,14 +1124,9 @@
         "docs/adr/0023-close-late-review-trust-and-delivery-gaps.md",
         "docs/implementation/oss-v1-execution.md",
         "docs/oss-v1.md",
-        "package.json",
         "packages/cli/**",
         "packages/openrouter/**",
         "scripts/continue-next-skill.test.mjs",
-        "scripts/plan.mjs",
-        "scripts/plan.test.mjs",
-        "scripts/promotion-tail.mjs",
-        "scripts/promotion-tail.test.mjs",
         "scripts/task.mjs",
         "scripts/task.test.mjs",
         "scripts/verify_installed_worker_packs.py"
@@ -1165,7 +1151,6 @@
         "A receipt-signing credential inside repository-controlled content is read or accepted.",
         "A billable response is omitted from observed spend or aggregate usage can exceed the context window.",
         "Two executions can emit the same candidate-run identity.",
-        "Promotion evidence is inherited without the executable tail validator passing on the exact two commits.",
         "A second repair generation starts instead of applying the terminal post-repair disposition.",
         "A P0, P1, privacy, fail-closed, provider-safety, evidence-integrity, or other non-waivable finding is recorded as delivery debt.",
         "The implementation expands into recommendation behavior, provider access, GitHub workflow changes, or unrelated hardening."

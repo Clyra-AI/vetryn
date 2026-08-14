@@ -906,7 +906,6 @@ describe("implementation plan validator", () => {
         "docs/adr/0023-close-late-review-trust-and-delivery-gaps.md",
         "docs/oss-v1.md",
         "scripts/continue-next-skill.test.mjs",
-        "scripts/promotion-tail.mjs",
         "scripts/verify_installed_worker_packs.py",
         "scripts/task.mjs",
       ]),
@@ -914,10 +913,15 @@ describe("implementation plan validator", () => {
     expect(task.deliverables).toEqual(
       expect.arrayContaining([
         ".agents/skills/vetryn-implement-task/**",
-        "scripts/plan.test.mjs",
-        "scripts/promotion-tail.test.mjs",
         "scripts/task.test.mjs",
         "scripts/verify_installed_worker_packs.py",
+      ]),
+    );
+    expect(task.scope.allowedPaths).not.toEqual(
+      expect.arrayContaining([
+        ".agents/skills/vetryn-promote-task/**",
+        "scripts/plan.mjs",
+        "scripts/promotion-tail.mjs",
       ]),
     );
     expect(task.scope.allowedPaths).not.toContain(".factory/artifacts/task-runs/M0-13/**");
