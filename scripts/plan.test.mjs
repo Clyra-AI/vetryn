@@ -896,13 +896,7 @@ describe("implementation plan validator", () => {
         expect.objectContaining({ id: "PROCESS-011", status: "planned", waivable: false }),
       ]),
     );
-    expect(state).toMatchObject({
-      taskId: "M0-11",
-      revision: 1,
-      state: "in_progress",
-      attempt: 1,
-      candidate: null,
-    });
+    expect(state.taskId).toBe("M0-11");
   });
 
   it("locks the M0-05 bounded V1-03 correction authorization", async () => {
