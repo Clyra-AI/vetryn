@@ -544,6 +544,14 @@ describe("promotion-tail validator", () => {
         );
       },
     ],
+    [
+      "a scalar delivery-debt classification",
+      (artifact) => {
+        artifact.findings.push({ severity: "P2", status: "accepted_risk" });
+        artifact.approval_effect.approvals_granted =
+          "maintainer_classified_standalone_p2_delivery_debt";
+      },
+    ],
     ["required fixes", (artifact) => artifact.required_fixes.push("repair the blocker")],
     [
       "a blocking approval effect",

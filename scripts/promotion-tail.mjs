@@ -212,7 +212,8 @@ function assertLifecycleArtifact(name, document, taskId, candidate) {
       acceptedRisks.length <= 1 &&
         (acceptedRisks.length === 0 ||
           (acceptedRisks[0].severity === "P2" &&
-            document.approval_effect?.approvals_granted?.includes(
+            Array.isArray(document.approval_effect?.approvals_granted) &&
+            document.approval_effect.approvals_granted.includes(
               "maintainer_classified_standalone_p2_delivery_debt",
             ))),
       "review_report has unclassified delivery debt",
