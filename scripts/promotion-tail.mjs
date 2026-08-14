@@ -390,7 +390,10 @@ export function checkPromotionTail({ root, taskId, productCandidate, deliveryHea
     state.criteria.length,
   );
 
-  const referencedEvidence = new Set(state.criteria.flatMap((criterion) => criterion.evidenceRefs));
+  const referencedEvidence = new Set([
+    ...state.criteria.flatMap((criterion) => criterion.evidenceRefs),
+    ...state.gates.flatMap((gate) => gate.evidenceRefs),
+  ]);
   for (const [relativePath, document] of addedFlatEvidence) {
     assert(
       document.taskId === taskId && relativePath === `${planRoot}/evidence/${document.id}.json`,
@@ -402,7 +405,10 @@ export function checkPromotionTail({ root, taskId, productCandidate, deliveryHea
         document.result.checks?.every((check) => check.status === "pass"),
       `${document.id} is not passing`,
     );
-    assert(referencedEvidence.has(document.id), `${document.id} is not cited by task criteria`);
+    assert(
+      referencedEvidence.has(document.id),
+      `${document.id} is not cited by task criteria or gates`,
+    );
   }
   for (const evidenceId of referencedEvidence)
     assert(

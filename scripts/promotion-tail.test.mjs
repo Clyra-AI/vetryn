@@ -212,6 +212,31 @@ describe("promotion-tail validator", () => {
     expect(JSON.parse(result.stdout)).toMatchObject({ status: "pass", task_id: taskId });
   });
 
+  it("accepts passing evidence cited only by an active command gate", async () => {
+    const fixture = await createFixture();
+    const gateEvidenceId = `ev-m0-14-repo-check-${fixture.candidate.slice(0, 7)}`;
+    const delivery = await amend(fixture.root, async () => {
+      const statePath = `${fixture.planRoot}/state/${taskId}.json`;
+      const state = await readJson(fixture.root, statePath);
+      state.gates = [{ gateId: "QG-REPO-CHECK", status: "pass", evidenceRefs: [gateEvidenceId] }];
+      await writeJson(fixture.root, statePath, state);
+      const gateEvidence = evidence(gateEvidenceId, fixture.candidate);
+      gateEvidence.gateBinding = {
+        gateId: "QG-REPO-CHECK",
+        kind: "command",
+        command: "pnpm check",
+      };
+      gateEvidence.result.checks = [{ name: "pnpm check", status: "pass" }];
+      await writeJson(
+        fixture.root,
+        `${fixture.planRoot}/evidence/${gateEvidenceId}.json`,
+        gateEvidence,
+      );
+    });
+    const result = run(fixture.root, fixture.candidate, delivery);
+    expect(result.status, result.stderr).toBe(0);
+  });
+
   it.each([
     [
       "product bytes",

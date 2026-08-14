@@ -14,7 +14,7 @@ such as `scripts/**` or `product/plans/**`.
 
 ## Decision
 
-`pnpm --silent task:promotion-tail -- TASK-ID PRODUCT-CANDIDATE DELIVERY-HEAD` is the canonical promotion-tail
+`pnpm --silent task:promotion-tail TASK-ID PRODUCT-CANDIDATE DELIVERY-HEAD` is the canonical promotion-tail
 gate. It requires a single promotion commit, task-scoped canonical artifacts, immutable prior evidence, generated
 progress, passing candidate-bound lifecycle reports, and exactly one candidate identity across every identity
 present in each lifecycle artifact. A work-proof marker therefore cannot combine a `git_sha` and authorized task

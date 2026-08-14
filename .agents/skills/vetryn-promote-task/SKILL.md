@@ -17,7 +17,7 @@ description: Perform maintainer-controlled promotion of a locally validated Vetr
    lifecycle evidence, and generated progress. Run `pnpm plan:write`; never edit `progress.json` directly. Commit
    these changes together as one promotion-only **DeliveryHead** on the existing task branch.
 5. Run formatting, `pnpm plan:check`, the focused plan/task structural tests, and
-   `pnpm --silent task:promotion-tail -- TASK-ID PRODUCT-CANDIDATE DELIVERY-HEAD`. The executable gate must pass
+   `pnpm --silent task:promotion-tail TASK-ID PRODUCT-CANDIDATE DELIVERY-HEAD`. The executable gate must pass
    on the exact two full commit SHAs. Prove every path in the `ProductCandidate..DeliveryHead` diff is canonical state, that task's ledger entries, compact
    lifecycle evidence, generated progress, or another packet-declared promotion artifact. Do not rerun the full
    product or domain-review suite merely because this valid tail exists. A product, contract, test, fixture, or
