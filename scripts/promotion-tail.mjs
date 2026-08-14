@@ -115,9 +115,15 @@ function taskIdentity(document) {
 function collectLifecycleRefCandidates(value, taskId, commits) {
   if (typeof value === "string") {
     const match = value.match(
-      new RegExp(`^${planRoot}/evidence/lifecycle/${taskId}/([0-9a-f]{40})(?:/|$)`, "u"),
+      new RegExp(
+        `^${planRoot}/evidence/lifecycle/((?:M0|V1)-[0-9]{2})/(unbound|[0-9a-f]{40})(?:/|$)`,
+        "u",
+      ),
     );
-    if (match) commits.add(match[1]);
+    if (match) {
+      assert(match[1] === taskId, "lifecycle artifact references another task");
+      commits.add(match[2]);
+    }
     return;
   }
   if (Array.isArray(value)) {
@@ -189,6 +195,9 @@ function assertLifecycleArtifact(name, document, taskId, candidate) {
   }
   if (name === "review_report") {
     assert(document.verdict === "approved", "review_report is not approved");
+    const acceptedRisks = Array.isArray(document.findings)
+      ? document.findings.filter((finding) => finding?.status === "accepted_risk")
+      : [];
     assert(
       Array.isArray(document.findings) &&
         document.findings.every(
@@ -198,6 +207,15 @@ function assertLifecycleArtifact(name, document, taskId, candidate) {
               (finding.status === "accepted_risk" && ["P2", "P3"].includes(finding.severity))),
         ),
       "review_report has unresolved findings",
+    );
+    assert(
+      acceptedRisks.length <= 1 &&
+        (acceptedRisks.length === 0 ||
+          (acceptedRisks[0].severity === "P2" &&
+            document.approval_effect?.approvals_granted?.includes(
+              "maintainer_classified_standalone_p2_delivery_debt",
+            ))),
+      "review_report has unclassified delivery debt",
     );
     assert(
       Array.isArray(document.required_fixes) && document.required_fixes.length === 0,

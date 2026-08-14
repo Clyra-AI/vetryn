@@ -1629,6 +1629,17 @@ describe("implementation plan validator", () => {
       ["product/plans/schemas/task-state.schema.json"],
       ["agent-workflow"],
     ],
+    [
+      "semantic-risk legacy schema path",
+      ["product/plans/schemas/semantic-risk-report-v0.1.schema.json"],
+      ["agent-workflow"],
+    ],
+    [
+      "semantic-risk schema path",
+      ["product/plans/schemas/semantic-risk-report-v0.2.schema.json"],
+      ["agent-workflow"],
+    ],
+    ["semantic-risk validator path", ["scripts/semantic-risk.mjs"], ["agent-workflow"]],
     ["security workflow path", [".github/workflows/codeql.yml"], ["agent-workflow"]],
     [
       "dependency security workflow path",

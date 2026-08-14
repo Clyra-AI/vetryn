@@ -434,6 +434,21 @@ describe("promotion-tail validator", () => {
     expect(result.stderr).toContain("validation_report is not candidate-bound");
   });
 
+  it("rejects a lifecycle report that also references another task", async () => {
+    const fixture = await createFixture();
+    const relativePath = `${fixture.planRoot}/evidence/lifecycle/${taskId}/${fixture.candidate}/validation_report.json`;
+    const delivery = await amend(fixture.root, async () => {
+      const artifact = await readJson(fixture.root, relativePath);
+      artifact.evidence_refs = [
+        `${fixture.planRoot}/evidence/lifecycle/M0-12/${fixture.candidate}/review_report.json`,
+      ];
+      await writeJson(fixture.root, relativePath, artifact);
+    });
+    const result = run(fixture.root, fixture.candidate, delivery);
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("lifecycle artifact references another task");
+  });
+
   it.each([
     [
       "conflicting git_sha and task binding",
@@ -515,6 +530,20 @@ describe("promotion-tail validator", () => {
       "P1 accepted risk",
       (artifact) => artifact.findings.push({ severity: "P1", status: "accepted_risk" }),
     ],
+    [
+      "an unclassified P2 accepted risk",
+      (artifact) => artifact.findings.push({ severity: "P2", status: "accepted_risk" }),
+    ],
+    [
+      "multiple accepted risks",
+      (artifact) => {
+        artifact.findings.push({ severity: "P2", status: "accepted_risk" });
+        artifact.findings.push({ severity: "P2", status: "accepted_risk" });
+        artifact.approval_effect.approvals_granted.push(
+          "maintainer_classified_standalone_p2_delivery_debt",
+        );
+      },
+    ],
     ["required fixes", (artifact) => artifact.required_fixes.push("repair the blocker")],
     [
       "a blocking approval effect",
@@ -540,8 +569,8 @@ describe("promotion-tail validator", () => {
   it.each([
     ["resolved P0", "P0", "resolved"],
     ["resolved P1", "P1", "resolved"],
-    ["accepted-risk P2", "P2", "accepted_risk"],
-    ["accepted-risk P3", "P3", "accepted_risk"],
+    ["resolved P2", "P2", "resolved"],
+    ["resolved P3", "P3", "resolved"],
   ])(
     "accepts an approved review report that retains a %s finding",
     async (_name, severity, status) => {
@@ -556,4 +585,19 @@ describe("promotion-tail validator", () => {
       expect(result.status, result.stderr).toBe(0);
     },
   );
+
+  it("accepts one explicitly classified standalone P2 delivery debt", async () => {
+    const fixture = await createFixture();
+    const relativePath = `${fixture.planRoot}/evidence/lifecycle/${taskId}/${fixture.candidate}/review_report.json`;
+    const delivery = await amend(fixture.root, async () => {
+      const artifact = await readJson(fixture.root, relativePath);
+      artifact.findings.push({ severity: "P2", status: "accepted_risk" });
+      artifact.approval_effect.approvals_granted.push(
+        "maintainer_classified_standalone_p2_delivery_debt",
+      );
+      await writeJson(fixture.root, relativePath, artifact);
+    });
+    const result = run(fixture.root, fixture.candidate, delivery);
+    expect(result.status, result.stderr).toBe(0);
+  });
 });

@@ -73,10 +73,13 @@ const highRiskPolicyPaths = new Set([
   "product/plans/oss-v1/evidence/example.json",
   "product/plans/schemas/acceptance-ledger.schema.json",
   "product/plans/schemas/evidence.schema.json",
+  "product/plans/schemas/semantic-risk-report-v0.1.schema.json",
+  "product/plans/schemas/semantic-risk-report-v0.2.schema.json",
   "product/plans/schemas/task-packet.schema.json",
   "product/plans/schemas/task-state.schema.json",
   "scripts/plan.mjs",
   "scripts/promotion-tail.mjs",
+  "scripts/semantic-risk.mjs",
   "scripts/task.mjs",
 ]);
 
