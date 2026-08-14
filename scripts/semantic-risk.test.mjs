@@ -136,6 +136,46 @@ async function createFixture() {
     (dependency) => dependency.taskId !== "M0-11",
   );
   await writeFile(planPath, `${JSON.stringify(plan, null, 2)}\n`);
+
+  const statePath = path.join(root, "product/plans/oss-v1/state/V1-06.json");
+  const state = JSON.parse(await readFile(statePath, "utf8"));
+  Object.assign(state, {
+    revision: 0,
+    state: "planned",
+    attempt: 0,
+    candidate: null,
+    criteria: state.criteria.map((criterion) => ({
+      ...criterion,
+      status: "pending",
+      evidenceRefs: [],
+    })),
+    gates: state.gates.map((gate) => ({ ...gate, status: "pending", evidenceRefs: [] })),
+    reviews: state.reviews.map((review) => ({
+      ...review,
+      status: "pending",
+      evidenceRefs: [],
+    })),
+    blockers: [],
+    history: [
+      {
+        from: null,
+        to: "planned",
+        at: "2026-08-10T00:30:00Z",
+        actor: "semantic-risk-test-fixture",
+        reason: "Normalize the target task independently of canonical promotion state.",
+      },
+    ],
+  });
+  await writeFile(statePath, `${JSON.stringify(state, null, 2)}\n`);
+
+  const ledgerPath = path.join(root, "product/plans/oss-v1/acceptance-ledger.json");
+  const ledger = JSON.parse(await readFile(ledgerPath, "utf8"));
+  for (const item of ledger.items.filter((item) => item.taskId === "V1-06")) {
+    item.status = "planned";
+    item.evidenceRefs = [];
+  }
+  await writeFile(ledgerPath, `${JSON.stringify(ledger, null, 2)}\n`);
+
   const planWrite = spawnSync(process.execPath, [planScript, "write"], {
     encoding: "utf8",
     env: { ...process.env, VETRYN_PLAN_REPO_ROOT: root },
