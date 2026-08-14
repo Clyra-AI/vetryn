@@ -191,7 +191,8 @@ repository.
 `$vetryn-continue-next` adds only repository discovery and routing. Its script requires a clean checkout, runs the
 existing plan check, chooses exactly one active task or otherwise one next-legal task, compiles the packet, and
 checks that HEAD and worktree status did not change. The procedure then delegates to the packet-selected skills.
-The delegated lifecycle batches one ProductCandidate review generation, creates one promotion-only DeliveryHead,
-lands it through the protected PR, verifies `main`, and reports the next legal task when the current-run grant
+The delegated lifecycle batches one ProductCandidate review generation, creates one promotion-only DeliveryHead
+validated by `pnpm --silent task:promotion-tail TASK-ID PRODUCT-CANDIDATE DELIVERY-HEAD`, lands it through the
+protected PR, verifies `main`, and reports the next legal task when the current-run grant
 authorizes those actions. The developer host and installed skills are trusted local inputs; the helper is not a
 security sandbox, does not require a sibling Factory checkout, and cannot supply mutation or delivery authority.

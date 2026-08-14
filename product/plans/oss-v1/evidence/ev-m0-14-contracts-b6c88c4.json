@@ -1,0 +1,35 @@
+{
+  "$schema": "../../schemas/evidence.schema.json",
+  "schemaVersion": "1.0.0",
+  "id": "ev-m0-14-contracts-b6c88c4",
+  "taskId": "M0-14",
+  "type": "command-run",
+  "actor": "validation-gate",
+  "commit": "b6c88c47fe2adbb10068485bddd885a276d53862",
+  "createdAt": "2026-08-14T16:56:54Z",
+  "result": {
+    "status": "pass",
+    "checks": [
+      {
+        "name": "pnpm test:contracts",
+        "status": "pass",
+        "summary": "All 313 deterministic tests passed, including the final promotion-provenance regressions."
+      }
+    ]
+  },
+  "inputs": {
+    "planDigest": "sha256:b334019e8095cb79e226c82a7ccfcd4f46a2e002e27aa52766780b961f6d5e44",
+    "lockfileDigest": "sha256:0d73c2bc837d2f12314c6fb3b2f28c4389a3887a5fdda7b6898913b2b20c91d9"
+  },
+  "gateBinding": {
+    "gateId": "QG-CONTRACTS",
+    "kind": "command",
+    "command": "pnpm test:contracts"
+  },
+  "review": null,
+  "redaction": {
+    "status": "not_applicable",
+    "containsRawModelOutput": false,
+    "containsSecrets": false
+  }
+}

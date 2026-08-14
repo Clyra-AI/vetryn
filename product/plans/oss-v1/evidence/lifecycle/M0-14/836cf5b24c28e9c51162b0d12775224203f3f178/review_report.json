@@ -1,0 +1,112 @@
+{
+  "artifact_type": "review_report",
+  "schema_version": "0.1",
+  "task_id": "M0-14",
+  "work_item_id": "M0-14",
+  "review_type": "architecture",
+  "review_scope": ["scripts/promotion-tail.mjs", "scripts/promotion-tail.test.mjs"],
+  "reviewer_class": "peer_agent",
+  "reviewer_id": "codex-local:v1_06_code_review",
+  "producer": {
+    "worker": "code-review",
+    "producer_id": "codex-local:v1_06_code_review",
+    "producer_class": "peer_agent"
+  },
+  "current_work": {
+    "validation_run_id": "validation:2026-08-14T18:10:34Z:M0-14",
+    "candidate_digest": "sha256:60b78e00a0c31ab1aab7e34a463888be812edd6328b004d384d823991d5baa39",
+    "work_proof_markers": [
+      {
+        "ref": "product/plans/oss-v1/evidence/lifecycle/M0-14/836cf5b24c28e9c51162b0d12775224203f3f178/work_proof_marker.json",
+        "sha256": "sha256:29d7a9f5cc71e54b7e09520f045bbde035d99c5fde3687121b82236bd633a235"
+      }
+    ]
+  },
+  "risk_class": "high",
+  "context_isolation": {
+    "allowed_sources": [
+      "task_packet",
+      "candidate_diff",
+      "repo_contracts",
+      "tests",
+      "validation_report"
+    ],
+    "disallowed_sources": ["private_builder_notes", "unpromoted_chat_reasoning"],
+    "builder_notes_authoritative": false
+  },
+  "findings": [
+    {
+      "id": "M0-14-CURRENT-8",
+      "severity": "P1",
+      "summary": "Pre-promotion review evidence mixed the later delivery-debt disposition into local promotion.",
+      "status": "resolved",
+      "claim_source": "independently_observed",
+      "verification_status": "independently_verified",
+      "location": "scripts/promotion-tail.mjs",
+      "failure_scenario": "A local accepted-risk declaration bypasses the stricter post-promotion delivery-debt phase.",
+      "impact": "A P2 could be waived before current-head PR evidence exists.",
+      "minimum_fix": "Require resolved local findings and retain standalone-P2 debt handling in commit-push.",
+      "promotion_effect": "block_until_fixed",
+      "evidence_refs": ["ev-m0-14-contracts-836cf5b"]
+    },
+    {
+      "id": "M0-14-CURRENT-9",
+      "severity": "P1",
+      "summary": "Initial candidate attribution did not prove a real prior Git base.",
+      "status": "resolved",
+      "claim_source": "independently_observed",
+      "verification_status": "independently_verified",
+      "location": "scripts/promotion-tail.mjs",
+      "failure_scenario": "A fabricated or self-referential base is copied into state and work proof.",
+      "impact": "Candidate provenance could be self-consistent without being ancestral.",
+      "minimum_fix": "Require the work-proof base to resolve and be a strict ProductCandidate ancestor.",
+      "promotion_effect": "block_until_fixed",
+      "evidence_refs": ["ev-m0-14-contracts-836cf5b"]
+    },
+    {
+      "id": "M0-14-CURRENT-10",
+      "severity": "P1",
+      "summary": "Repair-budget policy and history could be rewritten inside the ProductCandidate.",
+      "status": "resolved",
+      "claim_source": "independently_observed",
+      "verification_status": "independently_verified",
+      "location": "scripts/promotion-tail.mjs",
+      "failure_scenario": "A later repair edits or removes PROCESS-016 state before its final commit.",
+      "impact": "The one-repair lifecycle budget could be reset.",
+      "minimum_fix": "Require exact task-state equality at the strict prior work-proof base.",
+      "promotion_effect": "block_until_fixed",
+      "evidence_refs": ["ev-m0-14-contracts-836cf5b"]
+    }
+  ],
+  "verdict": "approved",
+  "required_fixes": [],
+  "residual_risks": [
+    "The repo-local installed Factory bootstrap remains unavailable on this historical branch base."
+  ],
+  "evidence_refs": [
+    "product/plans/oss-v1/evidence/lifecycle/M0-14/836cf5b24c28e9c51162b0d12775224203f3f178/validation_report.json",
+    "ev-m0-14-repo-check-836cf5b",
+    "ev-m0-14-contracts-836cf5b"
+  ],
+  "work_proof_marker_refs": [
+    "product/plans/oss-v1/evidence/lifecycle/M0-14/836cf5b24c28e9c51162b0d12775224203f3f178/work_proof_marker.json"
+  ],
+  "approval_effect": {
+    "promotion_decision": "ready_for_pr",
+    "approvals_granted": ["architecture_review_passed"],
+    "blocks_promotion": false
+  },
+  "systems_questions": {
+    "state_impact": ["Only M0-14 canonical acceptance is rebound after review."],
+    "source_of_truth_changes": [
+      "Promotion phase separation, strict base provenance, and repair-budget inheritance now fail closed."
+    ],
+    "feedback_plan": ["Protected CI validates the final DeliveryHead."],
+    "blast_radius": ["Promotion evidence only; no product packages."],
+    "rollback_or_deletion_test": [
+      "Focused regressions fail if any of the three current-head closures is removed."
+    ],
+    "system_model_summary": "The terminal batch closes three exact promotion-policy gaps without adding an authority framework."
+  },
+  "created_at": "2026-08-14T18:10:34Z"
+}

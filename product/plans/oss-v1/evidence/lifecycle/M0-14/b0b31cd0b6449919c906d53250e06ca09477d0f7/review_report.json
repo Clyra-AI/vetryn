@@ -1,0 +1,56 @@
+{
+  "artifact_type": "review_report",
+  "schema_version": "0.1",
+  "task_id": "M0-14",
+  "work_item_id": "M0-14",
+  "review_type": "architecture",
+  "review_scope": ["scripts/promotion-tail.mjs", "scripts/promotion-tail.test.mjs"],
+  "reviewer_class": "peer_agent",
+  "reviewer_id": "codex-local:v1_06_code_review",
+  "producer": {
+    "worker": "code-review",
+    "producer_id": "codex-local:v1_06_code_review",
+    "producer_class": "peer_agent"
+  },
+  "current_work": {
+    "validation_run_id": "validation:2026-08-14T19:12:13Z:M0-14",
+    "candidate_digest": "sha256:a54b240200c2a5e6860a8eaa07afff5787badbff56cd320f12f1c730e9dfa6ba",
+    "work_proof_markers": [
+      {
+        "ref": "product/plans/oss-v1/evidence/lifecycle/M0-14/b0b31cd0b6449919c906d53250e06ca09477d0f7/work_proof_marker.json",
+        "sha256": "sha256:887b655159278daf95cc57b7847cf69aa8f49b54b8d4a0acb60e028de21086b7"
+      }
+    ]
+  },
+  "risk_class": "high",
+  "findings": [
+    {
+      "id": "M0-14-CURRENT-18",
+      "severity": "P1",
+      "summary": "Credential reference metadata and credential values were not distinguished.",
+      "status": "resolved",
+      "location": "scripts/promotion-tail.mjs",
+      "promotion_effect": "block_until_fixed",
+      "evidence_refs": ["ev-m0-14-contracts-b0b31cd"]
+    }
+  ],
+  "verdict": "approved",
+  "required_fixes": [],
+  "residual_risks": [
+    "The standalone P2 about empty passing-check sets is deferred; this exact report records three passing checks."
+  ],
+  "evidence_refs": [
+    "product/plans/oss-v1/evidence/lifecycle/M0-14/b0b31cd0b6449919c906d53250e06ca09477d0f7/validation_report.json",
+    "ev-m0-14-repo-check-b0b31cd",
+    "ev-m0-14-contracts-b0b31cd"
+  ],
+  "work_proof_marker_refs": [
+    "product/plans/oss-v1/evidence/lifecycle/M0-14/b0b31cd0b6449919c906d53250e06ca09477d0f7/work_proof_marker.json"
+  ],
+  "approval_effect": {
+    "promotion_decision": "ready_for_pr",
+    "approvals_granted": ["architecture_review_passed"],
+    "blocks_promotion": false
+  },
+  "created_at": "2026-08-14T19:12:13Z"
+}

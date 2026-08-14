@@ -1,0 +1,18 @@
+{
+  "taskId": "M0-14",
+  "candidateCommit": "411bdf3eee0996a971a7e3edfa3f758ccab5a14a",
+  "result": "pass",
+  "checks": [
+    { "name": "pnpm plan:check", "status": "pass" },
+    { "name": "pnpm check", "status": "pass" },
+    { "name": "pnpm test:contracts", "status": "pass" }
+  ],
+  "work_proof_marker_refs": [
+    "product/plans/oss-v1/evidence/lifecycle/M0-14/411bdf3eee0996a971a7e3edfa3f758ccab5a14a/work_proof_marker.json"
+  ],
+  "redaction": {
+    "containsRawModelOutput": false,
+    "containsSecrets": false,
+    "rawLogsPersisted": false
+  }
+}

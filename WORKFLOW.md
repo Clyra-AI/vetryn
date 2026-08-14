@@ -65,7 +65,9 @@ candidate change.
 With explicit approval from an active maintainer, run `pnpm plan:write` and create one promotion-only
 **DeliveryHead** containing only that task's canonical state, ledger status/evidence, compact lifecycle evidence,
 generated progress, and other packet-declared promotion artifacts. Never edit `progress.json` directly. Run the
-small plan/tail structural checks, not the full product or domain-review suite again. If the tail contains product,
+small plan/tail structural checks, including
+`pnpm --silent task:promotion-tail TASK-ID PRODUCT-CANDIDATE DELIVERY-HEAD`, not the full product or domain-review
+suite again. If the tail contains product,
 contract, test, fixture, or task-scoped documentation bytes, invalidate inheritance and return to implementation.
 
 ## Pull requests and shipping

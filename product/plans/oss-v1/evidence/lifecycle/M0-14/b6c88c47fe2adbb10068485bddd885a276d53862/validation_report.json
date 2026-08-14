@@ -1,0 +1,113 @@
+{
+  "work_item_id": "M0-14",
+  "task_id": "M0-14",
+  "profile_ref": "profiles/vetryn.yaml",
+  "semantic_risk_report_ref": ".factory/artifacts/task-runs/M0-14/semantic-risk-report.json",
+  "semantic_risk_report_sha256": "sha256:1ddf145f0896dd122f1b60dc224cb6ce0473d238c53b3cef1548f7cea30fd329",
+  "validation_contract_ref": "product/plans/oss-v1/plan.json#M0-14",
+  "test_intent": [
+    {
+      "behavior": "Close the final promotion-provenance and lifecycle-redaction gaps without altering product behavior.",
+      "expected_signal": "Canonical promotion evidence remains candidate-bound, append-only, and redacted."
+    }
+  ],
+  "red_evidence": [
+    {
+      "check": "exact-candidate code review",
+      "summary": "The final bounded reviews identified the promotion-provenance and redaction gaps before repair."
+    }
+  ],
+  "green_evidence": [
+    {
+      "check": "pnpm check",
+      "summary": "The complete repository gate passed with 313 tests.",
+      "evidence_refs": ["ev-m0-14-repo-check-b6c88c4"]
+    },
+    {
+      "check": "pnpm test:contracts",
+      "summary": "All contract and adversarial tests passed on the exact ProductCandidate.",
+      "evidence_refs": ["ev-m0-14-contracts-b6c88c4"]
+    }
+  ],
+  "work_proof_marker_refs": [
+    "product/plans/oss-v1/evidence/lifecycle/M0-14/b6c88c47fe2adbb10068485bddd885a276d53862/work_proof_marker.json"
+  ],
+  "test_scope": [
+    "scripts/plan.mjs",
+    "scripts/plan.test.mjs",
+    "scripts/promotion-tail.mjs",
+    "scripts/promotion-tail.test.mjs"
+  ],
+  "checks": [
+    {
+      "name": "pnpm plan:check",
+      "status": "pass"
+    },
+    {
+      "name": "pnpm check",
+      "status": "pass"
+    },
+    {
+      "name": "pnpm test:contracts",
+      "status": "pass"
+    },
+    {
+      "name": "pnpm --silent task:compile -- M0-14",
+      "status": "skipped",
+      "reason": "M0-14 is accepted and correctly has no new execution packet."
+    }
+  ],
+  "result": "pass",
+  "introduced_failures": [],
+  "pre_existing_failures": [],
+  "independent_validation": {
+    "risk_class": "high",
+    "required_level": "independent_or_human",
+    "provided_levels": ["validation_gate", "adversarial", "review_adequacy"],
+    "status": "satisfied",
+    "evidence_refs": [
+      "ev-m0-14-plan-check-b6c88c4",
+      "ev-m0-14-repo-check-b6c88c4",
+      "ev-m0-14-contracts-b6c88c4"
+    ],
+    "notes": "Independent verification and candidate-bound code review report no P0/P1 findings on b6c88c4."
+  },
+  "test_first_skipped_reason": {
+    "status": "not_skipped",
+    "reason": "Each bounded finding was reproduced by a focused regression before its fix."
+  },
+  "anti_fitting_notes": [
+    "Tests cover canonical lifecycle shapes, state history, review binding, protected skills, and normalized redaction aliases."
+  ],
+  "residual_risks": [
+    "Future authority surfaces must be added to the protected inventory when introduced."
+  ],
+  "integrated_validation": {
+    "status": "task_only",
+    "scope_summary": "The full repository passed after the bounded final policy repair.",
+    "integrated_checks": [
+      {
+        "name": "pnpm check",
+        "status": "pass",
+        "work_proof_marker_ref": "product/plans/oss-v1/evidence/lifecycle/M0-14/b6c88c47fe2adbb10068485bddd885a276d53862/work_proof_marker.json"
+      }
+    ],
+    "fresh_checkout": {
+      "required": false,
+      "status": "not_required",
+      "work_proof_marker_refs": [],
+      "notes": "Protected GitHub CI supplies the clean-checkout replay."
+    },
+    "docs_schema_parity": {
+      "status": "pass",
+      "evidence_refs": [".agents/skills/vetryn-promote-task/SKILL.md", "WORKFLOW.md"]
+    },
+    "release_readiness": {
+      "claimed": false,
+      "status": "not_applicable",
+      "work_proof_marker_refs": [],
+      "notes": "No package release."
+    }
+  },
+  "promotion_decision": "ready_for_pr"
+}

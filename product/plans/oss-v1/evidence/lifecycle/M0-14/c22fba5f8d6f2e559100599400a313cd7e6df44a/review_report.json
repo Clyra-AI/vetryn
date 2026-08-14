@@ -1,0 +1,103 @@
+{
+  "artifact_type": "review_report",
+  "schema_version": "0.1",
+  "task_id": "M0-14",
+  "work_item_id": "M0-14",
+  "review_type": "architecture",
+  "review_scope": [
+    "scripts/plan.mjs",
+    "scripts/plan.test.mjs",
+    "scripts/promotion-tail.mjs",
+    "scripts/promotion-tail.test.mjs"
+  ],
+  "reviewer_class": "peer_agent",
+  "reviewer_id": "codex-local:v1_06_code_review",
+  "producer": {
+    "worker": "code-review",
+    "producer_id": "codex-local:v1_06_code_review",
+    "producer_class": "peer_agent"
+  },
+  "current_work": {
+    "validation_run_id": "validation:2026-08-14T17:37:12Z:M0-14",
+    "candidate_digest": "sha256:da4f67196a067fd2d32265f76fac330edb4d7fbe9bbfb9ca774fcb6c35278527",
+    "work_proof_markers": [
+      {
+        "ref": "product/plans/oss-v1/evidence/lifecycle/M0-14/c22fba5f8d6f2e559100599400a313cd7e6df44a/work_proof_marker.json",
+        "sha256": "sha256:c3bcc44d5c5b352c506b0633ea645b5d18e92e7848a9dee611110235d5c2918c"
+      }
+    ]
+  },
+  "risk_class": "high",
+  "context_isolation": {
+    "allowed_sources": [
+      "task_packet",
+      "candidate_diff",
+      "repo_contracts",
+      "tests",
+      "validation_report"
+    ],
+    "disallowed_sources": ["private_builder_notes", "unpromoted_chat_reasoning"],
+    "builder_notes_authoritative": false
+  },
+  "findings": [
+    {
+      "id": "M0-14-CURRENT-6",
+      "severity": "P1",
+      "summary": "Trust review evidence was not bound to the exact validation report.",
+      "status": "resolved",
+      "claim_source": "independently_observed",
+      "verification_status": "independently_verified",
+      "location": "scripts/promotion-tail.mjs",
+      "failure_scenario": "A passing trust report cites stale or unrelated validation evidence.",
+      "impact": "Promotion could inherit validation from another candidate.",
+      "minimum_fix": "Require the canonical candidate-scoped validation report reference.",
+      "promotion_effect": "block_until_fixed",
+      "evidence_refs": ["ev-m0-14-contracts-c22fba5"]
+    },
+    {
+      "id": "M0-14-CURRENT-7",
+      "severity": "P1",
+      "summary": "Unsupported glob syntax could evade protected-path risk classification.",
+      "status": "resolved",
+      "claim_source": "independently_observed",
+      "verification_status": "independently_verified",
+      "location": "scripts/plan.mjs",
+      "failure_scenario": "A task uses character-class syntax interpreted differently by the custom matcher.",
+      "impact": "A policy-changing task could be misclassified below high risk.",
+      "minimum_fix": "Reject scope syntax outside the repository's supported glob subset.",
+      "promotion_effect": "block_until_fixed",
+      "evidence_refs": ["ev-m0-14-plan-check-c22fba5"]
+    }
+  ],
+  "verdict": "approved",
+  "required_fixes": [],
+  "residual_risks": [
+    "The repo-local installed Factory bootstrap remains unavailable on this historical branch base."
+  ],
+  "evidence_refs": [
+    "product/plans/oss-v1/evidence/lifecycle/M0-14/c22fba5f8d6f2e559100599400a313cd7e6df44a/validation_report.json",
+    "ev-m0-14-repo-check-c22fba5",
+    "ev-m0-14-contracts-c22fba5"
+  ],
+  "work_proof_marker_refs": [
+    "product/plans/oss-v1/evidence/lifecycle/M0-14/c22fba5f8d6f2e559100599400a313cd7e6df44a/work_proof_marker.json"
+  ],
+  "approval_effect": {
+    "promotion_decision": "ready_for_pr",
+    "approvals_granted": ["architecture_review_passed"],
+    "blocks_promotion": false
+  },
+  "systems_questions": {
+    "state_impact": ["Only M0-14 canonical acceptance is rebound after review."],
+    "source_of_truth_changes": [
+      "Trust-review validation binding and plan scope syntax now fail closed."
+    ],
+    "feedback_plan": ["Protected CI validates the final DeliveryHead."],
+    "blast_radius": ["Task planning and promotion evidence only; no product packages."],
+    "rollback_or_deletion_test": [
+      "Focused regressions fail if either current-head closure is removed."
+    ],
+    "system_model_summary": "The terminal batch closes two exact evidence and scope-language mismatches without adding a framework."
+  },
+  "created_at": "2026-08-14T17:37:12Z"
+}

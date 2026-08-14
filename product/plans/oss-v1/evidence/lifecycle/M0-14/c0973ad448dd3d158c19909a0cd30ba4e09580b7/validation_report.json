@@ -1,0 +1,113 @@
+{
+  "work_item_id": "M0-14",
+  "task_id": "M0-14",
+  "profile_ref": "profiles/vetryn.yaml",
+  "semantic_risk_report_ref": ".factory/artifacts/task-runs/M0-14/semantic-risk-report.json",
+  "semantic_risk_report_sha256": "sha256:1ddf145f0896dd122f1b60dc224cb6ce0473d238c53b3cef1548f7cea30fd329",
+  "validation_contract_ref": "product/plans/oss-v1/plan.json#M0-14",
+  "test_intent": [
+    {
+      "behavior": "Reject review reports that retain a promotion blocker.",
+      "expected_signal": "Open, malformed, P0/P1 accepted-risk, required-fix, or blocking approval records fail closed while resolved history and P2/P3 accepted risk remain representable."
+    },
+    {
+      "behavior": "Bind work proof and future risk classification to the exact task and protected schemas.",
+      "expected_signal": "Cross-task markers and low/medium-risk exact schema scopes fail closed."
+    }
+  ],
+  "red_evidence": [
+    {
+      "check": "latest-head GitHub Codex review",
+      "summary": "Three current-head P1 gaps and the exact review-report predicate edge cases were reproduced before the repaired candidate was frozen."
+    }
+  ],
+  "green_evidence": [
+    {
+      "check": "pnpm check",
+      "summary": "The complete repository gate passed with 289 tests.",
+      "evidence_refs": ["ev-m0-14-repo-check-c0973ad"]
+    },
+    {
+      "check": "pnpm test:contracts",
+      "summary": "All contract and focused adversarial tests passed.",
+      "evidence_refs": ["ev-m0-14-contracts-c0973ad"]
+    }
+  ],
+  "work_proof_marker_refs": [
+    "product/plans/oss-v1/evidence/lifecycle/M0-14/c0973ad448dd3d158c19909a0cd30ba4e09580b7/work_proof_marker.json"
+  ],
+  "test_scope": [
+    "scripts/plan.mjs",
+    "scripts/plan.test.mjs",
+    "scripts/promotion-tail.mjs",
+    "scripts/promotion-tail.test.mjs"
+  ],
+  "checks": [
+    { "name": "pnpm plan:check", "status": "pass" },
+    { "name": "pnpm check", "status": "pass" },
+    { "name": "pnpm test:contracts", "status": "pass" },
+    {
+      "name": "pnpm --silent task:compile -- M0-14",
+      "status": "skipped",
+      "reason": "M0-14 was already accepted before this bounded PR repair, so the compiler correctly refuses a new execution packet; the canonical plan and packet inputs are unchanged."
+    }
+  ],
+  "result": "pass",
+  "introduced_failures": [],
+  "pre_existing_failures": [],
+  "independent_validation": {
+    "risk_class": "high",
+    "required_level": "independent_or_human",
+    "provided_levels": ["validation_gate", "adversarial", "review_adequacy"],
+    "status": "satisfied",
+    "evidence_refs": [
+      "ev-m0-14-plan-check-c0973ad",
+      "ev-m0-14-repo-check-c0973ad",
+      "ev-m0-14-contracts-c0973ad"
+    ],
+    "notes": "Independent verification and the required candidate-bound code review report no P0/P1 findings on c0973ad."
+  },
+  "test_first_skipped_reason": {
+    "status": "not_skipped",
+    "reason": "Each current-head review finding was reproduced by a focused failing case before its bounded fix."
+  },
+  "anti_fitting_notes": [
+    "The finding matrix covers every canonical severity and status plus missing and unknown values.",
+    "Task-binding and protected-path tests exercise both valid and adversarial identities and exact schema paths."
+  ],
+  "residual_risks": [
+    "The protected exact-path inventory must be updated when new authority or security-control surfaces are introduced."
+  ],
+  "integrated_validation": {
+    "status": "task_only",
+    "scope_summary": "The full repository passed locally after the one bounded remote-review repair batch.",
+    "integrated_checks": [
+      {
+        "name": "pnpm check",
+        "status": "pass",
+        "work_proof_marker_ref": "product/plans/oss-v1/evidence/lifecycle/M0-14/c0973ad448dd3d158c19909a0cd30ba4e09580b7/work_proof_marker.json"
+      }
+    ],
+    "fresh_checkout": {
+      "required": false,
+      "status": "not_required",
+      "work_proof_marker_refs": [],
+      "notes": "GitHub CI supplies the protected clean-checkout replay."
+    },
+    "docs_schema_parity": {
+      "status": "pass",
+      "evidence_refs": [
+        ".agents/skills/vetryn-promote-task/SKILL.md",
+        "WORKFLOW.md",
+        "docs/adr/0024-close-terminal-review-policy-gaps.md"
+      ]
+    },
+    "release_readiness": {
+      "claimed": false,
+      "status": "not_applicable",
+      "work_proof_marker_refs": [],
+      "notes": "No package release."
+    }
+  },
+  "promotion_decision": "ready_for_pr"
+}

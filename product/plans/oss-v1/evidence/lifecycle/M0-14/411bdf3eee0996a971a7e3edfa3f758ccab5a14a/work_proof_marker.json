@@ -1,0 +1,30 @@
+{
+  "artifactType": "vetryn-work-proof-marker",
+  "schemaVersion": "1.0.0",
+  "taskId": "M0-14",
+  "candidateCommit": "411bdf3eee0996a971a7e3edfa3f758ccab5a14a",
+  "baseCommit": "52225e9ed6a36dbd6cb42a91fae32ba1b8e8d67e",
+  "executor": "implementation-agent",
+  "cleanCandidateVerified": true,
+  "commands": [
+    { "command": "pnpm plan:check", "exitCode": 0, "status": "pass" },
+    { "command": "pnpm check", "exitCode": 0, "status": "pass" },
+    { "command": "pnpm test:contracts", "exitCode": 0, "status": "pass" },
+    {
+      "command": "pnpm exec vitest run scripts/plan.test.mjs scripts/promotion-tail.test.mjs",
+      "exitCode": 0,
+      "status": "pass"
+    }
+  ],
+  "authorized_task_bindings": [
+    {
+      "task_id": "M0-14",
+      "source_revision": "411bdf3eee0996a971a7e3edfa3f758ccab5a14a"
+    }
+  ],
+  "redaction": {
+    "containsRawModelOutput": false,
+    "containsSecrets": false,
+    "rawLogsPersisted": false
+  }
+}

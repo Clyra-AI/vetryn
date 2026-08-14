@@ -1,0 +1,86 @@
+{
+  "artifact_type": "review_report",
+  "schema_version": "0.1",
+  "task_id": "M0-14",
+  "work_item_id": "M0-14",
+  "review_type": "architecture",
+  "review_scope": ["scripts/promotion-tail.mjs", "scripts/promotion-tail.test.mjs"],
+  "reviewer_class": "peer_agent",
+  "reviewer_id": "codex-local:v1_06_code_review",
+  "producer": {
+    "worker": "code-review",
+    "producer_id": "codex-local:v1_06_code_review",
+    "producer_class": "peer_agent"
+  },
+  "current_work": {
+    "validation_run_id": "validation:2026-08-14T16:00:28Z:M0-14",
+    "candidate_digest": "sha256:42d3bf168206ff6ab4039310ae324b34715249634422927169bee3774da8e952",
+    "work_proof_markers": [
+      {
+        "ref": "product/plans/oss-v1/evidence/lifecycle/M0-14/4dc60d359228365841346e0f0eee9759a67fa5d0/work_proof_marker.json",
+        "sha256": "sha256:6e47e8084bd68035ded0993fa7c26997618022ca88071a8a521f7998b980f66a"
+      }
+    ]
+  },
+  "risk_class": "high",
+  "context_isolation": {
+    "allowed_sources": [
+      "task_packet",
+      "candidate_diff",
+      "repo_contracts",
+      "tests",
+      "validation_report"
+    ],
+    "disallowed_sources": ["private_builder_notes", "unpromoted_chat_reasoning"],
+    "builder_notes_authoritative": false
+  },
+  "findings": [
+    {
+      "id": "M0-14-REBIND-1",
+      "severity": "P1",
+      "summary": "Promotion-tail validation previously required generated progress to change during an accepted-to-accepted candidate rebind.",
+      "status": "resolved",
+      "claim_source": "independently_observed",
+      "verification_status": "independently_verified",
+      "location": "scripts/promotion-tail.mjs",
+      "failure_scenario": "A repaired accepted task changes candidate-bound state, ledger, and evidence while its generated rollup remains byte-identical.",
+      "impact": "The mandatory promotion gate blocks a legitimate reviewed repair from shipping.",
+      "minimum_fix": "Require state and ledger mutations, allow progress to be unchanged, and continue fully recomputing it from both commits.",
+      "promotion_effect": "block_until_fixed",
+      "evidence_refs": ["ev-m0-14-contracts-4dc60d3"]
+    }
+  ],
+  "verdict": "approved",
+  "required_fixes": [],
+  "residual_risks": [
+    "Unchanged progress is safe only because the validator still recomputes task, acceptance, next-legal, blocked, and criterion counts."
+  ],
+  "evidence_refs": [
+    "product/plans/oss-v1/evidence/lifecycle/M0-14/4dc60d359228365841346e0f0eee9759a67fa5d0/validation_report.json",
+    "ev-m0-14-repo-check-4dc60d3",
+    "ev-m0-14-contracts-4dc60d3"
+  ],
+  "work_proof_marker_refs": [
+    "product/plans/oss-v1/evidence/lifecycle/M0-14/4dc60d359228365841346e0f0eee9759a67fa5d0/work_proof_marker.json"
+  ],
+  "approval_effect": {
+    "promotion_decision": "ready_for_pr",
+    "approvals_granted": ["architecture_review_passed"],
+    "blocks_promotion": false
+  },
+  "systems_questions": {
+    "state_impact": ["Only M0-14 canonical acceptance is rebound after review."],
+    "source_of_truth_changes": [
+      "Promotion-tail path presence distinguishes required mutable state from a generated rollup whose bytes may remain current."
+    ],
+    "feedback_plan": [
+      "Protected CI and latest-head remote review validate the final DeliveryHead."
+    ],
+    "blast_radius": ["Promotion validation only; no product packages."],
+    "rollback_or_deletion_test": [
+      "The accepted-rebind regression fails if progress semantics drift even when the path remains absent from the diff."
+    ],
+    "system_model_summary": "A promotion rebind must change state and ledger, add exact evidence, and prove the generated rollup remains semantically current whether or not its bytes change."
+  },
+  "created_at": "2026-08-14T16:00:28Z"
+}

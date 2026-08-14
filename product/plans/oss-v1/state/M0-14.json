@@ -2,20 +2,52 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "M0-14",
-  "revision": 0,
-  "state": "planned",
-  "attempt": 0,
-  "candidate": null,
+  "revision": 15,
+  "state": "accepted",
+  "attempt": 1,
+  "candidate": {
+    "baseCommit": "be81357d3979f83f7f1d54a6819e7a524b788db8",
+    "commit": "919a1292bb56449988a8519acc94ae357a19b4e7",
+    "executor": "implementation-agent"
+  },
   "criteria": [
-    { "criterionId": "PROCESS-015", "status": "pending", "evidenceRefs": [] },
-    { "criterionId": "PROCESS-017", "status": "pending", "evidenceRefs": [] },
-    { "criterionId": "PROCESS-018", "status": "pending", "evidenceRefs": [] },
-    { "criterionId": "PROCESS-019", "status": "pending", "evidenceRefs": [] }
+    {
+      "criterionId": "PROCESS-015",
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-14-contracts-919a129"]
+    },
+    {
+      "criterionId": "PROCESS-017",
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-14-plan-check-919a129"]
+    },
+    {
+      "criterionId": "PROCESS-018",
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-14-contracts-919a129"]
+    },
+    {
+      "criterionId": "PROCESS-019",
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-14-plan-check-919a129"]
+    }
   ],
   "gates": [
-    { "gateId": "QG-PLAN-CHECK", "status": "pending", "evidenceRefs": [] },
-    { "gateId": "QG-REPO-CHECK", "status": "pending", "evidenceRefs": [] },
-    { "gateId": "QG-CONTRACTS", "status": "pending", "evidenceRefs": [] },
+    {
+      "gateId": "QG-PLAN-CHECK",
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-14-plan-check-919a129"]
+    },
+    {
+      "gateId": "QG-REPO-CHECK",
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-14-repo-check-919a129"]
+    },
+    {
+      "gateId": "QG-CONTRACTS",
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-14-contracts-919a129"]
+    },
     { "gateId": "QG-INDEPENDENT-VERIFY", "status": "pending", "evidenceRefs": [] }
   ],
   "reviews": [{ "role": "maintainer", "status": "pending", "evidenceRefs": [] }],
@@ -27,6 +59,111 @@
       "at": "2026-08-14T14:00:00Z",
       "actor": "planning-agent",
       "reason": "Created one narrow corrective task for the two terminal M0-13 P1 findings without reopening its repair generation."
+    },
+    {
+      "from": "planned",
+      "to": "accepted",
+      "at": "2026-08-14T15:21:02Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer accepted the exact process-only ProductCandidate after all active command gates, independent verification, and candidate-bound high-risk code review passed."
+    },
+    {
+      "from": "accepted",
+      "to": "accepted",
+      "at": "2026-08-14T15:50:59Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer rebound acceptance to the exact current-head repair ProductCandidate after all active commands, independent verification, and candidate-bound high-risk code review passed."
+    },
+    {
+      "from": "accepted",
+      "to": "accepted",
+      "at": "2026-08-14T16:00:28Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer rebound acceptance to the exact final ProductCandidate after the accepted-rebind promotion gate, all active commands, independent verification, and candidate-bound code review passed."
+    },
+    {
+      "from": "accepted",
+      "to": "accepted",
+      "at": "2026-08-14T16:18:59Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer rebound acceptance to the exact terminal-review ProductCandidate after all active commands, independent verification, and candidate-bound code review passed."
+    },
+    {
+      "from": "accepted",
+      "to": "accepted",
+      "at": "2026-08-14T16:33:46Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer rebound acceptance to the exact final policy-repair ProductCandidate after all active commands, independent verification, and candidate-bound code review passed."
+    },
+    {
+      "from": "accepted",
+      "to": "accepted",
+      "at": "2026-08-14T16:56:54Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer rebound acceptance to the exact final provenance-repair ProductCandidate after all active commands, independent verification, and candidate-bound code review passed."
+    },
+    {
+      "from": "accepted",
+      "to": "accepted",
+      "at": "2026-08-14T17:20:42Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer rebound acceptance to the exact terminal current-head ProductCandidate after all active commands, independent verification, and candidate-bound code review passed."
+    },
+    {
+      "from": "accepted",
+      "to": "accepted",
+      "at": "2026-08-14T17:37:12Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer rebound acceptance to the exact final current-head ProductCandidate after all active commands, independent verification, and candidate-bound code review passed."
+    },
+    {
+      "from": "accepted",
+      "to": "accepted",
+      "at": "2026-08-14T18:10:34Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer rebound acceptance to the exact strict-base ProductCandidate after all active commands, independent verification, and candidate-bound code review passed."
+    },
+    {
+      "from": "accepted",
+      "to": "accepted",
+      "at": "2026-08-14T18:23:26Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer rebound acceptance to the exact CI-headroom ProductCandidate after all active commands, independent verification, and candidate-bound code review passed."
+    },
+    {
+      "from": "accepted",
+      "to": "accepted",
+      "at": "2026-08-14T18:37:48Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer rebound acceptance to the exact input-normalization ProductCandidate after all active commands, independent verification, and candidate-bound code review passed."
+    },
+    {
+      "from": "accepted",
+      "to": "accepted",
+      "at": "2026-08-14T18:46:51Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer rebound acceptance to the exact canonical-input ProductCandidate after all active commands, independent verification, and candidate-bound code review passed."
+    },
+    {
+      "from": "accepted",
+      "to": "accepted",
+      "at": "2026-08-14T19:00:32Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer rebound acceptance to the exact terminal-evidence ProductCandidate after all active commands, independent verification, and candidate-bound code review passed."
+    },
+    {
+      "from": "accepted",
+      "to": "accepted",
+      "at": "2026-08-14T19:12:13Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer rebound acceptance to the exact credential-reference ProductCandidate after all active commands and candidate-bound review passed."
+    },
+    {
+      "from": "accepted",
+      "to": "accepted",
+      "at": "2026-08-14T19:24:12Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer rebound acceptance to the exact strict-ledger ProductCandidate after all active commands and candidate-bound review passed."
     }
   ]
 }

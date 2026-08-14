@@ -1,0 +1,91 @@
+{
+  "artifact_type": "review_report",
+  "schema_version": "0.1",
+  "task_id": "M0-14",
+  "work_item_id": "M0-14",
+  "review_type": "architecture",
+  "review_scope": [
+    "scripts/plan.mjs",
+    "scripts/plan.test.mjs",
+    "scripts/promotion-tail.mjs",
+    "scripts/promotion-tail.test.mjs"
+  ],
+  "reviewer_class": "peer_agent",
+  "reviewer_id": "codex-local:v1_06_code_review",
+  "producer": {
+    "worker": "code-review",
+    "producer_id": "codex-local:v1_06_code_review",
+    "producer_class": "peer_agent"
+  },
+  "current_work": {
+    "validation_run_id": "validation:2026-08-14T18:46:51Z:M0-14",
+    "candidate_digest": "sha256:ae66072414180f6d607812eedc2bb7c500815fd47c6926405735c3b09dddb1c6",
+    "work_proof_markers": [
+      {
+        "ref": "product/plans/oss-v1/evidence/lifecycle/M0-14/411bdf3eee0996a971a7e3edfa3f758ccab5a14a/work_proof_marker.json",
+        "sha256": "sha256:3a0afc0fd90d5c66a3b9f7f4e8d007febf20fab39cb181dc6b8d13076fd2f368"
+      }
+    ]
+  },
+  "risk_class": "high",
+  "context_isolation": {
+    "allowed_sources": [
+      "task_packet",
+      "candidate_diff",
+      "repo_contracts",
+      "tests",
+      "validation_report"
+    ],
+    "disallowed_sources": ["private_builder_notes", "unpromoted_chat_reasoning"],
+    "builder_notes_authoritative": false
+  },
+  "findings": [
+    {
+      "id": "M0-14-CURRENT-13",
+      "severity": "P1",
+      "summary": "Factory-style work-proof base references were not normalized.",
+      "status": "resolved",
+      "claim_source": "independently_observed",
+      "verification_status": "independently_verified",
+      "location": "scripts/promotion-tail.mjs",
+      "failure_scenario": "A valid Factory marker declares workspace_proof.base_ref instead of baseCommit.",
+      "impact": "A canonical Factory lifecycle marker could not pass the deterministic promotion tail.",
+      "minimum_fix": "Normalize both supported base fields, reject conflicts, and retain strict ancestry and state anchoring.",
+      "promotion_effect": "block_until_fixed",
+      "evidence_refs": ["ev-m0-14-contracts-411bdf3"]
+    },
+    {
+      "id": "M0-14-CURRENT-14",
+      "severity": "P1",
+      "summary": "The canonical plan schema was missing from protected policy inventory.",
+      "status": "resolved",
+      "claim_source": "independently_observed",
+      "verification_status": "independently_verified",
+      "location": "scripts/plan.mjs",
+      "failure_scenario": "A future low-risk task names product/plans/schemas/plan.schema.json exactly.",
+      "impact": "The task could weaken plan validation without receiving high-risk review.",
+      "minimum_fix": "Protect the exact schema path and cover it with the inventory regression table.",
+      "promotion_effect": "block_until_fixed",
+      "evidence_refs": ["ev-m0-14-plan-check-411bdf3"]
+    }
+  ],
+  "verdict": "approved",
+  "required_fixes": [],
+  "residual_risks": [
+    "The repo-local installed Factory bootstrap remains unavailable on this historical branch base."
+  ],
+  "evidence_refs": [
+    "product/plans/oss-v1/evidence/lifecycle/M0-14/411bdf3eee0996a971a7e3edfa3f758ccab5a14a/validation_report.json",
+    "ev-m0-14-repo-check-411bdf3",
+    "ev-m0-14-contracts-411bdf3"
+  ],
+  "work_proof_marker_refs": [
+    "product/plans/oss-v1/evidence/lifecycle/M0-14/411bdf3eee0996a971a7e3edfa3f758ccab5a14a/work_proof_marker.json"
+  ],
+  "approval_effect": {
+    "promotion_decision": "ready_for_pr",
+    "approvals_granted": ["architecture_review_passed"],
+    "blocks_promotion": false
+  },
+  "created_at": "2026-08-14T18:46:51Z"
+}

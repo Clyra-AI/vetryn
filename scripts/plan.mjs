@@ -12,6 +12,134 @@ const root = path.resolve(
   process.env.VETRYN_PLAN_REPO_ROOT ?? path.resolve(import.meta.dirname, ".."),
 );
 const planRoot = path.join(root, "product/plans/oss-v1");
+const highRiskPolicyDomains = new Set([
+  "approval",
+  "authorization",
+  "credentials",
+  "delivery-policy",
+  "evidence",
+  "evidence-integrity",
+  "evidence-inheritance",
+  "persistence",
+  "release",
+  "release-policy",
+  "security",
+  "security-controls",
+]);
+const legacyRiskPolicyTaskIds = new Set([
+  "M0-00",
+  "V1-00",
+  "M0-01",
+  "V1-01",
+  "M0-02",
+  "M0-03",
+  "M0-04",
+  "M0-05",
+  "M0-06",
+  "M0-07",
+  "M0-08",
+  "M0-09",
+  "M0-10",
+  "M0-11",
+  "M0-12",
+  "V1-02",
+  "V1-03",
+  "V1-04",
+  "V1-05",
+  "V1-06",
+]);
+const highRiskPolicyPaths = new Set([
+  ".agents/skills/vetryn-promote-task/SKILL.md",
+  ".agents/skills/vetryn-trust-review/SKILL.md",
+  ".agents/skills/vetryn-verify-task/SKILL.md",
+  ".changeset/config.json",
+  ".factory/profile.yaml",
+  ".github/CODEOWNERS",
+  ".github/workflows/ci.yml",
+  ".github/workflows/codeql.yml",
+  ".github/workflows/dependency-review.yml",
+  ".github/workflows/scorecard.yml",
+  "AGENTS.md",
+  "CODEOWNERS",
+  "MAINTAINERS.md",
+  "WORKFLOW.md",
+  "action.yml",
+  "docs/adr/0009-single-maintainer-v1-delivery.md",
+  "package.json",
+  "packages/cli/src/evaluation-files.ts",
+  "packages/cli/src/evidence-store.ts",
+  "packages/core/src/contracts.ts",
+  "packages/openrouter/src/evaluation.ts",
+  "packages/openrouter/src/live-refresh.ts",
+  "pnpm-lock.yaml",
+  "product/plans/oss-v1/acceptance-ledger.json",
+  "product/plans/oss-v1/evidence/example.json",
+  "product/plans/oss-v1/plan.json",
+  "product/plans/schemas/acceptance-ledger.schema.json",
+  "product/plans/schemas/evidence.schema.json",
+  "product/plans/schemas/plan.schema.json",
+  "product/plans/schemas/semantic-risk-report-v0.1.schema.json",
+  "product/plans/schemas/semantic-risk-report-v0.2.schema.json",
+  "product/plans/schemas/task-packet.schema.json",
+  "product/plans/schemas/task-state.schema.json",
+  "scripts/plan.mjs",
+  "scripts/github-review-auth.mjs",
+  "scripts/git-checkout-auth.mjs",
+  "scripts/promotion-tail.mjs",
+  "scripts/semantic-risk.mjs",
+  "scripts/task.mjs",
+]);
+const unsupportedScopeGlobSyntax = /[[\]{}()!+@\\]/u;
+
+function assertSupportedScopeGlobs(task) {
+  for (const pattern of [
+    ...task.scope.allowedPaths,
+    ...task.scope.forbiddenPaths,
+    ...task.deliverables,
+  ]) {
+    assert(
+      !unsupportedScopeGlobSyntax.test(pattern),
+      `${task.id} uses unsupported scope glob syntax: ${pattern}`,
+    );
+    assert(
+      !pattern.split("/").some((segment) => segment === "." || segment === ".."),
+      `${task.id} uses non-canonical scope path: ${pattern}`,
+    );
+  }
+}
+
+function scopePatternCoversPath(pattern, relativePath) {
+  let expression = "";
+  for (let index = 0; index < pattern.length; index += 1) {
+    const character = pattern[index];
+    if (character === "*" && pattern[index + 1] === "*") {
+      if (pattern[index + 2] === "/") {
+        expression += "(?:.*/)?";
+        index += 2;
+      } else {
+        expression += ".*";
+        index += 1;
+      }
+    } else if (character === "*") expression += "[^/]*";
+    else if (character === "?") expression += "[^/]";
+    else expression += "\\^$+.()|{}[]".includes(character) ? `\\${character}` : character;
+  }
+  return new RegExp(`^${expression}$`, "u").test(relativePath);
+}
+
+function declaresHighRiskPolicyChange(task) {
+  const paths = [...task.scope.allowedPaths, ...task.deliverables];
+  return (
+    task.risk.domains.some((domain) => highRiskPolicyDomains.has(domain)) ||
+    paths.some(
+      (candidate) =>
+        candidate.includes("vetryn-promote-task") ||
+        [...highRiskPolicyPaths].some((protectedPath) =>
+          scopePatternCoversPath(candidate, protectedPath),
+        ),
+    )
+  );
+}
 
 async function readJson(relativePath) {
   return JSON.parse(await readFile(path.join(root, relativePath), "utf8"));
@@ -285,6 +413,7 @@ async function main() {
   );
 
   for (const task of plan.tasks) {
+    assertSupportedScopeGlobs(task);
     for (const dependency of task.dependsOn)
       assert(
         taskSet.has(dependency.taskId),
@@ -328,6 +457,14 @@ async function main() {
       .filter(({ document }) => document.state === "accepted")
       .map(({ document }) => document.taskId),
   );
+  for (const task of plan.tasks) {
+    const changesHighRiskPolicy = declaresHighRiskPolicyChange(task);
+    if (!legacyRiskPolicyTaskIds.has(task.id) && changesHighRiskPolicy)
+      assert(
+        task.risk.level === "high",
+        `${task.id} changes approval, evidence, persistence, credential, security, or release policy and must be high risk until accepted`,
+      );
+  }
   assertUnique(stateTaskIds, "task-state task IDs");
   for (const { file, document: state } of stateFiles) {
     assert(file === `${state.taskId}.json`, `${file} does not match task ID ${state.taskId}`);

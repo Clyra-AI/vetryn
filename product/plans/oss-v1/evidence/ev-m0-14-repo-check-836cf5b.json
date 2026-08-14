@@ -1,0 +1,35 @@
+{
+  "$schema": "../../schemas/evidence.schema.json",
+  "schemaVersion": "1.0.0",
+  "id": "ev-m0-14-repo-check-836cf5b",
+  "taskId": "M0-14",
+  "type": "command-run",
+  "actor": "validation-gate",
+  "commit": "836cf5b24c28e9c51162b0d12775224203f3f178",
+  "createdAt": "2026-08-14T18:10:34Z",
+  "result": {
+    "status": "pass",
+    "checks": [
+      {
+        "name": "pnpm check",
+        "status": "pass",
+        "summary": "Formatting, plan validation, lint, dead-code analysis, types, all 332 tests, builds, and package checks passed."
+      }
+    ]
+  },
+  "inputs": {
+    "planDigest": "sha256:b334019e8095cb79e226c82a7ccfcd4f46a2e002e27aa52766780b961f6d5e44",
+    "lockfileDigest": "sha256:0d73c2bc837d2f12314c6fb3b2f28c4389a3887a5fdda7b6898913b2b20c91d9"
+  },
+  "gateBinding": {
+    "gateId": "QG-REPO-CHECK",
+    "kind": "command",
+    "command": "pnpm check"
+  },
+  "review": null,
+  "redaction": {
+    "status": "not_applicable",
+    "containsRawModelOutput": false,
+    "containsSecrets": false
+  }
+}

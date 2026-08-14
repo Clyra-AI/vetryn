@@ -1,0 +1,104 @@
+{
+  "work_item_id": "M0-14",
+  "task_id": "M0-14",
+  "profile_ref": "profiles/vetryn.yaml",
+  "semantic_risk_report_ref": ".factory/artifacts/task-runs/M0-14/semantic-risk-report.json",
+  "semantic_risk_report_sha256": "sha256:1ddf145f0896dd122f1b60dc224cb6ce0473d238c53b3cef1548f7cea30fd329",
+  "validation_contract_ref": "product/plans/oss-v1/plan.json#M0-14",
+  "test_intent": [
+    {
+      "behavior": "Close dot-segment scope aliases and credential-bearing lifecycle fields without broader policy changes.",
+      "expected_signal": "Both inputs fail closed under focused and full repository gates."
+    }
+  ],
+  "red_evidence": [
+    {
+      "check": "current-head Codex review",
+      "summary": "The two delayed P1 inputs and compound credential aliases were reproduced before repair."
+    }
+  ],
+  "green_evidence": [
+    {
+      "check": "pnpm check",
+      "summary": "The complete repository gate passed with 341 tests.",
+      "evidence_refs": ["ev-m0-14-repo-check-ee3bf20"]
+    },
+    {
+      "check": "pnpm test:contracts",
+      "summary": "All contract tests passed on the exact ProductCandidate.",
+      "evidence_refs": ["ev-m0-14-contracts-ee3bf20"]
+    }
+  ],
+  "work_proof_marker_refs": [
+    "product/plans/oss-v1/evidence/lifecycle/M0-14/ee3bf20fd1af15eac6fdfae16c04c23332190e07/work_proof_marker.json"
+  ],
+  "test_scope": [
+    "scripts/plan.mjs",
+    "scripts/plan.test.mjs",
+    "scripts/promotion-tail.mjs",
+    "scripts/promotion-tail.test.mjs"
+  ],
+  "checks": [
+    { "name": "pnpm plan:check", "status": "pass" },
+    { "name": "pnpm check", "status": "pass" },
+    { "name": "pnpm test:contracts", "status": "pass" },
+    {
+      "name": "pnpm --silent task:compile -- M0-14",
+      "status": "skipped",
+      "reason": "M0-14 is accepted and correctly has no new execution packet."
+    }
+  ],
+  "result": "pass",
+  "introduced_failures": [],
+  "pre_existing_failures": [],
+  "independent_validation": {
+    "risk_class": "high",
+    "required_level": "independent_or_human",
+    "provided_levels": ["validation_gate", "adversarial", "review_adequacy"],
+    "status": "satisfied",
+    "evidence_refs": [
+      "ev-m0-14-plan-check-ee3bf20",
+      "ev-m0-14-repo-check-ee3bf20",
+      "ev-m0-14-contracts-ee3bf20"
+    ],
+    "notes": "Two independent exact-candidate reviews reported no P0/P1 findings."
+  },
+  "test_first_skipped_reason": {
+    "status": "not_skipped",
+    "reason": "Six adversarial cases failed before the bounded repair."
+  },
+  "anti_fitting_notes": [
+    "Dot segments are rejected across all three scope collections; normalized compound credential aliases are covered."
+  ],
+  "residual_risks": [
+    "The repo-local installed Factory bootstrap remains unavailable on this historical branch base."
+  ],
+  "integrated_validation": {
+    "status": "task_only",
+    "scope_summary": "The full repository passed after the bounded current-head correction.",
+    "integrated_checks": [
+      {
+        "name": "pnpm check",
+        "status": "pass",
+        "work_proof_marker_ref": "product/plans/oss-v1/evidence/lifecycle/M0-14/ee3bf20fd1af15eac6fdfae16c04c23332190e07/work_proof_marker.json"
+      }
+    ],
+    "fresh_checkout": {
+      "required": false,
+      "status": "not_required",
+      "work_proof_marker_refs": [],
+      "notes": "Protected GitHub CI supplies the clean-checkout replay."
+    },
+    "docs_schema_parity": {
+      "status": "pass",
+      "evidence_refs": [".agents/skills/vetryn-promote-task/SKILL.md", "WORKFLOW.md"]
+    },
+    "release_readiness": {
+      "claimed": false,
+      "status": "not_applicable",
+      "work_proof_marker_refs": [],
+      "notes": "No package release."
+    }
+  },
+  "promotion_decision": "ready_for_pr"
+}

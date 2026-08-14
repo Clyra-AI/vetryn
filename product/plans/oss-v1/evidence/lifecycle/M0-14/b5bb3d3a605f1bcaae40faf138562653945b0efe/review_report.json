@@ -1,0 +1,65 @@
+{
+  "artifact_type": "review_report",
+  "schema_version": "0.1",
+  "task_id": "M0-14",
+  "work_item_id": "M0-14",
+  "review_type": "architecture",
+  "review_scope": ["scripts/task.test.mjs"],
+  "reviewer_class": "peer_agent",
+  "reviewer_id": "codex-local:v1_06_code_review",
+  "producer": {
+    "worker": "code-review",
+    "producer_id": "codex-local:v1_06_code_review",
+    "producer_class": "peer_agent"
+  },
+  "current_work": {
+    "validation_run_id": "validation:2026-08-14T18:23:26Z:M0-14",
+    "candidate_digest": "sha256:2c4801ced48cad686a63dd0c4b88eca3e6b966c13e58cd625073691b05a77b5e",
+    "work_proof_markers": [
+      {
+        "ref": "product/plans/oss-v1/evidence/lifecycle/M0-14/b5bb3d3a605f1bcaae40faf138562653945b0efe/work_proof_marker.json",
+        "sha256": "sha256:03104547d523d5358ec4c08af642f3f7593998107b44f4d03dd2574c765d9716"
+      }
+    ]
+  },
+  "risk_class": "high",
+  "context_isolation": {
+    "allowed_sources": [
+      "task_packet",
+      "candidate_diff",
+      "repo_contracts",
+      "tests",
+      "validation_report"
+    ],
+    "disallowed_sources": ["private_builder_notes", "unpromoted_chat_reasoning"],
+    "builder_notes_authoritative": false
+  },
+  "findings": [],
+  "verdict": "approved",
+  "required_fixes": [],
+  "residual_risks": [
+    "The longer test remains bounded at 90 seconds and retains all prior assertions."
+  ],
+  "evidence_refs": [
+    "product/plans/oss-v1/evidence/lifecycle/M0-14/b5bb3d3a605f1bcaae40faf138562653945b0efe/validation_report.json",
+    "ev-m0-14-repo-check-b5bb3d3",
+    "ev-m0-14-contracts-b5bb3d3"
+  ],
+  "work_proof_marker_refs": [
+    "product/plans/oss-v1/evidence/lifecycle/M0-14/b5bb3d3a605f1bcaae40faf138562653945b0efe/work_proof_marker.json"
+  ],
+  "approval_effect": {
+    "promotion_decision": "ready_for_pr",
+    "approvals_granted": ["architecture_review_passed"],
+    "blocks_promotion": false
+  },
+  "systems_questions": {
+    "state_impact": ["Only M0-14 canonical acceptance is rebound after review."],
+    "source_of_truth_changes": ["None; this is a test-only timeout adjustment."],
+    "feedback_plan": ["Protected CI validates the final DeliveryHead."],
+    "blast_radius": ["One existing V1-05 fixture timeout; no product code."],
+    "rollback_or_deletion_test": ["The original assertions remain unchanged."],
+    "system_model_summary": "The bounded timeout increase absorbs runner contention without hiding unbounded execution."
+  },
+  "created_at": "2026-08-14T18:23:26Z"
+}
