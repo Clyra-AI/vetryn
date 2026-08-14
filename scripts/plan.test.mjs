@@ -905,10 +905,12 @@ describe("implementation plan validator", () => {
     });
     expect(task.scope.allowedPaths).toEqual(
       expect.arrayContaining([
+        ".factory/profile.yaml",
         "packages/cli/**",
         "packages/openrouter/**",
         "docs/adr/0023-close-late-review-trust-and-delivery-gaps.md",
         "docs/oss-v1.md",
+        "scripts/continue-next-skill.test.mjs",
         "scripts/promotion-tail.mjs",
       ]),
     );

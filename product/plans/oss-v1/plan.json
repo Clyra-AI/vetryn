@@ -1086,6 +1086,7 @@
           ".agents/skills/vetryn-continue-next/**",
           ".agents/skills/vetryn-promote-task/**",
           ".changeset/**",
+          ".factory/profile.yaml",
           "AGENTS.md",
           "CHANGELOG.md",
           "WORKFLOW.md",
@@ -1099,6 +1100,7 @@
           "product/plans/oss-v1/**",
           "scripts/plan.mjs",
           "scripts/plan.test.mjs",
+          "scripts/continue-next-skill.test.mjs",
           "scripts/promotion-tail.mjs",
           "scripts/promotion-tail.test.mjs",
           "scripts/task.test.mjs"
@@ -1126,6 +1128,7 @@
         ".agents/skills/vetryn-continue-next/**",
         ".agents/skills/vetryn-promote-task/**",
         ".changeset/**",
+        ".factory/profile.yaml",
         "AGENTS.md",
         "CHANGELOG.md",
         "WORKFLOW.md",
@@ -1136,6 +1139,7 @@
         "package.json",
         "packages/cli/**",
         "packages/openrouter/**",
+        "scripts/continue-next-skill.test.mjs",
         "scripts/plan.mjs",
         "scripts/promotion-tail.mjs"
       ],
