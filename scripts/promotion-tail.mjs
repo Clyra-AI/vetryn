@@ -218,9 +218,11 @@ function normalizedLifecycleKey(key) {
 }
 
 function isCredentialLifecycleKey(key) {
+  if (key.endsWith("ref") || key.endsWith("refs")) return false;
   return (
     key.includes("authorization") ||
     key.includes("credential") ||
+    key.endsWith("key") ||
     key.endsWith("apikey") ||
     key.endsWith("password") ||
     key.endsWith("secret") ||

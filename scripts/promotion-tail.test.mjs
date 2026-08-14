@@ -656,6 +656,7 @@ describe("promotion-tail validator", () => {
     ["a token", (artifact) => (artifact.token = "private"), "credential field"],
     ["an access token", (artifact) => (artifact.accessToken = "private"), "credential field"],
     ["a client secret", (artifact) => (artifact.clientSecret = "private"), "credential field"],
+    ["a private key", (artifact) => (artifact.privateKey = "private"), "credential field"],
     ["a provider API key", (artifact) => (artifact.openai_api_key = "private"), "credential field"],
   ])("rejects lifecycle evidence with %s", async (_name, mutate, message) => {
     const fixture = await createFixture();
@@ -668,6 +669,18 @@ describe("promotion-tail validator", () => {
     const result = run(fixture.root, fixture.candidate, delivery);
     expect(result.status).toBe(1);
     expect(result.stderr).toContain(message);
+  });
+
+  it("allows credential-related reference metadata", async () => {
+    const fixture = await createFixture();
+    const relativePath = `${fixture.planRoot}/evidence/lifecycle/${taskId}/${fixture.candidate}/validation_report.json`;
+    const delivery = await amend(fixture.root, async () => {
+      const artifact = await readJson(fixture.root, relativePath);
+      artifact.authorizationRef = "github-review-auth.json";
+      await writeJson(fixture.root, relativePath, artifact);
+    });
+    const result = run(fixture.root, fixture.candidate, delivery);
+    expect(result.status, result.stderr).toBe(0);
   });
 
   it.each([
