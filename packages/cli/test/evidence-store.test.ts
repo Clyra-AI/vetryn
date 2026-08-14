@@ -25,6 +25,14 @@ const refreshSuccess = {
   sourceRef: "openrouter-models-api",
   status: "success",
 } as const;
+const refreshFailure = {
+  ...refreshSuccess,
+  contentDigest: null,
+  errorCode: "fetch-failed",
+  id: "refresh-failure",
+  snapshotId: null,
+  status: "failure",
+} as const;
 const lineage = {
   attempts: [{ observation: refreshSuccess, ordinal: 1 }],
   invocationId: "invocation-one",
@@ -230,25 +238,17 @@ describe("authenticated execution receipt store", () => {
 
   it("rejects success followed by failure, omitted attempts, and lineage gaps", async () => {
     const fixtureState = await fixture();
-    const failure = {
-      ...refreshSuccess,
-      contentDigest: null,
-      errorCode: "fetch-failed",
-      id: "refresh-failure",
-      snapshotId: null,
-      status: "failure",
-    } as const;
     const invalidLineages = [
       {
         ...lineage,
-        attempts: [...lineage.attempts, { observation: failure, ordinal: 2 }],
+        attempts: [...lineage.attempts, { observation: refreshFailure, ordinal: 2 }],
         terminalOrdinal: 2,
       },
       { ...lineage, attempts: [{ observation: refreshSuccess, ordinal: 2 }] },
       {
         ...lineage,
         attempts: [
-          { observation: failure, ordinal: 1 },
+          { observation: refreshFailure, ordinal: 1 },
           { observation: refreshSuccess, ordinal: 3 },
         ],
         terminalOrdinal: 3,
@@ -262,5 +262,72 @@ describe("authenticated execution receipt store", () => {
         }),
       ).rejects.toThrow();
     }
+  });
+
+  it("authenticates later refresh failure and detects omission, deletion, rollback, and forks", async () => {
+    const fixtureState = await fixture();
+    const first = await fixtureState.store.append(record, {
+      catalogRefreshLineage: lineage,
+      trustEpochId: "epoch-one",
+    });
+    const headPath = path.join(fixtureState.evidencePath, "head.json");
+    const oldHead = await readFile(headPath, "utf8");
+    const oldAnchor = await readFile(fixtureState.anchorPath, "utf8");
+
+    const failure = await fixtureState.store.appendCatalogRefreshAttempt(refreshFailure, {
+      invocationId: "invocation-two",
+      ordinal: 1,
+      trustEpochId: "epoch-one",
+    });
+    const failureHead = await readFile(headPath, "utf8");
+    const failureAnchor = await readFile(fixtureState.anchorPath, "utf8");
+    const failurePath = path.join(
+      fixtureState.evidencePath,
+      "receipts",
+      `${failure.headDigest.slice("sha256:".length)}.json`,
+    );
+    const failureEntry = await readFile(failurePath, "utf8");
+
+    await expect(fixtureState.store.verify(first.executionRecordId)).resolves.toMatchObject({
+      actionable: false,
+      reason: "catalog-refresh-not-current",
+    });
+    await expect(
+      fixtureState.store.append(
+        { ...record, id: "execution-record:omitted-refresh-failure" },
+        { catalogRefreshLineage: lineage, trustEpochId: "epoch-one" },
+      ),
+    ).rejects.toThrow(/roll back|omits/i);
+
+    await unlink(failurePath);
+    await expect(fixtureState.store.verify(first.executionRecordId)).resolves.toMatchObject({
+      actionable: false,
+      reason: "invalid-chain",
+    });
+    await writeFile(failurePath, failureEntry);
+
+    await writeFile(headPath, oldHead);
+    await expect(fixtureState.store.verify(first.executionRecordId)).resolves.toMatchObject({
+      actionable: false,
+      reason: "anchor-head-mismatch",
+    });
+
+    await writeFile(fixtureState.anchorPath, oldAnchor);
+    await fixtureState.store.appendCatalogRefreshAttempt(
+      { ...refreshFailure, id: "refresh-fork" },
+      { invocationId: "invocation-two", ordinal: 1, trustEpochId: "epoch-one" },
+    );
+    await writeFile(fixtureState.anchorPath, failureAnchor);
+    await expect(fixtureState.store.verify(first.executionRecordId)).resolves.toMatchObject({
+      actionable: false,
+      reason: "anchor-head-mismatch",
+    });
+
+    await writeFile(headPath, failureHead);
+    await writeFile(fixtureState.anchorPath, failureAnchor);
+    await expect(fixtureState.store.verify(first.executionRecordId)).resolves.toMatchObject({
+      actionable: false,
+      reason: "catalog-refresh-not-current",
+    });
   });
 });

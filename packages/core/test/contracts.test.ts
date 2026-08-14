@@ -8,7 +8,7 @@ import {
   assertCandidateRunPolicy,
   assertEvaluationInputDigest,
   assertPatchPlanEvidence,
-  assertRecommendationEvidence,
+  assertRecommendationArtifactConsistency,
   canonicalizeArtifact,
   candidateRunSchema,
   catalogSnapshotSchema,
@@ -500,7 +500,7 @@ describe("V1 artifact contracts", () => {
     const parsedRecommendation = parseRecommendation(recommendation);
 
     expect(() =>
-      assertRecommendationEvidence(
+      assertRecommendationArtifactConsistency(
         parsedRecommendation,
         [parsedRun, parsedRun],
         candidateRun.evaluationInputDigest,
@@ -511,7 +511,7 @@ describe("V1 artifact contracts", () => {
     ).toThrow(/duplicate candidate run ID/i);
 
     expect(() =>
-      assertRecommendationEvidence(
+      assertRecommendationArtifactConsistency(
         parsedRecommendation,
         [incompleteRun],
         candidateRun.evaluationInputDigest,
@@ -534,7 +534,7 @@ describe("V1 artifact contracts", () => {
       },
     });
     expect(() =>
-      assertRecommendationEvidence(
+      assertRecommendationArtifactConsistency(
         parsedRecommendation,
         [variableQualityRun],
         candidateRun.evaluationInputDigest,
@@ -544,7 +544,7 @@ describe("V1 artifact contracts", () => {
       ),
     ).toThrow(/evidence-bound quality lower bound/i);
     expect(
-      assertRecommendationEvidence(
+      assertRecommendationArtifactConsistency(
         parseRecommendation({ ...recommendation, confidence: 0.98 }),
         [variableQualityRun],
         candidateRun.evaluationInputDigest,
@@ -576,7 +576,7 @@ describe("V1 artifact contracts", () => {
       },
     });
     expect(
-      assertRecommendationEvidence(
+      assertRecommendationArtifactConsistency(
         parseRecommendation({ ...recommendation, confidence: 0.1, confidenceFloor: 0.1 }),
         [boundaryRun],
         candidateRun.evaluationInputDigest,
@@ -587,7 +587,7 @@ describe("V1 artifact contracts", () => {
     ).toMatchObject({ confidence: 0.1 });
 
     expect(() =>
-      assertRecommendationEvidence(
+      assertRecommendationArtifactConsistency(
         parsedRecommendation,
         [candidateRunWith({ callSiteId: "other-call-site" })],
         candidateRun.evaluationInputDigest,
@@ -597,7 +597,7 @@ describe("V1 artifact contracts", () => {
       ),
     ).toThrow(/call site/i);
     expect(() =>
-      assertRecommendationEvidence(
+      assertRecommendationArtifactConsistency(
         parsedRecommendation,
         [candidateRunWith({ baselineModel: "openai/gpt-4.1-mini" })],
         candidateRun.evaluationInputDigest,
@@ -607,7 +607,7 @@ describe("V1 artifact contracts", () => {
       ),
     ).toThrow(/baseline model/i);
     expect(() =>
-      assertRecommendationEvidence(
+      assertRecommendationArtifactConsistency(
         parsedRecommendation,
         [candidateRunWith({ catalogSnapshotId: "catalog-snapshot:other-catalog" })],
         candidateRun.evaluationInputDigest,
@@ -617,7 +617,7 @@ describe("V1 artifact contracts", () => {
       ),
     ).toThrow(/catalog snapshot/i);
     expect(() =>
-      assertRecommendationEvidence(
+      assertRecommendationArtifactConsistency(
         parsedRecommendation,
         [
           candidateRunWith({
@@ -642,7 +642,7 @@ describe("V1 artifact contracts", () => {
       ),
     ).toThrow(/recommended model/i);
     expect(() =>
-      assertRecommendationEvidence(
+      assertRecommendationArtifactConsistency(
         parsedRecommendation,
         [candidateRunWith({ confidenceFloor: 0.7 })],
         candidateRun.evaluationInputDigest,
@@ -652,7 +652,7 @@ describe("V1 artifact contracts", () => {
       ),
     ).toThrow(/confidence floor/i);
     expect(() =>
-      assertRecommendationEvidence(
+      assertRecommendationArtifactConsistency(
         parsedRecommendation,
         [
           candidateRunWith({
@@ -679,7 +679,7 @@ describe("V1 artifact contracts", () => {
       status: "no-change",
     });
     expect(() =>
-      assertRecommendationEvidence(
+      assertRecommendationArtifactConsistency(
         abstention,
         [candidateRunWith({ callSiteId: "other-call-site" })],
         candidateRun.evaluationInputDigest,
@@ -690,7 +690,7 @@ describe("V1 artifact contracts", () => {
     ).toThrow(/call site/i);
 
     expect(() =>
-      assertRecommendationEvidence(
+      assertRecommendationArtifactConsistency(
         parsedRecommendation,
         [
           candidateRunWith({
@@ -708,7 +708,7 @@ describe("V1 artifact contracts", () => {
       ),
     ).toThrow(/quality gate outcome/i);
     expect(() =>
-      assertRecommendationEvidence(
+      assertRecommendationArtifactConsistency(
         parsedRecommendation,
         [candidateRunWith({ metrics: { ...candidateRun.metrics, costUsd: "0.0600" } })],
         candidateRun.evaluationInputDigest,
@@ -718,7 +718,7 @@ describe("V1 artifact contracts", () => {
       ),
     ).toThrow(/cost gate outcome/i);
     expect(() =>
-      assertRecommendationEvidence(
+      assertRecommendationArtifactConsistency(
         parsedRecommendation,
         [candidateRunWith({ metrics: { ...candidateRun.metrics, p95LatencyMs: 800 } })],
         candidateRun.evaluationInputDigest,
@@ -728,7 +728,7 @@ describe("V1 artifact contracts", () => {
       ),
     ).toThrow(/latency gate outcome/i);
     expect(() =>
-      assertRecommendationEvidence(
+      assertRecommendationArtifactConsistency(
         parsedRecommendation,
         [parsedRun],
         candidateRun.evaluationInputDigest,
@@ -746,7 +746,7 @@ describe("V1 artifact contracts", () => {
       ),
     ).toThrow(/missing candidate model/i);
     expect(() =>
-      assertRecommendationEvidence(
+      assertRecommendationArtifactConsistency(
         parsedRecommendation,
         [parsedRun],
         candidateRun.evaluationInputDigest,
@@ -796,7 +796,7 @@ describe("V1 artifact contracts", () => {
       recommendedModel: unapprovedCandidate.id,
     });
     expect(() =>
-      assertRecommendationEvidence(
+      assertRecommendationArtifactConsistency(
         unapprovedRecommendation,
         [unapprovedRun],
         candidateRun.evaluationInputDigest,
@@ -810,7 +810,7 @@ describe("V1 artifact contracts", () => {
       ),
     ).not.toThrow();
     expect(() =>
-      assertRecommendationEvidence(
+      assertRecommendationArtifactConsistency(
         parsedRecommendation,
         [candidateRunWith({ gateOutcomes: { ...candidateRun.gateOutcomes, privacy: "fail" } })],
         candidateRun.evaluationInputDigest,
@@ -825,7 +825,7 @@ describe("V1 artifact contracts", () => {
         : model,
     );
     expect(() =>
-      assertRecommendationEvidence(
+      assertRecommendationArtifactConsistency(
         parsedRecommendation,
         [parsedRun],
         candidateRun.evaluationInputDigest,
@@ -839,7 +839,7 @@ describe("V1 artifact contracts", () => {
       ),
     ).toThrow(/structuredOutput/i);
     expect(() =>
-      assertRecommendationEvidence(
+      assertRecommendationArtifactConsistency(
         parsedRecommendation,
         [parsedRun],
         candidateRun.evaluationInputDigest,
@@ -852,7 +852,7 @@ describe("V1 artifact contracts", () => {
       ),
     ).toThrow(/toolCalls/i);
     expect(() =>
-      assertRecommendationEvidence(
+      assertRecommendationArtifactConsistency(
         parsedRecommendation,
         [parsedRun],
         candidateRun.evaluationInputDigest,
@@ -862,7 +862,7 @@ describe("V1 artifact contracts", () => {
       ),
     ).toThrow(/source binding/i);
     expect(() =>
-      assertRecommendationEvidence(
+      assertRecommendationArtifactConsistency(
         parsedRecommendation,
         [parsedRun],
         candidateRun.evaluationInputDigest,
@@ -872,7 +872,7 @@ describe("V1 artifact contracts", () => {
       ),
     ).toThrow(/manifest/i);
     expect(() =>
-      assertRecommendationEvidence(
+      assertRecommendationArtifactConsistency(
         parsedRecommendation,
         [parsedRun],
         candidateRun.evaluationInputDigest,
@@ -882,7 +882,7 @@ describe("V1 artifact contracts", () => {
       ),
     ).toThrow(/case count/i);
     expect(() =>
-      assertRecommendationEvidence(
+      assertRecommendationArtifactConsistency(
         parsedRecommendation,
         [parsedRun],
         candidateRun.evaluationInputDigest,

@@ -57,7 +57,9 @@ never ambient live catalog state. Candidate shortlists bind both evidence IDs an
 `evaluateOpenRouterCandidate` runs the reviewed baseline and candidate over the same cases with bounded concurrency,
 requests, retries, timeout, and spend. Deterministic required-fact and output-shape checks combine with hard quality,
 cost, latency, context, privacy, and route-evidence gates. Raw inputs and outputs remain transient. Partial, exhausted,
-invalid-route, or missing-metadata runs are incomplete and cannot support a recommendation.
+invalid-route, or missing-metadata runs are incomplete and cannot support a recommendation. The reviewed fixture
+digest is derived from the actual ordered cases, and route evidence must name the model, provider, and status for
+every attempt rather than relying on a synthesized request model.
 
 Actionable evaluation accepts only a `CurrentCatalogRefresh` consuming the exact in-memory result returned by the
 canonical live acquisition path. Captured responses, imported snapshots, serialized lineage, and caller-labeled

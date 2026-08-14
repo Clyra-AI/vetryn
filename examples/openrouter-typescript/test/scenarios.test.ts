@@ -11,6 +11,7 @@ import {
 } from "../../../packages/core/src/index.js";
 import {
   createCurrentCatalogRefresh,
+  createEvaluationCaseDigest,
   evaluateOpenRouterCandidate,
   normalizeOpenRouterCatalog,
   refreshOpenRouterCatalog,
@@ -65,6 +66,7 @@ interface EvalSuite {
 interface EvalCase {
   readonly expectedClass: string;
   readonly id: string;
+  readonly input: string;
   readonly review: {
     readonly owner: string;
     readonly reviewedAt: string;
@@ -138,8 +140,7 @@ describe("OpenRouter TypeScript golden scenario", () => {
     const cases = parseJsonLines(evalCaseText).map((evaluationCase) => ({
       expected: { classification: evaluationCase.expectedClass },
       id: evaluationCase.id,
-      input: `Synthetic input for ${evaluationCase.id}`,
-      protectedSegments: ["never-persist-this"],
+      input: evaluationCase.input,
     }));
     const expected = new Map(
       cases.map((evaluationCase) => [evaluationCase.id, evaluationCase.expected.classification]),
@@ -180,7 +181,6 @@ describe("OpenRouter TypeScript golden scenario", () => {
         evalSuite,
         evaluator: { build: "git:golden", id: "vetryn-evaluator", version: "0.0.0" },
         executionRecordId: "execution-record:support-classification-golden",
-        fixtureDigest: fixtureDigest(evalCaseText),
         limits: {
           concurrency: 4,
           maxRequests: 100,
@@ -200,8 +200,8 @@ describe("OpenRouter TypeScript golden scenario", () => {
               latencyMs: request.model === "openai/gpt-4.1-mini" ? 600 : 300,
               output: { classification: expected.get(request.caseId) },
               route: {
-                attempts: [{ providerName: "Azure", statusCode: 200 }],
-                selectedProvider: { providerName: "Azure" },
+                attempts: [{ model: request.model, providerName: "Azure", statusCode: 200 }],
+                selectedProvider: { model: request.model, providerName: "Azure" },
               },
               usage: { completionTokens: 1, promptTokens: 9 },
             };
@@ -222,8 +222,7 @@ describe("OpenRouter TypeScript golden scenario", () => {
       },
       status: "complete",
     });
-    expect(JSON.stringify(first)).not.toContain("Synthetic input");
-    expect(JSON.stringify(first)).not.toContain("never-persist-this");
+    expect(JSON.stringify(first)).not.toContain("Synthetic request");
   });
 
   it("binds a scanner-friendly source call to a human-reviewed manifest and 30 reviewed synthetic cases", async () => {
@@ -281,7 +280,13 @@ describe("OpenRouter TypeScript golden scenario", () => {
     ).toBe(true);
     expect(evalSuite).toMatchObject({
       caseCount: 30,
-      fixtureDigest: fixtureDigest(evalCaseText),
+      fixtureDigest: createEvaluationCaseDigest(
+        cases.map(({ expectedClass, id, input }) => ({
+          expected: { classification: expectedClass },
+          id,
+          input,
+        })),
+      ),
       fixturePath: "fixtures/support-classification.evals.jsonl",
       reviewed: true,
     });

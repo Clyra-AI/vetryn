@@ -67,3 +67,5 @@ vetryn eval \
 The output contains only aggregate metrics, finite gate outcomes, redacted route attempts, runner-owned timestamps,
 the execution record, and the receipt head. A missing anchor makes historical records replay-only. A new invocation
 may start a new externally anchored epoch for newly executed work but never rehabilitates older unanchored receipts.
+Later live catalog failures advance the same authenticated exact-head chain, so an older successful refresh becomes
+non-actionable if the later attempt is failed, omitted, deleted, forked, or rolled back.
