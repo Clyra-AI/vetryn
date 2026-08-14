@@ -438,9 +438,22 @@ describe("promotion-tail validator", () => {
   it.each([
     ["open findings", (artifact) => artifact.findings.push({ severity: "P1", status: "open" })],
     ["missing finding status", (artifact) => artifact.findings.push({ severity: "P1" })],
+    ["missing finding severity", (artifact) => artifact.findings.push({ status: "resolved" })],
     [
       "unknown finding status",
       (artifact) => artifact.findings.push({ severity: "P1", status: "unknown" }),
+    ],
+    [
+      "unknown finding severity",
+      (artifact) => artifact.findings.push({ severity: "PX", status: "resolved" }),
+    ],
+    [
+      "P0 accepted risk",
+      (artifact) => artifact.findings.push({ severity: "P0", status: "accepted_risk" }),
+    ],
+    [
+      "P1 accepted risk",
+      (artifact) => artifact.findings.push({ severity: "P1", status: "accepted_risk" }),
     ],
     ["required fixes", (artifact) => artifact.required_fixes.push("repair the blocker")],
     [
@@ -464,14 +477,19 @@ describe("promotion-tail validator", () => {
     expect(result.stderr).toContain("review_report");
   });
 
-  it.each(["resolved", "accepted_risk"])(
+  it.each([
+    ["resolved P0", "P0", "resolved"],
+    ["resolved P1", "P1", "resolved"],
+    ["accepted-risk P2", "P2", "accepted_risk"],
+    ["accepted-risk P3", "P3", "accepted_risk"],
+  ])(
     "accepts an approved review report that retains a %s finding",
-    async (status) => {
+    async (_name, severity, status) => {
       const fixture = await createFixture();
       const relativePath = `${fixture.planRoot}/evidence/lifecycle/${taskId}/${fixture.candidate}/review_report.json`;
       const delivery = await amend(fixture.root, async () => {
         const artifact = await readJson(fixture.root, relativePath);
-        artifact.findings.push({ severity: "P1", status });
+        artifact.findings.push({ severity, status });
         await writeJson(fixture.root, relativePath, artifact);
       });
       const result = run(fixture.root, fixture.candidate, delivery);
