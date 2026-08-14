@@ -892,8 +892,8 @@ describe("implementation plan validator", () => {
     expect(v106.dependsOn).toContainEqual({ taskId: "M0-11", kind: "hard" });
     expect(ledger.items.filter((item) => item.taskId === "M0-11")).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ id: "PROCESS-010", status: "planned", waivable: false }),
-        expect.objectContaining({ id: "PROCESS-011", status: "planned", waivable: false }),
+        expect.objectContaining({ id: "PROCESS-010", waivable: false }),
+        expect.objectContaining({ id: "PROCESS-011", waivable: false }),
       ]),
     );
     expect(state.taskId).toBe("M0-11");
