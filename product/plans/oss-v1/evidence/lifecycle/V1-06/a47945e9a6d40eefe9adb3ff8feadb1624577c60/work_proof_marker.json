@@ -1,0 +1,40 @@
+{
+  "marker_id": "V1-06-a47945e-pnpm-check",
+  "command": "pnpm check",
+  "cwd": ".",
+  "workspace_ref": "codex/v1-06-evaluation-runner",
+  "git_sha": "a47945e9a6d40eefe9adb3ff8feadb1624577c60",
+  "exit_code": 0,
+  "stdout_digest": "sha256:b94ff93a3b98457786f3fd49f4140611d6b74995f90a3cccbeb26905a70d8a19",
+  "stderr_digest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855c",
+  "raw_log_refs": [],
+  "execution_status": "pass",
+  "started_at": "2026-08-14T03:29:01Z",
+  "finished_at": "2026-08-14T03:30:11Z",
+  "runner_id": "codex-local:validation-gate",
+  "generated_by": "trusted_runner",
+  "workspace_proof": {
+    "isolation_model": "exact_clean_branch",
+    "clean_checkout_verified": true,
+    "base_ref": "c78f99ab1fb75fcf98f752be4c27f02ff3ddaf98",
+    "branch_name": "codex/v1-06-evaluation-runner",
+    "allowed_paths": [
+      ".changeset/**",
+      "packages/core/**",
+      "packages/openrouter/**",
+      "packages/cli/**",
+      "examples/openrouter-typescript/**",
+      ".factory/artifacts/task-runs/V1-06/semantic-risk-report.json",
+      ".factory/artifacts/task-runs/V1-06/semantic-risk-integrity-marker.json"
+    ],
+    "forbidden_paths": ["packages/typescript/**", "action.yml"],
+    "retry_preservation": {
+      "preserve_workspace_on_retry": true,
+      "checkpoint_ref": "a47945e9a6d40eefe9adb3ff8feadb1624577c60"
+    },
+    "cleanup_policy": {
+      "remove_after_terminal_state": "after merged-main verification",
+      "preserve_on_failure": true
+    }
+  }
+}

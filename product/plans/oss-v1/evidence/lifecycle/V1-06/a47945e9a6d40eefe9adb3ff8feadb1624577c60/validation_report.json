@@ -1,0 +1,125 @@
+{
+  "work_item_id": "V1-06",
+  "task_id": "V1-06",
+  "profile_ref": "profiles/vetryn.yaml",
+  "semantic_risk_report_ref": ".factory/artifacts/task-runs/V1-06/semantic-risk-report.json",
+  "semantic_risk_report_sha256": "sha256:22483c69fd2bc8d1ea34a38476b664107edb6727ab7254f8f0a4ba2e75ba12de",
+  "validation_contract_ref": "oss-v1:V1-06:r6",
+  "test_intent": [
+    {
+      "behavior": "Produce deterministic candidate-run and execution artifacts from reviewed cases.",
+      "expected_signal": "Actual ordered cases, catalog lineage, runner identity, route attempts, and output artifacts remain digest-bound."
+    },
+    {
+      "behavior": "Fail closed at every hard evaluation boundary.",
+      "expected_signal": "Quality, privacy, provider, response-size, retry, concurrency, timeout, and spend failures cannot complete a run."
+    },
+    {
+      "behavior": "Authorize only current or authenticated non-rolled-back execution evidence.",
+      "expected_signal": "Missing metadata, replay, newer failures, gaps, forks, rollback, restamping, and token reuse remain non-actionable."
+    }
+  ],
+  "red_evidence": [
+    {
+      "check": "focused red-first and independent adversarial review",
+      "summary": "Focused tests first failed on missing evaluator and receipt APIs. Independent review later reproduced empty-fact, spend, replay, route-metadata, response-bound, fixture-substitution, failure-lineage, and token-reuse gaps; each exact scenario was added before the final candidate passed.",
+      "evidence_refs": ["git:a5b0fe6", "git:1aace03", "git:633d48d", "git:a47945e"]
+    }
+  ],
+  "green_evidence": [
+    {
+      "check": "pnpm check",
+      "summary": "The exact candidate passed the full repository gate with 216 tests.",
+      "evidence_refs": ["ev-v1-06-repo-check-a47945e"]
+    },
+    {
+      "check": "pnpm test:contracts",
+      "summary": "The exact candidate passed all deterministic contract and adversarial tests.",
+      "evidence_refs": ["ev-v1-06-contracts-a47945e"]
+    },
+    {
+      "check": "pnpm test:scenarios",
+      "summary": "The exact candidate passed all 10 offline golden scenarios.",
+      "evidence_refs": ["ev-v1-06-scenarios-a47945e"]
+    }
+  ],
+  "work_proof_marker_refs": [
+    "product/plans/oss-v1/evidence/lifecycle/V1-06/a47945e9a6d40eefe9adb3ff8feadb1624577c60/work_proof_marker.json"
+  ],
+  "test_scope": [
+    "packages/core/**",
+    "packages/openrouter/**",
+    "packages/cli/**",
+    "examples/openrouter-typescript/**"
+  ],
+  "checks": [
+    { "name": "pnpm check", "status": "pass" },
+    { "name": "pnpm test:contracts", "status": "pass" },
+    { "name": "pnpm test:scenarios", "status": "pass" },
+    { "name": "pnpm --silent task:compile -- V1-06", "status": "pass" },
+    { "name": "git diff --check", "status": "pass" }
+  ],
+  "result": "pass",
+  "introduced_failures": [],
+  "pre_existing_failures": [],
+  "independent_validation": {
+    "risk_class": "high",
+    "required_level": "independent_or_human",
+    "provided_levels": ["validation_gate", "replay", "adversarial", "security_review"],
+    "status": "satisfied",
+    "evidence_refs": [
+      "ev-v1-06-repo-check-a47945e",
+      "ev-v1-06-contracts-a47945e",
+      "ev-v1-06-scenarios-a47945e",
+      "product/plans/oss-v1/evidence/lifecycle/V1-06/a47945e9a6d40eefe9adb3ff8feadb1624577c60/review_report.json",
+      "product/plans/oss-v1/evidence/lifecycle/V1-06/a47945e9a6d40eefe9adb3ff8feadb1624577c60/trust_review_report.json"
+    ],
+    "notes": "Independent verification, structured code review, and Vetryn trust review passed on the exact candidate."
+  },
+  "test_first_skipped_reason": {
+    "status": "not_skipped",
+    "reason": "Focused evaluator and receipt-store tests failed before implementation and every independently reproduced gap received a regression."
+  },
+  "anti_fitting_notes": [
+    "Adversarial tests exercise the public evaluator, transport, CLI, and filesystem receipt store rather than private helpers.",
+    "Golden determinism uses independent one-use current-refresh tokens with content-identical reviewed inputs.",
+    "Failure tests cover absent and inconsistent route metadata, oversized streaming bodies, same-count case substitution, hard spend boundaries, rollback, omission, forks, later failures, and direct token reuse."
+  ],
+  "residual_risks": [
+    "Live OpenRouter execution remains intentionally outside offline CI and requires a separate explicit grant.",
+    "Receipt-authenticated recommendation orchestration is the V1-07 consumer boundary; the V1-06 core helper is explicitly artifact-consistency-only."
+  ],
+  "integrated_validation": {
+    "status": "task_only",
+    "scope_summary": "The whole repository and offline golden scenarios passed on the exact V1-06 candidate; remote PR gates remain pending.",
+    "integrated_checks": [
+      {
+        "name": "pnpm check",
+        "status": "pass",
+        "work_proof_marker_ref": "product/plans/oss-v1/evidence/lifecycle/V1-06/a47945e9a6d40eefe9adb3ff8feadb1624577c60/work_proof_marker.json"
+      }
+    ],
+    "fresh_checkout": {
+      "required": false,
+      "status": "not_required",
+      "work_proof_marker_refs": [],
+      "notes": "GitHub CI supplies the clean-checkout replay."
+    },
+    "docs_schema_parity": {
+      "status": "pass",
+      "evidence_refs": [
+        "packages/core/README.md",
+        "packages/openrouter/README.md",
+        "packages/cli/README.md",
+        "examples/openrouter-typescript/README.md"
+      ]
+    },
+    "release_readiness": {
+      "claimed": false,
+      "status": "not_applicable",
+      "work_proof_marker_refs": [],
+      "notes": "V1-06 records a minor Changeset but does not publish packages."
+    }
+  },
+  "promotion_decision": "ready_for_pr"
+}

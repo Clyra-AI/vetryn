@@ -2,62 +2,66 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "V1-06",
-  "revision": 6,
-  "state": "planned",
-  "attempt": 0,
-  "candidate": null,
+  "revision": 7,
+  "state": "accepted",
+  "attempt": 1,
+  "candidate": {
+    "baseCommit": "c78f99ab1fb75fcf98f752be4c27f02ff3ddaf98",
+    "commit": "a47945e9a6d40eefe9adb3ff8feadb1624577c60",
+    "executor": "implementation-agent"
+  },
   "criteria": [
     {
       "criterionId": "EVAL-001",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-06-scenarios-a47945e"]
     },
     {
       "criterionId": "EVAL-002",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-06-contracts-a47945e"]
     },
     {
       "criterionId": "EVAL-003",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-06-scenarios-a47945e"]
     },
     {
       "criterionId": "EVAL-004",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-06-contracts-a47945e"]
     },
     {
       "criterionId": "EVAL-005",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-06-scenarios-a47945e"]
     },
     {
       "criterionId": "EVAL-006",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-06-contracts-a47945e"]
     },
     {
       "criterionId": "EVAL-007",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-06-contracts-a47945e"]
     }
   ],
   "gates": [
     {
       "gateId": "QG-REPO-CHECK",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-06-repo-check-a47945e"]
     },
     {
       "gateId": "QG-CONTRACTS",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-06-contracts-a47945e"]
     },
     {
       "gateId": "QG-SCENARIOS",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-v1-06-scenarios-a47945e"]
     },
     {
       "gateId": "QG-INDEPENDENT-VERIFY",
@@ -132,6 +136,27 @@
       "at": "2026-08-13T02:50:00Z",
       "actor": "davidahmann",
       "reason": "Defined recovery as a new externally anchored trust epoch that cannot rehabilitate prior unanchored receipts."
+    },
+    {
+      "from": "planned",
+      "to": "in_progress",
+      "at": "2026-08-14T03:20:00Z",
+      "actor": "implementation-agent",
+      "reason": "Implemented the bounded offline evaluator, exact-head receipt store, and deterministic golden scenario within the compiled V1-06 packet."
+    },
+    {
+      "from": "in_progress",
+      "to": "verification_pending",
+      "at": "2026-08-14T03:29:00Z",
+      "actor": "implementation-agent",
+      "reason": "Submitted the exact candidate after all active command gates and focused adversarial tests passed."
+    },
+    {
+      "from": "verification_pending",
+      "to": "accepted",
+      "at": "2026-08-14T03:30:11Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer accepted the exact candidate after command gates, independent verification, structured code review, and Vetryn trust review passed."
     }
   ]
 }

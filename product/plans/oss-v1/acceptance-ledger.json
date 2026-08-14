@@ -478,8 +478,8 @@
       "statement": "The canonical vetryn eval command emits reproducible run and candidate artifacts from pinned inputs.",
       "verification": { "method": "test", "testLevel": "e2e", "gateId": "QG-SCENARIOS" },
       "waivable": false,
-      "status": "planned",
-      "evidenceRefs": []
+      "status": "accepted",
+      "evidenceRefs": ["ev-v1-06-scenarios-a47945e"]
     },
     {
       "id": "EVAL-002",
@@ -487,8 +487,8 @@
       "statement": "Schema, required-fact, protected-segment, cost, latency, context, and privacy gates are deterministic and fail closed.",
       "verification": { "method": "test", "testLevel": "adversarial", "gateId": "QG-CONTRACTS" },
       "waivable": false,
-      "status": "planned",
-      "evidenceRefs": []
+      "status": "accepted",
+      "evidenceRefs": ["ev-v1-06-contracts-a47945e"]
     },
     {
       "id": "EVAL-003",
@@ -496,8 +496,8 @@
       "statement": "Provider retries, concurrency, timeouts, and spend are bounded and reported.",
       "verification": { "method": "test", "testLevel": "integration", "gateId": "QG-SCENARIOS" },
       "waivable": false,
-      "status": "planned",
-      "evidenceRefs": []
+      "status": "accepted",
+      "evidenceRefs": ["ev-v1-06-scenarios-a47945e"]
     },
     {
       "id": "EVAL-004",
@@ -509,8 +509,8 @@
         "gateId": "QG-TRUST-REVIEW"
       },
       "waivable": false,
-      "status": "planned",
-      "evidenceRefs": []
+      "status": "accepted",
+      "evidenceRefs": ["ev-v1-06-contracts-a47945e"]
     },
     {
       "id": "EVAL-005",
@@ -518,8 +518,8 @@
       "statement": "Provider-backed execution applies the reviewed route policy at the request boundary and records every router attempt and exactly one selected provider; missing, cached-without-metadata, or inconsistent route evidence remains incomplete.",
       "verification": { "method": "test", "testLevel": "adversarial", "gateId": "QG-SCENARIOS" },
       "waivable": false,
-      "status": "planned",
-      "evidenceRefs": []
+      "status": "accepted",
+      "evidenceRefs": ["ev-v1-06-scenarios-a47945e"]
     },
     {
       "id": "EVAL-006",
@@ -527,8 +527,8 @@
       "statement": "Every candidate run binds an immutable execution record whose startedAt and completedAt are derived by the canonical evaluator's trusted runtime clock rather than provider output, CLI or Action input, or imported artifact fields; deterministic tests may inject a reviewed fixed clock only at the runner boundary. Same-invocation evidence and canonical persisted repository run receipts are actionable. The evaluator atomically appends each receipt to the canonical content-addressed repository evidence log, binding the exact evaluation-input digest, artifact-content digest, runner identity, version and build, runner-derived timestamps, monotonic sequence, trust-epoch ID, and prior-head digest. In the same locked transaction, Vetryn authenticates the extension with a key held outside repository-controlled content and atomically advances its per-repository trusted exact-head anchor; reuse requires every entry authentication in that epoch to verify and the repository head to equal that anchor. The store rejects ID collisions, unauthenticated extensions, digest mismatches, gaps, forks, truncation, or rollback. A machine with no authenticated key and exact-head anchor treats historical receipts as replay-only. A fresh run creates a new externally anchored trust epoch containing only newly produced same-invocation receipts and never makes prior unanchored history actionable. Every downstream authorization re-verifies the epoch, chain, exact anchor, receipts, and current policy. Other persisted or imported evidence is actionable only when a repository-policy-allowlisted provenance verifier binds the artifact content digest, runner identity, timestamps, and exact anti-rollback head and its own identity, version, and configuration digest are authorization inputs. Caller-restamped, unauthenticated, arbitrarily imported, appended, rolled-back, or merely producer-labeled replay evidence cannot authorize a patch or PR.",
       "verification": { "method": "test", "testLevel": "adversarial", "gateId": "QG-CONTRACTS" },
       "waivable": false,
-      "status": "planned",
-      "evidenceRefs": []
+      "status": "accepted",
+      "evidenceRefs": ["ev-v1-06-contracts-a47945e"]
     },
     {
       "id": "EVAL-007",
@@ -536,8 +536,8 @@
       "statement": "Provider-backed evaluation consumes the terminal result of the current invocation's ordered live catalog-refresh attempts, or a canonical hash-chained repository receipt backed by the trusted anti-rollback anchor or authenticated external provenance commits the complete ordered attempt lineage and proves the cited success remains the latest terminal attempt at authorization time. A success followed by failure, deletion or rollback of a later attempt, missing local anchor, an omitted attempt, a fork, or a lineage gap deterministically abstains and cannot reuse the older success; adversarial tests cover success-then-failure, deleted-failure, missing-anchor, rollback, and omitted-failure cases.",
       "verification": { "method": "test", "testLevel": "adversarial", "gateId": "QG-CONTRACTS" },
       "waivable": false,
-      "status": "planned",
-      "evidenceRefs": []
+      "status": "accepted",
+      "evidenceRefs": ["ev-v1-06-contracts-a47945e"]
     },
     {
       "id": "RECOMMEND-001",

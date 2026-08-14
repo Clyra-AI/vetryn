@@ -1,0 +1,119 @@
+{
+  "artifact_type": "review_report",
+  "schema_version": "0.1",
+  "task_id": "V1-06",
+  "work_item_id": "V1-06",
+  "review_type": "security",
+  "review_scope": [
+    "packages/core/**",
+    "packages/openrouter/**",
+    "packages/cli/**",
+    "examples/openrouter-typescript/**"
+  ],
+  "reviewer_class": "security_reviewer",
+  "reviewer_id": "security-reviewer:codex-local",
+  "producer": {
+    "worker": "code-review",
+    "producer_id": "security-reviewer:codex-local",
+    "producer_class": "security_reviewer"
+  },
+  "current_work": {
+    "validation_run_id": "validation:2026-08-14T03:30:11Z:V1-06",
+    "candidate_digest": "sha256:afc6254060b002e81d1356391cdaeb59c2757aed4d803e86867af837f876d028",
+    "work_proof_markers": [
+      {
+        "ref": "product/plans/oss-v1/evidence/lifecycle/V1-06/a47945e9a6d40eefe9adb3ff8feadb1624577c60/work_proof_marker.json",
+        "sha256": "sha256:6f8139f3c7d8640355b305f1f2ce3f766a0b6f4be7e39af9e2dbf58190d5366e"
+      }
+    ]
+  },
+  "risk_class": "high",
+  "context_isolation": {
+    "allowed_sources": ["task_packet", "diff", "repo_contracts", "tests", "validation_report"],
+    "disallowed_sources": ["private_builder_notes", "unpromoted_chat_reasoning"],
+    "builder_notes_authoritative": false
+  },
+  "findings": [
+    {
+      "id": "V1-06-F-1",
+      "severity": "P1",
+      "summary": "Incomplete or synthetic evaluation evidence previously could become actionable.",
+      "status": "resolved",
+      "claim_source": "independently_observed",
+      "verification_status": "independently_verified",
+      "location": "packages/openrouter/src/evaluation.ts",
+      "failure_scenario": "Empty facts, missing route attempts, case substitution, or replayed refresh tokens pass as current evidence.",
+      "impact": "A recommendation consumer could trust an unreviewed or stale candidate run.",
+      "minimum_fix": "Bind actual cases and explicit route attempts and consume live provenance tokens once.",
+      "promotion_effect": "block_until_fixed",
+      "evidence_refs": ["ev-v1-06-contracts-a47945e", "ev-v1-06-scenarios-a47945e"]
+    },
+    {
+      "id": "V1-06-F-2",
+      "severity": "P1",
+      "summary": "Provider cost and response-size limits previously detected some overruns after external work.",
+      "status": "resolved",
+      "claim_source": "independently_observed",
+      "verification_status": "independently_verified",
+      "location": "packages/openrouter/src/evaluation.ts",
+      "failure_scenario": "A request exceeds the spend cap or a provider body is buffered beyond the byte limit.",
+      "impact": "Evaluation can exceed its reviewed execution budget.",
+      "minimum_fix": "Reserve worst-case spend before dispatch and stream-cancel oversized bodies.",
+      "promotion_effect": "block_until_fixed",
+      "evidence_refs": ["ev-v1-06-contracts-a47945e"]
+    },
+    {
+      "id": "V1-06-F-3",
+      "severity": "P1",
+      "summary": "Receipt and catalog lineage failures previously left stale success or prior evidence in an invalid state.",
+      "status": "resolved",
+      "claim_source": "independently_observed",
+      "verification_status": "independently_verified",
+      "location": "packages/cli/src/evidence-store.ts",
+      "failure_scenario": "Anchor advancement fails or a newer catalog failure, deletion, gap, rollback, fork, restamp, or token reuse occurs.",
+      "impact": "Historical execution evidence can be corrupted or incorrectly remain actionable.",
+      "minimum_fix": "Restore failed appends and authenticate the latest terminal catalog attempt in the exact-head chain.",
+      "promotion_effect": "block_until_fixed",
+      "evidence_refs": ["ev-v1-06-contracts-a47945e"]
+    }
+  ],
+  "verdict": "approved",
+  "required_fixes": [],
+  "residual_risks": [
+    "Live provider behavior is not exercised in offline CI.",
+    "Recommendation authorization composition remains a separately named V1-07 boundary."
+  ],
+  "evidence_refs": [
+    "ev-v1-06-repo-check-a47945e",
+    "ev-v1-06-contracts-a47945e",
+    "ev-v1-06-scenarios-a47945e",
+    "product/plans/oss-v1/evidence/lifecycle/V1-06/a47945e9a6d40eefe9adb3ff8feadb1624577c60/validation_report.json"
+  ],
+  "work_proof_marker_refs": [
+    "product/plans/oss-v1/evidence/lifecycle/V1-06/a47945e9a6d40eefe9adb3ff8feadb1624577c60/work_proof_marker.json"
+  ],
+  "approval_effect": {
+    "promotion_decision": "ready_for_pr",
+    "approvals_granted": ["candidate-bound-structured-review"],
+    "blocks_promotion": false
+  },
+  "systems_questions": {
+    "state_impact": [
+      "Adds immutable evaluation and catalog-attempt receipts inside a Vetryn trust epoch."
+    ],
+    "source_of_truth_changes": [
+      "Repository-owned eval inputs and authenticated exact-head receipts become evaluation truth."
+    ],
+    "feedback_plan": [
+      "GitHub CI and later field evaluation exercise clean-checkout and live-provider boundaries."
+    ],
+    "blast_radius": [
+      "Core contracts, OpenRouter evaluation, CLI orchestration, and the offline golden example."
+    ],
+    "rollback_or_deletion_test": [
+      "Tests reject receipt rollback, deletion, omission, gaps, forks, and later catalog failures."
+    ],
+    "system_model_summary": "V1-06 separates reviewed inputs, same-invocation execution, persisted authenticated receipts, and later recommendation authorization."
+  },
+  "created_at": "2026-08-14T03:30:11Z"
+}
