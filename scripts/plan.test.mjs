@@ -912,6 +912,7 @@ describe("implementation plan validator", () => {
         "docs/oss-v1.md",
         "scripts/continue-next-skill.test.mjs",
         "scripts/promotion-tail.mjs",
+        "scripts/task.mjs",
       ]),
     );
     expect(task.scope.allowedPaths).not.toContain(".factory/artifacts/task-runs/M0-13/**");

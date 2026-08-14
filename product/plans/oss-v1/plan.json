@@ -1103,6 +1103,7 @@
           "scripts/continue-next-skill.test.mjs",
           "scripts/promotion-tail.mjs",
           "scripts/promotion-tail.test.mjs",
+          "scripts/task.mjs",
           "scripts/task.test.mjs"
         ],
         "forbiddenPaths": [
@@ -1141,7 +1142,8 @@
         "packages/openrouter/**",
         "scripts/continue-next-skill.test.mjs",
         "scripts/plan.mjs",
-        "scripts/promotion-tail.mjs"
+        "scripts/promotion-tail.mjs",
+        "scripts/task.mjs"
       ],
       "requiredTestLevels": ["unit", "contract", "integration", "adversarial"],
       "requiredGates": [
