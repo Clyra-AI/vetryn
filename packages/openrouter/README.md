@@ -59,8 +59,10 @@ requests, retries, timeout, and spend. Deterministic required-fact and output-sh
 cost, latency, context, privacy, and route-evidence gates. Raw inputs and outputs remain transient. Partial, exhausted,
 invalid-route, or missing-metadata runs are incomplete and cannot support a recommendation.
 
-Actionable evaluation accepts only a `CurrentCatalogRefresh` created in memory by the canonical acquisition path.
-Serialized or caller-labeled lineage cannot be substituted. The lineage is complete, ordinal, terminal-success
-evidence and is later authenticated in the repository receipt chain. Tests inject an offline transport; production
-uses `createOpenRouterEvaluationTransport` with an explicitly supplied key and applies the reviewed route policy at
-the request boundary.
+Actionable evaluation accepts only a `CurrentCatalogRefresh` consuming the exact in-memory result returned by the
+canonical live acquisition path. Captured responses, imported snapshots, serialized lineage, and caller-labeled
+objects remain replay-only and cannot be branded as current. The lineage is complete, ordinal, terminal-success
+evidence and is later authenticated in the repository receipt chain. Before each request the runner reserves the
+catalog-derived worst-case context and output cost against the hard spend ceiling. Tests replace the global
+transport while exercising that canonical path offline; production uses `createOpenRouterEvaluationTransport` with
+an explicitly supplied key and applies the reviewed route policy at the request boundary.

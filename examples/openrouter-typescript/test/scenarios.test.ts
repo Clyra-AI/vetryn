@@ -49,6 +49,8 @@ interface CallSiteManifest {
 }
 
 afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.restoreAllMocks();
   vi.useRealTimers();
 });
 
@@ -127,15 +129,10 @@ const parseJsonLines = (value: string): EvalCase[] =>
 
 describe("OpenRouter TypeScript golden scenario", () => {
   it("replays a deterministic bounded baseline-versus-candidate evaluation offline", async () => {
-    const [manifest, evalSuite, catalog, lineage, evalCaseText] = await Promise.all([
+    const [manifest, evalSuite, catalog, evalCaseText] = await Promise.all([
       readJson<{ callSites: readonly unknown[] }>("fixtures/manifest.json"),
       readJson<unknown>("fixtures/eval-suite.json"),
       readJson<CoreCatalogSnapshot>("fixtures/catalog-snapshot.json"),
-      readJson<{
-        attempts: Parameters<typeof createCurrentCatalogRefresh>[0]["attempts"];
-        invocationId: string;
-        terminalOrdinal: number;
-      }>("fixtures/catalog-refresh-lineage.json"),
       readFile(fixtureFile("fixtures/support-classification.evals.jsonl"), "utf8"),
     ]);
     const cases = parseJsonLines(evalCaseText).map((evaluationCase) => ({
@@ -147,6 +144,31 @@ describe("OpenRouter TypeScript golden scenario", () => {
     const expected = new Map(
       cases.map((evaluationCase) => [evaluationCase.id, evaluationCase.expected.classification]),
     );
+    vi.useFakeTimers();
+    vi.setSystemTime(catalog.observedAt);
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        Promise.resolve(
+          new Response(JSON.stringify(rawCatalogFromSnapshot(catalog)), {
+            headers: { "content-type": "application/json" },
+            status: 200,
+          }),
+        ),
+      ),
+    );
+    const refresh = await refreshOpenRouterCatalog({
+      acquisition: "live-api",
+      refreshId: "golden-live-refresh",
+      store: new ScenarioCatalogStore(),
+    });
+    if (refresh.status !== "success") throw new Error("golden live refresh must succeed");
+    const currentCatalogRefresh = createCurrentCatalogRefresh({
+      invocationId: "golden-invocation",
+      refresh,
+    });
+    vi.unstubAllGlobals();
+    vi.useRealTimers();
     const run = async () => {
       const times = ["2026-08-10T00:00:01.000Z", "2026-08-10T00:00:02.000Z"];
       return evaluateOpenRouterCandidate({
@@ -154,17 +176,18 @@ describe("OpenRouter TypeScript golden scenario", () => {
         candidateModel: "openai/gpt-4o-mini",
         cases,
         clock: { now: () => times.shift() ?? "2026-08-10T00:00:02.000Z" },
-        currentCatalogRefresh: createCurrentCatalogRefresh({
-          attempts: lineage.attempts,
-          invocationId: lineage.invocationId,
-          snapshot: catalog,
-          terminalOrdinal: lineage.terminalOrdinal,
-        }),
+        currentCatalogRefresh,
         evalSuite,
         evaluator: { build: "git:golden", id: "vetryn-evaluator", version: "0.0.0" },
         executionRecordId: "execution-record:support-classification-golden",
         fixtureDigest: fixtureDigest(evalCaseText),
-        limits: { concurrency: 4, maxRequests: 100, maxSpendUsd: "1", retries: 1, timeoutMs: 1000 },
+        limits: {
+          concurrency: 4,
+          maxRequests: 100,
+          maxSpendUsd: "100",
+          retries: 1,
+          timeoutMs: 1000,
+        },
         sampling: { attempts: 1, maxOutputTokens: 128, seed: 42, temperature: 0 },
         scorer: {
           configurationDigest: fixtureDigest("deterministic-assertions:1.0.0"),
@@ -863,4 +886,32 @@ class ScenarioCatalogStore implements CatalogStore {
     this.snapshots.set(snapshot.contentDigest, snapshot);
     return { reused: false, snapshot };
   }
+}
+
+function rawCatalogFromSnapshot(snapshot: CoreCatalogSnapshot) {
+  return {
+    data: snapshot.models.map((model) => ({
+      architecture: { output_modalities: ["text"] },
+      context_length: model.contextWindowTokens,
+      id: model.id,
+      pricing: {
+        completion: perTokenPrice(model.outputPricePerMillionUsd),
+        prompt: perTokenPrice(model.inputPricePerMillionUsd),
+      },
+      supported_parameters: [
+        ...(model.capabilities.structuredOutput ? ["response_format"] : []),
+        ...(model.capabilities.toolCalls ? ["tools"] : []),
+      ],
+    })),
+  };
+}
+
+function perTokenPrice(pricePerMillionUsd: string): string {
+  const [whole = "0", fraction = ""] = pricePerMillionUsd.split(".");
+  const digits = `${whole}${fraction}`.replace(/^0+(?=\d)/u, "");
+  const decimalPlaces = fraction.length + 6;
+  if (digits.length <= decimalPlaces) {
+    return `0.${"0".repeat(decimalPlaces - digits.length)}${digits}`;
+  }
+  return `${digits.slice(0, -decimalPlaces)}.${digits.slice(-decimalPlaces)}`;
 }

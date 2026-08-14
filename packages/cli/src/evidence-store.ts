@@ -164,8 +164,9 @@ export class FileExecutionReceiptStore {
       await publishImmutable(receiptPath, `${JSON.stringify(receipt, null, 2)}\n`);
       try {
         await atomicWrite(this.headPath(), `${JSON.stringify(nextHead, null, 2)}\n`);
-        await atomicWrite(this.anchorPath, `${JSON.stringify(nextAnchor, null, 2)}\n`);
+        await this.advanceAnchor(`${JSON.stringify(nextAnchor, null, 2)}\n`);
       } catch (error: unknown) {
+        await this.restoreHead(head);
         await unlink(receiptPath).catch(() => undefined);
         throw error;
       }
@@ -278,6 +279,20 @@ export class FileExecutionReceiptStore {
       }
     }
     return false;
+  }
+
+  protected async advanceAnchor(contents: string): Promise<void> {
+    await atomicWrite(this.anchorPath, contents);
+  }
+
+  private async restoreHead(head: RepositoryHead | null): Promise<void> {
+    if (head === null) {
+      await unlink(this.headPath()).catch((error: unknown) => {
+        if (!isMissingFileError(error)) throw error;
+      });
+      return;
+    }
+    await atomicWrite(this.headPath(), `${JSON.stringify(head, null, 2)}\n`);
   }
 
   private async ensureDirectories(): Promise<void> {
@@ -409,8 +424,14 @@ async function readOptionalJson<Value>(filePath: string): Promise<Value | null> 
 async function atomicWrite(filePath: string, contents: string): Promise<void> {
   await mkdir(path.dirname(filePath), { recursive: true });
   const temporary = `${filePath}.${process.pid}.tmp`;
-  await writeFile(temporary, contents, { encoding: "utf8", flag: "wx" });
-  await rename(temporary, filePath);
+  try {
+    await writeFile(temporary, contents, { encoding: "utf8", flag: "wx" });
+    await rename(temporary, filePath);
+  } finally {
+    await unlink(temporary).catch((error: unknown) => {
+      if (!isMissingFileError(error)) throw error;
+    });
+  }
 }
 
 async function publishImmutable(filePath: string, contents: string): Promise<void> {

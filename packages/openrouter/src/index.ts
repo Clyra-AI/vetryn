@@ -16,6 +16,8 @@ import {
 } from "@vetryn/core";
 import { z } from "zod";
 
+import { markLiveCatalogRefreshResult } from "./live-refresh.js";
+
 export const OPENROUTER_CATALOG_URL = "https://openrouter.ai/api/v1/models";
 export const OPENROUTER_NORMALIZER_VERSION = "1.0.0";
 export const DEFAULT_CANDIDATE_LIMIT = 5;
@@ -728,7 +730,8 @@ export async function refreshOpenRouterCatalog(
     status: "success",
   } as const;
   const committed = await store.putRefresh(normalizedSnapshot, observationInput);
-  return { ...committed, status: "success" };
+  const result = { ...committed, status: "success" as const };
+  return acquisition === "live-api" ? markLiveCatalogRefreshResult(result) : result;
 }
 
 export function resolveCandidates({

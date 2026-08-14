@@ -585,10 +585,8 @@ export function createProgram(dependencies: CliDependencies = {}): Command {
               throw new Error("The current invocation's terminal catalog refresh failed.");
             }
             return createCurrentCatalogRefresh({
-              attempts: [{ observation: refresh.observation, ordinal: 1 }],
               invocationId: options.runId,
-              snapshot: refresh.snapshot,
-              terminalOrdinal: 1,
+              refresh,
             });
           })());
         const result = await evaluateFiles({
