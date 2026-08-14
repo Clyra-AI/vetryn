@@ -25,16 +25,21 @@ After a passing preflight:
    its existing validation evidence still binds that candidate. Stop on any other state.
 3. When routed through implementation, stay within `allowed_paths`; stop on every packet blocker, failed
    command, or forbidden capability.
-4. Unless resuming at review, run every packet validation command and Factory `validation-gate` on the
-   frozen candidate.
+4. Unless resuming at review, run every packet validation command and Factory `validation-gate` on the frozen
+   ProductCandidate.
 5. Run each packet-required local or domain review, including Factory `code-review` when declared.
-   Candidate changes invalidate validation and review.
+   Collect the current review generation before editing and address its concrete findings in one bounded repair;
+   ProductCandidate changes invalidate validation and review exactly once for the repaired candidate.
 6. Invoke the packet's promotion skill only after required gates pass and the current-run grant includes
-   maintainer promotion. That skill owns promotion checkpoints and the single handoff to Factory `commit-push`
+   maintainer promotion. That skill creates one canonical promotion-only DeliveryHead and owns the single handoff to Factory `commit-push`
    for protected landing; do not invoke the land lifecycle a second time. Delivery still requires the grant to
    include branch, PR, merge, and GitHub writes.
-7. After that lifecycle completes, resync the default branch and rerun `pnpm --silent task:next` to report the
-   newly legal task.
+7. Require DeliveryHead CI and treat P0/P1 or non-waivable findings as blockers. After one completed repair
+   generation, a new standalone P2 follows the explicit ADR-0009 maintainer delivery-debt disposition instead of
+   automatically starting another implementation cycle.
+8. After merge, resync the default branch, monitor default-branch CI, and rerun
+   `pnpm --silent task:next`. The task is not complete until the protected merge is verified and the newly legal
+   next task is reported.
 
 Never infer positive authority from this skill, the packet, `MAINTAINERS.md`, `CODEOWNERS`, prior chat, or
 ambient credentials. Never push directly to `main`, use live-provider access or credentials without a

@@ -48,6 +48,13 @@ These instructions apply to the entire repository.
   and redacted, and pass its recorded command. Recorded plan and lockfile digests identify the inputs observed at
   the time; later unrelated planning changes do not invalidate that evidence. Re-run the active commands whenever
   the candidate changes.
+- Treat the final product, contract, test, fixture, or task-scoped documentation commit as the ProductCandidate.
+  Validation and required reviews bind it exactly. A later DeliveryHead may inherit that evidence only when its
+  deterministic promotion tail contains canonical state, ledger, compact lifecycle evidence, generated progress,
+  and other packet-declared promotion artifacts—never product-bearing changes.
+- Batch automated findings for one ProductCandidate and make one bounded repair pass. P0/P1 and non-waivable
+  findings remain blocking. After that repair generation, one new standalone P2 may be explicitly classified by
+  the maintainer as delivery debt under ADR 0009 rather than triggering an endless review loop.
 - `product/plans/oss-v1/progress.json` is generated. Update task state and evidence through the plan
   tooling rather than editing the roll-up directly.
 - Keep Factory-compatible planning artifacts separate from Vetryn product-domain schemas. Transient

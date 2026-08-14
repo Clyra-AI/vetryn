@@ -1,0 +1,220 @@
+{
+  "artifact_lifecycle_matrix": [
+    {
+      "artifact": "Product-candidate and delivery-head lifecycle guidance",
+      "producer_or_authority": "M0-12 task executor within the compiled packet",
+      "mutable_owner": "Task executor before candidate freeze",
+      "states": ["generated", "persisted"],
+      "freshness": "The workflow derives candidate and delivery-head identities for every run",
+      "integrity": "Committed skill guidance plus deterministic contract and integration tests",
+      "authenticity": "Protected repository history; guidance grants no authority",
+      "actionable_states": [],
+      "transitions_and_recovery": [
+        "A product candidate may advance only after active commands pass; a delivery head may inherit that evidence only after deterministic promotion-tail validation."
+      ]
+    }
+  ],
+  "authorization_boundary_trace": [
+    {
+      "stage": "input_validation",
+      "authority": "Canonical M0-12 packet and repository policy",
+      "input": "Product candidate, delivery head, active gates, review inventory, and promotion artifacts",
+      "decision": "allow",
+      "denied_behavior": "Stop on scope drift, failed commands, invalid promotion tails, or P0/P1 findings"
+    },
+    {
+      "stage": "reuse_or_persistence",
+      "authority": "Compiled M0-12 allowed paths",
+      "input": "Skills, workflow docs, tests, and task lifecycle artifacts",
+      "decision": "allow",
+      "denied_behavior": "Do not modify product packages, workflows, examples, or accepted product evidence"
+    },
+    {
+      "stage": "plan_authorization",
+      "authority": "Canonical M0-12 task packet",
+      "input": "Scope, invariants, gates, and stop conditions",
+      "decision": "allow",
+      "denied_behavior": "Do not broaden the process task or weaken non-waivable requirements"
+    },
+    {
+      "stage": "workspace_mutation",
+      "authority": "Explicit current-run maintainer grant",
+      "input": "Task-scoped skill and documentation edits",
+      "decision": "allow",
+      "denied_behavior": "Do not infer authority from the skill, roster, or ambient credentials"
+    },
+    {
+      "stage": "command_execution",
+      "authority": "Compiled command gates",
+      "input": "Plan, repository, contract, and skill validation commands",
+      "decision": "allow",
+      "denied_behavior": "Do not skip a failed active gate or rerun full gates solely for a valid promotion tail"
+    },
+    {
+      "stage": "remote_effect",
+      "authority": "Protected delivery workflow plus current-run maintainer grant",
+      "input": "Push, PR, review batch, merge, and post-merge checks",
+      "decision": "deny",
+      "denied_behavior": "The implementation role performs no GitHub write, merge, or provider action"
+    },
+    {
+      "stage": "external_status",
+      "authority": "Repository CI and protected branch state",
+      "input": "Latest delivery-head checks and post-merge status",
+      "decision": "deny",
+      "denied_behavior": "Local guidance cannot fabricate or change external status"
+    }
+  ],
+  "normative_adversarial_matrix": [
+    {
+      "invariant": "Only a canonical promotion tail may inherit exact product-candidate evidence.",
+      "positive": "State, ledger, evidence, and generated progress form the complete delivery-head delta.",
+      "missing": "A missing required promotion artifact blocks inheritance.",
+      "stale": "Evidence bound to another product candidate blocks promotion.",
+      "contradictory": "A product or test change in the tail blocks promotion.",
+      "tampered": "An extra out-of-policy path blocks promotion.",
+      "transition_or_recovery": "Restore the exact candidate, rebuild the promotion tail, and rerun the small tail check.",
+      "concurrency": "A changed delivery head invalidates the tail check and CI result."
+    },
+    {
+      "invariant": "Review feedback is batched without weakening blockers.",
+      "positive": "One review inventory produces one bounded repair and exact-candidate revalidation.",
+      "missing": "An incomplete review inventory cannot justify delivery-debt classification.",
+      "stale": "Prior-candidate findings cannot settle a changed product candidate.",
+      "contradictory": "Any P0, P1, or non-waivable finding blocks regardless of P2 classification.",
+      "tampered": "A claimed standalone P2 without explicit maintainer classification blocks.",
+      "transition_or_recovery": "Fix blockers in one batch; after a completed repair generation, record at most one standalone P2 as delivery debt.",
+      "concurrency": "New feedback is classified against the exact current product candidate and delivery head."
+    }
+  ],
+  "external_effect_preflight": {
+    "actions": [
+      {
+        "action": "agent_runner",
+        "disposition": "not_applicable",
+        "authority_ref": null,
+        "invalid_authority_effect": {
+          "calls": 0,
+          "spend_usd": 0,
+          "writes": 0
+        }
+      },
+      {
+        "action": "model",
+        "disposition": "not_applicable",
+        "authority_ref": null,
+        "invalid_authority_effect": {
+          "calls": 0,
+          "spend_usd": 0,
+          "writes": 0
+        }
+      },
+      {
+        "action": "repository_command",
+        "disposition": "not_applicable",
+        "authority_ref": null,
+        "invalid_authority_effect": {
+          "calls": 0,
+          "spend_usd": 0,
+          "writes": 0
+        }
+      },
+      {
+        "action": "package_registry",
+        "disposition": "blocked",
+        "authority_ref": null,
+        "invalid_authority_effect": {
+          "calls": 0,
+          "spend_usd": 0,
+          "writes": 0
+        }
+      },
+      {
+        "action": "provider_sandbox",
+        "disposition": "blocked",
+        "authority_ref": null,
+        "invalid_authority_effect": {
+          "calls": 0,
+          "spend_usd": 0,
+          "writes": 0
+        }
+      },
+      {
+        "action": "github",
+        "disposition": "blocked",
+        "authority_ref": null,
+        "invalid_authority_effect": {
+          "calls": 0,
+          "spend_usd": 0,
+          "writes": 0
+        }
+      },
+      {
+        "action": "provider_status",
+        "disposition": "blocked",
+        "authority_ref": null,
+        "invalid_authority_effect": {
+          "calls": 0,
+          "spend_usd": 0,
+          "writes": 0
+        }
+      }
+    ]
+  },
+  "persistence_threat_matrix": [
+    {
+      "threat": "integrity",
+      "attack_cases": ["A promotion tail changes product or test bytes."],
+      "expected_disposition": "reject"
+    },
+    {
+      "threat": "authenticity",
+      "attack_cases": ["An unclassified P2 or skill text is presented as maintainer authority."],
+      "expected_disposition": "reject"
+    },
+    {
+      "threat": "freshness",
+      "attack_cases": ["Candidate evidence is reused after a product change."],
+      "expected_disposition": "reject"
+    },
+    {
+      "threat": "completeness",
+      "attack_cases": ["Review batching omits a P0, P1, or non-waivable finding."],
+      "expected_disposition": "reject"
+    },
+    {
+      "threat": "ordering",
+      "attack_cases": ["Promotion precedes exact-candidate validation or required reviews."],
+      "expected_disposition": "reject"
+    },
+    {
+      "threat": "anti_rollback",
+      "attack_cases": [
+        "A prior product candidate is substituted beneath current promotion artifacts."
+      ],
+      "expected_disposition": "reject"
+    }
+  ],
+  "review_convergence": {
+    "implementation_design_pass": "pass",
+    "same_subsystem_p1_rounds_seen": 0,
+    "decision": "proceed"
+  },
+  "residual_risks": [
+    "Automated review can still surface a genuinely blocking issue after push; P0 and P1 remain blocking.",
+    "The workflow trusts the local developer runtime and installed skills and is not a security sandbox."
+  ],
+  "artifact_type": "semantic_risk_report",
+  "schema_version": "0.2",
+  "task_id": "M0-12",
+  "work_item_id": "M0-12",
+  "risk_class": "medium",
+  "profile_ref": ".factory/profile.yaml",
+  "source_revision": "8f2aa4b7e9c509127ef9b3dd2003764f7a9bcfe9",
+  "phase": "implementation_design",
+  "created_at": "2026-08-14T11:31:24.665Z",
+  "baseline_evidence": {
+    "work_proof_marker_ref": ".factory/artifacts/task-runs/M0-12/semantic-risk-integrity-marker.json",
+    "work_proof_marker_sha256": "sha256:d89c872eff98c73758b908dfd613878fa3b986a4db1998d2e2fd6137fb03549d"
+  }
+}
