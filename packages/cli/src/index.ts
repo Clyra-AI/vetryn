@@ -569,7 +569,7 @@ export function createProgram(dependencies: CliDependencies = {}): Command {
         suite: string;
         trustEpoch: string;
       }) => {
-        assertEvaluationOutputPath({
+        await assertEvaluationOutputPath({
           anchorPath: options.anchor,
           evidencePath: options.evidenceStore,
           outputPath: options.output,

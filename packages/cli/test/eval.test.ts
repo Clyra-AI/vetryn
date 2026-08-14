@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
@@ -22,8 +22,19 @@ describe("vetryn eval", () => {
     const repositoryRoot = path.join(root, "repo");
     const evidencePath = path.join(repositoryRoot, ".vetryn", "evidence");
     const anchorPath = path.join(root, "trust", "anchor.json");
+    await mkdir(evidencePath, { recursive: true });
+    await mkdir(path.dirname(anchorPath), { recursive: true });
+    const evidenceAlias = path.join(repositoryRoot, "evidence-alias");
+    const anchorAlias = path.join(repositoryRoot, "anchor-alias");
+    await symlink(evidencePath, evidenceAlias);
+    await symlink(path.dirname(anchorPath), anchorAlias);
 
-    for (const outputPath of [anchorPath, path.join(evidencePath, "head.json")]) {
+    for (const outputPath of [
+      anchorPath,
+      path.join(evidencePath, "head.json"),
+      path.join(evidenceAlias, "head.json"),
+      path.join(anchorAlias, "anchor.json"),
+    ]) {
       await expect(
         createProgram().parseAsync([
           "node",

@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { createReadStream } from "node:fs";
-import { mkdir, rename, rm, writeFile } from "node:fs/promises";
+import { lstat, mkdir, realpath, rename, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 import {
@@ -46,21 +46,23 @@ export interface EvaluateFilesResult {
   readonly receipt: ReceiptAppendResult;
 }
 
-export function assertEvaluationOutputPath(options: {
+export async function assertEvaluationOutputPath(options: {
   readonly anchorPath: string;
   readonly evidencePath: string;
   readonly outputPath: string;
-}): void {
-  const anchorPath = path.resolve(options.anchorPath);
-  const evidencePath = path.resolve(options.evidencePath);
-  const outputPath = path.resolve(options.outputPath);
+}): Promise<void> {
+  const [anchorPath, evidencePath, outputPath] = await Promise.all([
+    canonicalDestination(options.anchorPath),
+    canonicalDestination(options.evidencePath),
+    canonicalDestination(options.outputPath),
+  ]);
   if (outputPath === anchorPath || isWithin(evidencePath, outputPath)) {
     throw new Error("Evaluation output must not overlap receipt or anchor trust state.");
   }
 }
 
 export async function evaluateFiles(options: EvaluateFilesOptions): Promise<EvaluateFilesResult> {
-  assertEvaluationOutputPath(options);
+  await assertEvaluationOutputPath(options);
   const [manifest, evalSuite, fixtureContents] = await Promise.all([
     readJson(options.manifestPath).then(parseCallSiteManifest),
     readJson(options.evalSuitePath).then(parseEvalSuite),
@@ -107,6 +109,7 @@ export async function evaluateFiles(options: EvaluateFilesOptions): Promise<Eval
   // Make the exact redacted evaluation artifacts durable before advancing the
   // authenticated receipt chain. A destination failure must not strand a
   // receipt whose candidate run exists only in memory.
+  await assertEvaluationOutputPath(options);
   await writeJsonAtomically(options.outputPath, artifacts);
   const receipt = await store.append(artifacts.executionRecord, {
     catalogRefreshLineage: options.currentCatalogRefresh.lineage,
@@ -199,4 +202,33 @@ function sha256(value: string): string {
 function isWithin(parent: string, candidate: string): boolean {
   const relative = path.relative(parent, candidate);
   return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
+}
+
+async function canonicalDestination(filePath: string): Promise<string> {
+  let current = path.resolve(filePath);
+  const missingSegments: string[] = [];
+  while (true) {
+    try {
+      return path.join(await realpath(current), ...missingSegments);
+    } catch (error: unknown) {
+      if (!isErrno(error, "ENOENT")) throw error;
+      try {
+        if ((await lstat(current)).isSymbolicLink()) {
+          throw new Error(`Evaluation path contains a dangling symbolic link: ${current}`, {
+            cause: error,
+          });
+        }
+      } catch (statError: unknown) {
+        if (!isErrno(statError, "ENOENT")) throw statError;
+      }
+      const parent = path.dirname(current);
+      if (parent === current) throw error;
+      missingSegments.unshift(path.basename(current));
+      current = parent;
+    }
+  }
+}
+
+function isErrno(error: unknown, code: string): boolean {
+  return typeof error === "object" && error !== null && Reflect.get(error, "code") === code;
 }
