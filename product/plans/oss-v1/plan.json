@@ -1084,6 +1084,7 @@
       "scope": {
         "allowedPaths": [
           ".agents/skills/vetryn-continue-next/**",
+          ".agents/skills/vetryn-implement-task/**",
           ".agents/skills/vetryn-promote-task/**",
           ".changeset/**",
           ".factory/profile.yaml",
@@ -1127,6 +1128,7 @@
       ],
       "deliverables": [
         ".agents/skills/vetryn-continue-next/**",
+        ".agents/skills/vetryn-implement-task/**",
         ".agents/skills/vetryn-promote-task/**",
         ".changeset/**",
         ".factory/profile.yaml",
@@ -1142,8 +1144,11 @@
         "packages/openrouter/**",
         "scripts/continue-next-skill.test.mjs",
         "scripts/plan.mjs",
+        "scripts/plan.test.mjs",
         "scripts/promotion-tail.mjs",
-        "scripts/task.mjs"
+        "scripts/promotion-tail.test.mjs",
+        "scripts/task.mjs",
+        "scripts/task.test.mjs"
       ],
       "requiredTestLevels": ["unit", "contract", "integration", "adversarial"],
       "requiredGates": [
