@@ -1,0 +1,42 @@
+{
+  "artifactType": "vetryn-trust-review-report",
+  "schemaVersion": "1.0.0",
+  "taskId": "V1-06",
+  "candidateCommit": "bd52e07df008edf27d10c221ba29cf2c9dbd3eb9",
+  "validationReportRef": "product/plans/oss-v1/evidence/lifecycle/V1-06/bd52e07df008edf27d10c221ba29cf2c9dbd3eb9/validation_report.json",
+  "reviewer": "vetryn-trust-review:codex-local",
+  "verdict": "pass",
+  "surfaceMatrix": [
+    {
+      "surface": "catalog-refresh-chronology",
+      "status": "pass",
+      "summary": "Each successful live-refresh attempt is authenticated before evaluation, artifact, or output effects."
+    },
+    {
+      "surface": "zero-effect-compatibility",
+      "status": "pass",
+      "summary": "Baseline equality and required-capability mismatches reject before provider requests or spend."
+    },
+    {
+      "surface": "bounded-durable-input",
+      "status": "pass",
+      "summary": "Receipt, head, and anchor inputs are byte-bounded before decoding or JSON parsing."
+    },
+    {
+      "surface": "prior-evaluation-trust-boundaries",
+      "status": "pass",
+      "summary": "Route lineage, privacy, exact economics, bounded spend, and deterministic outcomes remain covered."
+    }
+  ],
+  "unresolvedFindings": [],
+  "evidenceRefs": [
+    "ev-v1-06-contracts-bd52e07",
+    "ev-v1-06-scenarios-bd52e07",
+    "product/plans/oss-v1/evidence/lifecycle/V1-06/bd52e07df008edf27d10c221ba29cf2c9dbd3eb9/review_report.json"
+  ],
+  "residualRisks": [
+    "Live OpenRouter behavior remains outside offline CI and needs an explicit field-operation grant.",
+    "V1-07 must compose recommendation authorization with current receipt and policy verification."
+  ],
+  "createdAt": "2026-08-14T07:39:45Z"
+}

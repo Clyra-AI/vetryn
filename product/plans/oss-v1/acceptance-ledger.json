@@ -479,7 +479,7 @@
       "verification": { "method": "test", "testLevel": "e2e", "gateId": "QG-SCENARIOS" },
       "waivable": false,
       "status": "accepted",
-      "evidenceRefs": ["ev-v1-06-scenarios-a9b2f8e"]
+      "evidenceRefs": ["ev-v1-06-scenarios-bd52e07"]
     },
     {
       "id": "EVAL-002",
@@ -488,7 +488,7 @@
       "verification": { "method": "test", "testLevel": "adversarial", "gateId": "QG-CONTRACTS" },
       "waivable": false,
       "status": "accepted",
-      "evidenceRefs": ["ev-v1-06-contracts-a9b2f8e"]
+      "evidenceRefs": ["ev-v1-06-contracts-bd52e07"]
     },
     {
       "id": "EVAL-003",
@@ -497,7 +497,7 @@
       "verification": { "method": "test", "testLevel": "integration", "gateId": "QG-SCENARIOS" },
       "waivable": false,
       "status": "accepted",
-      "evidenceRefs": ["ev-v1-06-scenarios-a9b2f8e"]
+      "evidenceRefs": ["ev-v1-06-scenarios-bd52e07"]
     },
     {
       "id": "EVAL-004",
@@ -510,7 +510,7 @@
       },
       "waivable": false,
       "status": "accepted",
-      "evidenceRefs": ["ev-v1-06-contracts-a9b2f8e"]
+      "evidenceRefs": ["ev-v1-06-contracts-bd52e07"]
     },
     {
       "id": "EVAL-005",
@@ -519,7 +519,7 @@
       "verification": { "method": "test", "testLevel": "adversarial", "gateId": "QG-SCENARIOS" },
       "waivable": false,
       "status": "accepted",
-      "evidenceRefs": ["ev-v1-06-scenarios-a9b2f8e"]
+      "evidenceRefs": ["ev-v1-06-scenarios-bd52e07"]
     },
     {
       "id": "EVAL-006",
@@ -528,7 +528,7 @@
       "verification": { "method": "test", "testLevel": "adversarial", "gateId": "QG-CONTRACTS" },
       "waivable": false,
       "status": "accepted",
-      "evidenceRefs": ["ev-v1-06-contracts-a9b2f8e"]
+      "evidenceRefs": ["ev-v1-06-contracts-bd52e07"]
     },
     {
       "id": "EVAL-007",
@@ -537,7 +537,7 @@
       "verification": { "method": "test", "testLevel": "adversarial", "gateId": "QG-CONTRACTS" },
       "waivable": false,
       "status": "accepted",
-      "evidenceRefs": ["ev-v1-06-contracts-a9b2f8e"]
+      "evidenceRefs": ["ev-v1-06-contracts-bd52e07"]
     },
     {
       "id": "RECOMMEND-001",
