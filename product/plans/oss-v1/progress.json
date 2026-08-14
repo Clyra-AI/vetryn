@@ -4,13 +4,14 @@
   "planId": "oss-v1",
   "taskCounts": {
     "accepted": 17,
-    "planned": 6
+    "in_progress": 1,
+    "planned": 5
   },
   "acceptanceCounts": {
     "accepted": 43,
     "planned": 35
   },
-  "nextLegalTasks": ["M0-11"],
+  "nextLegalTasks": [],
   "blockedTasks": [],
   "tasks": [
     {
@@ -93,7 +94,7 @@
     },
     {
       "taskId": "M0-11",
-      "state": "planned",
+      "state": "in_progress",
       "acceptedCriteria": 0,
       "totalCriteria": 2
     },

@@ -2,9 +2,9 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "M0-11",
-  "revision": 0,
-  "state": "planned",
-  "attempt": 0,
+  "revision": 1,
+  "state": "in_progress",
+  "attempt": 1,
   "candidate": null,
   "criteria": [
     {
@@ -50,6 +50,13 @@
       "at": "2026-08-13T17:32:17Z",
       "actor": "planning-agent",
       "reason": "Maintainer requested a portable repository-owned continuation workflow before V1-06."
+    },
+    {
+      "from": "planned",
+      "to": "in_progress",
+      "at": "2026-08-14T00:10:00Z",
+      "actor": "implementation-agent",
+      "reason": "Begin the reviewed narrow helper implementation from canonical main."
     }
   ]
 }
