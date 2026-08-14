@@ -68,4 +68,6 @@ The output contains only aggregate metrics, finite gate outcomes, redacted route
 the execution record, and the receipt head. A missing anchor makes historical records replay-only. A new invocation
 may start a new externally anchored epoch for newly executed work but never rehabilitates older unanchored receipts.
 Later live catalog failures advance the same authenticated exact-head chain, so an older successful refresh becomes
-non-actionable if the later attempt is failed, omitted, deleted, forked, or rolled back.
+non-actionable if the later attempt is failed, omitted, deleted, forked, or rolled back. The redacted evaluation
+output is staged before its receipt advances, repository and external heads must match before every append, and the
+receipt directory cannot cross the configured evidence boundary through a symbolic link.

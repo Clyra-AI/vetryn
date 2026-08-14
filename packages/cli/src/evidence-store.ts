@@ -349,6 +349,9 @@ export class FileExecutionReceiptStore {
       readOptionalJson<Anchor>(this.anchorPath),
     ]);
     if (head !== null && anchor !== null) {
+      if (!sameHead(head, anchor)) {
+        throw new Error("Repository and external execution receipt heads do not match.");
+      }
       const verified = await this.verifyChain(head, anchor);
       if (!verified.valid)
         throw new Error(`Existing execution receipt chain is invalid: ${verified.reason}.`);
@@ -416,15 +419,22 @@ export class FileExecutionReceiptStore {
   private async ensureDirectories(): Promise<void> {
     await mkdir(this.repositoryRoot, { recursive: true });
     await assertNoSymbolicLinks(this.repositoryRoot, this.evidencePath);
-    await mkdir(path.join(this.evidencePath, "receipts"), { recursive: true });
+    const receiptsPath = path.join(this.evidencePath, "receipts");
+    await mkdir(receiptsPath, { recursive: true });
+    await assertNoSymbolicLinks(this.repositoryRoot, receiptsPath);
     await mkdir(path.dirname(this.anchorPath), { recursive: true });
-    const [canonicalRoot, canonicalEvidence, canonicalAnchorParent] = await Promise.all([
-      realpath(this.repositoryRoot),
-      realpath(this.evidencePath),
-      realpath(path.dirname(this.anchorPath)),
-    ]);
+    const [canonicalRoot, canonicalEvidence, canonicalReceipts, canonicalAnchorParent] =
+      await Promise.all([
+        realpath(this.repositoryRoot),
+        realpath(this.evidencePath),
+        realpath(receiptsPath),
+        realpath(path.dirname(this.anchorPath)),
+      ]);
     if (!isWithin(canonicalRoot, canonicalEvidence)) {
       throw new Error("Execution evidence store resolves outside the repository root.");
+    }
+    if (!isWithin(canonicalEvidence, canonicalReceipts)) {
+      throw new Error("Execution receipt directory resolves outside the evidence store.");
     }
     if (isWithin(canonicalRoot, canonicalAnchorParent)) {
       throw new Error("Execution receipt anchor resolves inside repository-controlled content.");
@@ -464,6 +474,14 @@ export class FileExecutionReceiptStore {
     }
     throw new Error("Timed out waiting for the execution receipt store lock.");
   }
+}
+
+function sameHead(left: RepositoryHead, right: RepositoryHead): boolean {
+  return (
+    left.headDigest === right.headDigest &&
+    left.sequence === right.sequence &&
+    left.trustEpochId === right.trustEpochId
+  );
 }
 
 async function assertNoSymbolicLinks(root: string, target: string): Promise<void> {

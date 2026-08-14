@@ -229,6 +229,23 @@ describe("authenticated execution receipt store", () => {
     ).rejects.toThrow(/symbolic-link|outside/i);
 
     await unlink(path.join(repositoryRoot, ".vetryn"));
+    const receiptsParent = path.join(repositoryRoot, ".vetryn", "evidence");
+    await mkdir(receiptsParent, { recursive: true });
+    await symlink(external, path.join(receiptsParent, "receipts"));
+    const receiptsSymlinkStore = new FileExecutionReceiptStore({
+      anchorPath: path.join(root, "trust", "anchor.json"),
+      evidencePath: receiptsParent,
+      key: Buffer.from("offline-test-key-that-is-not-a-credential"),
+      repositoryRoot,
+    });
+    await expect(
+      receiptsSymlinkStore.append(record, {
+        catalogRefreshLineage: lineage,
+        trustEpochId: "epoch-one",
+      }),
+    ).rejects.toThrow(/symbolic-link|outside/i);
+    await unlink(path.join(receiptsParent, "receipts"));
+
     const repositoryTrust = path.join(repositoryRoot, "trust");
     await mkdir(repositoryTrust, { recursive: true });
     await symlink(repositoryTrust, path.join(root, "anchor-link"));
@@ -321,6 +338,12 @@ describe("authenticated execution receipt store", () => {
       actionable: false,
       reason: "anchor-head-mismatch",
     });
+    await expect(
+      fixtureState.store.append(
+        { ...record, id: "execution-record:rollback-fork" },
+        { catalogRefreshLineage: lineage, trustEpochId: "epoch-one" },
+      ),
+    ).rejects.toThrow(/heads do not match/i);
 
     await writeFile(fixtureState.anchorPath, oldAnchor);
     await fixtureState.store.appendCatalogRefreshAttempt(

@@ -80,6 +80,15 @@ const models = [
     modelAuthor: "openai",
     retired: false,
   },
+  ...["openai/foo_bar", "openai/foo-bar"].map((id) => ({
+    capabilities: { structuredOutput: true, textGeneration: true, toolCalls: false },
+    contextWindowTokens: 100_000,
+    id,
+    inputPricePerMillionUsd: "0.1",
+    outputPricePerMillionUsd: "0.2",
+    modelAuthor: "openai",
+    retired: false,
+  })),
 ];
 
 const snapshot = {
@@ -131,6 +140,13 @@ const rawCatalog = {
       pricing: { completion: "0.0000002", prompt: "0.0000001" },
       supported_parameters: ["response_format"],
     },
+    ...["openai/foo_bar", "openai/foo-bar"].map((id) => ({
+      architecture: { output_modalities: ["text"] },
+      context_length: 100_000,
+      id,
+      pricing: { completion: "0.0000002", prompt: "0.0000001" },
+      supported_parameters: ["response_format"],
+    })),
   ],
 };
 
@@ -453,6 +469,23 @@ describe("bounded deterministic evaluation", () => {
     expect(result.candidateRun.routeObservation?.requestCount).toBe(2);
     expect(JSON.stringify(result)).not.toContain("Synthetic billing request");
     expect(JSON.stringify(result)).not.toContain("customer-secret");
+  });
+
+  it("keeps candidate-run IDs distinct when model punctuation normalizes alike", async () => {
+    const first = await evaluateOpenRouterCandidate({
+      ...baseOptions(await acquireCurrentCatalogRefresh()),
+      candidateModel: "openai/foo_bar",
+      executionRecordId: "execution-record:model-id-first",
+    });
+    const second = await evaluateOpenRouterCandidate({
+      ...baseOptions(await acquireCurrentCatalogRefresh()),
+      candidateModel: "openai/foo-bar",
+      executionRecordId: "execution-record:model-id-second",
+    });
+
+    expect(first.candidateRun.id).not.toBe(second.candidateRun.id);
+    expect(first.candidateRun.id).toMatch(/--model-[0-9a-f]{64}$/u);
+    expect(second.candidateRun.id).toMatch(/--model-[0-9a-f]{64}$/u);
   });
 
   it("bounds retries and spend and leaves partial route evidence non-promotable", async () => {

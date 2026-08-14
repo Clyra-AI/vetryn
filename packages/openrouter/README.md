@@ -59,7 +59,8 @@ requests, retries, timeout, and spend. Deterministic required-fact and output-sh
 cost, latency, context, privacy, and route-evidence gates. Raw inputs and outputs remain transient. Partial, exhausted,
 invalid-route, or missing-metadata runs are incomplete and cannot support a recommendation. The reviewed fixture
 digest is derived from the actual ordered cases, and route evidence must name the model, provider, and status for
-every attempt rather than relying on a synthesized request model.
+every attempt rather than relying on a synthesized request model. Candidate-run IDs include a digest of the canonical
+model ID so distinct model names cannot collapse to the same artifact identity after display-safe normalization.
 
 Actionable evaluation accepts only a `CurrentCatalogRefresh` consuming the exact in-memory result returned by the
 canonical live acquisition path. Captured responses, imported snapshots, serialized lineage, and caller-labeled

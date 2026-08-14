@@ -4,4 +4,5 @@
 "vetryn": minor
 ---
 
-Add bounded deterministic evaluation artifacts, same-invocation OpenRouter execution, authenticated receipt storage, and the canonical `vetryn eval` command.
+Add bounded deterministic evaluation artifacts, model-bound candidate identities, same-invocation OpenRouter execution,
+authenticated exact-head receipt storage, durable output staging, and the canonical `vetryn eval` command.

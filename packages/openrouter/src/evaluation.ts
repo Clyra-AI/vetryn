@@ -563,7 +563,7 @@ function buildCandidateRun(options: {
     evalSuiteId: options.evalSuite.id,
     executionRecordId: options.executionRecordId,
     fixtureDigest: options.evalSuite.fixtureDigest,
-    id: `candidate-run:${stablePart(options.callSite.id)}--${stablePart(options.candidateModel)}`,
+    id: `candidate-run:${stablePart(options.callSite.id)}--${stablePart(options.candidateModel)}--model-${sha256Hex(options.candidateModel)}`,
     provenance: {
       attemptCount: options.sampling.attempts,
       completedAt: options.completedAt,
@@ -1005,7 +1005,11 @@ function formatDecimal(value: number): string {
 }
 
 function sha256(value: string): string {
-  return `sha256:${createHash("sha256").update(value, "utf8").digest("hex")}`;
+  return `sha256:${sha256Hex(value)}`;
+}
+
+function sha256Hex(value: string): string {
+  return createHash("sha256").update(value, "utf8").digest("hex");
 }
 
 function canonicalJson(value: unknown): string {

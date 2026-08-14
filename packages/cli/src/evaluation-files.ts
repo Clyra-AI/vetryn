@@ -90,6 +90,10 @@ export async function evaluateFiles(options: EvaluateFilesOptions): Promise<Eval
     key: options.key,
     repositoryRoot: options.repositoryRoot,
   });
+  // Make the exact redacted evaluation artifacts durable before advancing the
+  // authenticated receipt chain. A destination failure must not strand a
+  // receipt whose candidate run exists only in memory.
+  await writeJsonAtomically(options.outputPath, artifacts);
   const receipt = await store.append(artifacts.executionRecord, {
     catalogRefreshLineage: options.currentCatalogRefresh.lineage,
     trustEpochId: options.trustEpochId,
