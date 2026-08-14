@@ -237,6 +237,84 @@
       "evidenceRefs": ["ev-m0-12-repo-check-918758d"]
     },
     {
+      "id": "HARDEN-001",
+      "taskId": "M0-13",
+      "statement": "The CLI canonicalizes the receipt-signing key path before credential or provider I/O and rejects any direct or symlink-aliased path controlled by the repository root.",
+      "verification": {
+        "method": "test",
+        "testLevel": "adversarial",
+        "gateId": "QG-CONTRACTS"
+      },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
+      "id": "HARDEN-002",
+      "taskId": "M0-13",
+      "statement": "The evaluator accounts valid usage from every billable response before normalization or retry disposition and rejects aggregate prompt-plus-completion usage above the model context window.",
+      "verification": {
+        "method": "test",
+        "testLevel": "adversarial",
+        "gateId": "QG-CONTRACTS"
+      },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
+      "id": "HARDEN-003",
+      "taskId": "M0-13",
+      "statement": "Candidate-run identifiers bind exact execution identity so separate evaluation executions are unambiguous while repeated construction within one execution remains deterministic.",
+      "verification": {
+        "method": "test",
+        "testLevel": "contract",
+        "gateId": "QG-CONTRACTS"
+      },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
+      "id": "PROCESS-015",
+      "taskId": "M0-13",
+      "statement": "A named executable promotion-tail command deterministically proves the exact ProductCandidate-to-DeliveryHead diff contains only the selected task's canonical promotion artifacts and fails closed on product, cross-task, prior-evidence, missing-progress, or undeclared changes.",
+      "verification": {
+        "method": "test",
+        "testLevel": "contract",
+        "gateId": "QG-CONTRACTS"
+      },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
+      "id": "PROCESS-016",
+      "taskId": "M0-13",
+      "statement": "The complete task delivery lifecycle has one repair-generation budget and one terminal post-repair disposition; late review is audited once, every P0 or P1 remains blocking, and only one eligible standalone P2 may be recorded as delivery debt.",
+      "verification": {
+        "method": "test",
+        "testLevel": "integration",
+        "gateId": "QG-REPO-CHECK"
+      },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
+      "id": "PROCESS-017",
+      "taskId": "M0-13",
+      "statement": "Plan validation rejects any new unaccepted task that declares low or medium risk while changing approval, evidence inheritance, persistence, credentials, security controls, or release policy, while preserving accepted historical task evidence.",
+      "verification": {
+        "method": "test",
+        "testLevel": "contract",
+        "gateId": "QG-PLAN-CHECK"
+      },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
       "id": "ROUTE-001",
       "taskId": "M0-09",
       "statement": "Catalog and call-site contracts model the canonical model-ID namespace as model-author identity and model execution as a separate reviewed OpenRouter route policy.",
