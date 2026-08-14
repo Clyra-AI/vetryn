@@ -1,0 +1,112 @@
+{
+  "artifact_type": "review_report",
+  "schema_version": "0.1",
+  "task_id": "V1-06",
+  "work_item_id": "V1-06",
+  "review_type": "security",
+  "review_scope": ["packages/cli/**", "packages/openrouter/**"],
+  "reviewer_class": "security_reviewer",
+  "reviewer_id": "security-reviewer:codex-local",
+  "producer": {
+    "worker": "code-review",
+    "producer_id": "security-reviewer:codex-local",
+    "producer_class": "security_reviewer"
+  },
+  "current_work": {
+    "validation_run_id": "validation:2026-08-14T11:04:17Z:V1-06",
+    "candidate_digest": "sha256:a1c1d8d9b2376f9fd694efb18472d1d49bff37f53fb3b51143287f35d44a3c93",
+    "work_proof_markers": [
+      {
+        "ref": "product/plans/oss-v1/evidence/lifecycle/V1-06/0bd9dce20e7dfc58d9d2ef92538907904b6c67b4/work_proof_marker.json",
+        "sha256": "sha256:60b2d5fc3127a20a2fd900bfe23ad927495de37985614b7b0b2bef768f4a4f1f"
+      }
+    ]
+  },
+  "risk_class": "high",
+  "context_isolation": {
+    "allowed_sources": ["task_packet", "diff", "repo_contracts", "tests", "validation_report"],
+    "disallowed_sources": ["private_builder_notes", "unpromoted_chat_reasoning"],
+    "builder_notes_authoritative": false
+  },
+  "findings": [
+    {
+      "id": "V1-06-PR38-CREDENTIAL-SEPARATION",
+      "severity": "P2",
+      "summary": "Credential files were not included in every canonical destination-separation check.",
+      "status": "resolved",
+      "claim_source": "independently_observed",
+      "verification_status": "independently_verified",
+      "location": "packages/cli/src/evaluation-files.ts",
+      "failure_scenario": "An output aliases the provider or receipt key after the initial CLI check.",
+      "impact": "Artifact publication could overwrite credential material.",
+      "minimum_fix": "Carry credential paths through every pre-effect and pre-publication canonical-path check.",
+      "promotion_effect": "block_until_fixed",
+      "evidence_refs": ["ev-v1-06-contracts-0bd9dce"]
+    },
+    {
+      "id": "V1-06-PR38-RECEIPT-JOURNAL",
+      "severity": "P2",
+      "summary": "An interruption between repository-head and external-anchor publication lacked a durable recovery record.",
+      "status": "resolved",
+      "claim_source": "independently_observed",
+      "verification_status": "independently_verified",
+      "location": "packages/cli/src/evidence-store.ts",
+      "failure_scenario": "The process exits after publishing only part of a receipt transaction.",
+      "impact": "A valid chain could become unavailable or an unanchored entry could obstruct a lawful retry.",
+      "minimum_fix": "Publish an authenticated pending-head journal before the entry and recover deterministically before collision checks.",
+      "promotion_effect": "block_until_fixed",
+      "evidence_refs": ["ev-v1-06-contracts-0bd9dce"]
+    },
+    {
+      "id": "V1-06-PR38-STRUCTURED-OUTPUT",
+      "severity": "P2",
+      "summary": "The evaluator transport requires structured output but capability preflight did not require it for every model.",
+      "status": "resolved",
+      "claim_source": "independently_observed",
+      "verification_status": "independently_verified",
+      "location": "packages/openrouter/src/evaluation.ts",
+      "failure_scenario": "A baseline or candidate lacks structured output while the transport still sends response_format.",
+      "impact": "Provider work could begin for an incompatible model.",
+      "minimum_fix": "Require text generation and structured output for baseline and candidate before transport.",
+      "promotion_effect": "block_until_fixed",
+      "evidence_refs": ["ev-v1-06-contracts-0bd9dce"]
+    }
+  ],
+  "verdict": "approved",
+  "required_fixes": [],
+  "residual_risks": [
+    "Live provider behavior is not exercised in offline CI.",
+    "Recommendation authorization composition remains a V1-07 concern."
+  ],
+  "evidence_refs": [
+    "ev-v1-06-repo-check-0bd9dce",
+    "ev-v1-06-contracts-0bd9dce",
+    "ev-v1-06-scenarios-0bd9dce",
+    "product/plans/oss-v1/evidence/lifecycle/V1-06/0bd9dce20e7dfc58d9d2ef92538907904b6c67b4/validation_report.json"
+  ],
+  "work_proof_marker_refs": [
+    "product/plans/oss-v1/evidence/lifecycle/V1-06/0bd9dce20e7dfc58d9d2ef92538907904b6c67b4/work_proof_marker.json"
+  ],
+  "approval_effect": {
+    "promotion_decision": "ready_for_pr",
+    "approvals_granted": ["candidate-bound-structured-review"],
+    "blocks_promotion": false
+  },
+  "systems_questions": {
+    "state_impact": [
+      "Canonical path separation protects outputs, credentials, receipt state, and the external anchor.",
+      "The authenticated journal makes receipt publication recoverable without accepting unanchored state."
+    ],
+    "source_of_truth_changes": ["None; the repair protects existing trust-state boundaries."],
+    "feedback_plan": ["GitHub CI replays the complete offline suite after push."],
+    "blast_radius": [
+      "CLI evaluation output and receipt publication",
+      "OpenRouter evaluator capability preflight"
+    ],
+    "rollback_or_deletion_test": [
+      "Tests cover interrupted publication before the immutable entry and safe same-record retry."
+    ],
+    "system_model_summary": "Evaluation side effects begin only after compatible models and separated destinations are established; receipt publication is recoverable and externally anchored."
+  },
+  "created_at": "2026-08-14T11:04:17Z"
+}

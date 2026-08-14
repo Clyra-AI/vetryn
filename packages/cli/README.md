@@ -40,3 +40,36 @@ counts reconcile considered, parsed, and parse-error units; observation counts r
 high-confidence/ambiguous, and reason-code totals. File-level parse diagnostics remain outside those call-site
 observation totals. A scan with no findings therefore remains an explicitly scoped assessment rather than a claim
 that the repository contains no other AI usage.
+
+Run one bounded provider-backed comparison with `vetryn eval`. The command performs a live catalog refresh in the
+same invocation; it never accepts imported JSON lineage as actionable freshness evidence. Provider and receipt keys
+come from explicitly named files and are never written to artifacts. The receipt store stays inside the repository,
+while its authenticated exact-head anchor and HMAC key must remain outside repository-controlled content. Output,
+anchor, evidence, provider-key, and receipt-key destinations must remain canonically separate.
+
+```sh
+vetryn eval \
+  --manifest .vetryn/manifest.json \
+  --call-site support-classification \
+  --suite .vetryn/evals/support-classification.suite.json \
+  --fixture .vetryn/evals/support-classification.jsonl \
+  --catalog-store .vetryn/catalog \
+  --refresh-id eval-2026-08-13 \
+  --candidate openai/gpt-4o-mini \
+  --run-id support-classification-2026-08-13 \
+  --trust-epoch workstation-2026-08 \
+  --evidence-store .vetryn/evidence \
+  --anchor "$VETRYN_TRUST_DIR/anchor.json" \
+  --receipt-key-file "$VETRYN_TRUST_DIR/receipt.key" \
+  --provider-key-file "$VETRYN_TRUST_DIR/openrouter.key" \
+  --output .vetryn/runs/support-classification.json
+```
+
+The output contains only aggregate metrics, finite gate outcomes, redacted route attempts, runner-owned timestamps,
+the execution record, and the receipt head. A missing anchor makes historical records replay-only. A new invocation
+may start a new externally anchored epoch for newly executed work but never rehabilitates older unanchored receipts.
+Later live catalog failures advance the same authenticated exact-head chain, so an older successful refresh becomes
+non-actionable if the later attempt is failed, omitted, deleted, forked, or rolled back. The redacted evaluation
+output is staged before its receipt advances, repository and external heads must match before every append, and the
+receipt directory cannot cross the configured evidence boundary through a symbolic link. An authenticated pending
+transaction lets the next append safely retry if a process stops between repository-head and anchor advancement.

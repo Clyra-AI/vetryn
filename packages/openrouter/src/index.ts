@@ -16,6 +16,8 @@ import {
 } from "@vetryn/core";
 import { z } from "zod";
 
+import { markLiveCatalogRefreshResult } from "./live-refresh.js";
+
 export const OPENROUTER_CATALOG_URL = "https://openrouter.ai/api/v1/models";
 export const OPENROUTER_NORMALIZER_VERSION = "1.0.0";
 export const DEFAULT_CANDIDATE_LIMIT = 5;
@@ -48,7 +50,7 @@ const rawCatalogSchema = z
   })
   .passthrough();
 
-const refreshObservationSchema = z
+export const refreshObservationSchema = z
   .object({
     artifactType: z.literal("openrouter-catalog-refresh-observation"),
     acquisition: z.enum(["captured-response", "live-api"]),
@@ -99,6 +101,8 @@ const refreshObservationSchema = z
   });
 
 export type RefreshObservation = z.infer<typeof refreshObservationSchema>;
+
+export * from "./evaluation.js";
 
 export interface CatalogExclusion {
   readonly modelId: string;
@@ -726,7 +730,8 @@ export async function refreshOpenRouterCatalog(
     status: "success",
   } as const;
   const committed = await store.putRefresh(normalizedSnapshot, observationInput);
-  return { ...committed, status: "success" };
+  const result = { ...committed, status: "success" as const };
+  return acquisition === "live-api" ? markLiveCatalogRefreshResult(result) : result;
 }
 
 export function resolveCandidates({

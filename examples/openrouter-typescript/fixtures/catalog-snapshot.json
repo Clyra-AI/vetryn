@@ -1,7 +1,7 @@
 {
   "artifactType": "catalog-snapshot",
-  "contentDigest": "sha256:d436f3d8b9981bf44431927803abb1d248c4fd1d7a60850467a44cda2bc8f70c",
-  "id": "catalog-snapshot:openrouter--sha256-d436f3d8b9981bf44431927803abb1d248c4fd1d7a60850467a44cda2bc8f70c",
+  "contentDigest": "sha256:972277189e55dec9cb42c63f0545dec87fa93a63d74622faf7dfaea4fd972d6d",
+  "id": "catalog-snapshot:openrouter--sha256-972277189e55dec9cb42c63f0545dec87fa93a63d74622faf7dfaea4fd972d6d",
   "models": [
     {
       "capabilities": { "structuredOutput": true, "textGeneration": true, "toolCalls": false },

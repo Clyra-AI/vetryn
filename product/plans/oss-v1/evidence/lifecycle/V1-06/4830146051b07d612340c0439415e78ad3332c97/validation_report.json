@@ -1,0 +1,118 @@
+{
+  "work_item_id": "V1-06",
+  "task_id": "V1-06",
+  "profile_ref": "profiles/vetryn.yaml",
+  "semantic_risk_report_ref": ".factory/artifacts/task-runs/V1-06/semantic-risk-report.json",
+  "semantic_risk_report_sha256": "sha256:22483c69fd2bc8d1ea34a38476b664107edb6727ab7254f8f0a4ba2e75ba12de",
+  "validation_contract_ref": "oss-v1:V1-06:r6",
+  "test_intent": [
+    {
+      "behavior": "Reject direct and symlink-aliased evaluation outputs that overlap receipt or anchor trust state.",
+      "expected_signal": "The CLI rejects the destination before key or provider work and rechecks it before each publication."
+    },
+    {
+      "behavior": "Preserve immutable refresh evidence, raw-lexeme privacy checks, and representative context gating.",
+      "expected_signal": "Focused adversarial and full repository tests remain green."
+    }
+  ],
+  "red_evidence": [
+    {
+      "check": "latest-head review reproduction",
+      "summary": "Review reproduced lexical-path aliases into the receipt head and external anchor before the canonical-path repair.",
+      "evidence_refs": ["https://github.com/Clyra-AI/vetryn/pull/38"]
+    }
+  ],
+  "green_evidence": [
+    {
+      "check": "pnpm check",
+      "summary": "The exact candidate passed the full repository gate with 228 tests.",
+      "evidence_refs": ["ev-v1-06-repo-check-4830146"]
+    },
+    {
+      "check": "pnpm test:contracts",
+      "summary": "The exact candidate passed all deterministic contract and adversarial tests.",
+      "evidence_refs": ["ev-v1-06-contracts-4830146"]
+    },
+    {
+      "check": "pnpm test:scenarios",
+      "summary": "The exact candidate passed all 10 offline golden scenarios.",
+      "evidence_refs": ["ev-v1-06-scenarios-4830146"]
+    }
+  ],
+  "work_proof_marker_refs": [
+    "product/plans/oss-v1/evidence/lifecycle/V1-06/4830146051b07d612340c0439415e78ad3332c97/work_proof_marker.json"
+  ],
+  "test_scope": ["packages/cli/**", "packages/openrouter/**"],
+  "checks": [
+    { "name": "pnpm check", "status": "pass" },
+    { "name": "pnpm test:contracts", "status": "pass" },
+    { "name": "pnpm test:scenarios", "status": "pass" },
+    {
+      "name": "pnpm --silent task:compile -- V1-06",
+      "status": "skipped",
+      "reason": "The task is already accepted and the compiler correctly refuses accepted tasks; the reviewed packet remains oss-v1:V1-06:r6 with unchanged plan and lockfile digests."
+    },
+    { "name": "git diff --check", "status": "pass" }
+  ],
+  "result": "pass",
+  "introduced_failures": [],
+  "pre_existing_failures": [],
+  "independent_validation": {
+    "risk_class": "high",
+    "required_level": "independent_or_human",
+    "provided_levels": ["validation_gate", "replay", "adversarial", "security_review"],
+    "status": "satisfied",
+    "evidence_refs": [
+      "ev-v1-06-repo-check-4830146",
+      "ev-v1-06-contracts-4830146",
+      "ev-v1-06-scenarios-4830146",
+      "product/plans/oss-v1/evidence/lifecycle/V1-06/4830146051b07d612340c0439415e78ad3332c97/review_report.json",
+      "product/plans/oss-v1/evidence/lifecycle/V1-06/4830146051b07d612340c0439415e78ad3332c97/trust_review_report.json"
+    ],
+    "notes": "Independent validation, structured code review, and Vetryn trust review passed on the exact candidate."
+  },
+  "test_first_skipped_reason": {
+    "status": "not_skipped",
+    "reason": "The symlink-alias review finding received focused regressions before the exact candidate passed."
+  },
+  "anti_fitting_notes": [
+    "Regressions cover aliases into both repository evidence and the external anchor.",
+    "The guard runs before effects and immediately before both artifact publications."
+  ],
+  "residual_risks": [
+    "Live OpenRouter execution remains outside offline CI and requires a separate explicit grant.",
+    "Recommendation authorization composition remains the separately planned V1-07 boundary."
+  ],
+  "integrated_validation": {
+    "status": "task_only",
+    "scope_summary": "The repository and offline scenarios passed on the exact repaired V1-06 candidate; latest-head GitHub gates will rerun after push.",
+    "integrated_checks": [
+      {
+        "name": "pnpm check",
+        "status": "pass",
+        "work_proof_marker_ref": "product/plans/oss-v1/evidence/lifecycle/V1-06/4830146051b07d612340c0439415e78ad3332c97/work_proof_marker.json"
+      }
+    ],
+    "fresh_checkout": {
+      "required": false,
+      "status": "not_required",
+      "work_proof_marker_refs": [],
+      "notes": "GitHub CI supplies the clean-checkout replay."
+    },
+    "docs_schema_parity": {
+      "status": "pass",
+      "evidence_refs": [
+        "packages/openrouter/README.md",
+        "packages/cli/README.md",
+        ".changeset/bounded-evals-run.md"
+      ]
+    },
+    "release_readiness": {
+      "claimed": false,
+      "status": "not_applicable",
+      "work_proof_marker_refs": [],
+      "notes": "V1-06 records a minor Changeset but does not publish packages."
+    }
+  },
+  "promotion_decision": "ready_for_pr"
+}

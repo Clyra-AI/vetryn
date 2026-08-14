@@ -1,0 +1,122 @@
+{
+  "artifact_type": "review_report",
+  "schema_version": "0.1",
+  "task_id": "V1-06",
+  "work_item_id": "V1-06",
+  "review_type": "security",
+  "review_scope": ["packages/openrouter/**", "packages/cli/**"],
+  "reviewer_class": "security_reviewer",
+  "reviewer_id": "security-reviewer:codex-local",
+  "producer": {
+    "worker": "code-review",
+    "producer_id": "security-reviewer:codex-local",
+    "producer_class": "security_reviewer"
+  },
+  "current_work": {
+    "validation_run_id": "validation:2026-08-14T06:36:40Z:V1-06",
+    "candidate_digest": "sha256:8f9022ecf93df9b3482a60da2950f300d81042030e6bbd77d0c3075d533e1a12",
+    "work_proof_markers": [
+      {
+        "ref": "product/plans/oss-v1/evidence/lifecycle/V1-06/35883443e8fd3d14245952ea5f2325fcf4dfed55/work_proof_marker.json",
+        "sha256": "sha256:3d53adce40d2199ddb3216387987804000815c0233701dddd506718ee372af20"
+      }
+    ]
+  },
+  "risk_class": "high",
+  "context_isolation": {
+    "allowed_sources": ["task_packet", "diff", "repo_contracts", "tests", "validation_report"],
+    "disallowed_sources": ["private_builder_notes", "unpromoted_chat_reasoning"],
+    "builder_notes_authoritative": false
+  },
+  "findings": [
+    {
+      "id": "V1-06-PR38-F-1",
+      "severity": "P1",
+      "summary": "A rolled-back repository head could fork the authenticated external history during append.",
+      "status": "resolved",
+      "claim_source": "independently_observed",
+      "verification_status": "independently_verified",
+      "location": "packages/cli/src/evidence-store.ts",
+      "failure_scenario": "Repository head.json is rolled back while the external anchor remains current, followed by a new append.",
+      "impact": "The newer authenticated history could be replaced by a fork.",
+      "minimum_fix": "Require exact repository/external head equality before chain extension.",
+      "promotion_effect": "block_until_fixed",
+      "evidence_refs": ["ev-v1-06-contracts-3588344"]
+    },
+    {
+      "id": "V1-06-PR38-F-2",
+      "severity": "P2",
+      "summary": "A symbolic-linked receipts directory could escape the repository evidence boundary.",
+      "status": "resolved",
+      "claim_source": "independently_observed",
+      "verification_status": "independently_verified",
+      "location": "packages/cli/src/evidence-store.ts",
+      "failure_scenario": "An untrusted checkout pre-creates evidence/receipts as a link to an external directory.",
+      "impact": "Receipt reads and writes could leave the declared evidence store.",
+      "minimum_fix": "Reject symbolic-link components and require receipt realpath containment.",
+      "promotion_effect": "block_until_fixed",
+      "evidence_refs": ["ev-v1-06-contracts-3588344"]
+    },
+    {
+      "id": "V1-06-PR38-F-3",
+      "severity": "P2",
+      "summary": "An output publication failure could leave an authenticated receipt without durable evaluation artifacts.",
+      "status": "resolved",
+      "claim_source": "independently_observed",
+      "verification_status": "independently_verified",
+      "location": "packages/cli/src/evaluation-files.ts",
+      "failure_scenario": "The configured output destination cannot be replaced after evaluation.",
+      "impact": "The execution ID becomes consumed while the reviewed candidate artifacts exist only in memory.",
+      "minimum_fix": "Stage the redacted candidate and execution artifacts before receipt append.",
+      "promotion_effect": "block_until_fixed",
+      "evidence_refs": ["ev-v1-06-contracts-3588344"]
+    },
+    {
+      "id": "V1-06-PR38-F-4",
+      "severity": "P2",
+      "summary": "Display-safe model normalization could collide candidate-run identities.",
+      "status": "resolved",
+      "claim_source": "independently_observed",
+      "verification_status": "independently_verified",
+      "location": "packages/openrouter/src/evaluation.ts",
+      "failure_scenario": "Two canonical model IDs differ only by punctuation that normalizes to the same artifact segment.",
+      "impact": "Distinct candidate evidence could become ambiguous or rejected as duplicate.",
+      "minimum_fix": "Add a digest of the exact canonical model ID to the artifact identity.",
+      "promotion_effect": "block_until_fixed",
+      "evidence_refs": ["ev-v1-06-contracts-3588344"]
+    }
+  ],
+  "verdict": "approved",
+  "required_fixes": [],
+  "residual_risks": [
+    "Live provider behavior is not exercised in offline CI.",
+    "Recommendation authorization composition remains a separately named V1-07 boundary."
+  ],
+  "evidence_refs": [
+    "ev-v1-06-repo-check-3588344",
+    "ev-v1-06-contracts-3588344",
+    "ev-v1-06-scenarios-3588344",
+    "product/plans/oss-v1/evidence/lifecycle/V1-06/35883443e8fd3d14245952ea5f2325fcf4dfed55/validation_report.json"
+  ],
+  "work_proof_marker_refs": [
+    "product/plans/oss-v1/evidence/lifecycle/V1-06/35883443e8fd3d14245952ea5f2325fcf4dfed55/work_proof_marker.json"
+  ],
+  "approval_effect": {
+    "promotion_decision": "ready_for_pr",
+    "approvals_granted": ["candidate-bound-structured-review"],
+    "blocks_promotion": false
+  },
+  "systems_questions": {
+    "state_impact": ["Preserves one externally anchored exact-head receipt history."],
+    "source_of_truth_changes": [
+      "Durable redacted output precedes receipt commitment and model identity remains canonical."
+    ],
+    "feedback_plan": ["GitHub CI replays the complete offline suite after the repair push."],
+    "blast_radius": ["OpenRouter candidate identity and CLI evaluation persistence."],
+    "rollback_or_deletion_test": [
+      "Tests reject head mismatch, receipt-directory links, output publication failure, and model-ID collisions."
+    ],
+    "system_model_summary": "The repair keeps model identity, durable artifacts, repository chain state, and the external anchor consistent before evidence becomes actionable."
+  },
+  "created_at": "2026-08-14T06:36:40Z"
+}

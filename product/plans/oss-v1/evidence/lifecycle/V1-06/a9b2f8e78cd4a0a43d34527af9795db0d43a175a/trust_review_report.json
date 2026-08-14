@@ -1,0 +1,47 @@
+{
+  "artifactType": "vetryn-trust-review-report",
+  "schemaVersion": "1.0.0",
+  "taskId": "V1-06",
+  "candidateCommit": "a9b2f8e78cd4a0a43d34527af9795db0d43a175a",
+  "validationReportRef": "product/plans/oss-v1/evidence/lifecycle/V1-06/a9b2f8e78cd4a0a43d34527af9795db0d43a175a/validation_report.json",
+  "reviewer": "vetryn-trust-review:codex-local",
+  "verdict": "pass",
+  "surfaceMatrix": [
+    {
+      "surface": "protected-output-privacy",
+      "status": "pass",
+      "summary": "Strings, keys, numbers, booleans, nulls, arrays, and nested objects are checked before output redaction."
+    },
+    {
+      "surface": "quality-evidence-sufficiency",
+      "status": "pass",
+      "summary": "Quality requires the reviewed minimum case count and exact rational pass and regression thresholds."
+    },
+    {
+      "surface": "exact-evaluation-economics",
+      "status": "pass",
+      "summary": "Request, aggregate, and observed costs retain exact catalog decimal precision through the hard gate."
+    },
+    {
+      "surface": "measured-evaluation-variance",
+      "status": "pass",
+      "summary": "Repeated candidate observations derive quality, latency, and cost variance instead of placeholder zeros."
+    },
+    {
+      "surface": "deterministic-failure-evidence",
+      "status": "pass",
+      "summary": "Concurrent terminal failures reduce through fixed precedence and incomplete runs remain non-actionable."
+    }
+  ],
+  "unresolvedFindings": [],
+  "evidenceRefs": [
+    "ev-v1-06-contracts-a9b2f8e",
+    "ev-v1-06-scenarios-a9b2f8e",
+    "product/plans/oss-v1/evidence/lifecycle/V1-06/a9b2f8e78cd4a0a43d34527af9795db0d43a175a/review_report.json"
+  ],
+  "residualRisks": [
+    "Live OpenRouter behavior remains outside offline CI and needs an explicit field-operation grant.",
+    "V1-07 must compose recommendation authorization with exact receipt and current-policy verification."
+  ],
+  "createdAt": "2026-08-14T07:15:03Z"
+}

@@ -1,0 +1,42 @@
+{
+  "artifactType": "vetryn-trust-review-report",
+  "schemaVersion": "1.0.0",
+  "taskId": "V1-06",
+  "candidateCommit": "0bd9dce20e7dfc58d9d2ef92538907904b6c67b4",
+  "validationReportRef": "product/plans/oss-v1/evidence/lifecycle/V1-06/0bd9dce20e7dfc58d9d2ef92538907904b6c67b4/validation_report.json",
+  "reviewer": "vetryn-trust-review:codex-local",
+  "verdict": "pass",
+  "surfaceMatrix": [
+    {
+      "surface": "output-credential-trust-state-separation",
+      "status": "pass",
+      "summary": "Canonical destination checks reject direct and aliased overlap among outputs, credentials, receipt state, and the external anchor before effects and publication."
+    },
+    {
+      "surface": "receipt-transaction-recovery",
+      "status": "pass",
+      "summary": "The authenticated pending-head journal records intent before entry publication and recovers each supported partial state without accepting an unanchored entry."
+    },
+    {
+      "surface": "provider-capability-preflight",
+      "status": "pass",
+      "summary": "Baseline and candidate must support both text generation and the structured output required by the fixed evaluator transport before requests begin."
+    },
+    {
+      "surface": "prior-evaluation-trust-boundaries",
+      "status": "pass",
+      "summary": "Refresh lineage, path alias protection, bounded input, exact economics, privacy, and deterministic outcomes remain covered."
+    }
+  ],
+  "unresolvedFindings": [],
+  "evidenceRefs": [
+    "ev-v1-06-contracts-0bd9dce",
+    "ev-v1-06-scenarios-0bd9dce",
+    "product/plans/oss-v1/evidence/lifecycle/V1-06/0bd9dce20e7dfc58d9d2ef92538907904b6c67b4/review_report.json"
+  ],
+  "residualRisks": [
+    "Live OpenRouter behavior remains outside offline CI and needs an explicit field-operation grant.",
+    "V1-07 must compose recommendation authorization with current receipt and policy verification."
+  ],
+  "createdAt": "2026-08-14T11:04:17Z"
+}

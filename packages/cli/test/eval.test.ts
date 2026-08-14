@@ -1,0 +1,412 @@
+import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
+
+import { afterEach, describe, expect, it, vi } from "vitest";
+
+import { createProgram } from "../src/index.js";
+
+const roots: string[] = [];
+
+afterEach(async () => {
+  vi.restoreAllMocks();
+  vi.unstubAllGlobals();
+  vi.useRealTimers();
+  await Promise.all(roots.splice(0).map((root) => rm(root, { force: true, recursive: true })));
+});
+
+describe("vetryn eval", () => {
+  it("rejects output paths that overlap receipt or anchor trust state before I/O", async () => {
+    const root = await mkdtemp(path.join(tmpdir(), "vetryn-eval-overlap-"));
+    roots.push(root);
+    const repositoryRoot = path.join(root, "repo");
+    const evidencePath = path.join(repositoryRoot, ".vetryn", "evidence");
+    const anchorPath = path.join(root, "trust", "anchor.json");
+    const receiptKeyPath = path.join(root, "keys", "receipt.key");
+    const providerKeyPath = path.join(root, "keys", "provider.key");
+    await mkdir(evidencePath, { recursive: true });
+    await mkdir(path.dirname(anchorPath), { recursive: true });
+    const evidenceAlias = path.join(repositoryRoot, "evidence-alias");
+    const anchorAlias = path.join(repositoryRoot, "anchor-alias");
+    await symlink(evidencePath, evidenceAlias);
+    await symlink(path.dirname(anchorPath), anchorAlias);
+
+    for (const paths of [
+      { anchorPath, outputPath: anchorPath },
+      { anchorPath, outputPath: path.join(evidencePath, "head.json") },
+      { anchorPath, outputPath: path.join(evidenceAlias, "head.json") },
+      { anchorPath, outputPath: path.join(anchorAlias, "anchor.json") },
+      { anchorPath, outputPath: receiptKeyPath },
+      { anchorPath: receiptKeyPath, outputPath: path.join(repositoryRoot, "result.json") },
+    ]) {
+      await expect(
+        createProgram().parseAsync([
+          "node",
+          "vetryn",
+          "eval",
+          "--manifest",
+          "unused-manifest.json",
+          "--call-site",
+          "support-classification",
+          "--suite",
+          "unused-suite.json",
+          "--fixture",
+          "unused-fixture.jsonl",
+          "--catalog-store",
+          path.join(repositoryRoot, ".vetryn", "catalog"),
+          "--refresh-id",
+          "overlap-refresh",
+          "--candidate",
+          "openai/gpt-4o-mini",
+          "--run-id",
+          "overlap-run",
+          "--trust-epoch",
+          "overlap-epoch",
+          "--evidence-store",
+          evidencePath,
+          "--anchor",
+          paths.anchorPath,
+          "--receipt-key-file",
+          receiptKeyPath,
+          "--provider-key-file",
+          providerKeyPath,
+          "--output",
+          paths.outputPath,
+          "--root",
+          repositoryRoot,
+        ]),
+      ).rejects.toThrow(/must not overlap receipt or anchor trust state/i);
+    }
+  });
+
+  it("emits redacted reproducible artifacts and an authenticated receipt using offline transport", async () => {
+    const root = await mkdtemp(path.join(tmpdir(), "vetryn-eval-cli-"));
+    roots.push(root);
+    const repositoryRoot = path.join(root, "repo");
+    const anchorPath = path.join(root, "trust", "anchor.json");
+    const keyPath = path.join(root, "keys", "receipt.key");
+    const providerKeyPath = path.join(root, "keys", "provider.key");
+    await mkdir(path.dirname(keyPath), { recursive: true });
+    await writeFile(keyPath, "offline-test-receipt-key-material");
+    await writeFile(providerKeyPath, "offline-provider-key");
+    const exampleRoot = path.resolve("examples/openrouter-typescript");
+    const cases = (
+      await readFile(path.join(exampleRoot, "fixtures/support-classification.evals.jsonl"), "utf8")
+    )
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line) as { id: string; expectedClass: string });
+    const expected = new Map(cases.map((entry) => [entry.id, entry.expectedClass]));
+    const times = ["2026-08-10T00:00:01.000Z", "2026-08-10T00:00:02.000Z"];
+    const outputPath = path.join(repositoryRoot, ".vetryn", "runs", "result.json");
+    vi.useFakeTimers();
+    vi.setSystemTime("2026-08-10T00:00:00.000Z");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        Promise.resolve(
+          new Response(
+            JSON.stringify({
+              data: [
+                {
+                  architecture: { output_modalities: ["text"] },
+                  context_length: 1_047_576,
+                  id: "openai/gpt-4.1-mini",
+                  pricing: { completion: "0.0000016", prompt: "0.0000004" },
+                  supported_parameters: ["response_format"],
+                },
+                {
+                  architecture: { output_modalities: ["text"] },
+                  context_length: 128_000,
+                  id: "openai/gpt-4o-mini",
+                  pricing: { completion: "0.0000006", prompt: "0.00000015" },
+                  supported_parameters: ["response_format"],
+                },
+              ],
+            }),
+            { headers: { "content-type": "application/json" }, status: 200 },
+          ),
+        ),
+      ),
+    );
+    const stdout = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+    const program = createProgram({
+      clock: { now: () => times.shift() ?? "2026-08-10T00:00:02.000Z" },
+      evaluationTransportFactory: () => ({
+        async execute(request) {
+          return {
+            latencyMs: request.model === "openai/gpt-4.1-mini" ? 600 : 300,
+            outputText: JSON.stringify({ classification: expected.get(request.caseId) }),
+            route: {
+              attempts: [{ model: request.model, providerName: "Azure", statusCode: 200 }],
+              selectedProvider: { model: request.model, providerName: "Azure" },
+            },
+            usage: { completionTokens: 1, promptTokens: 9 },
+          };
+        },
+      }),
+    });
+
+    await program.parseAsync([
+      "node",
+      "vetryn",
+      "eval",
+      "--manifest",
+      path.join(exampleRoot, "fixtures/manifest.json"),
+      "--call-site",
+      "support-classification",
+      "--suite",
+      path.join(exampleRoot, "fixtures/eval-suite.json"),
+      "--fixture",
+      path.join(exampleRoot, "fixtures/support-classification.evals.jsonl"),
+      "--catalog-store",
+      path.join(repositoryRoot, ".vetryn", "catalog"),
+      "--refresh-id",
+      "golden-refresh",
+      "--candidate",
+      "openai/gpt-4o-mini",
+      "--run-id",
+      "support-classification-golden",
+      "--trust-epoch",
+      "golden-epoch",
+      "--evidence-store",
+      path.join(repositoryRoot, ".vetryn", "evidence"),
+      "--anchor",
+      anchorPath,
+      "--receipt-key-file",
+      keyPath,
+      "--provider-key-file",
+      providerKeyPath,
+      "--output",
+      outputPath,
+      "--root",
+      repositoryRoot,
+      "--evaluator-build",
+      "git:golden",
+    ]);
+
+    const artifactText = await readFile(outputPath, "utf8");
+    const artifact = JSON.parse(artifactText) as {
+      candidateRun: {
+        executionRecordId: string;
+        gateOutcomes: Record<string, string>;
+        status: string;
+      };
+      executionRecord: { startedAt: string };
+      receipt: { headDigest: string };
+    };
+    expect(artifact.candidateRun).toMatchObject({
+      executionRecordId: "execution-record:support-classification-golden",
+      gateOutcomes: {
+        context: "pass",
+        cost: "pass",
+        latency: "pass",
+        privacy: "pass",
+        quality: "pass",
+      },
+      status: "complete",
+    });
+    expect(artifact.executionRecord.startedAt).toBe("2026-08-10T00:00:01.000Z");
+    expect(artifact.receipt.headDigest).toMatch(/^sha256:/);
+    expect(artifactText).not.toContain("Synthetic request");
+    expect(artifactText).not.toContain("offline-provider-key");
+    expect(stdout).toHaveBeenCalled();
+  });
+
+  it("authenticates a successful refresh before a later output failure", async () => {
+    const root = await mkdtemp(path.join(tmpdir(), "vetryn-eval-output-failure-"));
+    roots.push(root);
+    const repositoryRoot = path.join(root, "repo");
+    const anchorPath = path.join(root, "trust", "anchor.json");
+    const keyPath = path.join(root, "keys", "receipt.key");
+    const providerKeyPath = path.join(root, "keys", "provider.key");
+    const evidencePath = path.join(repositoryRoot, ".vetryn", "evidence");
+    const outputPath = path.join(repositoryRoot, "blocked-output");
+    await mkdir(path.dirname(keyPath), { recursive: true });
+    await writeFile(keyPath, "offline-test-receipt-key-material");
+    await writeFile(providerKeyPath, "offline-provider-key");
+    await mkdir(outputPath, { recursive: true });
+    const exampleRoot = path.resolve("examples/openrouter-typescript");
+    vi.useFakeTimers();
+    vi.setSystemTime("2026-08-10T00:00:00.000Z");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        Promise.resolve(
+          new Response(
+            JSON.stringify({
+              data: [
+                {
+                  architecture: { output_modalities: ["text"] },
+                  context_length: 1_047_576,
+                  id: "openai/gpt-4.1-mini",
+                  pricing: { completion: "0.0000016", prompt: "0.0000004" },
+                  supported_parameters: ["response_format"],
+                },
+                {
+                  architecture: { output_modalities: ["text"] },
+                  context_length: 128_000,
+                  id: "openai/gpt-4o-mini",
+                  pricing: { completion: "0.0000006", prompt: "0.00000015" },
+                  supported_parameters: ["response_format"],
+                },
+              ],
+            }),
+            { headers: { "content-type": "application/json" }, status: 200 },
+          ),
+        ),
+      ),
+    );
+    const expected = new Map(
+      (
+        await readFile(
+          path.join(exampleRoot, "fixtures/support-classification.evals.jsonl"),
+          "utf8",
+        )
+      )
+        .trim()
+        .split("\n")
+        .map((line) => JSON.parse(line) as { id: string; expectedClass: string })
+        .map((entry) => [entry.id, entry.expectedClass] as const),
+    );
+
+    await expect(
+      createProgram({
+        clock: { now: () => "2026-08-10T00:00:01.000Z" },
+        evaluationTransportFactory: () => ({
+          async execute(request) {
+            return {
+              latencyMs: 100,
+              outputText: JSON.stringify({ classification: expected.get(request.caseId) }),
+              route: {
+                attempts: [{ model: request.model, providerName: "Azure", statusCode: 200 }],
+                selectedProvider: { model: request.model, providerName: "Azure" },
+              },
+              usage: { completionTokens: 1, promptTokens: 9 },
+            };
+          },
+        }),
+      }).parseAsync([
+        "node",
+        "vetryn",
+        "eval",
+        "--manifest",
+        path.join(exampleRoot, "fixtures/manifest.json"),
+        "--call-site",
+        "support-classification",
+        "--suite",
+        path.join(exampleRoot, "fixtures/eval-suite.json"),
+        "--fixture",
+        path.join(exampleRoot, "fixtures/support-classification.evals.jsonl"),
+        "--catalog-store",
+        path.join(repositoryRoot, ".vetryn", "catalog"),
+        "--refresh-id",
+        "output-failure-refresh",
+        "--candidate",
+        "openai/gpt-4o-mini",
+        "--run-id",
+        "output-failure-invocation",
+        "--trust-epoch",
+        "output-failure-epoch",
+        "--evidence-store",
+        evidencePath,
+        "--anchor",
+        anchorPath,
+        "--receipt-key-file",
+        keyPath,
+        "--provider-key-file",
+        providerKeyPath,
+        "--output",
+        outputPath,
+        "--root",
+        repositoryRoot,
+        "--evaluator-build",
+        "git:output-failure",
+      ]),
+    ).rejects.toThrow();
+    const head = JSON.parse(await readFile(path.join(evidencePath, "head.json"), "utf8")) as {
+      headDigest: string;
+      sequence: number;
+    };
+    const entry = JSON.parse(
+      await readFile(
+        path.join(evidencePath, "receipts", `${head.headDigest.slice("sha256:".length)}.json`),
+        "utf8",
+      ),
+    ) as { artifactType: string; observation: { status: string } };
+    expect(head.sequence).toBe(1);
+    expect(entry).toMatchObject({
+      artifactType: "authenticated-catalog-refresh-attempt",
+      observation: { status: "success" },
+    });
+  });
+
+  it("authenticates a terminal live catalog failure before refusing evaluation", async () => {
+    const root = await mkdtemp(path.join(tmpdir(), "vetryn-eval-failure-"));
+    roots.push(root);
+    const repositoryRoot = path.join(root, "repo");
+    const anchorPath = path.join(root, "trust", "anchor.json");
+    const keyPath = path.join(root, "keys", "receipt.key");
+    const providerKeyPath = path.join(root, "keys", "provider.key");
+    const evidencePath = path.join(repositoryRoot, ".vetryn", "evidence");
+    await mkdir(path.dirname(keyPath), { recursive: true });
+    await writeFile(keyPath, "offline-test-receipt-key-material");
+    await writeFile(providerKeyPath, "offline-provider-key");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response("unavailable", { status: 503 })),
+    );
+
+    await expect(
+      createProgram().parseAsync([
+        "node",
+        "vetryn",
+        "eval",
+        "--manifest",
+        "unused-manifest.json",
+        "--call-site",
+        "support-classification",
+        "--suite",
+        "unused-suite.json",
+        "--fixture",
+        "unused-fixture.jsonl",
+        "--catalog-store",
+        path.join(repositoryRoot, ".vetryn", "catalog"),
+        "--refresh-id",
+        "failed-refresh",
+        "--candidate",
+        "openai/gpt-4o-mini",
+        "--run-id",
+        "failed-evaluation",
+        "--trust-epoch",
+        "golden-epoch",
+        "--evidence-store",
+        evidencePath,
+        "--anchor",
+        anchorPath,
+        "--receipt-key-file",
+        keyPath,
+        "--provider-key-file",
+        providerKeyPath,
+        "--output",
+        path.join(repositoryRoot, "unused-output.json"),
+        "--root",
+        repositoryRoot,
+      ]),
+    ).rejects.toThrow(/terminal catalog refresh failed/i);
+
+    const head = JSON.parse(await readFile(path.join(evidencePath, "head.json"), "utf8")) as {
+      headDigest: string;
+    };
+    const entry = JSON.parse(
+      await readFile(
+        path.join(evidencePath, "receipts", `${head.headDigest.slice("sha256:".length)}.json`),
+        "utf8",
+      ),
+    ) as { artifactType: string; observation: { status: string } };
+    expect(entry).toMatchObject({
+      artifactType: "authenticated-catalog-refresh-attempt",
+      observation: { status: "failure" },
+    });
+  });
+});

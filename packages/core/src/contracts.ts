@@ -29,6 +29,12 @@ const evalSuiteArtifactIdSchema = artifactIdSchema.refine(
   (value) => value.startsWith("eval-suite:"),
   "Use an eval-suite artifact ID.",
 );
+const executionRecordIdSchema = z
+  .string()
+  .regex(
+    /^execution-record:[a-z][a-z0-9]*(?:-[a-z0-9]+)*(?:--[a-z][a-z0-9]*(?:-[a-z0-9]+)*)*$/,
+    "Use a deterministic evaluation execution-record ID.",
+  );
 const digestSchema = z.string().regex(/^sha256:[0-9a-f]{64}$/, "Use a sha256 digest.");
 const decimalSchema = z
   .string()
@@ -426,6 +432,21 @@ const candidateRunProvenanceSchema = z
         version: z.string().min(1),
       })
       .strict(),
+    limits: z
+      .object({
+        concurrency: z.number().int().positive().max(32),
+        maxRequests: z.number().int().positive().max(100_000),
+        maxSpendUsd: decimalSchema,
+        retries: z.number().int().nonnegative().max(10),
+        timeoutMs: z.number().int().positive().max(300_000),
+      })
+      .strict(),
+    observed: z
+      .object({
+        providerRequestCount: z.number().int().nonnegative().max(100_000),
+        spendUsd: decimalSchema,
+      })
+      .strict(),
     sampling: z
       .object({
         maxOutputTokens: z.number().int().positive(),
@@ -612,6 +633,7 @@ export const candidateRunSchema = z
     confidenceFloor: confidenceSchema,
     evaluationInputDigest: digestSchema,
     evalSuiteId: artifactIdSchema,
+    executionRecordId: executionRecordIdSchema,
     failureCode: candidateRunFailureCodeSchema.optional(),
     fixtureDigest: digestSchema,
     gateOutcomes: hardGateOutcomesSchema.optional(),
@@ -838,6 +860,87 @@ export const candidateRunSchema = z
   });
 
 export type CandidateRun = z.infer<typeof candidateRunSchema>;
+
+export const evaluationExecutionRecordSchema = z
+  .object({
+    artifactContentDigest: digestSchema,
+    artifactType: z.literal("evaluation-execution-record"),
+    candidateRunId: artifactIdSchema,
+    catalogRefreshLineageDigest: digestSchema,
+    completedAt: z.string().datetime({ offset: true }),
+    evaluationInputDigest: digestSchema,
+    id: executionRecordIdSchema,
+    runner: z
+      .object({
+        build: opaqueReferenceSchema,
+        id: stableIdSchema,
+        version: z.string().min(1),
+      })
+      .strict(),
+    schemaVersion: z.literal(VETRYN_ARTIFACT_SCHEMA_VERSION),
+    startedAt: z.string().datetime({ offset: true }),
+  })
+  .strict()
+  .superRefine((record, context) => {
+    assertArtifactReferencePrefix(record.candidateRunId, context, "candidate-run", [
+      "candidateRunId",
+    ]);
+    if (Date.parse(record.startedAt) > Date.parse(record.completedAt)) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Evaluation execution record cannot complete before it starts.",
+        path: ["completedAt"],
+      });
+    }
+  });
+
+export type EvaluationExecutionRecord = z.infer<typeof evaluationExecutionRecordSchema>;
+
+export function parseEvaluationExecutionRecord(value: unknown): EvaluationExecutionRecord {
+  return parseWithDiagnostics(
+    evaluationExecutionRecordSchema,
+    "evaluation execution record",
+    value,
+  );
+}
+
+export function createCandidateRunContentDigest(value: unknown): string {
+  const run = parseCandidateRun(value);
+  return `sha256:${createHash("sha256").update(canonicalizeJson(run), "utf8").digest("hex")}`;
+}
+
+export function assertCandidateRunExecutionRecord(
+  candidateRunInput: unknown,
+  executionRecordInput: unknown,
+): EvaluationExecutionRecord {
+  const candidateRun = parseCandidateRun(candidateRunInput);
+  const record = parseEvaluationExecutionRecord(executionRecordInput);
+  if (candidateRun.executionRecordId !== record.id) {
+    throw new VetrynContractError("Candidate run cites a different execution record.");
+  }
+  if (candidateRun.id !== record.candidateRunId) {
+    throw new VetrynContractError("Execution record cites a different candidate run.");
+  }
+  if (candidateRun.evaluationInputDigest !== record.evaluationInputDigest) {
+    throw new VetrynContractError("Execution record has a different evaluation input digest.");
+  }
+  if (
+    candidateRun.provenance.startedAt !== record.startedAt ||
+    candidateRun.provenance.completedAt !== record.completedAt
+  ) {
+    throw new VetrynContractError("Execution record timestamps differ from the canonical runner.");
+  }
+  if (
+    candidateRun.provenance.evaluator.build !== record.runner.build ||
+    candidateRun.provenance.evaluator.version !== record.runner.version
+  ) {
+    throw new VetrynContractError("Execution record has a different evaluator identity.");
+  }
+  if (record.artifactContentDigest !== createCandidateRunContentDigest(candidateRun)) {
+    throw new VetrynContractError("Execution record does not bind the candidate-run content.");
+  }
+  return record;
+}
 
 export const recommendationStatusSchema = z.enum([
   "recommend",
@@ -1136,7 +1239,12 @@ function recommendationConfidenceUpperBound(candidateRun: CandidateRun): number 
   );
 }
 
-export function assertRecommendationEvidence(
+/**
+ * Checks only the internal consistency of a recommendation and its supplied
+ * artifacts. This pure contract helper does not authenticate execution records
+ * or receipt-store state and therefore cannot authorize a recommendation or patch.
+ */
+export function assertRecommendationArtifactConsistency(
   recommendation: Recommendation,
   candidateRuns: readonly CandidateRun[],
   expectedEvaluationInputDigest: string,

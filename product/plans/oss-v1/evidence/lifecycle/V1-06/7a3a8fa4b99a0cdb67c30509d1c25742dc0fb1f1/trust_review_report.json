@@ -1,0 +1,47 @@
+{
+  "artifactType": "vetryn-trust-review-report",
+  "schemaVersion": "1.0.0",
+  "taskId": "V1-06",
+  "candidateCommit": "7a3a8fa4b99a0cdb67c30509d1c25742dc0fb1f1",
+  "validationReportRef": "product/plans/oss-v1/evidence/lifecycle/V1-06/7a3a8fa4b99a0cdb67c30509d1c25742dc0fb1f1/validation_report.json",
+  "reviewer": "vetryn-trust-review:codex-local",
+  "verdict": "pass",
+  "surfaceMatrix": [
+    {
+      "surface": "evidence-sufficiency-and-case-binding",
+      "status": "pass",
+      "summary": "Required facts are nonempty and the actual ordered cases are bound into the fixture and evaluation-input digests."
+    },
+    {
+      "surface": "hard-limits-and-privacy",
+      "status": "pass",
+      "summary": "Quality, privacy, route, spend, retry, concurrency, timeout, and response-size limits fail closed."
+    },
+    {
+      "surface": "provider-route-evidence",
+      "status": "pass",
+      "summary": "Every attempt requires explicit provider, model, and status metadata; missing, cached, or inconsistent metadata remains incomplete."
+    },
+    {
+      "surface": "execution-and-catalog-provenance",
+      "status": "pass",
+      "summary": "Runner time, one-use same-invocation provenance, authenticated receipts, latest terminal attempts, and anti-rollback anchors are reverified."
+    },
+    {
+      "surface": "abstention-and-consumer-boundary",
+      "status": "pass",
+      "summary": "Incomplete evidence cannot become recommendation input; the core helper is explicitly artifact-consistency-only until V1-07 composes receipt-authenticated authorization."
+    }
+  ],
+  "unresolvedFindings": [],
+  "evidenceRefs": [
+    "ev-v1-06-contracts-7a3a8fa",
+    "ev-v1-06-scenarios-7a3a8fa",
+    "product/plans/oss-v1/evidence/lifecycle/V1-06/7a3a8fa4b99a0cdb67c30509d1c25742dc0fb1f1/review_report.json"
+  ],
+  "residualRisks": [
+    "Live OpenRouter behavior remains outside offline CI and needs an explicit field-operation grant.",
+    "V1-07 must compose recommendation authorization with exact receipt and current-policy verification."
+  ],
+  "createdAt": "2026-08-14T05:17:02Z"
+}

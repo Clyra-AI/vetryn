@@ -1,0 +1,609 @@
+import { createHmac } from "node:crypto";
+import { mkdir, mkdtemp, readFile, rm, symlink, unlink, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
+
+import { afterEach, describe, expect, it, vi } from "vitest";
+
+import { FileExecutionReceiptStore } from "../src/evidence-store.js";
+import {
+  createCatalogRefreshLineageDigest,
+  createCurrentCatalogRefresh,
+  createEvaluationCaseDigest,
+  evaluateOpenRouterCandidate,
+  refreshOpenRouterCatalog,
+  type CatalogStore,
+} from "@vetryn/openrouter";
+
+const roots: string[] = [];
+const digest = (character: string) => `sha256:${character.repeat(64)}`;
+
+const refreshSuccess = {
+  acquisition: "live-api",
+  artifactType: "openrouter-catalog-refresh-observation",
+  contentDigest: digest("d"),
+  errorCode: null,
+  id: "refresh-success",
+  normalizerVersion: "1.0.0",
+  observedAt: "2026-08-10T00:00:00.000Z",
+  reusedSnapshot: false,
+  schemaVersion: "1.0.0",
+  snapshotId: "catalog-snapshot:openrouter-test",
+  source: "openrouter",
+  sourceRef: "openrouter-models-api",
+  status: "success",
+} as const;
+const refreshFailure = {
+  ...refreshSuccess,
+  contentDigest: null,
+  errorCode: "fetch-failed",
+  id: "refresh-failure",
+  snapshotId: null,
+  status: "failure",
+} as const;
+const lineage = {
+  attempts: [{ observation: refreshSuccess, ordinal: 1 }],
+  invocationId: "invocation-one",
+  schemaVersion: "1.0.0",
+  terminalOrdinal: 1,
+} as const;
+
+const record = {
+  artifactContentDigest: digest("a"),
+  artifactType: "evaluation-execution-record",
+  candidateRunId: "candidate-run:support-classification-test",
+  catalogRefreshLineageDigest: createCatalogRefreshLineageDigest(lineage),
+  completedAt: "2026-08-10T00:00:02.000Z",
+  evaluationInputDigest: digest("c"),
+  id: "execution-record:support-classification-test",
+  runner: { build: "git:test", id: "vetryn-evaluator", version: "0.1.0" },
+  schemaVersion: "1.0.0",
+  startedAt: "2026-08-10T00:00:01.000Z",
+} as const;
+
+afterEach(async () => {
+  vi.restoreAllMocks();
+  vi.unstubAllGlobals();
+  vi.useRealTimers();
+  await Promise.all(roots.splice(0).map((root) => rm(root, { force: true, recursive: true })));
+});
+
+async function fixture() {
+  const root = await mkdtemp(path.join(tmpdir(), "vetryn-receipts-"));
+  roots.push(root);
+  const repositoryRoot = path.join(root, "repo");
+  const evidencePath = path.join(repositoryRoot, ".vetryn", "evidence");
+  const anchorPath = path.join(root, "trust", "anchor.json");
+  const key = Buffer.from("offline-test-key-that-is-not-a-credential");
+  return {
+    anchorPath,
+    evidencePath,
+    key,
+    repositoryRoot,
+    store: new FileExecutionReceiptStore({ anchorPath, evidencePath, key, repositoryRoot }),
+  };
+}
+
+describe("authenticated execution receipt store", () => {
+  it("appends and verifies an exact-head authenticated receipt", async () => {
+    const { store } = await fixture();
+    const appended = await store.append(record, {
+      catalogRefreshLineage: lineage,
+      trustEpochId: "epoch-one",
+    });
+
+    expect(appended.sequence).toBe(1);
+    await expect(store.verify(record.id)).resolves.toMatchObject({
+      actionable: true,
+      reason: "verified",
+      receipt: { executionRecord: record, sequence: 1, trustEpochId: "epoch-one" },
+    });
+    await expect(
+      store.append(record, { catalogRefreshLineage: lineage, trustEpochId: "epoch-one" }),
+    ).rejects.toThrow(/collision/i);
+  });
+
+  it("rejects an oversized receipt through the bounded reader", async () => {
+    const fixtureState = await fixture();
+    const appended = await fixtureState.store.append(record, {
+      catalogRefreshLineage: lineage,
+      trustEpochId: "epoch-one",
+    });
+    await writeFile(
+      path.join(
+        fixtureState.evidencePath,
+        "receipts",
+        `${appended.headDigest.slice("sha256:".length)}.json`,
+      ),
+      Buffer.alloc(1_000_001, 0x20),
+    );
+
+    await expect(fixtureState.store.verify(record.id)).resolves.toEqual({
+      actionable: false,
+      reason: "invalid-chain",
+      receipt: null,
+    });
+  });
+
+  it("fails closed on missing anchor, tamper, and rollback", async () => {
+    const fixtureState = await fixture();
+    const first = await fixtureState.store.append(record, {
+      catalogRefreshLineage: lineage,
+      trustEpochId: "epoch-one",
+    });
+    const firstAnchor = await readFile(fixtureState.anchorPath, "utf8");
+    const secondRecord = { ...record, id: "execution-record:support-classification-second" };
+    const second = await fixtureState.store.append(secondRecord, {
+      catalogRefreshLineage: lineage,
+      trustEpochId: "epoch-one",
+    });
+
+    await writeFile(fixtureState.anchorPath, firstAnchor);
+    await expect(fixtureState.store.verify(secondRecord.id)).resolves.toMatchObject({
+      actionable: false,
+      reason: "anchor-head-mismatch",
+    });
+
+    const receiptPath = path.join(
+      fixtureState.evidencePath,
+      "receipts",
+      `${second.headDigest.slice("sha256:".length)}.json`,
+    );
+    await writeFile(receiptPath, `${JSON.stringify({ forged: true })}\n`);
+    await expect(fixtureState.store.verify(secondRecord.id)).resolves.toMatchObject({
+      actionable: false,
+      reason: "anchor-head-mismatch",
+    });
+
+    await unlink(fixtureState.anchorPath);
+    await expect(fixtureState.store.verify(first.executionRecordId)).resolves.toEqual({
+      actionable: false,
+      reason: "missing-trust-state",
+      receipt: null,
+    });
+  });
+
+  it("starts a new epoch without making prior unanchored receipts actionable", async () => {
+    const fixtureState = await fixture();
+    await fixtureState.store.append(record, {
+      catalogRefreshLineage: lineage,
+      trustEpochId: "epoch-one",
+    });
+    await unlink(fixtureState.anchorPath);
+    const nextRecord = { ...record, id: "execution-record:support-classification-fresh" };
+    const fresh = await fixtureState.store.append(nextRecord, {
+      catalogRefreshLineage: lineage,
+      trustEpochId: "epoch-two",
+    });
+
+    expect(fresh).toMatchObject({ sequence: 1, trustEpochId: "epoch-two" });
+    await expect(fixtureState.store.verify(nextRecord.id)).resolves.toMatchObject({
+      actionable: true,
+    });
+    await expect(fixtureState.store.verify(record.id)).resolves.toMatchObject({
+      actionable: false,
+      reason: "record-not-in-current-epoch",
+    });
+  });
+
+  it("restores the prior repository head when the external anchor cannot advance", async () => {
+    const fixtureState = await fixture();
+    const first = await fixtureState.store.append(record, {
+      catalogRefreshLineage: lineage,
+      trustEpochId: "epoch-one",
+    });
+    const headPath = path.join(fixtureState.evidencePath, "head.json");
+    const priorHead = await readFile(headPath, "utf8");
+    const secondRecord = { ...record, id: "execution-record:support-classification-retry" };
+    class FailingAnchorStore extends FileExecutionReceiptStore {
+      protected override async advanceAnchor(): Promise<void> {
+        throw new Error("injected external anchor failure");
+      }
+    }
+    const failingStore = new FailingAnchorStore({
+      anchorPath: fixtureState.anchorPath,
+      evidencePath: fixtureState.evidencePath,
+      key: fixtureState.key,
+      repositoryRoot: fixtureState.repositoryRoot,
+    });
+
+    await expect(
+      failingStore.append(secondRecord, {
+        catalogRefreshLineage: lineage,
+        trustEpochId: "epoch-one",
+      }),
+    ).rejects.toThrow(/injected external anchor failure/i);
+    await expect(readFile(headPath, "utf8")).resolves.toBe(priorHead);
+    await expect(fixtureState.store.verify(first.executionRecordId)).resolves.toMatchObject({
+      actionable: true,
+    });
+    await expect(fixtureState.store.verify(secondRecord.id)).resolves.toMatchObject({
+      actionable: false,
+      reason: "record-not-in-current-epoch",
+    });
+
+    await expect(
+      fixtureState.store.append(secondRecord, {
+        catalogRefreshLineage: lineage,
+        trustEpochId: "epoch-one",
+      }),
+    ).resolves.toMatchObject({ sequence: 2 });
+  });
+
+  it("recovers an authenticated transaction interrupted between head and anchor writes", async () => {
+    const fixtureState = await fixture();
+    await fixtureState.store.append(record, {
+      catalogRefreshLineage: lineage,
+      trustEpochId: "epoch-one",
+    });
+    const headPath = path.join(fixtureState.evidencePath, "head.json");
+    const priorHead = JSON.parse(await readFile(headPath, "utf8")) as Record<string, unknown>;
+    const priorAnchor = await readFile(fixtureState.anchorPath, "utf8");
+    const interruptedRecord = { ...record, id: "execution-record:interrupted" };
+    const interrupted = await fixtureState.store.append(interruptedRecord, {
+      catalogRefreshLineage: lineage,
+      trustEpochId: "epoch-one",
+    });
+    const nextHead = JSON.parse(await readFile(headPath, "utf8")) as Record<string, unknown>;
+    const transactionBody = {
+      artifactType: "execution-receipt-head-transaction",
+      nextHead,
+      priorHead,
+      schemaVersion: "1.0.0",
+    };
+    await writeFile(fixtureState.anchorPath, priorAnchor);
+    await writeFile(
+      path.join(fixtureState.evidencePath, ".receipt-transaction.json"),
+      `${JSON.stringify(
+        {
+          ...transactionBody,
+          authenticationTag: `hmac-sha256:${createHmac("sha256", fixtureState.key)
+            .update(canonicalJson(transactionBody), "utf8")
+            .digest("hex")}`,
+        },
+        null,
+        2,
+      )}\n`,
+    );
+
+    const recovered = await fixtureState.store.append(interruptedRecord, {
+      catalogRefreshLineage: lineage,
+      trustEpochId: "epoch-one",
+    });
+    expect(recovered).toMatchObject({ headDigest: interrupted.headDigest, sequence: 2 });
+    await expect(fixtureState.store.verify(interruptedRecord.id)).resolves.toMatchObject({
+      actionable: true,
+    });
+  });
+
+  it("rejects symlink paths that cross repository and external-anchor boundaries", async () => {
+    const root = await mkdtemp(path.join(tmpdir(), "vetryn-receipt-links-"));
+    roots.push(root);
+    const repositoryRoot = path.join(root, "repo");
+    const external = path.join(root, "external");
+    await mkdir(repositoryRoot, { recursive: true });
+    await mkdir(external, { recursive: true });
+    await symlink(external, path.join(repositoryRoot, ".vetryn"));
+    const evidenceSymlinkStore = new FileExecutionReceiptStore({
+      anchorPath: path.join(root, "trust", "anchor.json"),
+      evidencePath: path.join(repositoryRoot, ".vetryn", "evidence"),
+      key: Buffer.from("offline-test-key-that-is-not-a-credential"),
+      repositoryRoot,
+    });
+    await expect(
+      evidenceSymlinkStore.append(record, {
+        catalogRefreshLineage: lineage,
+        trustEpochId: "epoch-one",
+      }),
+    ).rejects.toThrow(/symbolic-link|outside/i);
+
+    await unlink(path.join(repositoryRoot, ".vetryn"));
+    const receiptsParent = path.join(repositoryRoot, ".vetryn", "evidence");
+    await mkdir(receiptsParent, { recursive: true });
+    await symlink(external, path.join(receiptsParent, "receipts"));
+    const receiptsSymlinkStore = new FileExecutionReceiptStore({
+      anchorPath: path.join(root, "trust", "anchor.json"),
+      evidencePath: receiptsParent,
+      key: Buffer.from("offline-test-key-that-is-not-a-credential"),
+      repositoryRoot,
+    });
+    await expect(
+      receiptsSymlinkStore.append(record, {
+        catalogRefreshLineage: lineage,
+        trustEpochId: "epoch-one",
+      }),
+    ).rejects.toThrow(/symbolic-link|outside/i);
+    await unlink(path.join(receiptsParent, "receipts"));
+
+    const repositoryTrust = path.join(repositoryRoot, "trust");
+    await mkdir(repositoryTrust, { recursive: true });
+    await symlink(repositoryTrust, path.join(root, "anchor-link"));
+    const anchorSymlinkStore = new FileExecutionReceiptStore({
+      anchorPath: path.join(root, "anchor-link", "anchor.json"),
+      evidencePath: path.join(repositoryRoot, ".vetryn", "evidence"),
+      key: Buffer.from("offline-test-key-that-is-not-a-credential"),
+      repositoryRoot,
+    });
+    await expect(
+      anchorSymlinkStore.append(record, {
+        catalogRefreshLineage: lineage,
+        trustEpochId: "epoch-one",
+      }),
+    ).rejects.toThrow(/inside repository-controlled/i);
+  });
+
+  it("rejects success followed by failure, omitted attempts, and lineage gaps", async () => {
+    const fixtureState = await fixture();
+    const invalidLineages = [
+      {
+        ...lineage,
+        attempts: [...lineage.attempts, { observation: refreshFailure, ordinal: 2 }],
+        terminalOrdinal: 2,
+      },
+      { ...lineage, attempts: [{ observation: refreshSuccess, ordinal: 2 }] },
+      {
+        ...lineage,
+        attempts: [
+          { observation: refreshFailure, ordinal: 1 },
+          { observation: refreshSuccess, ordinal: 3 },
+        ],
+        terminalOrdinal: 3,
+      },
+    ];
+    for (const invalidLineage of invalidLineages) {
+      await expect(
+        fixtureState.store.append(record, {
+          catalogRefreshLineage: invalidLineage,
+          trustEpochId: "epoch-one",
+        }),
+      ).rejects.toThrow();
+    }
+  });
+
+  it("authenticates later refresh failure and detects omission, deletion, rollback, and forks", async () => {
+    const fixtureState = await fixture();
+    const first = await fixtureState.store.append(record, {
+      catalogRefreshLineage: lineage,
+      trustEpochId: "epoch-one",
+    });
+    const headPath = path.join(fixtureState.evidencePath, "head.json");
+    const oldHead = await readFile(headPath, "utf8");
+    const oldAnchor = await readFile(fixtureState.anchorPath, "utf8");
+
+    const failure = await fixtureState.store.appendCatalogRefreshAttempt(refreshFailure, {
+      invocationId: "invocation-two",
+      ordinal: 1,
+      trustEpochId: "epoch-one",
+    });
+    const failureHead = await readFile(headPath, "utf8");
+    const failureAnchor = await readFile(fixtureState.anchorPath, "utf8");
+    const failurePath = path.join(
+      fixtureState.evidencePath,
+      "receipts",
+      `${failure.headDigest.slice("sha256:".length)}.json`,
+    );
+    const failureEntry = await readFile(failurePath, "utf8");
+
+    await expect(fixtureState.store.verify(first.executionRecordId)).resolves.toMatchObject({
+      actionable: false,
+      reason: "catalog-refresh-not-current",
+    });
+    await expect(
+      fixtureState.store.append(
+        { ...record, id: "execution-record:omitted-refresh-failure" },
+        { catalogRefreshLineage: lineage, trustEpochId: "epoch-one" },
+      ),
+    ).rejects.toThrow(/roll back|omits/i);
+
+    await unlink(failurePath);
+    await expect(fixtureState.store.verify(first.executionRecordId)).resolves.toMatchObject({
+      actionable: false,
+      reason: "invalid-chain",
+    });
+    await writeFile(failurePath, failureEntry);
+
+    await writeFile(headPath, oldHead);
+    await expect(fixtureState.store.verify(first.executionRecordId)).resolves.toMatchObject({
+      actionable: false,
+      reason: "anchor-head-mismatch",
+    });
+    await expect(
+      fixtureState.store.append(
+        { ...record, id: "execution-record:rollback-fork" },
+        { catalogRefreshLineage: lineage, trustEpochId: "epoch-one" },
+      ),
+    ).rejects.toThrow(/heads do not match/i);
+
+    await writeFile(fixtureState.anchorPath, oldAnchor);
+    await fixtureState.store.appendCatalogRefreshAttempt(
+      { ...refreshFailure, id: "refresh-fork" },
+      { invocationId: "invocation-two", ordinal: 1, trustEpochId: "epoch-one" },
+    );
+    await writeFile(fixtureState.anchorPath, failureAnchor);
+    await expect(fixtureState.store.verify(first.executionRecordId)).resolves.toMatchObject({
+      actionable: false,
+      reason: "anchor-head-mismatch",
+    });
+
+    await writeFile(headPath, failureHead);
+    await writeFile(fixtureState.anchorPath, failureAnchor);
+    await expect(fixtureState.store.verify(first.executionRecordId)).resolves.toMatchObject({
+      actionable: false,
+      reason: "catalog-refresh-not-current",
+    });
+  });
+
+  it("cannot restamp a consumed live success after an authenticated later failure", async () => {
+    const fixtureState = await fixture();
+    const store: CatalogStore = {
+      async hasSnapshot() {
+        return false;
+      },
+      async putObservation() {},
+      async putRefresh(snapshot, observation) {
+        return { observation: { ...observation, reusedSnapshot: false }, snapshot };
+      },
+      async putSnapshot(snapshot) {
+        return { reused: false, snapshot };
+      },
+    };
+    vi.useFakeTimers();
+    vi.setSystemTime("2026-08-10T00:00:00.000Z");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        Promise.resolve(
+          new Response(
+            JSON.stringify({
+              data: [
+                {
+                  architecture: { output_modalities: ["text"] },
+                  context_length: 128_000,
+                  id: "openai/gpt-4.1-mini",
+                  pricing: { completion: "0.0000016", prompt: "0.0000004" },
+                  supported_parameters: ["response_format"],
+                },
+                {
+                  architecture: { output_modalities: ["text"] },
+                  context_length: 128_000,
+                  id: "openai/gpt-4o-mini",
+                  pricing: { completion: "0.0000006", prompt: "0.00000015" },
+                  supported_parameters: ["response_format"],
+                },
+              ],
+            }),
+            { headers: { "content-type": "application/json" }, status: 200 },
+          ),
+        ),
+      ),
+    );
+    const refreshA = await refreshOpenRouterCatalog({
+      acquisition: "live-api",
+      refreshId: "refresh-a",
+      store,
+    });
+    if (refreshA.status !== "success") throw new Error("Expected refresh A to succeed.");
+    const currentA = createCurrentCatalogRefresh({
+      invocationId: "invocation-a",
+      refresh: refreshA,
+    });
+    const cases = [{ expected: { classification: "billing" }, id: "case-a", input: "fixture" }];
+    const callSite = {
+      currentModel: "openai/gpt-4.1-mini",
+      evalSuiteId: "eval-suite:refresh-a",
+      gates: {
+        maxP95LatencyMs: 100,
+        maxQualityRegression: 0,
+        minCases: 1,
+        minPassRate: 1,
+        minRecommendationConfidence: 0.8,
+        minSavingsPercent: 1,
+      },
+      id: "refresh-a",
+      name: "Refresh A",
+      owner: "test",
+      routePolicy: {
+        allowFallbacks: false,
+        dataCollection: "deny",
+        providerSlug: "azure",
+        requireParameters: true,
+        zdr: true,
+      },
+      representativeUsage: {
+        completionTokens: 1,
+        promptTokens: 1,
+        provenanceRef: "reviewed-fixture:refresh-a",
+        reviewed: true,
+      },
+      requiredCapabilities: {
+        structuredOutput: true,
+        textGeneration: true,
+        toolCalls: false,
+      },
+      sourceBinding: {
+        adapter: "openai.chat.completions.create",
+        file: "src/test.ts",
+        sourceFingerprint: digest("a"),
+        symbol: "test",
+      },
+    };
+    const evalSuite = {
+      artifactType: "eval-suite",
+      callSiteId: callSite.id,
+      caseCount: cases.length,
+      fixtureDigest: createEvaluationCaseDigest(cases),
+      fixturePath: "fixtures/refresh-a.jsonl",
+      id: callSite.evalSuiteId,
+      redactionMode: "no-raw-inputs-or-outputs",
+      reviewed: true,
+      schemaVersion: "1.0.0",
+    };
+    const evaluationOptions = {
+      callSite,
+      candidateModel: "openai/gpt-4o-mini",
+      cases,
+      clock: {
+        now: (() => {
+          const times = ["2026-08-10T00:00:01.000Z", "2026-08-10T00:00:02.000Z"];
+          return () => times.shift() ?? "2026-08-10T00:00:02.000Z";
+        })(),
+      },
+      currentCatalogRefresh: currentA,
+      evalSuite,
+      evaluator: { build: "git:test", id: "vetryn-evaluator", version: "0.1.0" },
+      executionRecordId: "execution-record:refresh-a",
+      limits: { concurrency: 1, maxRequests: 2, maxSpendUsd: "1", retries: 0, timeoutMs: 100 },
+      sampling: { attempts: 1, maxOutputTokens: 8, seed: 42, temperature: 0 },
+      scorer: {
+        configurationDigest: digest("c"),
+        id: "deterministic-assertions",
+        version: "1.0.0",
+      },
+      transport: {
+        async execute(request: { model: string }) {
+          return {
+            latencyMs: 10,
+            outputText: JSON.stringify({ classification: "billing" }),
+            route: {
+              attempts: [{ model: request.model, providerName: "Azure", statusCode: 200 }],
+              selectedProvider: { model: request.model, providerName: "Azure" },
+            },
+            usage: { completionTokens: 1, promptTokens: 1 },
+          };
+        },
+      },
+    } as const;
+    const artifactsA = await evaluateOpenRouterCandidate(evaluationOptions);
+    await fixtureState.store.append(artifactsA.executionRecord, {
+      catalogRefreshLineage: currentA.lineage,
+      trustEpochId: "epoch-one",
+    });
+    await fixtureState.store.appendCatalogRefreshAttempt(refreshFailure, {
+      invocationId: "invocation-b",
+      ordinal: 1,
+      trustEpochId: "epoch-one",
+    });
+
+    await expect(
+      evaluateOpenRouterCandidate({
+        ...evaluationOptions,
+        clock: { now: () => "2026-08-10T00:00:03.000Z" },
+        executionRecordId: "execution-record:refresh-a-reused",
+      }),
+    ).rejects.toThrow(/unconsumed canonical same-invocation/i);
+    await expect(fixtureState.store.verify(artifactsA.executionRecord.id)).resolves.toMatchObject({
+      actionable: false,
+      reason: "catalog-refresh-not-current",
+    });
+  });
+});
+
+function canonicalJson(value: unknown): string {
+  if (value === null || typeof value !== "object") return JSON.stringify(value);
+  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(",")}]`;
+  const recordValue = value as Record<string, unknown>;
+  return `{${Object.keys(recordValue)
+    .sort()
+    .map((key) => `${JSON.stringify(key)}:${canonicalJson(recordValue[key])}`)
+    .join(",")}}`;
+}

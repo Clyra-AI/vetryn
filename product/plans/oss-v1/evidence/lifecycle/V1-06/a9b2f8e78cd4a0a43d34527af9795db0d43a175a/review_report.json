@@ -1,0 +1,136 @@
+{
+  "artifact_type": "review_report",
+  "schema_version": "0.1",
+  "task_id": "V1-06",
+  "work_item_id": "V1-06",
+  "review_type": "security",
+  "review_scope": ["packages/openrouter/**"],
+  "reviewer_class": "security_reviewer",
+  "reviewer_id": "security-reviewer:codex-local",
+  "producer": {
+    "worker": "code-review",
+    "producer_id": "security-reviewer:codex-local",
+    "producer_class": "security_reviewer"
+  },
+  "current_work": {
+    "validation_run_id": "validation:2026-08-14T07:15:03Z:V1-06",
+    "candidate_digest": "sha256:2567549f966a29a6a2a68270e50f57d3dc2a2ba83367d4f9dca4a7e9ad7258c3",
+    "work_proof_markers": [
+      {
+        "ref": "product/plans/oss-v1/evidence/lifecycle/V1-06/a9b2f8e78cd4a0a43d34527af9795db0d43a175a/work_proof_marker.json",
+        "sha256": "sha256:34536a64b8d04ed5f5c071e70fb7e628f0b436a9a8945431f51f3193900bf86d"
+      }
+    ]
+  },
+  "risk_class": "high",
+  "context_isolation": {
+    "allowed_sources": ["task_packet", "diff", "repo_contracts", "tests", "validation_report"],
+    "disallowed_sources": ["private_builder_notes", "unpromoted_chat_reasoning"],
+    "builder_notes_authoritative": false
+  },
+  "findings": [
+    {
+      "id": "V1-06-PR38-EVAL-1",
+      "severity": "P1",
+      "summary": "Serialized protected output could hide escaped control characters from the privacy gate.",
+      "status": "resolved",
+      "claim_source": "independently_observed",
+      "verification_status": "independently_verified",
+      "location": "packages/openrouter/src/evaluation.ts",
+      "failure_scenario": "A protected segment contains a newline or control character escaped by JSON serialization.",
+      "impact": "A privacy-unsafe run could pass its hard gate.",
+      "minimum_fix": "Inspect raw JSON values and keys before redaction.",
+      "promotion_effect": "block_until_fixed",
+      "evidence_refs": ["ev-v1-06-contracts-a9b2f8e"]
+    },
+    {
+      "id": "V1-06-PR38-EVAL-2",
+      "severity": "P2",
+      "summary": "Quality gating omitted the reviewed minimum case count.",
+      "status": "resolved",
+      "claim_source": "independently_observed",
+      "verification_status": "independently_verified",
+      "location": "packages/openrouter/src/evaluation.ts",
+      "failure_scenario": "A complete but undersized suite otherwise passes quality thresholds.",
+      "impact": "Insufficient evidence could be labeled quality-pass.",
+      "minimum_fix": "Require caseCount to meet minCases.",
+      "promotion_effect": "block_until_fixed",
+      "evidence_refs": ["ev-v1-06-contracts-a9b2f8e"]
+    },
+    {
+      "id": "V1-06-PR38-EVAL-3",
+      "severity": "P2",
+      "summary": "Binary floating-point arithmetic could disagree at exact cost boundaries.",
+      "status": "resolved",
+      "claim_source": "independently_observed",
+      "verification_status": "independently_verified",
+      "location": "packages/openrouter/src/evaluation.ts",
+      "failure_scenario": "Long catalog decimals or a boundary threshold round before gate comparison.",
+      "impact": "The runner and consumer could authorize different cost outcomes.",
+      "minimum_fix": "Preserve exact decimal request and aggregate costs through rational gate comparison.",
+      "promotion_effect": "block_until_fixed",
+      "evidence_refs": ["ev-v1-06-contracts-a9b2f8e"]
+    },
+    {
+      "id": "V1-06-PR38-EVAL-4",
+      "severity": "P2",
+      "summary": "Repeated evaluation recorded constant zero variance.",
+      "status": "resolved",
+      "claim_source": "independently_observed",
+      "verification_status": "independently_verified",
+      "location": "packages/openrouter/src/evaluation.ts",
+      "failure_scenario": "Two repetitions differ in quality, latency, and cost.",
+      "impact": "Confidence could ignore observed instability.",
+      "minimum_fix": "Derive population variance from per-repetition metrics.",
+      "promotion_effect": "block_until_fixed",
+      "evidence_refs": ["ev-v1-06-contracts-a9b2f8e"]
+    },
+    {
+      "id": "V1-06-PR38-EVAL-5",
+      "severity": "P2",
+      "summary": "Concurrent terminal failure selection depended on completion order.",
+      "status": "resolved",
+      "claim_source": "independently_observed",
+      "verification_status": "independently_verified",
+      "location": "packages/openrouter/src/evaluation.ts",
+      "failure_scenario": "Timeout and rate-limit failures complete in opposite orders.",
+      "impact": "Identical evidence could produce different failure artifacts.",
+      "minimum_fix": "Collect failures and apply fixed precedence.",
+      "promotion_effect": "block_until_fixed",
+      "evidence_refs": ["ev-v1-06-contracts-a9b2f8e"]
+    }
+  ],
+  "verdict": "approved",
+  "required_fixes": [],
+  "residual_risks": [
+    "Live provider behavior is not exercised in offline CI.",
+    "Recommendation authorization composition remains a separately named V1-07 boundary."
+  ],
+  "evidence_refs": [
+    "ev-v1-06-repo-check-a9b2f8e",
+    "ev-v1-06-contracts-a9b2f8e",
+    "ev-v1-06-scenarios-a9b2f8e",
+    "product/plans/oss-v1/evidence/lifecycle/V1-06/a9b2f8e78cd4a0a43d34527af9795db0d43a175a/validation_report.json"
+  ],
+  "work_proof_marker_refs": [
+    "product/plans/oss-v1/evidence/lifecycle/V1-06/a9b2f8e78cd4a0a43d34527af9795db0d43a175a/work_proof_marker.json"
+  ],
+  "approval_effect": {
+    "promotion_decision": "ready_for_pr",
+    "approvals_granted": ["candidate-bound-structured-review"],
+    "blocks_promotion": false
+  },
+  "systems_questions": {
+    "state_impact": ["Hard-gate evidence now matches raw output and exact reviewed thresholds."],
+    "source_of_truth_changes": [
+      "Candidate metrics now preserve exact catalog price precision and observed repetition variance."
+    ],
+    "feedback_plan": ["GitHub CI replays the complete offline suite after the repair push."],
+    "blast_radius": ["OpenRouter deterministic evaluation and candidate-run provenance."],
+    "rollback_or_deletion_test": [
+      "Tests cover protected primitives, boundary prices, repetition variance, and reversed concurrent failures."
+    ],
+    "system_model_summary": "The evaluator derives durable hard-gate outcomes from raw transient output, exact catalog economics, measured repetitions, and stable failure precedence."
+  },
+  "created_at": "2026-08-14T07:15:03Z"
+}

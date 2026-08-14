@@ -1,0 +1,124 @@
+{
+  "artifact_type": "review_report",
+  "schema_version": "0.1",
+  "task_id": "V1-06",
+  "work_item_id": "V1-06",
+  "review_type": "security",
+  "review_scope": ["packages/cli/**", "packages/openrouter/**"],
+  "reviewer_class": "security_reviewer",
+  "reviewer_id": "security-reviewer:codex-local",
+  "producer": {
+    "worker": "code-review",
+    "producer_id": "security-reviewer:codex-local",
+    "producer_class": "security_reviewer"
+  },
+  "current_work": {
+    "validation_run_id": "validation:2026-08-14T07:39:45Z:V1-06",
+    "candidate_digest": "sha256:1656a64471f922321e6047c8f56bf041c90039da64cb955a69ec533267ffab16",
+    "work_proof_markers": [
+      {
+        "ref": "product/plans/oss-v1/evidence/lifecycle/V1-06/bd52e07df008edf27d10c221ba29cf2c9dbd3eb9/work_proof_marker.json",
+        "sha256": "sha256:84877f4f18fa21be550619413cd59626f61d517c1226ca1bc7bef8ed0ca2d8c5"
+      }
+    ]
+  },
+  "risk_class": "high",
+  "context_isolation": {
+    "allowed_sources": ["task_packet", "diff", "repo_contracts", "tests", "validation_report"],
+    "disallowed_sources": ["private_builder_notes", "unpromoted_chat_reasoning"],
+    "builder_notes_authoritative": false
+  },
+  "findings": [
+    {
+      "id": "V1-06-PR38-FINAL-1",
+      "severity": "P1",
+      "summary": "Successful refresh evidence was persisted after evaluation output effects.",
+      "status": "resolved",
+      "claim_source": "independently_observed",
+      "verification_status": "independently_verified",
+      "location": "packages/cli/src/index.ts",
+      "failure_scenario": "Catalog refresh succeeds and output publication then fails.",
+      "impact": "The durable chain could omit a truthful success attempt.",
+      "minimum_fix": "Authenticate successful refresh attempts before evaluation or output effects.",
+      "promotion_effect": "block_until_fixed",
+      "evidence_refs": ["ev-v1-06-contracts-bd52e07"]
+    },
+    {
+      "id": "V1-06-PR38-FINAL-2",
+      "severity": "P2",
+      "summary": "Baseline-equal candidates were not rejected before provider execution.",
+      "status": "resolved",
+      "claim_source": "independently_observed",
+      "verification_status": "independently_verified",
+      "location": "packages/openrouter/src/evaluation.ts",
+      "failure_scenario": "The requested candidate equals the call site's current model.",
+      "impact": "A useless evaluation could spend provider budget.",
+      "minimum_fix": "Reject candidate equality before dispatch.",
+      "promotion_effect": "block_until_fixed",
+      "evidence_refs": ["ev-v1-06-contracts-bd52e07"]
+    },
+    {
+      "id": "V1-06-PR38-FINAL-3",
+      "severity": "P2",
+      "summary": "Structured-output and tool capability mismatches were not preflighted.",
+      "status": "resolved",
+      "claim_source": "independently_observed",
+      "verification_status": "independently_verified",
+      "location": "packages/openrouter/src/evaluation.ts",
+      "failure_scenario": "A candidate lacks a call site's required structured-output or tool-call capability.",
+      "impact": "A known-incompatible candidate could make provider requests.",
+      "minimum_fix": "Reject every required capability mismatch before dispatch.",
+      "promotion_effect": "block_until_fixed",
+      "evidence_refs": ["ev-v1-06-contracts-bd52e07"]
+    },
+    {
+      "id": "V1-06-PR38-FINAL-4",
+      "severity": "P2",
+      "summary": "Receipt inputs were bounded only after full file allocation.",
+      "status": "resolved",
+      "claim_source": "independently_observed",
+      "verification_status": "independently_verified",
+      "location": "packages/cli/src/evidence-store.ts",
+      "failure_scenario": "An oversized receipt, head, or anchor is supplied.",
+      "impact": "Untrusted durable input could consume unbounded memory before rejection.",
+      "minimum_fix": "Read at most the configured limit plus one byte before parsing.",
+      "promotion_effect": "block_until_fixed",
+      "evidence_refs": ["ev-v1-06-contracts-bd52e07"]
+    }
+  ],
+  "verdict": "approved",
+  "required_fixes": [],
+  "residual_risks": [
+    "Live provider behavior is not exercised in offline CI.",
+    "Recommendation authorization composition remains a V1-07 concern."
+  ],
+  "evidence_refs": [
+    "ev-v1-06-repo-check-bd52e07",
+    "ev-v1-06-contracts-bd52e07",
+    "ev-v1-06-scenarios-bd52e07",
+    "product/plans/oss-v1/evidence/lifecycle/V1-06/bd52e07df008edf27d10c221ba29cf2c9dbd3eb9/validation_report.json"
+  ],
+  "work_proof_marker_refs": [
+    "product/plans/oss-v1/evidence/lifecycle/V1-06/bd52e07df008edf27d10c221ba29cf2c9dbd3eb9/work_proof_marker.json"
+  ],
+  "approval_effect": {
+    "promotion_decision": "ready_for_pr",
+    "approvals_granted": ["candidate-bound-structured-review"],
+    "blocks_promotion": false
+  },
+  "systems_questions": {
+    "state_impact": [
+      "Refresh chronology and preflight rejection now precede evaluation side effects."
+    ],
+    "source_of_truth_changes": [
+      "Receipt readers enforce the durable input byte limit before parsing."
+    ],
+    "feedback_plan": ["GitHub CI replays the complete offline suite after push."],
+    "blast_radius": ["OpenRouter evaluation preflight and CLI receipt persistence."],
+    "rollback_or_deletion_test": [
+      "Tests cover output failure after refresh, zero-call rejection, and oversized receipts."
+    ],
+    "system_model_summary": "The evaluator rejects known-invalid work before effects and persists truthful refresh chronology before downstream failures."
+  },
+  "created_at": "2026-08-14T07:39:45Z"
+}

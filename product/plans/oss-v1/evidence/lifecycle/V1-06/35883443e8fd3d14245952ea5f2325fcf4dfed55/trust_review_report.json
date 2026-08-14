@@ -1,0 +1,47 @@
+{
+  "artifactType": "vetryn-trust-review-report",
+  "schemaVersion": "1.0.0",
+  "taskId": "V1-06",
+  "candidateCommit": "35883443e8fd3d14245952ea5f2325fcf4dfed55",
+  "validationReportRef": "product/plans/oss-v1/evidence/lifecycle/V1-06/35883443e8fd3d14245952ea5f2325fcf4dfed55/validation_report.json",
+  "reviewer": "vetryn-trust-review:codex-local",
+  "verdict": "pass",
+  "surfaceMatrix": [
+    {
+      "surface": "exact-head-history",
+      "status": "pass",
+      "summary": "Repository and external receipt heads must match before every chain extension."
+    },
+    {
+      "surface": "filesystem-evidence-boundary",
+      "status": "pass",
+      "summary": "The receipt directory rejects symbolic-link traversal and must resolve beneath the evidence root."
+    },
+    {
+      "surface": "durable-redacted-output",
+      "status": "pass",
+      "summary": "Redacted candidate and execution artifacts are published before their authenticated receipt advances."
+    },
+    {
+      "surface": "canonical-model-identity",
+      "status": "pass",
+      "summary": "Candidate-run identity includes the exact canonical model ID digest and cannot collapse on punctuation normalization."
+    },
+    {
+      "surface": "bounded-evaluation-regression",
+      "status": "pass",
+      "summary": "The existing privacy, budget, route, freshness, abstention, and one-use execution boundaries remain green."
+    }
+  ],
+  "unresolvedFindings": [],
+  "evidenceRefs": [
+    "ev-v1-06-contracts-3588344",
+    "ev-v1-06-scenarios-3588344",
+    "product/plans/oss-v1/evidence/lifecycle/V1-06/35883443e8fd3d14245952ea5f2325fcf4dfed55/review_report.json"
+  ],
+  "residualRisks": [
+    "Live OpenRouter behavior remains outside offline CI and needs an explicit field-operation grant.",
+    "V1-07 must compose recommendation authorization with exact receipt and current-policy verification."
+  ],
+  "createdAt": "2026-08-14T06:36:40Z"
+}

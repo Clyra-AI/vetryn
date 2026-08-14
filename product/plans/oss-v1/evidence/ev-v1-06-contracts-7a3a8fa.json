@@ -1,0 +1,35 @@
+{
+  "$schema": "../../schemas/evidence.schema.json",
+  "schemaVersion": "1.0.0",
+  "id": "ev-v1-06-contracts-7a3a8fa",
+  "taskId": "V1-06",
+  "type": "command-run",
+  "actor": "validation-gate",
+  "commit": "7a3a8fa4b99a0cdb67c30509d1c25742dc0fb1f1",
+  "createdAt": "2026-08-14T05:17:02Z",
+  "result": {
+    "status": "pass",
+    "checks": [
+      {
+        "name": "pnpm test:contracts",
+        "status": "pass",
+        "summary": "All 216 deterministic contract and adversarial tests passed, including fail-closed scoring, route evidence, spend reservation, bounded streaming, case binding, one-use live provenance, authenticated receipts, and rollback or lineage failures."
+      }
+    ]
+  },
+  "inputs": {
+    "planDigest": "sha256:1c759a5f00ef6e2afdd4214e595947231da0d6f5ce63135b162e98c48223f056",
+    "lockfileDigest": "sha256:0d73c2bc837d2f12314c6fb3b2f28c4389a3887a5fdda7b6898913b2b20c91d9"
+  },
+  "gateBinding": {
+    "gateId": "QG-CONTRACTS",
+    "kind": "command",
+    "command": "pnpm test:contracts"
+  },
+  "review": null,
+  "redaction": {
+    "status": "verified",
+    "containsRawModelOutput": false,
+    "containsSecrets": false
+  }
+}

@@ -1,0 +1,300 @@
+{
+  "artifact_lifecycle_matrix": [
+    {
+      "artifact": "Reviewed evaluation inputs",
+      "producer_or_authority": "Repository-owned call-site manifest, eval suite, fixtures, catalog snapshot, and terminal refresh evidence",
+      "mutable_owner": "Repository maintainer before evaluation starts",
+      "states": ["persisted", "imported", "replay_only", "actionable"],
+      "freshness": "The evaluator derives exact input digests and accepts refresh evidence only from the current invocation or authenticated complete lineage",
+      "integrity": "Strict schemas, canonical digests, exact case counts, and terminal-attempt reconciliation",
+      "authenticity": "Repository review plus same-invocation runtime evidence or an externally authenticated exact-head proof",
+      "actionable_states": ["actionable"],
+      "transitions_and_recovery": [
+        "Missing, stale, contradictory, tampered, replay-only, or non-terminal evidence produces an incomplete run and cannot be repaired by restamping."
+      ]
+    },
+    {
+      "artifact": "Candidate run and execution record",
+      "producer_or_authority": "Canonical Vetryn evaluator using its trusted runtime clock",
+      "mutable_owner": "Evaluator only until canonical serialization and receipt append complete",
+      "states": ["generated", "persisted", "replay_only", "actionable"],
+      "freshness": "Started and completed times come only from the runner clock and remain bound to evaluator identity and exact evaluation inputs",
+      "integrity": "Candidate-run schema, evaluation-input digest, artifact-content digest, finite failure codes, and immutable receipt identity",
+      "authenticity": "Same-invocation execution or a verified receipt-chain extension authenticated by a key outside repository-controlled content",
+      "actionable_states": ["generated", "actionable"],
+      "transitions_and_recovery": [
+        "Complete bounded runs become actionable only after all requests, scores, gates, route observations, and receipt bindings reconcile; failed or incomplete runs remain non-promotable."
+      ]
+    },
+    {
+      "artifact": "Repository execution-receipt log",
+      "producer_or_authority": "Locked canonical receipt store",
+      "mutable_owner": "Receipt store in one append-and-anchor transaction",
+      "states": ["persisted", "replay_only", "actionable"],
+      "freshness": "Monotonic sequence, trust-epoch ID, prior-head digest, and exact external anchor head",
+      "integrity": "Hash-chained canonical entries bind evaluation inputs, artifacts, runner identity, timestamps, and previous head",
+      "authenticity": "Each extension is authenticated with external key material and the exact head is stored outside repository-controlled content",
+      "actionable_states": ["actionable"],
+      "transitions_and_recovery": [
+        "Append and anchor advance are atomic under a lock; crash, concurrent writer, gap, fork, deletion, truncation, rollback, or missing key and anchor downgrades historical entries to replay-only or rejects them."
+      ]
+    },
+    {
+      "artifact": "Deterministic score and hard-gate results",
+      "producer_or_authority": "Built-in schema, required-fact, protected-segment, cost, latency, context, and privacy scorers",
+      "mutable_owner": "Evaluator during the bounded run",
+      "states": ["generated", "persisted"],
+      "freshness": "Bound to scorer identity, version, configuration digest, and exact candidate run",
+      "integrity": "Every case/repetition is accounted for exactly once and hard gates are derived rather than accepted from provider output",
+      "authenticity": "Canonical evaluator build identity and candidate receipt",
+      "actionable_states": ["generated"],
+      "transitions_and_recovery": [
+        "Any hard-gate failure, insufficient coverage, exhausted budget, timeout, invalid output, or privacy violation prevents a complete promotable run."
+      ]
+    },
+    {
+      "artifact": "OpenRouter route-attempt evidence",
+      "producer_or_authority": "Provider adapter at the request boundary",
+      "mutable_owner": "Provider adapter during each bounded request",
+      "states": ["generated", "persisted", "replay_only"],
+      "freshness": "Bound to request, case, repetition, retry ordinal, reviewed route policy, and candidate model",
+      "integrity": "Contiguous attempt ordinals and exactly one selected successful provider per completed request",
+      "authenticity": "Untrusted provider metadata is normalized and reconciled by the adapter; it never supplies runner timestamps or policy",
+      "actionable_states": ["generated"],
+      "transitions_and_recovery": [
+        "Missing, cached-without-metadata, fallback, model mismatch, provider mismatch, duplicate, or contradictory observations leave the run incomplete."
+      ]
+    }
+  ],
+  "authorization_boundary_trace": [
+    {
+      "stage": "input_validation",
+      "authority": "Strict core schemas and compiled V1-06 packet",
+      "input": "Manifest, eval suite, JSONL cases, catalog snapshot, refresh lineage, limits, and deterministic scorer configuration",
+      "decision": "allow",
+      "denied_behavior": "Reject malformed, duplicate, stale, contradictory, oversized, or unbound inputs before any provider request"
+    },
+    {
+      "stage": "reuse_or_persistence",
+      "authority": "Same-invocation identity or verified receipt chain plus exact external anchor",
+      "input": "Candidate-run artifact, execution receipt, refresh lineage, and prior repository evidence",
+      "decision": "allow",
+      "denied_behavior": "Treat imported or historical evidence without current key, anchor, complete chain, and exact bindings as replay-only"
+    },
+    {
+      "stage": "plan_authorization",
+      "authority": "Canonical V1-06 packet and repository product contract",
+      "input": "Allowed paths, offline posture, hard invariants, budgets, retries, tests, and acceptance items",
+      "decision": "allow",
+      "denied_behavior": "Stop instead of broadening scope, using live credentials, or weakening non-waivable gates"
+    },
+    {
+      "stage": "workspace_mutation",
+      "authority": "Current task implementation grant bounded by allowed paths",
+      "input": "Core contracts, OpenRouter adapter, CLI orchestration, fixtures, tests, docs, and Changesets",
+      "decision": "allow",
+      "denied_behavior": "Do not modify TypeScript scanner, Action, plan state, ledger, progress, workflows, or any other path"
+    },
+    {
+      "stage": "command_execution",
+      "authority": "Deterministic local V1-06 validation only",
+      "input": "Offline unit, contract, integration, scenario, build, and pack commands",
+      "decision": "allow",
+      "denied_behavior": "Do not run provider, credential, registry, GitHub, or other network-capable commands"
+    },
+    {
+      "stage": "remote_effect",
+      "authority": "No eligible current-run grant",
+      "input": "OpenRouter calls, package registry, GitHub writes, or metered model execution",
+      "decision": "deny",
+      "denied_behavior": "Produce zero remote calls, writes, and spend; use deterministic offline adapters and fixtures"
+    },
+    {
+      "stage": "external_status",
+      "authority": "Later validation, review, and protected-delivery workers",
+      "input": "CI, review, task promotion, PR, merge, and post-merge state",
+      "decision": "deny",
+      "denied_behavior": "Executor records only implementation evidence and does not fabricate lifecycle status"
+    }
+  ],
+  "normative_adversarial_matrix": [
+    {
+      "invariant": "Evaluation is deterministic, bounded, and accounts for the exact case-by-repetition cross-product.",
+      "positive": "Pinned cases, scorer configuration, sampling, attempts, and fixed runner clock emit byte-stable run artifacts.",
+      "missing": "Absent cases, required assertions, limits, scorer identity, or evaluator identity reject before execution.",
+      "stale": "A changed fixture, evaluator build, policy, catalog, or refresh lineage changes the input digest and prevents reuse.",
+      "contradictory": "Conflicting assertions, duplicate case IDs, or inconsistent outcomes produce insufficient or incomplete evidence.",
+      "tampered": "Provider-supplied gates, timestamps, route policy, costs, or success labels are ignored and re-derived.",
+      "transition_or_recovery": "A bounded retry may recover only within the declared per-request and total budgets; exhaustion is terminal for that run.",
+      "concurrency": "The scheduler never exceeds configured concurrency and records each request exactly once despite out-of-order completion."
+    },
+    {
+      "invariant": "Hard schema, fact, protected-segment, cost, latency, context, and privacy limits cannot be outweighed by quality or savings.",
+      "positive": "All deterministic assertions and each independently derived hard gate pass.",
+      "missing": "Missing required result fields or route evidence fails closed.",
+      "stale": "Stale call-site, suite, catalog, route, or scorer bindings cannot support completion.",
+      "contradictory": "Any gate failure or mutually conflicting representative outcomes prevents promotion.",
+      "tampered": "Producer-supplied pass labels, selected providers, or usage values are validated against bounded observations.",
+      "transition_or_recovery": "Repair requires a new evaluation with corrected reviewed input, never mutation of the old artifact.",
+      "concurrency": "Parallel case outcomes are reduced by stable case and repetition ordinals, not completion order."
+    },
+    {
+      "invariant": "Actionable execution times and persisted reuse come only from the canonical runner or authenticated exact-head provenance.",
+      "positive": "The runner clock supplies ordered times and an authenticated receipt append atomically advances the matching external anchor.",
+      "missing": "Missing key, anchor, receipt, or current artifact binding makes historical evidence replay-only.",
+      "stale": "An anchor that does not equal the repository log head rejects reuse.",
+      "contradictory": "A receipt whose artifact, input, runner, timestamps, sequence, epoch, or prior head disagrees is rejected.",
+      "tampered": "Append, deletion, truncation, reorder, fork, rollback, restamp, or modified digest fails verification.",
+      "transition_or_recovery": "A fresh machine starts a new authenticated epoch for newly executed work and never rehabilitates prior unanchored history.",
+      "concurrency": "A repository lock serializes append plus anchor update; concurrent writers re-read the exact head or fail."
+    },
+    {
+      "invariant": "Only the terminal result of a complete ordered catalog-refresh lineage can authorize provider-backed evaluation.",
+      "positive": "Current-invocation attempts are contiguous and terminate in the cited successful observation.",
+      "missing": "Missing attempt, lineage proof, or exact anchor abstains.",
+      "stale": "An older success followed by a newer failure is not actionable.",
+      "contradictory": "Duplicate ordinals, multiple terminal results, or a success bound to another snapshot rejects.",
+      "tampered": "Deleted failure, rolled-back head, omitted attempt, fork, or lineage gap rejects.",
+      "transition_or_recovery": "Run a new bounded live refresh under a new complete invocation lineage; do not reuse the older success.",
+      "concurrency": "Refresh attempt ordering is assigned by the canonical orchestrator and reconciled independently of response arrival order."
+    }
+  ],
+  "external_effect_preflight": {
+    "actions": [
+      {
+        "action": "agent_runner",
+        "disposition": "not_applicable",
+        "authority_ref": null,
+        "invalid_authority_effect": {
+          "calls": 0,
+          "spend_usd": 0,
+          "writes": 0
+        }
+      },
+      {
+        "action": "model",
+        "disposition": "blocked",
+        "authority_ref": null,
+        "invalid_authority_effect": {
+          "calls": 0,
+          "spend_usd": 0,
+          "writes": 0
+        }
+      },
+      {
+        "action": "repository_command",
+        "disposition": "not_applicable",
+        "authority_ref": null,
+        "invalid_authority_effect": {
+          "calls": 0,
+          "spend_usd": 0,
+          "writes": 0
+        }
+      },
+      {
+        "action": "package_registry",
+        "disposition": "blocked",
+        "authority_ref": null,
+        "invalid_authority_effect": {
+          "calls": 0,
+          "spend_usd": 0,
+          "writes": 0
+        }
+      },
+      {
+        "action": "provider_sandbox",
+        "disposition": "blocked",
+        "authority_ref": null,
+        "invalid_authority_effect": {
+          "calls": 0,
+          "spend_usd": 0,
+          "writes": 0
+        }
+      },
+      {
+        "action": "github",
+        "disposition": "blocked",
+        "authority_ref": null,
+        "invalid_authority_effect": {
+          "calls": 0,
+          "spend_usd": 0,
+          "writes": 0
+        }
+      },
+      {
+        "action": "provider_status",
+        "disposition": "blocked",
+        "authority_ref": null,
+        "invalid_authority_effect": {
+          "calls": 0,
+          "spend_usd": 0,
+          "writes": 0
+        }
+      }
+    ]
+  },
+  "persistence_threat_matrix": [
+    {
+      "threat": "integrity",
+      "attack_cases": [
+        "Modify a run, receipt, prior-head digest, or catalog lineage entry after persistence."
+      ],
+      "expected_disposition": "reject"
+    },
+    {
+      "threat": "authenticity",
+      "attack_cases": [
+        "Supply a repository-owned key, forged MAC, unallowlisted verifier, or producer success label."
+      ],
+      "expected_disposition": "reject"
+    },
+    {
+      "threat": "freshness",
+      "attack_cases": ["Restamp an imported run or reuse an older success after a newer failure."],
+      "expected_disposition": "abstain"
+    },
+    {
+      "threat": "completeness",
+      "attack_cases": [
+        "Delete or omit a receipt, refresh failure, request outcome, route attempt, case, or repetition."
+      ],
+      "expected_disposition": "reject"
+    },
+    {
+      "threat": "ordering",
+      "attack_cases": [
+        "Reorder receipt sequence, retry ordinal, refresh attempt, or runner timestamps."
+      ],
+      "expected_disposition": "reject"
+    },
+    {
+      "threat": "anti_rollback",
+      "attack_cases": [
+        "Rollback, truncate, fork, or replace the repository log while retaining an older local anchor."
+      ],
+      "expected_disposition": "reject"
+    }
+  ],
+  "review_convergence": {
+    "implementation_design_pass": "pass",
+    "same_subsystem_p1_rounds_seen": 0,
+    "decision": "proceed"
+  },
+  "residual_risks": [
+    "Offline deterministic adapters prove protocol and safety behavior but do not validate live OpenRouter metadata variations or operational latency.",
+    "Cross-invocation actionability depends on external key and anchor storage configured by a later authorized runtime; missing state intentionally downgrades history to replay-only."
+  ],
+  "artifact_type": "semantic_risk_report",
+  "schema_version": "0.2",
+  "task_id": "V1-06",
+  "work_item_id": "V1-06",
+  "risk_class": "high",
+  "profile_ref": ".factory/profile.yaml",
+  "source_revision": "a6d02757b77414893fb40ea6967216ab2c7c23fb",
+  "phase": "implementation_design",
+  "created_at": "2026-08-14T01:40:06.062Z",
+  "baseline_evidence": {
+    "work_proof_marker_ref": ".factory/artifacts/task-runs/V1-06/semantic-risk-integrity-marker.json",
+    "work_proof_marker_sha256": "sha256:04f0db81c1f857533e8e217774af69cf7ea1c00576f8197c1e74d4555c8b00af"
+  }
+}

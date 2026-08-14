@@ -1,0 +1,129 @@
+{
+  "work_item_id": "V1-06",
+  "task_id": "V1-06",
+  "profile_ref": "profiles/vetryn.yaml",
+  "semantic_risk_report_ref": ".factory/artifacts/task-runs/V1-06/semantic-risk-report.json",
+  "semantic_risk_report_sha256": "sha256:22483c69fd2bc8d1ea34a38476b664107edb6727ab7254f8f0a4ba2e75ba12de",
+  "validation_contract_ref": "oss-v1:V1-06:r6",
+  "test_intent": [
+    {
+      "behavior": "Preserve one exact authenticated receipt history across append and rollback paths.",
+      "expected_signal": "Mismatched heads and receipt-directory boundary escapes reject before chain advancement."
+    },
+    {
+      "behavior": "Persist redacted evaluation output before its authenticated receipt.",
+      "expected_signal": "An invalid output destination creates no evaluation receipt or repository head."
+    },
+    {
+      "behavior": "Keep candidate-run identity bound to the exact canonical model ID.",
+      "expected_signal": "Model IDs that normalize to the same display-safe text still produce distinct artifact IDs."
+    }
+  ],
+  "red_evidence": [
+    {
+      "check": "latest-head Codex review reproduction",
+      "summary": "The PR review reproduced repository/external head rollback, receipt-directory symlink, output publication, and normalized model-ID collision gaps before the repaired candidate passed.",
+      "evidence_refs": [
+        "https://github.com/Clyra-AI/vetryn/pull/38#discussion_r3781320599",
+        "https://github.com/Clyra-AI/vetryn/pull/38#discussion_r3781320602",
+        "https://github.com/Clyra-AI/vetryn/pull/38#discussion_r3781320603",
+        "https://github.com/Clyra-AI/vetryn/pull/38#discussion_r3781320606"
+      ]
+    }
+  ],
+  "green_evidence": [
+    {
+      "check": "pnpm check",
+      "summary": "The exact repaired candidate passed the full repository gate with 218 tests.",
+      "evidence_refs": ["ev-v1-06-repo-check-3588344"]
+    },
+    {
+      "check": "pnpm test:contracts",
+      "summary": "The exact repaired candidate passed all deterministic contract and adversarial tests.",
+      "evidence_refs": ["ev-v1-06-contracts-3588344"]
+    },
+    {
+      "check": "pnpm test:scenarios",
+      "summary": "The exact repaired candidate passed all 10 offline golden scenarios.",
+      "evidence_refs": ["ev-v1-06-scenarios-3588344"]
+    }
+  ],
+  "work_proof_marker_refs": [
+    "product/plans/oss-v1/evidence/lifecycle/V1-06/35883443e8fd3d14245952ea5f2325fcf4dfed55/work_proof_marker.json"
+  ],
+  "test_scope": ["packages/openrouter/**", "packages/cli/**"],
+  "checks": [
+    { "name": "pnpm check", "status": "pass" },
+    { "name": "pnpm test:contracts", "status": "pass" },
+    { "name": "pnpm test:scenarios", "status": "pass" },
+    {
+      "name": "pnpm --silent task:compile -- V1-06",
+      "status": "skipped",
+      "reason": "The task was already accepted; the compiler correctly refuses accepted tasks. The reviewed packet remains oss-v1:V1-06:r6 with unchanged plan and lockfile digests."
+    },
+    { "name": "git diff --check", "status": "pass" }
+  ],
+  "result": "pass",
+  "introduced_failures": [],
+  "pre_existing_failures": [],
+  "independent_validation": {
+    "risk_class": "high",
+    "required_level": "independent_or_human",
+    "provided_levels": ["validation_gate", "replay", "adversarial", "security_review"],
+    "status": "satisfied",
+    "evidence_refs": [
+      "ev-v1-06-repo-check-3588344",
+      "ev-v1-06-contracts-3588344",
+      "ev-v1-06-scenarios-3588344",
+      "product/plans/oss-v1/evidence/lifecycle/V1-06/35883443e8fd3d14245952ea5f2325fcf4dfed55/review_report.json",
+      "product/plans/oss-v1/evidence/lifecycle/V1-06/35883443e8fd3d14245952ea5f2325fcf4dfed55/trust_review_report.json"
+    ],
+    "notes": "Independent validation, structured code review, and Vetryn trust review passed on the exact repaired candidate."
+  },
+  "test_first_skipped_reason": {
+    "status": "not_skipped",
+    "reason": "Each PR finding received a direct adversarial regression before the repaired candidate passed."
+  },
+  "anti_fitting_notes": [
+    "The rollback regression mutates the real repository head while retaining the authenticated external anchor.",
+    "The symlink regression creates the exact receipts-directory boundary escape.",
+    "The output regression uses an invalid destination and verifies no receipt head is created.",
+    "The identity regression evaluates two canonical model IDs with the same normalized display form."
+  ],
+  "residual_risks": [
+    "Live OpenRouter execution remains intentionally outside offline CI and requires a separate explicit grant.",
+    "Same-account concurrent filesystem mutation remains a trusted-host concern outside V1's offline repository boundary."
+  ],
+  "integrated_validation": {
+    "status": "task_only",
+    "scope_summary": "The whole repository and offline golden scenarios passed on the exact repaired V1-06 candidate; latest-head GitHub gates will rerun after push.",
+    "integrated_checks": [
+      {
+        "name": "pnpm check",
+        "status": "pass",
+        "work_proof_marker_ref": "product/plans/oss-v1/evidence/lifecycle/V1-06/35883443e8fd3d14245952ea5f2325fcf4dfed55/work_proof_marker.json"
+      }
+    ],
+    "fresh_checkout": {
+      "required": false,
+      "status": "not_required",
+      "work_proof_marker_refs": [],
+      "notes": "GitHub CI supplies the clean-checkout replay."
+    },
+    "docs_schema_parity": {
+      "status": "pass",
+      "evidence_refs": [
+        "packages/openrouter/README.md",
+        "packages/cli/README.md",
+        ".changeset/bounded-evals-run.md"
+      ]
+    },
+    "release_readiness": {
+      "claimed": false,
+      "status": "not_applicable",
+      "work_proof_marker_refs": [],
+      "notes": "V1-06 records a minor Changeset but does not publish packages."
+    }
+  },
+  "promotion_decision": "ready_for_pr"
+}
