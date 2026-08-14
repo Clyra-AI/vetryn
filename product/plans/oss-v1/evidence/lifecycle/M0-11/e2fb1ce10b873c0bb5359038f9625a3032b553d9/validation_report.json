@@ -1,0 +1,106 @@
+{
+  "work_item_id": "M0-11",
+  "task_id": "M0-11",
+  "profile_ref": "profiles/vetryn.yaml",
+  "semantic_risk_report_ref": ".factory/artifacts/task-runs/M0-11/semantic-risk-report.json",
+  "semantic_risk_report_sha256": "sha256:3f312c8b3100ce3abd55b04f9ea64e9148ab2f1e0e37dfd3660b35b169bec7da",
+  "validation_contract_ref": "product/plans/oss-v1/plan.json#M0-11",
+  "test_intent": [
+    {
+      "behavior": "Discover one task and report packet-owned routing.",
+      "expected_signal": "A clean checkout returns ready_for_authority."
+    },
+    {
+      "behavior": "Fail closed on invalid or changing state.",
+      "expected_signal": "The preflight returns a finite blocker without mutation."
+    }
+  ],
+  "red_evidence": [
+    {
+      "check": "exact-candidate architecture review",
+      "summary": "Malformed discovery and lifecycle-coupled planning assertions were found and fixed before this candidate."
+    }
+  ],
+  "green_evidence": [
+    {
+      "check": "pnpm check",
+      "summary": "The complete repository gate passed.",
+      "evidence_refs": ["ev-m0-11-repo-check-e2fb1ce"]
+    },
+    {
+      "check": "pnpm test:contracts",
+      "summary": "All contract and integration tests passed.",
+      "evidence_refs": ["ev-m0-11-contracts-e2fb1ce"]
+    }
+  ],
+  "work_proof_marker_refs": [
+    "product/plans/oss-v1/evidence/lifecycle/M0-11/e2fb1ce10b873c0bb5359038f9625a3032b553d9/work_proof_marker.json"
+  ],
+  "test_scope": [
+    ".agents/skills/vetryn-continue-next/scripts/preflight.mjs",
+    "scripts/continue-next-skill.test.mjs",
+    "scripts/plan.test.mjs"
+  ],
+  "checks": [
+    { "name": "pnpm plan:check", "status": "pass" },
+    { "name": "pnpm check", "status": "pass" },
+    { "name": "pnpm test:contracts", "status": "pass" },
+    { "name": "pnpm --silent task:compile -- M0-11", "status": "pass" }
+  ],
+  "result": "pass",
+  "introduced_failures": [],
+  "pre_existing_failures": [],
+  "independent_validation": {
+    "risk_class": "high",
+    "required_level": "independent_or_human",
+    "provided_levels": ["validation_gate", "adversarial", "human_validation_approval"],
+    "status": "satisfied",
+    "evidence_refs": [
+      "ev-m0-11-plan-check-e2fb1ce",
+      "ev-m0-11-repo-check-e2fb1ce",
+      "ev-m0-11-contracts-e2fb1ce"
+    ],
+    "notes": "Maintainer authority is explicit; protected remote gates remain pending."
+  },
+  "test_first_skipped_reason": {
+    "status": "skipped",
+    "reason": "The small wrapper and initial tests were authored together; exact-candidate review supplied both final regressions."
+  },
+  "anti_fitting_notes": [
+    "Tests use arbitrary task IDs and paths.",
+    "Positive and all required fail-closed cases share the same entrypoint."
+  ],
+  "residual_risks": ["ADR 0022 intentionally trusts the developer host and installed tools."],
+  "integrated_validation": {
+    "status": "task_only",
+    "scope_summary": "The whole repository passed locally; remote gates remain pending.",
+    "integrated_checks": [
+      {
+        "name": "pnpm check",
+        "status": "pass",
+        "work_proof_marker_ref": "product/plans/oss-v1/evidence/lifecycle/M0-11/e2fb1ce10b873c0bb5359038f9625a3032b553d9/work_proof_marker.json"
+      }
+    ],
+    "fresh_checkout": {
+      "required": false,
+      "status": "not_required",
+      "work_proof_marker_refs": [],
+      "notes": "GitHub CI supplies the protected clean-checkout replay."
+    },
+    "docs_schema_parity": {
+      "status": "pass",
+      "evidence_refs": [
+        "AGENTS.md",
+        "WORKFLOW.md",
+        "docs/adr/0022-separate-continuation-procedure-from-run-authority.md"
+      ]
+    },
+    "release_readiness": {
+      "claimed": false,
+      "status": "not_applicable",
+      "work_proof_marker_refs": [],
+      "notes": "No package release."
+    }
+  },
+  "promotion_decision": "ready_for_pr"
+}
