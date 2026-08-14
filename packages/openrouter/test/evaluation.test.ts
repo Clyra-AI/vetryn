@@ -798,7 +798,7 @@ describe("bounded deterministic evaluation", () => {
         candidateModel: "openai/gpt-4o-mini",
         currentCatalogRefresh: await acquireCurrentCatalogRefresh(incompatibleCatalog),
         expectedError: /incompatible/i,
-        requiredCapabilities: callSite.requiredCapabilities,
+        requiredCapabilities: { ...callSite.requiredCapabilities, structuredOutput: false },
       },
       {
         candidateModel: "openai/gpt-4o-mini",

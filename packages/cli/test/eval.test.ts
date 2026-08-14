@@ -22,6 +22,8 @@ describe("vetryn eval", () => {
     const repositoryRoot = path.join(root, "repo");
     const evidencePath = path.join(repositoryRoot, ".vetryn", "evidence");
     const anchorPath = path.join(root, "trust", "anchor.json");
+    const receiptKeyPath = path.join(root, "keys", "receipt.key");
+    const providerKeyPath = path.join(root, "keys", "provider.key");
     await mkdir(evidencePath, { recursive: true });
     await mkdir(path.dirname(anchorPath), { recursive: true });
     const evidenceAlias = path.join(repositoryRoot, "evidence-alias");
@@ -29,11 +31,13 @@ describe("vetryn eval", () => {
     await symlink(evidencePath, evidenceAlias);
     await symlink(path.dirname(anchorPath), anchorAlias);
 
-    for (const outputPath of [
-      anchorPath,
-      path.join(evidencePath, "head.json"),
-      path.join(evidenceAlias, "head.json"),
-      path.join(anchorAlias, "anchor.json"),
+    for (const paths of [
+      { anchorPath, outputPath: anchorPath },
+      { anchorPath, outputPath: path.join(evidencePath, "head.json") },
+      { anchorPath, outputPath: path.join(evidenceAlias, "head.json") },
+      { anchorPath, outputPath: path.join(anchorAlias, "anchor.json") },
+      { anchorPath, outputPath: receiptKeyPath },
+      { anchorPath: receiptKeyPath, outputPath: path.join(repositoryRoot, "result.json") },
     ]) {
       await expect(
         createProgram().parseAsync([
@@ -61,13 +65,13 @@ describe("vetryn eval", () => {
           "--evidence-store",
           evidencePath,
           "--anchor",
-          anchorPath,
+          paths.anchorPath,
           "--receipt-key-file",
-          "unused-receipt-key",
+          receiptKeyPath,
           "--provider-key-file",
-          "unused-provider-key",
+          providerKeyPath,
           "--output",
-          outputPath,
+          paths.outputPath,
           "--root",
           repositoryRoot,
         ]),

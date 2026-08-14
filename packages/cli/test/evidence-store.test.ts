@@ -1,3 +1,4 @@
+import { createHmac } from "node:crypto";
 import { mkdir, mkdtemp, readFile, rm, symlink, unlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -227,6 +228,52 @@ describe("authenticated execution receipt store", () => {
         trustEpochId: "epoch-one",
       }),
     ).resolves.toMatchObject({ sequence: 2 });
+  });
+
+  it("recovers an authenticated transaction interrupted between head and anchor writes", async () => {
+    const fixtureState = await fixture();
+    await fixtureState.store.append(record, {
+      catalogRefreshLineage: lineage,
+      trustEpochId: "epoch-one",
+    });
+    const headPath = path.join(fixtureState.evidencePath, "head.json");
+    const priorHead = JSON.parse(await readFile(headPath, "utf8")) as Record<string, unknown>;
+    const priorAnchor = await readFile(fixtureState.anchorPath, "utf8");
+    const interruptedRecord = { ...record, id: "execution-record:interrupted" };
+    const interrupted = await fixtureState.store.append(interruptedRecord, {
+      catalogRefreshLineage: lineage,
+      trustEpochId: "epoch-one",
+    });
+    const nextHead = JSON.parse(await readFile(headPath, "utf8")) as Record<string, unknown>;
+    const transactionBody = {
+      artifactType: "execution-receipt-head-transaction",
+      nextHead,
+      priorHead,
+      schemaVersion: "1.0.0",
+    };
+    await writeFile(fixtureState.anchorPath, priorAnchor);
+    await writeFile(
+      path.join(fixtureState.evidencePath, ".receipt-transaction.json"),
+      `${JSON.stringify(
+        {
+          ...transactionBody,
+          authenticationTag: `hmac-sha256:${createHmac("sha256", fixtureState.key)
+            .update(canonicalJson(transactionBody), "utf8")
+            .digest("hex")}`,
+        },
+        null,
+        2,
+      )}\n`,
+    );
+
+    const recovered = await fixtureState.store.append(interruptedRecord, {
+      catalogRefreshLineage: lineage,
+      trustEpochId: "epoch-one",
+    });
+    expect(recovered).toMatchObject({ headDigest: interrupted.headDigest, sequence: 2 });
+    await expect(fixtureState.store.verify(interruptedRecord.id)).resolves.toMatchObject({
+      actionable: true,
+    });
   });
 
   it("rejects symlink paths that cross repository and external-anchor boundaries", async () => {
@@ -550,3 +597,13 @@ describe("authenticated execution receipt store", () => {
     });
   });
 });
+
+function canonicalJson(value: unknown): string {
+  if (value === null || typeof value !== "object") return JSON.stringify(value);
+  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(",")}]`;
+  const recordValue = value as Record<string, unknown>;
+  return `{${Object.keys(recordValue)
+    .sort()
+    .map((key) => `${JSON.stringify(key)}:${canonicalJson(recordValue[key])}`)
+    .join(",")}}`;
+}

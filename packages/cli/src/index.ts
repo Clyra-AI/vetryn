@@ -571,6 +571,7 @@ export function createProgram(dependencies: CliDependencies = {}): Command {
       }) => {
         await assertEvaluationOutputPath({
           anchorPath: options.anchor,
+          credentialPaths: [options.receiptKeyFile, options.providerKeyFile],
           evidencePath: options.evidenceStore,
           outputPath: options.output,
         });

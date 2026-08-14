@@ -48,16 +48,26 @@ export interface EvaluateFilesResult {
 
 export async function assertEvaluationOutputPath(options: {
   readonly anchorPath: string;
+  readonly credentialPaths?: readonly string[];
   readonly evidencePath: string;
   readonly outputPath: string;
 }): Promise<void> {
-  const [anchorPath, evidencePath, outputPath] = await Promise.all([
+  const [anchorPath, evidencePath, outputPath, credentialPaths] = await Promise.all([
     canonicalDestination(options.anchorPath),
     canonicalDestination(options.evidencePath),
     canonicalDestination(options.outputPath),
+    Promise.all((options.credentialPaths ?? []).map(canonicalDestination)),
   ]);
-  if (outputPath === anchorPath || isWithin(evidencePath, outputPath)) {
-    throw new Error("Evaluation output must not overlap receipt or anchor trust state.");
+  const protectedPaths = [anchorPath, ...credentialPaths];
+  if (
+    protectedPaths.some((protectedPath) => outputPath === protectedPath) ||
+    isWithin(evidencePath, outputPath) ||
+    protectedPaths.some((protectedPath) => isWithin(evidencePath, protectedPath)) ||
+    new Set(protectedPaths).size !== protectedPaths.length
+  ) {
+    throw new Error(
+      "Evaluation output must not overlap receipt or anchor trust state or credential files.",
+    );
   }
 }
 

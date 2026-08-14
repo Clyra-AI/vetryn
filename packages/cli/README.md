@@ -44,7 +44,8 @@ that the repository contains no other AI usage.
 Run one bounded provider-backed comparison with `vetryn eval`. The command performs a live catalog refresh in the
 same invocation; it never accepts imported JSON lineage as actionable freshness evidence. Provider and receipt keys
 come from explicitly named files and are never written to artifacts. The receipt store stays inside the repository,
-while its authenticated exact-head anchor and HMAC key must remain outside repository-controlled content.
+while its authenticated exact-head anchor and HMAC key must remain outside repository-controlled content. Output,
+anchor, evidence, provider-key, and receipt-key destinations must remain canonically separate.
 
 ```sh
 vetryn eval \
@@ -70,4 +71,5 @@ may start a new externally anchored epoch for newly executed work but never reha
 Later live catalog failures advance the same authenticated exact-head chain, so an older successful refresh becomes
 non-actionable if the later attempt is failed, omitted, deleted, forked, or rolled back. The redacted evaluation
 output is staged before its receipt advances, repository and external heads must match before every append, and the
-receipt directory cannot cross the configured evidence boundary through a symbolic link.
+receipt directory cannot cross the configured evidence boundary through a symbolic link. An authenticated pending
+transaction lets the next append safely retry if a process stops between repository-head and anchor advancement.

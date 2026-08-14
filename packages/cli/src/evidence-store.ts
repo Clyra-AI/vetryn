@@ -35,6 +35,17 @@ interface Anchor extends RepositoryHead {
   readonly authenticationTag: string;
 }
 
+interface PendingHeadTransactionBody {
+  readonly artifactType: "execution-receipt-head-transaction";
+  readonly nextHead: RepositoryHead;
+  readonly priorHead: RepositoryHead | null;
+  readonly schemaVersion: "1.0.0";
+}
+
+interface PendingHeadTransaction extends PendingHeadTransactionBody {
+  readonly authenticationTag: string;
+}
+
 interface AuthenticatedExecutionReceipt {
   readonly artifactType: "authenticated-evaluation-receipt";
   readonly authenticationTag: string;
@@ -144,10 +155,10 @@ export class FileExecutionReceiptStore {
     assertStableId(options.trustEpochId, "trust epoch ID");
     await this.ensureDirectories();
     return this.withLock(async () => {
+      const { entries, head, prior } = await this.loadChain(options.trustEpochId);
       if (await this.hasRecordCollision(record.id)) {
         throw new Error(`Execution record ID collision for ${record.id}.`);
       }
-      const { entries, head, prior } = await this.loadChain(options.trustEpochId);
       assertLineageExtendsAuthenticatedHistory(catalogRefreshLineage, entries);
 
       const body = {
@@ -344,6 +355,7 @@ export class FileExecutionReceiptStore {
     readonly head: RepositoryHead | null;
     readonly prior: RepositoryHead | null;
   }> {
+    await this.recoverInterruptedTransaction(trustEpochId);
     const [head, anchor] = await Promise.all([
       readOptionalJson<RepositoryHead>(this.headPath()),
       readOptionalJson<Anchor>(this.anchorPath),
@@ -391,14 +403,27 @@ export class FileExecutionReceiptStore {
     };
     const entryPath = this.receiptPath(headDigest);
     await publishImmutable(entryPath, `${JSON.stringify(entry, null, 2)}\n`);
+    const transactionBody: PendingHeadTransactionBody = {
+      artifactType: "execution-receipt-head-transaction",
+      nextHead,
+      priorHead: previousHead,
+      schemaVersion: "1.0.0",
+    };
+    const transaction: PendingHeadTransaction = {
+      ...transactionBody,
+      authenticationTag: hmac(this.key, canonicalJson(transactionBody)),
+    };
     try {
+      await atomicWrite(this.transactionPath(), `${JSON.stringify(transaction, null, 2)}\n`);
       await atomicWrite(this.headPath(), `${JSON.stringify(nextHead, null, 2)}\n`);
       await this.advanceAnchor(`${JSON.stringify(nextAnchor, null, 2)}\n`);
     } catch (error: unknown) {
       await this.restoreHead(previousHead);
       await unlink(entryPath).catch(() => undefined);
+      await unlink(this.transactionPath()).catch(() => undefined);
       throw error;
     }
+    await unlink(this.transactionPath()).catch(() => undefined);
     return { entry, headDigest };
   }
 
@@ -414,6 +439,52 @@ export class FileExecutionReceiptStore {
       return;
     }
     await atomicWrite(this.headPath(), `${JSON.stringify(head, null, 2)}\n`);
+  }
+
+  private async recoverInterruptedTransaction(trustEpochId: string): Promise<void> {
+    const transactionInput = await readOptionalJson<unknown>(this.transactionPath());
+    if (transactionInput === null) return;
+    const transaction = parsePendingHeadTransaction(transactionInput);
+    const { authenticationTag, ...body } = transaction;
+    if (!safeEqual(authenticationTag, hmac(this.key, canonicalJson(body)))) {
+      throw new Error("Execution receipt transaction authentication is invalid.");
+    }
+    if (transaction.nextHead.trustEpochId !== trustEpochId) {
+      throw new Error("Interrupted receipt transaction belongs to another trust epoch.");
+    }
+    const entry = parseChainEntry(
+      await readBoundedJson(this.receiptPath(transaction.nextHead.headDigest)),
+    );
+    if (
+      sha256(canonicalJson(entry)) !== transaction.nextHead.headDigest ||
+      entry.sequence !== transaction.nextHead.sequence ||
+      entry.trustEpochId !== transaction.nextHead.trustEpochId ||
+      entry.priorHeadDigest !== (transaction.priorHead?.headDigest ?? null)
+    ) {
+      throw new Error("Interrupted receipt transaction does not bind its pending entry.");
+    }
+    const [head, anchor] = await Promise.all([
+      readOptionalJson<RepositoryHead>(this.headPath()),
+      readOptionalJson<Anchor>(this.anchorPath),
+    ]);
+    if (
+      sameOptionalHead(head, transaction.nextHead) &&
+      sameOptionalHead(anchor, transaction.nextHead)
+    ) {
+      await unlink(this.transactionPath());
+      return;
+    }
+    if (
+      (sameOptionalHead(head, transaction.nextHead) ||
+        sameOptionalHead(head, transaction.priorHead)) &&
+      sameOptionalHead(anchor, transaction.priorHead)
+    ) {
+      await this.restoreHead(transaction.priorHead);
+      await unlink(this.receiptPath(transaction.nextHead.headDigest));
+      await unlink(this.transactionPath());
+      return;
+    }
+    throw new Error("Interrupted execution receipt transaction cannot be recovered safely.");
   }
 
   private async ensureDirectories(): Promise<void> {
@@ -452,6 +523,10 @@ export class FileExecutionReceiptStore {
     return path.join(this.evidencePath, "head.json");
   }
 
+  private transactionPath(): string {
+    return path.join(this.evidencePath, ".receipt-transaction.json");
+  }
+
   private receiptPath(digest: string): string {
     if (!/^sha256:[0-9a-f]{64}$/.test(digest)) throw new Error("Invalid execution receipt digest.");
     return path.join(this.evidencePath, "receipts", `${digest.slice(7)}.json`);
@@ -482,6 +557,10 @@ function sameHead(left: RepositoryHead, right: RepositoryHead): boolean {
     left.sequence === right.sequence &&
     left.trustEpochId === right.trustEpochId
   );
+}
+
+function sameOptionalHead(left: RepositoryHead | null, right: RepositoryHead | null): boolean {
+  return left === null || right === null ? left === right : sameHead(left, right);
 }
 
 async function assertNoSymbolicLinks(root: string, target: string): Promise<void> {
@@ -594,6 +673,59 @@ function parseChainEntry(value: unknown): AuthenticatedChainEntry {
   return value.artifactType === "authenticated-catalog-refresh-attempt"
     ? parseCatalogRefreshAttempt(value)
     : parseReceipt(value);
+}
+
+function parsePendingHeadTransaction(value: unknown): PendingHeadTransaction {
+  if (!isRecord(value)) throw new Error("Invalid execution receipt transaction.");
+  const keys = Object.keys(value).sort().join(",");
+  if (
+    keys !==
+      ["artifactType", "authenticationTag", "nextHead", "priorHead", "schemaVersion"]
+        .sort()
+        .join(",") ||
+    value.artifactType !== "execution-receipt-head-transaction" ||
+    value.schemaVersion !== "1.0.0" ||
+    typeof value.authenticationTag !== "string" ||
+    !/^hmac-sha256:[0-9a-f]{64}$/.test(value.authenticationTag)
+  ) {
+    throw new Error("Invalid execution receipt transaction.");
+  }
+  const nextHead = parseRepositoryHead(value.nextHead);
+  const priorHead = value.priorHead === null ? null : parseRepositoryHead(value.priorHead);
+  if (
+    nextHead.sequence !== (priorHead?.sequence ?? 0) + 1 ||
+    (priorHead !== null && nextHead.trustEpochId !== priorHead.trustEpochId)
+  ) {
+    throw new Error("Invalid execution receipt transaction sequence.");
+  }
+  return {
+    artifactType: "execution-receipt-head-transaction",
+    authenticationTag: value.authenticationTag,
+    nextHead,
+    priorHead,
+    schemaVersion: "1.0.0",
+  };
+}
+
+function parseRepositoryHead(value: unknown): RepositoryHead {
+  if (
+    !isRecord(value) ||
+    Object.keys(value).sort().join(",") !==
+      ["headDigest", "sequence", "trustEpochId"].sort().join(",") ||
+    typeof value.headDigest !== "string" ||
+    !/^sha256:[0-9a-f]{64}$/.test(value.headDigest) ||
+    !Number.isSafeInteger(value.sequence) ||
+    (value.sequence as number) < 1 ||
+    typeof value.trustEpochId !== "string"
+  ) {
+    throw new Error("Invalid execution receipt head.");
+  }
+  assertStableId(value.trustEpochId, "trust epoch ID");
+  return {
+    headDigest: value.headDigest,
+    sequence: value.sequence as number,
+    trustEpochId: value.trustEpochId,
+  };
 }
 
 interface CatalogAttemptCursor {

@@ -61,6 +61,8 @@ invalid-route, or missing-metadata runs are incomplete and cannot support a reco
 digest is derived from the actual ordered cases, and route evidence must name the model, provider, and status for
 every attempt rather than relying on a synthesized request model. Candidate-run IDs include a digest of the canonical
 model ID so distinct model names cannot collapse to the same artifact identity after display-safe normalization.
+Because the canonical transport requests JSON output, both baseline and candidate models must advertise structured
+output support before any provider request starts.
 
 Actionable evaluation accepts only a `CurrentCatalogRefresh` consuming the exact in-memory result returned by the
 canonical live acquisition path. Captured responses, imported snapshots, serialized lineage, and caller-labeled
