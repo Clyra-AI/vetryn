@@ -1,0 +1,78 @@
+{
+  "artifact_type": "review_report",
+  "schema_version": "0.1",
+  "task_id": "M0-14",
+  "work_item_id": "M0-14",
+  "review_type": "architecture",
+  "review_scope": [
+    ".agents/skills/vetryn-promote-task/SKILL.md",
+    "WORKFLOW.md",
+    "scripts/plan.mjs",
+    "scripts/plan.test.mjs",
+    "scripts/promotion-tail.mjs",
+    "scripts/promotion-tail.test.mjs"
+  ],
+  "reviewer_class": "peer_agent",
+  "reviewer_id": "codex-local:v1_06_code_review",
+  "producer": {
+    "worker": "code-review",
+    "producer_id": "codex-local:v1_06_code_review",
+    "producer_class": "peer_agent"
+  },
+  "current_work": {
+    "validation_run_id": "validation:2026-08-14T15:21:02Z:M0-14",
+    "candidate_digest": "sha256:36bd61fa4289b049fe7c8311e551a199f4c38fa854cc4a457c599409e765d93e",
+    "work_proof_markers": [
+      {
+        "ref": "product/plans/oss-v1/evidence/lifecycle/M0-14/a2c66864c8a45623a07d05369230203ab2cb07da/work_proof_marker.json",
+        "sha256": "sha256:6c87bea1894286125fb6537025b9a87950a5740bff772d8c0cfc9399bd06636f"
+      }
+    ]
+  },
+  "risk_class": "high",
+  "context_isolation": {
+    "allowed_sources": [
+      "task_packet",
+      "candidate_diff",
+      "repo_contracts",
+      "tests",
+      "validation_report"
+    ],
+    "disallowed_sources": ["private_builder_notes", "unpromoted_chat_reasoning"],
+    "builder_notes_authoritative": false
+  },
+  "findings": [],
+  "verdict": "approved",
+  "required_fixes": [],
+  "residual_risks": [
+    "The protected exact-path inventory must be updated when new authority or security-control surfaces are introduced."
+  ],
+  "evidence_refs": [
+    "product/plans/oss-v1/evidence/lifecycle/M0-14/a2c66864c8a45623a07d05369230203ab2cb07da/validation_report.json",
+    "ev-m0-14-repo-check-a2c6686",
+    "ev-m0-14-contracts-a2c6686"
+  ],
+  "work_proof_marker_refs": [
+    "product/plans/oss-v1/evidence/lifecycle/M0-14/a2c66864c8a45623a07d05369230203ab2cb07da/work_proof_marker.json"
+  ],
+  "approval_effect": {
+    "promotion_decision": "ready_for_pr",
+    "approvals_granted": ["architecture_review_passed"],
+    "blocks_promotion": false
+  },
+  "systems_questions": {
+    "state_impact": ["Only M0-14 canonical promotion state changes after review."],
+    "source_of_truth_changes": [
+      "The repository gains one executable promotion-tail gate and one conservative future-task risk classifier."
+    ],
+    "feedback_plan": ["Protected CI and latest-head remote review validate the DeliveryHead."],
+    "blast_radius": [
+      "Task planning, promotion evidence, and delivery policy only; no product packages."
+    ],
+    "rollback_or_deletion_test": [
+      "Removing the new command restores the prior manual promotion check without product migration."
+    ],
+    "system_model_summary": "A frozen ProductCandidate is reviewed once; one promotion-only DeliveryHead may add only task-bound canonical evidence, state, ledger, and generated progress."
+  },
+  "created_at": "2026-08-14T15:21:02Z"
+}

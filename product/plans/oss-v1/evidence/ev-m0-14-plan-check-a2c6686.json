@@ -1,0 +1,31 @@
+{
+  "$schema": "../../schemas/evidence.schema.json",
+  "schemaVersion": "1.0.0",
+  "id": "ev-m0-14-plan-check-a2c6686",
+  "taskId": "M0-14",
+  "type": "command-run",
+  "actor": "validation-gate",
+  "commit": "a2c66864c8a45623a07d05369230203ab2cb07da",
+  "createdAt": "2026-08-14T15:21:02Z",
+  "result": {
+    "status": "pass",
+    "checks": [
+      {
+        "name": "pnpm plan:check",
+        "status": "pass",
+        "summary": "The canonical plan and generated progress passed on the exact ProductCandidate."
+      }
+    ]
+  },
+  "inputs": {
+    "planDigest": "sha256:b334019e8095cb79e226c82a7ccfcd4f46a2e002e27aa52766780b961f6d5e44",
+    "lockfileDigest": "sha256:0d73c2bc837d2f12314c6fb3b2f28c4389a3887a5fdda7b6898913b2b20c91d9"
+  },
+  "gateBinding": { "gateId": "QG-PLAN-CHECK", "kind": "command", "command": "pnpm plan:check" },
+  "review": null,
+  "redaction": {
+    "status": "not_applicable",
+    "containsRawModelOutput": false,
+    "containsSecrets": false
+  }
+}

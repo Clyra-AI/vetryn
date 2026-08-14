@@ -285,8 +285,8 @@
         "gateId": "QG-CONTRACTS"
       },
       "waivable": false,
-      "status": "planned",
-      "evidenceRefs": []
+      "status": "accepted",
+      "evidenceRefs": ["ev-m0-14-contracts-a2c6686"]
     },
     {
       "id": "PROCESS-016",
@@ -311,8 +311,8 @@
         "gateId": "QG-PLAN-CHECK"
       },
       "waivable": false,
-      "status": "planned",
-      "evidenceRefs": []
+      "status": "accepted",
+      "evidenceRefs": ["ev-m0-14-plan-check-a2c6686"]
     },
     {
       "id": "PROCESS-018",
@@ -324,8 +324,8 @@
         "gateId": "QG-CONTRACTS"
       },
       "waivable": false,
-      "status": "planned",
-      "evidenceRefs": []
+      "status": "accepted",
+      "evidenceRefs": ["ev-m0-14-contracts-a2c6686"]
     },
     {
       "id": "PROCESS-019",
@@ -337,8 +337,8 @@
         "gateId": "QG-PLAN-CHECK"
       },
       "waivable": false,
-      "status": "planned",
-      "evidenceRefs": []
+      "status": "accepted",
+      "evidenceRefs": ["ev-m0-14-plan-check-a2c6686"]
     },
     {
       "id": "ROUTE-001",
