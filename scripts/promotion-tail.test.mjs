@@ -46,7 +46,7 @@ function evidence(id, candidate) {
   };
 }
 
-async function createFixture() {
+async function createFixture({ criterionId = "PROCESS-015" } = {}) {
   const root = await mkdtemp(path.join(tmpdir(), "vetryn-promotion-tail-"));
   roots.push(root);
   git(root, "init", "--quiet");
@@ -54,7 +54,7 @@ async function createFixture() {
   git(root, "config", "user.email", "fixture@vetryn.invalid");
   const planRoot = "product/plans/oss-v1";
   const item = {
-    id: "PROCESS-015",
+    id: criterionId,
     taskId,
     statement: "Validate promotion tails.",
     verification: { method: "test", testLevel: "contract", gateId: "QG-CONTRACTS" },
@@ -129,6 +129,7 @@ async function createFixture() {
     ...evidence("ev-m0-12-historical", "1".repeat(40)),
     taskId: "M0-12",
   });
+  const baseCommit = commit(root, "canonical base");
   await writeFile(path.join(root, "product.txt"), "candidate\n");
   const candidate = commit(root, "product candidate");
 
@@ -137,7 +138,7 @@ async function createFixture() {
   Object.assign(state, {
     revision: 1,
     state: "accepted",
-    candidate: { baseCommit: "0".repeat(40), commit: candidate, executor: "implementation-agent" },
+    candidate: { baseCommit, commit: candidate, executor: "implementation-agent" },
     criteria: [{ criterionId: item.id, status: "pass", evidenceRefs: [evidenceId] }],
     history: [
       ...state.history,
@@ -178,7 +179,7 @@ async function createFixture() {
   });
   await writeJson(root, `${lifecycleRoot}/work_proof_marker.json`, {
     git_sha: candidate,
-    baseCommit: "0".repeat(40),
+    baseCommit,
     executor: "implementation-agent",
     cleanCandidateVerified: true,
     commands: [{ command: "pnpm test", exitCode: 0, status: "pass" }],
@@ -278,6 +279,7 @@ async function rebindAcceptedFixture(fixture, contents) {
         .replaceAll(fixture.candidate, candidate)
         .replaceAll(fixture.evidenceId, evidenceId),
     );
+    if (name === "work_proof_marker") rebound.baseCommit = fixture.delivery;
     await writeJson(fixture.root, `${lifecycleRoot}/${name}.json`, rebound);
   }
   const delivery = commit(fixture.root, "accepted repair promotion");
@@ -285,21 +287,9 @@ async function rebindAcceptedFixture(fixture, contents) {
 }
 
 async function createAcceptedRebindFixture({ repairBudget = false } = {}) {
-  const fixture = await createFixture();
-  if (repairBudget) {
-    const planPath = `${fixture.planRoot}/plan.json`;
-    const plan = await readJson(fixture.root, planPath);
-    plan.tasks[0].acceptanceItemIds = ["PROCESS-016"];
-    await writeJson(fixture.root, planPath, plan);
-    const statePath = `${fixture.planRoot}/state/${taskId}.json`;
-    const state = await readJson(fixture.root, statePath);
-    state.criteria[0].criterionId = "PROCESS-016";
-    await writeJson(fixture.root, statePath, state);
-    const ledgerPath = `${fixture.planRoot}/acceptance-ledger.json`;
-    const ledger = await readJson(fixture.root, ledgerPath);
-    ledger.items[0].id = "PROCESS-016";
-    await writeJson(fixture.root, ledgerPath, ledger);
-  }
+  const fixture = await createFixture({
+    criterionId: repairBudget ? "PROCESS-016" : "PROCESS-015",
+  });
   return rebindAcceptedFixture(fixture, "repaired candidate");
 }
 
@@ -398,6 +388,19 @@ describe("promotion-tail validator", () => {
       expect(result.stderr).toContain("promotion state changed candidate attribution");
     },
   );
+
+  it("rejects a work-proof base equal to the ProductCandidate", async () => {
+    const fixture = await createFixture();
+    const delivery = await amend(fixture.root, async () => {
+      const relativePath = `${fixture.planRoot}/evidence/lifecycle/${taskId}/${fixture.candidate}/work_proof_marker.json`;
+      const marker = await readJson(fixture.root, relativePath);
+      marker.baseCommit = fixture.candidate;
+      await writeJson(fixture.root, relativePath, marker);
+    });
+    const result = run(fixture.root, fixture.candidate, delivery);
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("work proof has no strict ProductCandidate base");
+  });
 
   it.each(["baseCommit", "executor"])(
     "rejects initial candidate attribution not bound by the work proof %s",
@@ -787,6 +790,15 @@ describe("promotion-tail validator", () => {
       (artifact) => artifact.findings.push({ severity: "P2", status: "accepted_risk" }),
     ],
     [
+      "a classified P2 accepted risk before the delivery-debt phase",
+      (artifact) => {
+        artifact.findings.push({ severity: "P2", status: "accepted_risk" });
+        artifact.approval_effect.approvals_granted.push(
+          "maintainer_classified_standalone_p2_delivery_debt",
+        );
+      },
+    ],
+    [
       "multiple accepted risks",
       (artifact) => {
         artifact.findings.push({ severity: "P2", status: "accepted_risk" });
@@ -845,19 +857,4 @@ describe("promotion-tail validator", () => {
       expect(result.status, result.stderr).toBe(0);
     },
   );
-
-  it("accepts one explicitly classified standalone P2 as delivery debt", async () => {
-    const fixture = await createFixture();
-    const relativePath = `${fixture.planRoot}/evidence/lifecycle/${taskId}/${fixture.candidate}/review_report.json`;
-    const delivery = await amend(fixture.root, async () => {
-      const artifact = await readJson(fixture.root, relativePath);
-      artifact.findings.push({ severity: "P2", status: "accepted_risk" });
-      artifact.approval_effect.approvals_granted.push(
-        "maintainer_classified_standalone_p2_delivery_debt",
-      );
-      await writeJson(fixture.root, relativePath, artifact);
-    });
-    const result = run(fixture.root, fixture.candidate, delivery);
-    expect(result.status, result.stderr).toBe(0);
-  });
 });

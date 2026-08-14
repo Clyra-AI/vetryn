@@ -39,6 +39,20 @@ function git(root, arguments_, { binary = false } = {}) {
   return result.stdout;
 }
 
+function gitSucceeds(root, arguments_) {
+  return (
+    spawnSync("git", ["-c", "core.fsmonitor=false", "-C", root, ...arguments_], {
+      stdio: "ignore",
+      env: {
+        ...process.env,
+        GIT_NO_REPLACE_OBJECTS: "1",
+        GIT_OPTIONAL_LOCKS: "0",
+        GIT_TERMINAL_PROMPT: "0",
+      },
+    }).status === 0
+  );
+}
+
 function jsonAt(root, commit, relativePath) {
   const contents = git(root, ["show", `${commit}:${relativePath}`]);
   try {
@@ -298,28 +312,13 @@ function assertLifecycleArtifact(name, document, taskId, candidate) {
       Array.isArray(document.evidence_refs) && document.evidence_refs.includes(validationRef),
       "review_report is not bound to validation_report",
     );
-    const acceptedRisks = Array.isArray(document.findings)
-      ? document.findings.filter((finding) => finding?.status === "accepted_risk")
-      : [];
     assert(
       Array.isArray(document.findings) &&
         document.findings.every(
           (finding) =>
-            ["P0", "P1", "P2", "P3"].includes(finding?.severity) &&
-            (finding.status === "resolved" ||
-              (finding.status === "accepted_risk" && finding.severity === "P2")),
+            ["P0", "P1", "P2", "P3"].includes(finding?.severity) && finding.status === "resolved",
         ),
       "review_report has unresolved findings",
-    );
-    assert(
-      acceptedRisks.length <= 1 &&
-        (acceptedRisks.length === 0 ||
-          (acceptedRisks[0].severity === "P2" &&
-            Array.isArray(document.approval_effect?.approvals_granted) &&
-            document.approval_effect.approvals_granted.includes(
-              "maintainer_classified_standalone_p2_delivery_debt",
-            ))),
-      "review_report has unclassified delivery debt",
     );
     assert(
       Array.isArray(document.required_fixes) && document.required_fixes.length === 0,
@@ -351,6 +350,7 @@ function assertLifecycleArtifact(name, document, taskId, candidate) {
 }
 
 function assertPromotionState(
+  root,
   candidateState,
   state,
   task,
@@ -370,13 +370,20 @@ function assertPromotionState(
   } else
     assert(
       shaPattern.test(workProofMarker?.baseCommit) &&
+        gitSucceeds(root, ["cat-file", "-e", `${workProofMarker.baseCommit}^{commit}`]) &&
+        gitSucceeds(root, [
+          "merge-base",
+          "--is-ancestor",
+          workProofMarker.baseCommit,
+          productCandidate,
+        ]) &&
         typeof workProofMarker?.executor === "string" &&
         workProofMarker.executor.length > 0 &&
         state.candidate?.baseCommit === workProofMarker.baseCommit &&
         state.candidate?.executor === workProofMarker.executor,
       "promotion state has unbound initial candidate attribution",
     );
-  if (task.acceptanceItemIds.includes("PROCESS-016"))
+  if (candidateState.criteria.some((criterion) => criterion.criterionId === "PROCESS-016"))
     assert(
       candidateState.history.filter((entry) => entry.from === "accepted" && entry.to === "accepted")
         .length < 1,
@@ -589,14 +596,28 @@ export function checkPromotionTail({ root, taskId, productCandidate, deliveryHea
   const promotedLedger = jsonAt(root, deliveryHead, ledgerPath);
   assertLedgerTail(candidateLedger, promotedLedger, taskId);
   const candidateState = jsonAt(root, productCandidate, statePath);
+  const workProofMarker = addedLifecycle.get("work_proof_marker");
+  const candidateBase = workProofMarker?.baseCommit;
+  assert(
+    shaPattern.test(candidateBase) &&
+      candidateBase !== productCandidate &&
+      gitSucceeds(root, ["cat-file", "-e", `${candidateBase}^{commit}`]) &&
+      gitSucceeds(root, ["merge-base", "--is-ancestor", candidateBase, productCandidate]),
+    "work proof has no strict ProductCandidate base",
+  );
+  assert(
+    JSON.stringify(candidateState) === JSON.stringify(jsonAt(root, candidateBase, statePath)),
+    "ProductCandidate changed canonical task state from its work-proof base",
+  );
   const state = jsonAt(root, deliveryHead, statePath);
   assertPromotionState(
+    root,
     candidateState,
     state,
     task,
     taskId,
     productCandidate,
-    addedLifecycle.get("work_proof_marker"),
+    workProofMarker,
   );
   assertPromotedLedger(promotedLedger, state, taskId);
   assertProgress(
