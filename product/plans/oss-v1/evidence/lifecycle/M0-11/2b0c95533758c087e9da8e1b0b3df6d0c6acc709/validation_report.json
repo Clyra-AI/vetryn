@@ -1,0 +1,102 @@
+{
+  "work_item_id": "M0-11",
+  "task_id": "M0-11",
+  "profile_ref": "profiles/vetryn.yaml",
+  "semantic_risk_report_ref": ".factory/artifacts/task-runs/M0-11/semantic-risk-report.json",
+  "semantic_risk_report_sha256": "sha256:3f312c8b3100ce3abd55b04f9ea64e9148ab2f1e0e37dfd3660b35b169bec7da",
+  "validation_contract_ref": "product/plans/oss-v1/plan.json#M0-11",
+  "test_intent": [
+    {
+      "behavior": "Bind task discovery to the discovered checkout.",
+      "expected_signal": "Inherited plan-root overrides are replaced with the repository root."
+    },
+    {
+      "behavior": "Delegate protected landing exactly once.",
+      "expected_signal": "Promotion owns the sole commit-push handoff."
+    }
+  ],
+  "red_evidence": [
+    {
+      "check": "latest-head Codex review on PR #34",
+      "summary": "Review identified inherited plan-root and duplicate landing paths; both are closed in this candidate."
+    }
+  ],
+  "green_evidence": [
+    {
+      "check": "pnpm check",
+      "summary": "The complete repository gate passed with 192 tests.",
+      "evidence_refs": ["ev-m0-11-repo-check-2b0c955"]
+    },
+    {
+      "check": "pnpm test:contracts",
+      "summary": "All contract and focused regression tests passed.",
+      "evidence_refs": ["ev-m0-11-contracts-2b0c955"]
+    }
+  ],
+  "work_proof_marker_refs": [
+    "product/plans/oss-v1/evidence/lifecycle/M0-11/2b0c95533758c087e9da8e1b0b3df6d0c6acc709/work_proof_marker.json"
+  ],
+  "test_scope": [
+    ".agents/skills/vetryn-continue-next/SKILL.md",
+    ".agents/skills/vetryn-continue-next/scripts/preflight.mjs",
+    "scripts/continue-next-skill.test.mjs"
+  ],
+  "checks": [
+    { "name": "pnpm plan:check", "status": "pass" },
+    { "name": "pnpm check", "status": "pass" },
+    { "name": "pnpm test:contracts", "status": "pass" },
+    { "name": "pnpm --silent task:compile -- M0-11", "status": "pass" }
+  ],
+  "result": "pass",
+  "introduced_failures": [],
+  "pre_existing_failures": [],
+  "independent_validation": {
+    "risk_class": "high",
+    "required_level": "independent_or_human",
+    "provided_levels": ["validation_gate", "adversarial", "human_validation_approval"],
+    "status": "satisfied",
+    "evidence_refs": [
+      "ev-m0-11-plan-check-2b0c955",
+      "ev-m0-11-repo-check-2b0c955",
+      "ev-m0-11-contracts-2b0c955"
+    ],
+    "notes": "Latest-head findings were reproduced and repaired; protected remote gates rerun after push."
+  },
+  "test_first_skipped_reason": {
+    "status": "not_skipped",
+    "reason": "Both remote review findings were reproduced as focused regressions before the repaired candidate was frozen."
+  },
+  "anti_fitting_notes": [
+    "The checkout test supplies an unrelated inherited root.",
+    "The skill contract asserts one explicit owner for protected landing."
+  ],
+  "residual_risks": ["ADR 0022 intentionally trusts the developer host and installed tools."],
+  "integrated_validation": {
+    "status": "task_only",
+    "scope_summary": "The whole repository passed locally after the bounded review repair.",
+    "integrated_checks": [
+      {
+        "name": "pnpm check",
+        "status": "pass",
+        "work_proof_marker_ref": "product/plans/oss-v1/evidence/lifecycle/M0-11/2b0c95533758c087e9da8e1b0b3df6d0c6acc709/work_proof_marker.json"
+      }
+    ],
+    "fresh_checkout": {
+      "required": false,
+      "status": "not_required",
+      "work_proof_marker_refs": [],
+      "notes": "GitHub CI supplies clean-checkout replay."
+    },
+    "docs_schema_parity": {
+      "status": "pass",
+      "evidence_refs": [".agents/skills/vetryn-continue-next/SKILL.md", "WORKFLOW.md"]
+    },
+    "release_readiness": {
+      "claimed": false,
+      "status": "not_applicable",
+      "work_proof_marker_refs": [],
+      "notes": "No package release."
+    }
+  },
+  "promotion_decision": "ready_for_pr"
+}

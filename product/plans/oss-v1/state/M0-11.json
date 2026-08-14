@@ -2,37 +2,41 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "M0-11",
-  "revision": 3,
-  "state": "in_progress",
+  "revision": 4,
+  "state": "accepted",
   "attempt": 1,
-  "candidate": null,
+  "candidate": {
+    "baseCommit": "a4d0849c7e4ce37c78511526933ae9b1d193f8c3",
+    "commit": "2b0c95533758c087e9da8e1b0b3df6d0c6acc709",
+    "executor": "implementation-agent"
+  },
   "criteria": [
     {
       "criterionId": "PROCESS-010",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-11-contracts-2b0c955"]
     },
     {
       "criterionId": "PROCESS-011",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-11-repo-check-2b0c955"]
     }
   ],
   "gates": [
     {
       "gateId": "QG-PLAN-CHECK",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-11-plan-check-2b0c955"]
     },
     {
       "gateId": "QG-REPO-CHECK",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-11-repo-check-2b0c955"]
     },
     {
       "gateId": "QG-CONTRACTS",
-      "status": "pending",
-      "evidenceRefs": []
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-11-contracts-2b0c955"]
     }
   ],
   "reviews": [
@@ -71,6 +75,13 @@
       "at": "2026-08-14T00:44:11Z",
       "actor": "implementation-agent",
       "reason": "Latest-head Codex review found an inherited plan-root override and duplicate land-lifecycle routing; prior candidate evidence was invalidated for the bounded repair."
+    },
+    {
+      "from": "in_progress",
+      "to": "accepted",
+      "at": "2026-08-14T00:46:49Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer accepted the repaired exact candidate after every active command gate passed and both latest-head review findings were closed."
     }
   ]
 }
