@@ -1,0 +1,115 @@
+{
+  "artifact_type": "review_report",
+  "schema_version": "0.1",
+  "task_id": "M0-14",
+  "work_item_id": "M0-14",
+  "review_type": "architecture",
+  "review_scope": [
+    "scripts/plan.mjs",
+    "scripts/plan.test.mjs",
+    "scripts/promotion-tail.mjs",
+    "scripts/promotion-tail.test.mjs"
+  ],
+  "reviewer_class": "peer_agent",
+  "reviewer_id": "codex-local:v1_06_code_review",
+  "producer": {
+    "worker": "code-review",
+    "producer_id": "codex-local:v1_06_code_review",
+    "producer_class": "peer_agent"
+  },
+  "current_work": {
+    "validation_run_id": "validation:2026-08-14T16:33:46Z:M0-14",
+    "candidate_digest": "sha256:db7205d897f0c09698538bfbb8eb7834dcbb12464f2e0df27327bd356a0f02c1",
+    "work_proof_markers": [
+      {
+        "ref": "product/plans/oss-v1/evidence/lifecycle/M0-14/af7b691214e7baa66b40832ef189575ec051471b/work_proof_marker.json",
+        "sha256": "sha256:5f8435d30d6c2c49a0becd2981ccaa81a58ae9410cd9e0b707fb4525c4804ac9"
+      }
+    ]
+  },
+  "risk_class": "high",
+  "context_isolation": {
+    "allowed_sources": [
+      "task_packet",
+      "candidate_diff",
+      "repo_contracts",
+      "tests",
+      "validation_report"
+    ],
+    "disallowed_sources": ["private_builder_notes", "unpromoted_chat_reasoning"],
+    "builder_notes_authoritative": false
+  },
+  "findings": [
+    {
+      "id": "M0-14-TERMINAL-1",
+      "severity": "P1",
+      "summary": "Canonical plan and ledger files were absent from the protected exact-path inventory.",
+      "status": "resolved",
+      "claim_source": "independently_observed",
+      "verification_status": "independently_verified",
+      "location": "scripts/plan.mjs",
+      "failure_scenario": "A lower-risk future task names a canonical plan file exactly.",
+      "impact": "Reviewed scope, gate, risk, or acceptance policy could change without high-risk review.",
+      "minimum_fix": "Protect both exact canonical paths.",
+      "promotion_effect": "block_until_fixed",
+      "evidence_refs": ["ev-m0-14-plan-check-af7b691"]
+    },
+    {
+      "id": "M0-14-TERMINAL-2",
+      "severity": "P1",
+      "summary": "Promotion could rewrite existing candidate attribution while retaining its commit.",
+      "status": "resolved",
+      "claim_source": "independently_observed",
+      "verification_status": "independently_verified",
+      "location": "scripts/promotion-tail.mjs",
+      "failure_scenario": "An accepted rebind changes baseCommit or executor in its promotion-only tail.",
+      "impact": "Review independence could be evaluated against forged attribution.",
+      "minimum_fix": "Preserve non-null ProductCandidate base and executor fields.",
+      "promotion_effect": "block_until_fixed",
+      "evidence_refs": ["ev-m0-14-contracts-af7b691"]
+    },
+    {
+      "id": "M0-14-TERMINAL-3",
+      "severity": "P2",
+      "summary": "Approved state review evidence was omitted from the promotion reference set.",
+      "status": "resolved",
+      "claim_source": "independently_observed",
+      "verification_status": "independently_verified",
+      "location": "scripts/promotion-tail.mjs",
+      "failure_scenario": "A canonical review cites newly added passing evidence that the tail validator treats as uncited.",
+      "impact": "Legitimate promotion evidence is rejected.",
+      "minimum_fix": "Union state review evidence with criteria and gate evidence.",
+      "promotion_effect": "block_until_fixed",
+      "evidence_refs": ["ev-m0-14-contracts-af7b691"]
+    }
+  ],
+  "verdict": "approved",
+  "required_fixes": [],
+  "residual_risks": [
+    "Future canonical policy inputs must join the protected inventory when introduced."
+  ],
+  "evidence_refs": [
+    "product/plans/oss-v1/evidence/lifecycle/M0-14/af7b691214e7baa66b40832ef189575ec051471b/validation_report.json",
+    "ev-m0-14-repo-check-af7b691",
+    "ev-m0-14-contracts-af7b691"
+  ],
+  "work_proof_marker_refs": [
+    "product/plans/oss-v1/evidence/lifecycle/M0-14/af7b691214e7baa66b40832ef189575ec051471b/work_proof_marker.json"
+  ],
+  "approval_effect": {
+    "promotion_decision": "ready_for_pr",
+    "approvals_granted": ["architecture_review_passed"],
+    "blocks_promotion": false
+  },
+  "systems_questions": {
+    "state_impact": ["Only M0-14 canonical acceptance is rebound after review."],
+    "source_of_truth_changes": [
+      "Canonical policy inventory and promotion attribution/reference validation become fail closed."
+    ],
+    "feedback_plan": ["Protected CI validates the final DeliveryHead."],
+    "blast_radius": ["Task planning and promotion evidence only; no product packages."],
+    "rollback_or_deletion_test": ["Focused tests fail if any terminal closure is removed."],
+    "system_model_summary": "The terminal repair preserves candidate attribution and recognizes all canonical promotion evidence."
+  },
+  "created_at": "2026-08-14T16:33:46Z"
+}
