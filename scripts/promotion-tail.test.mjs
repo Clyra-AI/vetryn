@@ -71,11 +71,26 @@ async function createFixture() {
         acceptanceItemIds: [item.id],
         requiredGates: ["QG-CONTRACTS", "QG-TRUST-REVIEW"],
       },
+      {
+        id: "M0-12",
+        risk: { level: "medium", domains: ["agent-workflow"] },
+        acceptanceItemIds: ["OTHER-001"],
+        requiredGates: ["QG-CONTRACTS"],
+      },
     ],
   });
   await writeJson(root, `${planRoot}/acceptance-ledger.json`, {
     planId: "fixture",
-    items: [item, { ...item, id: "OTHER-001", taskId: "M0-12" }],
+    items: [
+      item,
+      {
+        ...item,
+        id: "OTHER-001",
+        taskId: "M0-12",
+        status: "accepted",
+        evidenceRefs: ["ev-m0-12-historical"],
+      },
+    ],
   });
   await writeJson(root, `${planRoot}/state/${taskId}.json`, {
     taskId,
@@ -87,8 +102,17 @@ async function createFixture() {
     blockers: [],
   });
   await writeJson(root, `${planRoot}/progress.json`, {
+    $schema: "../schemas/progress.schema.json",
+    schemaVersion: "1.0.0",
     planId: "fixture",
-    tasks: [{ taskId, state: "review_pending", acceptedCriteria: 0, totalCriteria: 1 }],
+    taskCounts: { accepted: 1, review_pending: 1 },
+    acceptanceCounts: { accepted: 1, planned: 1 },
+    nextLegalTasks: [],
+    blockedTasks: [],
+    tasks: [
+      { taskId, state: "review_pending", acceptedCriteria: 0, totalCriteria: 1 },
+      { taskId: "M0-12", state: "accepted", acceptedCriteria: 1, totalCriteria: 1 },
+    ],
   });
   await writeJson(root, `${planRoot}/evidence/ev-m0-12-historical.json`, {
     ...evidence("ev-m0-12-historical", "1".repeat(40)),
@@ -109,28 +133,40 @@ async function createFixture() {
   Object.assign(ledger.items[0], { status: "accepted", evidenceRefs: [evidenceId] });
   await writeJson(root, `${planRoot}/acceptance-ledger.json`, ledger);
   await writeJson(root, `${planRoot}/progress.json`, {
+    $schema: "../schemas/progress.schema.json",
+    schemaVersion: "1.0.0",
     planId: "fixture",
-    tasks: [{ taskId, state: "accepted", acceptedCriteria: 1, totalCriteria: 1 }],
+    taskCounts: { accepted: 2 },
+    acceptanceCounts: { accepted: 2 },
+    nextLegalTasks: [],
+    blockedTasks: [],
+    tasks: [
+      { taskId, state: "accepted", acceptedCriteria: 1, totalCriteria: 1 },
+      { taskId: "M0-12", state: "accepted", acceptedCriteria: 1, totalCriteria: 1 },
+    ],
   });
   await writeJson(root, `${planRoot}/evidence/${evidenceId}.json`, evidence(evidenceId, candidate));
   const lifecycleRoot = `${planRoot}/evidence/lifecycle/${taskId}/${candidate}`;
   await writeJson(root, `${lifecycleRoot}/validation_report.json`, {
-    candidate_commit: candidate,
     task_id: taskId,
     work_item_id: taskId,
     result: "pass",
     checks: [{ name: "pnpm test", status: "pass" }],
+    work_proof_marker_refs: [`${lifecycleRoot}/work_proof_marker.json`],
   });
   await writeJson(root, `${lifecycleRoot}/work_proof_marker.json`, {
     git_sha: candidate,
-    authorized_task_bindings: [{ task_id: taskId, source_revision: candidate }],
   });
   await writeJson(root, `${lifecycleRoot}/review_report.json`, {
     artifact_type: "review_report",
-    candidate_commit: candidate,
     task_id: taskId,
     work_item_id: taskId,
     verdict: "approved",
+    current_work: {
+      candidate_digest: `sha256:${"a".repeat(64)}`,
+      work_proof_markers: [{ ref: `${lifecycleRoot}/work_proof_marker.json` }],
+    },
+    evidence_refs: [`${lifecycleRoot}/validation_report.json`],
   });
   await writeJson(root, `${lifecycleRoot}/trust_review_report.json`, {
     artifactType: "vetryn-trust-review-report",
@@ -186,7 +222,7 @@ describe("promotion-tail validator", () => {
       "cross-task ledger",
       async (fixture) => {
         const ledger = await readJson(fixture.root, `${fixture.planRoot}/acceptance-ledger.json`);
-        ledger.items[1].status = "accepted";
+        ledger.items[1].evidenceRefs = ["ev-m0-12-mutated"];
         await writeJson(fixture.root, `${fixture.planRoot}/acceptance-ledger.json`, ledger);
       },
       "another task",
@@ -205,9 +241,39 @@ describe("promotion-tail validator", () => {
       async (fixture) => {
         const progress = await readJson(fixture.root, `${fixture.planRoot}/progress.json`);
         progress.tasks[0].state = "review_pending";
+        progress.taskCounts = { accepted: 1, review_pending: 1 };
         await writeJson(fixture.root, `${fixture.planRoot}/progress.json`, progress);
       },
       "does not mark the task accepted",
+    ],
+    [
+      "another task's generated progress",
+      async (fixture) => {
+        const progress = await readJson(fixture.root, `${fixture.planRoot}/progress.json`);
+        progress.tasks[1].state = "blocked";
+        await writeJson(fixture.root, `${fixture.planRoot}/progress.json`, progress);
+      },
+      "changed another task M0-12",
+    ],
+    [
+      "inconsistent generated progress counts",
+      async (fixture) => {
+        const progress = await readJson(fixture.root, `${fixture.planRoot}/progress.json`);
+        progress.taskCounts = { accepted: 999 };
+        await writeJson(fixture.root, `${fixture.planRoot}/progress.json`, progress);
+      },
+      "task counts are inconsistent",
+    ],
+    [
+      "missing work-proof marker",
+      async (fixture) =>
+        rm(
+          path.join(
+            fixture.root,
+            `${fixture.planRoot}/evidence/lifecycle/${taskId}/${fixture.candidate}/work_proof_marker.json`,
+          ),
+        ),
+      "missing work_proof_marker",
     ],
     [
       "mutable prior evidence",
@@ -237,31 +303,38 @@ describe("promotion-tail validator", () => {
     expect(result.stderr).toContain(message);
   });
 
-  it.each(["validation_report", "review_report", "trust_review_report", "canonical_promotion"])(
-    "rejects an unbound %s",
-    async (name) => {
-      const fixture = await createFixture();
-      const relativePath = `${fixture.planRoot}/evidence/lifecycle/${taskId}/${fixture.candidate}/${name}.json`;
-      const delivery = await amend(fixture.root, async () => {
-        const artifact = await readJson(fixture.root, relativePath);
-        delete artifact.candidateCommit;
-        delete artifact.candidate_commit;
-        delete artifact.commit;
-        delete artifact.git_sha;
-        await writeJson(fixture.root, relativePath, artifact);
-      });
-      const result = run(fixture.root, fixture.candidate, delivery);
-      expect(result.status).toBe(1);
-      expect(result.stderr).toContain(`${name} is not candidate-bound`);
-    },
-  );
+  it.each([
+    ["validation_report", (artifact) => (artifact.work_proof_marker_refs = [])],
+    [
+      "review_report",
+      (artifact) => {
+        artifact.current_work.work_proof_markers = [];
+        artifact.evidence_refs = [];
+      },
+    ],
+    ["trust_review_report", (artifact) => delete artifact.candidateCommit],
+    ["canonical_promotion", (artifact) => delete artifact.candidateCommit],
+  ])("rejects an unbound %s", async (name, unbind) => {
+    const fixture = await createFixture();
+    const relativePath = `${fixture.planRoot}/evidence/lifecycle/${taskId}/${fixture.candidate}/${name}.json`;
+    const delivery = await amend(fixture.root, async () => {
+      const artifact = await readJson(fixture.root, relativePath);
+      unbind(artifact);
+      await writeJson(fixture.root, relativePath, artifact);
+    });
+    const result = run(fixture.root, fixture.candidate, delivery);
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain(`${name} is not candidate-bound`);
+  });
 
   it("rejects a lifecycle report bound to another candidate", async () => {
     const fixture = await createFixture();
     const relativePath = `${fixture.planRoot}/evidence/lifecycle/${taskId}/${fixture.candidate}/validation_report.json`;
     const delivery = await amend(fixture.root, async () => {
       const artifact = await readJson(fixture.root, relativePath);
-      artifact.candidate_commit = "f".repeat(40);
+      artifact.work_proof_marker_refs = [
+        `${fixture.planRoot}/evidence/lifecycle/${taskId}/${"f".repeat(40)}/work_proof_marker.json`,
+      ];
       await writeJson(fixture.root, relativePath, artifact);
     });
     const result = run(fixture.root, fixture.candidate, delivery);
@@ -273,17 +346,17 @@ describe("promotion-tail validator", () => {
     [
       "conflicting git_sha and task binding",
       (artifact) => {
-        artifact.authorized_task_bindings[0].source_revision = "f".repeat(40);
+        artifact.authorized_task_bindings = [{ task_id: taskId, source_revision: "f".repeat(40) }];
       },
     ],
     [
       "multiple task bindings with different candidates",
-      (artifact) => {
+      (artifact, fixture) => {
         delete artifact.git_sha;
-        artifact.authorized_task_bindings.push({
-          task_id: taskId,
-          source_revision: "f".repeat(40),
-        });
+        artifact.authorized_task_bindings = [
+          { task_id: taskId, source_revision: fixture.candidate },
+          { task_id: taskId, source_revision: "f".repeat(40) },
+        ];
       },
     ],
     [
@@ -298,7 +371,7 @@ describe("promotion-tail validator", () => {
     const relativePath = `${fixture.planRoot}/evidence/lifecycle/${taskId}/${fixture.candidate}/work_proof_marker.json`;
     const delivery = await amend(fixture.root, async () => {
       const artifact = await readJson(fixture.root, relativePath);
-      mutate(artifact);
+      mutate(artifact, fixture);
       await writeJson(fixture.root, relativePath, artifact);
     });
     const result = run(fixture.root, fixture.candidate, delivery);

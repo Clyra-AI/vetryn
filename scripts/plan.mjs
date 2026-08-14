@@ -50,10 +50,24 @@ const legacyRiskPolicyTaskIds = new Set([
 ]);
 const highRiskPolicyPaths = new Set([
   ".agents/skills/vetryn-promote-task/SKILL.md",
+  ".changeset/config.json",
   ".factory/profile.yaml",
+  ".github/CODEOWNERS",
+  ".github/workflows/ci.yml",
   "AGENTS.md",
+  "CODEOWNERS",
+  "MAINTAINERS.md",
   "WORKFLOW.md",
+  "action.yml",
   "docs/adr/0009-single-maintainer-v1-delivery.md",
+  "package.json",
+  "packages/cli/src/evaluation-files.ts",
+  "packages/cli/src/evidence-store.ts",
+  "packages/core/src/contracts.ts",
+  "packages/openrouter/src/evaluation.ts",
+  "packages/openrouter/src/live-refresh.ts",
+  "pnpm-lock.yaml",
+  "product/plans/oss-v1/evidence/example.json",
   "product/plans/schemas/evidence.schema.json",
   "product/plans/schemas/task-packet.schema.json",
   "scripts/plan.mjs",
@@ -66,8 +80,13 @@ function scopePatternCoversPath(pattern, relativePath) {
   for (let index = 0; index < pattern.length; index += 1) {
     const character = pattern[index];
     if (character === "*" && pattern[index + 1] === "*") {
-      expression += ".*";
-      index += 1;
+      if (pattern[index + 2] === "/") {
+        expression += "(?:.*/)?";
+        index += 2;
+      } else {
+        expression += ".*";
+        index += 1;
+      }
     } else if (character === "*") expression += "[^/]*";
     else if (character === "?") expression += "[^/]";
     else expression += "\\^$+.()|{}[]".includes(character) ? `\\${character}` : character;

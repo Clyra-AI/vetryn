@@ -1586,7 +1586,17 @@ describe("implementation plan validator", () => {
     expect(result.stderr).toContain("exceeds maxAttempts 2");
   });
 
-  it.each(["scripts/**", ".factory/**", "product/plans/**", "docs/**"])(
+  it.each([
+    "scripts/**",
+    "scripts/**/*",
+    ".factory/**",
+    ".factory/**/*",
+    ".github/**",
+    ".github/**/*",
+    "product/plans/**",
+    "product/plans/**/*",
+    "docs/**",
+  ])(
     "rejects an unaccepted low-risk task whose broad %s scope covers protected policy",
     async (scopePattern) => {
       const root = await createFixture();
@@ -1607,6 +1617,12 @@ describe("implementation plan validator", () => {
 
   it.each([
     ["protected exact path", ["scripts/task.mjs"], ["agent-workflow"]],
+    ["maintainer authority path", ["MAINTAINERS.md"], ["agent-workflow"]],
+    [
+      "credential and evidence implementation path",
+      ["packages/cli/src/evidence-store.ts"],
+      ["agent-workflow"],
+    ],
     ["protected risk domain", ["packages/openrouter/**"], ["release-policy"]],
   ])("rejects an unaccepted medium-risk task with a %s", async (_name, paths, domains) => {
     const root = await createFixture();
@@ -1630,8 +1646,8 @@ describe("implementation plan validator", () => {
     const plan = await readFixtureJson(root, planPath);
     const task = plan.tasks.find((candidate) => candidate.id === "M0-14");
     task.risk = { level: "low", domains: ["agent-workflow"] };
-    task.scope.allowedPaths = ["packages/openrouter/**"];
-    task.deliverables = ["packages/openrouter/**"];
+    task.scope.allowedPaths = ["packages/typescript/**"];
+    task.deliverables = ["packages/typescript/**"];
     await writeFixtureJson(root, planPath, plan);
 
     const result = runPlan(root);

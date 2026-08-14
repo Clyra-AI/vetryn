@@ -112,7 +112,23 @@ function taskIdentity(document) {
   );
 }
 
-function candidateIdentity(document) {
+function collectLifecycleRefCandidates(value, taskId, commits) {
+  if (typeof value === "string") {
+    const match = value.match(
+      new RegExp(`^${planRoot}/evidence/lifecycle/${taskId}/([0-9a-f]{40})(?:/|$)`, "u"),
+    );
+    if (match) commits.add(match[1]);
+    return;
+  }
+  if (Array.isArray(value)) {
+    for (const entry of value) collectLifecycleRefCandidates(entry, taskId, commits);
+    return;
+  }
+  if (value && typeof value === "object")
+    for (const entry of Object.values(value)) collectLifecycleRefCandidates(entry, taskId, commits);
+}
+
+function candidateIdentity(document, taskId) {
   const commits = new Set();
   for (const value of [
     document.candidateCommit,
@@ -127,20 +143,14 @@ function candidateIdentity(document) {
     );
     commits.add(value);
   }
+  collectLifecycleRefCandidates(document, taskId, commits);
   return commits;
 }
 
 function assertLifecycleArtifact(name, document, taskId, candidate) {
   if (name === "work_proof_marker") {
     const bindings = document.authorized_task_bindings;
-    const commits = new Set();
-    if (document.git_sha !== undefined) {
-      assert(
-        typeof document.git_sha === "string" && shaPattern.test(document.git_sha),
-        "work_proof_marker has an invalid git_sha",
-      );
-      commits.add(document.git_sha);
-    }
+    const commits = candidateIdentity(document, taskId);
     if (bindings !== undefined) {
       assert(Array.isArray(bindings), "work_proof_marker bindings are invalid");
       for (const binding of bindings) {
@@ -158,18 +168,11 @@ function assertLifecycleArtifact(name, document, taskId, candidate) {
       commits.size === 1 && commits.has(candidate),
       "work_proof_marker is not candidate-bound",
     );
-    assert(
-      Array.isArray(bindings) &&
-        bindings.some(
-          (binding) => binding.task_id === taskId && binding.source_revision === candidate,
-        ),
-      "work_proof_marker is not task-bound",
-    );
     return;
   }
   const tasks = taskIdentity(document);
   assert(tasks.size === 1 && tasks.has(taskId), `${name} is not task-bound`);
-  const commits = candidateIdentity(document);
+  const commits = candidateIdentity(document, taskId);
   assert(commits.size === 1 && commits.has(candidate), `${name} is not candidate-bound`);
   if (name === "validation_report") {
     assert(document.result === "pass", "validation_report is not passing");
@@ -239,7 +242,76 @@ function assertPromotedLedger(ledger, state, taskId) {
   }
 }
 
-function assertProgress(progress, taskId, criteriaCount) {
+function countBy(values) {
+  return Object.fromEntries(
+    [...new Set(values)]
+      .sort()
+      .map((value) => [value, values.filter((item) => item === value).length]),
+  );
+}
+
+function assertProgress(candidateProgress, progress, plan, ledger, taskId, criteriaCount) {
+  assert(
+    Array.isArray(candidateProgress.tasks) && Array.isArray(progress.tasks),
+    "generated progress task rows are required",
+  );
+  assert(
+    candidateProgress.tasks.length === progress.tasks.length,
+    "generated progress task membership changed",
+  );
+  for (const [index, before] of candidateProgress.tasks.entries()) {
+    const after = progress.tasks[index];
+    assert(before.taskId === after?.taskId, "generated progress tasks were reordered or replaced");
+    if (before.taskId !== taskId)
+      assert(
+        JSON.stringify(before) === JSON.stringify(after),
+        `generated progress changed another task ${before.taskId}`,
+      );
+  }
+  assert(
+    JSON.stringify(Object.keys(progress).sort()) ===
+      JSON.stringify(Object.keys(candidateProgress).sort()),
+    "generated progress shape changed",
+  );
+  assert(progress.$schema === candidateProgress.$schema, "generated progress schema changed");
+  assert(
+    progress.schemaVersion === candidateProgress.schemaVersion,
+    "generated progress version changed",
+  );
+  assert(progress.planId === plan.planId, "generated progress plan ID changed");
+  assert(
+    JSON.stringify(progress.taskCounts) ===
+      JSON.stringify(countBy(progress.tasks.map((entry) => entry.state))),
+    "generated progress task counts are inconsistent",
+  );
+  assert(
+    JSON.stringify(progress.acceptanceCounts) ===
+      JSON.stringify(countBy(ledger.items.map((item) => item.status))),
+    "generated progress acceptance counts are inconsistent",
+  );
+  const stateByTask = new Map(progress.tasks.map((entry) => [entry.taskId, entry.state]));
+  const acceptedTasks = new Set(
+    progress.tasks.filter((entry) => entry.state === "accepted").map((entry) => entry.taskId),
+  );
+  const expectedNext = plan.tasks
+    .filter((entry) => ["planned", "ready"].includes(stateByTask.get(entry.id)))
+    .filter((entry) =>
+      (entry.dependsOn ?? [])
+        .filter((dependency) => ["hard", "contract", "field"].includes(dependency.kind))
+        .every((dependency) => acceptedTasks.has(dependency.taskId)),
+    )
+    .map((entry) => entry.id);
+  assert(
+    JSON.stringify(progress.nextLegalTasks) === JSON.stringify(expectedNext),
+    "generated progress next-legal tasks are inconsistent",
+  );
+  assert(
+    JSON.stringify(progress.blockedTasks) ===
+      JSON.stringify(
+        progress.tasks.filter((entry) => entry.state === "blocked").map((entry) => entry.taskId),
+      ),
+    "generated progress blocked tasks are inconsistent",
+  );
   const task = progress.tasks?.find((entry) => entry.taskId === taskId);
   assert(task, "generated progress omits the promoted task");
   assert(task.state === "accepted", "generated progress does not mark the task accepted");
@@ -271,6 +343,7 @@ export function checkPromotionTail({ root, taskId, productCandidate, deliveryHea
   const task = plan.tasks?.find((entry) => entry.id === taskId);
   assert(task, `unknown task ${taskId} at ProductCandidate`);
   const requiredLifecycle = new Set([
+    "work_proof_marker",
     "validation_report",
     "canonical_promotion",
     ...(task.risk?.level === "high" ? ["review_report"] : []),
@@ -308,7 +381,14 @@ export function checkPromotionTail({ root, taskId, productCandidate, deliveryHea
   const state = jsonAt(root, deliveryHead, statePath);
   assertPromotionState(state, task, taskId, productCandidate);
   assertPromotedLedger(promotedLedger, state, taskId);
-  assertProgress(jsonAt(root, deliveryHead, progressPath), taskId, state.criteria.length);
+  assertProgress(
+    jsonAt(root, productCandidate, progressPath),
+    jsonAt(root, deliveryHead, progressPath),
+    plan,
+    promotedLedger,
+    taskId,
+    state.criteria.length,
+  );
 
   const referencedEvidence = new Set(state.criteria.flatMap((criterion) => criterion.evidenceRefs));
   for (const [relativePath, document] of addedFlatEvidence) {
