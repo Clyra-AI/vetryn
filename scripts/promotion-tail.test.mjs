@@ -58,7 +58,7 @@ async function createFixture() {
     taskId,
     statement: "Validate promotion tails.",
     verification: { method: "test", testLevel: "contract", gateId: "QG-CONTRACTS" },
-    waivable: false,
+    waivable: true,
     status: "planned",
     evidenceRefs: [],
   };
@@ -178,6 +178,8 @@ async function createFixture() {
   });
   await writeJson(root, `${lifecycleRoot}/work_proof_marker.json`, {
     git_sha: candidate,
+    cleanCandidateVerified: true,
+    commands: [{ command: "pnpm test", exitCode: 0, status: "pass" }],
   });
   await writeJson(root, `${lifecycleRoot}/review_report.json`, {
     artifact_type: "review_report",
@@ -555,6 +557,9 @@ describe("promotion-tail validator", () => {
       "raw payload field",
     ],
     ["message content", (artifact) => (artifact.messages = ["private"]), "raw payload field"],
+    ["raw completion", (artifact) => (artifact.rawCompletion = "private"), "raw payload field"],
+    ["completion text", (artifact) => (artifact.completionText = "private"), "raw payload field"],
+    ["raw logs", (artifact) => (artifact.rawLogs = ["private"]), "raw payload field"],
   ])("rejects lifecycle evidence with %s", async (_name, mutate, message) => {
     const fixture = await createFixture();
     const relativePath = `${fixture.planRoot}/evidence/lifecycle/${taskId}/${fixture.candidate}/validation_report.json`;
@@ -603,6 +608,62 @@ describe("promotion-tail validator", () => {
     const result = run(fixture.root, fixture.candidate, delivery);
     expect(result.status).toBe(1);
     expect(result.stderr).toContain("work_proof_marker is not candidate-bound");
+  });
+
+  it.each([
+    ["an unclean candidate", (artifact) => (artifact.cleanCandidateVerified = false)],
+    ["a failed command status", (artifact) => (artifact.commands[0].status = "fail")],
+    ["a nonzero command exit", (artifact) => (artifact.commands[0].exitCode = 1)],
+    ["a failed legacy execution", (artifact) => (artifact.execution_status = "fail")],
+  ])("rejects a work-proof marker with %s", async (_name, mutate) => {
+    const fixture = await createFixture();
+    const relativePath = `${fixture.planRoot}/evidence/lifecycle/${taskId}/${fixture.candidate}/work_proof_marker.json`;
+    const delivery = await amend(fixture.root, async () => {
+      const artifact = await readJson(fixture.root, relativePath);
+      mutate(artifact);
+      await writeJson(fixture.root, relativePath, artifact);
+    });
+    const result = run(fixture.root, fixture.candidate, delivery);
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("work_proof_marker is not passing");
+  });
+
+  it("rejects a work-proof marker with a conflicting checkpoint", async () => {
+    const fixture = await createFixture();
+    const relativePath = `${fixture.planRoot}/evidence/lifecycle/${taskId}/${fixture.candidate}/work_proof_marker.json`;
+    const delivery = await amend(fixture.root, async () => {
+      const artifact = await readJson(fixture.root, relativePath);
+      artifact.workspace_proof = {
+        retry_preservation: { checkpoint_ref: "f".repeat(40) },
+      };
+      await writeJson(fixture.root, relativePath, artifact);
+    });
+    const result = run(fixture.root, fixture.candidate, delivery);
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("work_proof_marker is not candidate-bound");
+  });
+
+  it("accepts a canonical waivable criterion disposition", async () => {
+    const fixture = await createFixture();
+    const delivery = await amend(fixture.root, async () => {
+      const statePath = `${fixture.planRoot}/state/${taskId}.json`;
+      const state = await readJson(fixture.root, statePath);
+      state.criteria[0].status = "waived";
+      await writeJson(fixture.root, statePath, state);
+
+      const ledgerPath = `${fixture.planRoot}/acceptance-ledger.json`;
+      const ledger = await readJson(fixture.root, ledgerPath);
+      ledger.items[0].status = "deferred_with_approval";
+      await writeJson(fixture.root, ledgerPath, ledger);
+
+      const progressPath = `${fixture.planRoot}/progress.json`;
+      const progress = await readJson(fixture.root, progressPath);
+      progress.acceptanceCounts = { accepted: 1, deferred_with_approval: 1 };
+      progress.tasks[0].acceptedCriteria = 0;
+      await writeJson(fixture.root, progressPath, progress);
+    });
+    const result = run(fixture.root, fixture.candidate, delivery);
+    expect(result.status, result.stderr).toBe(0);
   });
 
   it.each([

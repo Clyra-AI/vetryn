@@ -1646,6 +1646,8 @@ describe("implementation plan validator", () => {
       ["agent-workflow"],
     ],
     ["semantic-risk validator path", ["scripts/semantic-risk.mjs"], ["agent-workflow"]],
+    ["GitHub review authentication path", ["scripts/github-review-auth.mjs"], ["agent-workflow"]],
+    ["Git checkout authentication path", ["scripts/git-checkout-auth.mjs"], ["agent-workflow"]],
     [
       "trust-review skill path",
       [".agents/skills/vetryn-trust-review/SKILL.md"],

@@ -149,6 +149,14 @@ function candidateIdentity(document, taskId) {
     );
     commits.add(value);
   }
+  const checkpoint = document.workspace_proof?.retry_preservation?.checkpoint_ref;
+  if (checkpoint !== undefined) {
+    assert(
+      typeof checkpoint === "string" && shaPattern.test(checkpoint),
+      "lifecycle artifact has an invalid candidate identity",
+    );
+    commits.add(checkpoint);
+  }
   collectLifecycleRefCandidates(document, taskId, commits);
   return commits;
 }
@@ -160,10 +168,14 @@ const lifecycleDeclarationKeys = new Set([
 ]);
 
 const sensitiveLifecycleKeys = new Set([
+  "completion",
+  "completiontext",
   "content",
+  "logs",
   "messages",
   "modeloutput",
   "outputtext",
+  "payload",
   "prompt",
   "prompttext",
   "rawmodeloutput",
@@ -189,21 +201,58 @@ function assertLifecycleRedacted(value) {
   if (!value || typeof value !== "object") return;
   for (const [key, entry] of Object.entries(value)) {
     const normalizedKey = normalizedLifecycleKey(key);
+    if (lifecycleDeclarationKeys.has(normalizedKey)) {
+      assert(entry === false, "lifecycle artifact has an invalid redaction declaration");
+      continue;
+    }
+    if (normalizedKey === "rawlogrefs") {
+      assert(
+        Array.isArray(entry) && entry.length === 0,
+        "lifecycle artifact contains a raw payload field",
+      );
+      continue;
+    }
     assert(
-      !lifecycleDeclarationKeys.has(normalizedKey) || entry === false,
-      "lifecycle artifact has an invalid redaction declaration",
-    );
-    assert(
-      !(sensitiveLifecycleKeys.has(normalizedKey) && entry !== null && entry !== ""),
+      !(
+        (normalizedKey.includes("raw") || sensitiveLifecycleKeys.has(normalizedKey)) &&
+        entry !== null &&
+        entry !== ""
+      ),
       "lifecycle artifact contains a raw payload field",
     );
     assertLifecycleRedacted(entry);
   }
 }
 
+function assertWorkProofPassing(document) {
+  const hasVetrynShape =
+    document.cleanCandidateVerified !== undefined || document.commands !== undefined;
+  const hasFactoryShape =
+    document.execution_status !== undefined ||
+    document.exit_code !== undefined ||
+    document.workspace_proof?.clean_checkout_verified !== undefined;
+  assert(hasVetrynShape || hasFactoryShape, "work_proof_marker is not passing");
+  if (hasVetrynShape)
+    assert(
+      document.cleanCandidateVerified === true &&
+        Array.isArray(document.commands) &&
+        document.commands.length > 0 &&
+        document.commands.every((command) => command?.status === "pass" && command.exitCode === 0),
+      "work_proof_marker is not passing",
+    );
+  if (hasFactoryShape)
+    assert(
+      document.execution_status === "pass" &&
+        document.exit_code === 0 &&
+        document.workspace_proof?.clean_checkout_verified === true,
+      "work_proof_marker is not passing",
+    );
+}
+
 function assertLifecycleArtifact(name, document, taskId, candidate) {
   assertLifecycleRedacted(document);
   if (name === "work_proof_marker") {
+    assertWorkProofPassing(document);
     const bindings = document.authorized_task_bindings;
     const tasks = taskIdentity(document);
     assert(
@@ -320,7 +369,7 @@ function assertPromotionState(candidateState, state, task, taskId, productCandid
   assert(
     state.criteria.every(
       (criterion) =>
-        criterion.status === "pass" &&
+        ["pass", "waived"].includes(criterion.status) &&
         Array.isArray(criterion.evidenceRefs) &&
         criterion.evidenceRefs.length > 0,
     ),
@@ -341,7 +390,14 @@ function assertPromotedLedger(ledger, state, taskId) {
   for (const item of items) {
     const criterion = criteria.get(item.id);
     assert(criterion, `promotion ledger contains undeclared item ${item.id}`);
-    assert(item.status === "accepted", `promotion ledger item ${item.id} is not accepted`);
+    if (criterion.status === "pass")
+      assert(item.status === "accepted", `promotion ledger item ${item.id} is not accepted`);
+    else
+      assert(
+        item.waivable === true &&
+          ["deferred_with_approval", "not_applicable"].includes(item.status),
+        `promotion ledger item ${item.id} has an invalid waiver disposition`,
+      );
     assert(
       JSON.stringify(item.evidenceRefs) === JSON.stringify(criterion.evidenceRefs),
       `promotion ledger evidence differs for ${item.id}`,
@@ -357,7 +413,7 @@ function countBy(values) {
   );
 }
 
-function assertProgress(candidateProgress, progress, plan, ledger, taskId, criteriaCount) {
+function assertProgress(candidateProgress, progress, plan, ledger, taskId) {
   assert(
     Array.isArray(candidateProgress.tasks) && Array.isArray(progress.tasks),
     "generated progress task rows are required",
@@ -422,8 +478,10 @@ function assertProgress(candidateProgress, progress, plan, ledger, taskId, crite
   const task = progress.tasks?.find((entry) => entry.taskId === taskId);
   assert(task, "generated progress omits the promoted task");
   assert(task.state === "accepted", "generated progress does not mark the task accepted");
+  const taskItems = ledger.items.filter((item) => item.taskId === taskId);
   assert(
-    task.acceptedCriteria === criteriaCount && task.totalCriteria === criteriaCount,
+    task.acceptedCriteria === taskItems.filter((item) => item.status === "accepted").length &&
+      task.totalCriteria === taskItems.length,
     "generated progress criterion counts are inconsistent",
   );
 }
@@ -497,7 +555,6 @@ export function checkPromotionTail({ root, taskId, productCandidate, deliveryHea
     plan,
     promotedLedger,
     taskId,
-    state.criteria.length,
   );
 
   const referencedEvidence = new Set([

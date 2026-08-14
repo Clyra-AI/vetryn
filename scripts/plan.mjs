@@ -82,6 +82,8 @@ const highRiskPolicyPaths = new Set([
   "product/plans/schemas/task-packet.schema.json",
   "product/plans/schemas/task-state.schema.json",
   "scripts/plan.mjs",
+  "scripts/github-review-auth.mjs",
+  "scripts/git-checkout-auth.mjs",
   "scripts/promotion-tail.mjs",
   "scripts/semantic-risk.mjs",
   "scripts/task.mjs",
