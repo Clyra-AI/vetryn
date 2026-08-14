@@ -1,0 +1,33 @@
+{
+  "artifactType": "vetryn-work-proof-marker",
+  "schemaVersion": "1.0.0",
+  "taskId": "M0-14",
+  "candidateCommit": "b5bb3d3a605f1bcaae40faf138562653945b0efe",
+  "baseCommit": "da4ee8f20f60e848138c486e0a7127abbada60f0",
+  "executor": "implementation-agent",
+  "runner": "codex-exec-tool",
+  "workspaceRef": "codex/m0-14-terminal-review-final",
+  "cleanCandidateVerified": true,
+  "observedAt": "2026-08-14T18:23:26Z",
+  "commands": [
+    { "command": "pnpm plan:check", "exitCode": 0, "status": "pass" },
+    { "command": "pnpm check", "exitCode": 0, "status": "pass" },
+    { "command": "pnpm test:contracts", "exitCode": 0, "status": "pass" },
+    {
+      "command": "pnpm exec vitest run scripts/task.test.mjs -t 'compiles the actual V1-05 package and release scope for clean installs'",
+      "exitCode": 0,
+      "status": "pass"
+    }
+  ],
+  "authorized_task_bindings": [
+    {
+      "task_id": "M0-14",
+      "source_revision": "b5bb3d3a605f1bcaae40faf138562653945b0efe"
+    }
+  ],
+  "redaction": {
+    "containsRawModelOutput": false,
+    "containsSecrets": false,
+    "rawLogsPersisted": false
+  }
+}

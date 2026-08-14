@@ -2,51 +2,51 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "M0-14",
-  "revision": 9,
+  "revision": 10,
   "state": "accepted",
   "attempt": 1,
   "candidate": {
     "baseCommit": "be81357d3979f83f7f1d54a6819e7a524b788db8",
-    "commit": "836cf5b24c28e9c51162b0d12775224203f3f178",
+    "commit": "b5bb3d3a605f1bcaae40faf138562653945b0efe",
     "executor": "implementation-agent"
   },
   "criteria": [
     {
       "criterionId": "PROCESS-015",
       "status": "pass",
-      "evidenceRefs": ["ev-m0-14-contracts-836cf5b"]
+      "evidenceRefs": ["ev-m0-14-contracts-b5bb3d3"]
     },
     {
       "criterionId": "PROCESS-017",
       "status": "pass",
-      "evidenceRefs": ["ev-m0-14-plan-check-836cf5b"]
+      "evidenceRefs": ["ev-m0-14-plan-check-b5bb3d3"]
     },
     {
       "criterionId": "PROCESS-018",
       "status": "pass",
-      "evidenceRefs": ["ev-m0-14-contracts-836cf5b"]
+      "evidenceRefs": ["ev-m0-14-contracts-b5bb3d3"]
     },
     {
       "criterionId": "PROCESS-019",
       "status": "pass",
-      "evidenceRefs": ["ev-m0-14-plan-check-836cf5b"]
+      "evidenceRefs": ["ev-m0-14-plan-check-b5bb3d3"]
     }
   ],
   "gates": [
     {
       "gateId": "QG-PLAN-CHECK",
       "status": "pass",
-      "evidenceRefs": ["ev-m0-14-plan-check-836cf5b"]
+      "evidenceRefs": ["ev-m0-14-plan-check-b5bb3d3"]
     },
     {
       "gateId": "QG-REPO-CHECK",
       "status": "pass",
-      "evidenceRefs": ["ev-m0-14-repo-check-836cf5b"]
+      "evidenceRefs": ["ev-m0-14-repo-check-b5bb3d3"]
     },
     {
       "gateId": "QG-CONTRACTS",
       "status": "pass",
-      "evidenceRefs": ["ev-m0-14-contracts-836cf5b"]
+      "evidenceRefs": ["ev-m0-14-contracts-b5bb3d3"]
     },
     { "gateId": "QG-INDEPENDENT-VERIFY", "status": "pending", "evidenceRefs": [] }
   ],
@@ -122,6 +122,13 @@
       "at": "2026-08-14T18:10:34Z",
       "actor": "davidahmann",
       "reason": "Maintainer rebound acceptance to the exact strict-base ProductCandidate after all active commands, independent verification, and candidate-bound code review passed."
+    },
+    {
+      "from": "accepted",
+      "to": "accepted",
+      "at": "2026-08-14T18:23:26Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer rebound acceptance to the exact CI-headroom ProductCandidate after all active commands, independent verification, and candidate-bound code review passed."
     }
   ]
 }
