@@ -122,7 +122,12 @@ async function createFixture() {
     { recursive: true },
   );
   await cp(path.join(repositoryRoot, "pnpm-lock.yaml"), path.join(root, "pnpm-lock.yaml"));
-  await cp(path.join(repositoryRoot, ".factory"), path.join(root, ".factory"), { recursive: true });
+  await mkdir(path.join(root, ".factory"));
+  await cp(
+    path.join(repositoryRoot, ".factory/profile.yaml"),
+    path.join(root, ".factory/profile.yaml"),
+  );
+  await mkdir(path.join(root, ".factory/artifacts/task-runs"), { recursive: true });
 
   const planPath = path.join(root, "product/plans/oss-v1/plan.json");
   const plan = JSON.parse(await readFile(planPath, "utf8"));
