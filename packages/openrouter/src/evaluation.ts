@@ -18,7 +18,7 @@ import {
 } from "@vetryn/core";
 import { z } from "zod";
 
-import { isLiveCatalogRefreshResult } from "./live-refresh.js";
+import { consumeLiveCatalogRefreshResult } from "./live-refresh.js";
 
 const digestSchema = z.string().regex(/^sha256:[0-9a-f]{64}$/);
 const decimalSchema = z.string().regex(/^(?:0|[1-9][0-9]*)(?:\.[0-9]+)?$/);
@@ -79,8 +79,10 @@ export function createCurrentCatalogRefresh(input: {
     readonly status: "success";
   };
 }): CurrentCatalogRefresh {
-  if (!isLiveCatalogRefreshResult(input.refresh)) {
-    throw new Error("Current evaluation requires the canonical live acquisition result object.");
+  if (!consumeLiveCatalogRefreshResult(input.refresh, input.invocationId)) {
+    throw new Error(
+      "Current evaluation requires an unconsumed canonical live acquisition result object.",
+    );
   }
   const observation = evaluationRefreshObservationSchema.parse(input.refresh.observation);
   if (observation.acquisition !== "live-api") {

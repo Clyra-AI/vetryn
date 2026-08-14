@@ -2,10 +2,15 @@ import { mkdir, mkdtemp, readFile, rm, symlink, unlink, writeFile } from "node:f
 import { tmpdir } from "node:os";
 import path from "node:path";
 
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { FileExecutionReceiptStore } from "../src/evidence-store.js";
-import { createCatalogRefreshLineageDigest } from "@vetryn/openrouter";
+import {
+  createCatalogRefreshLineageDigest,
+  createCurrentCatalogRefresh,
+  refreshOpenRouterCatalog,
+  type CatalogStore,
+} from "@vetryn/openrouter";
 
 const roots: string[] = [];
 const digest = (character: string) => `sha256:${character.repeat(64)}`;
@@ -54,6 +59,9 @@ const record = {
 } as const;
 
 afterEach(async () => {
+  vi.restoreAllMocks();
+  vi.unstubAllGlobals();
+  vi.useRealTimers();
   await Promise.all(roots.splice(0).map((root) => rm(root, { force: true, recursive: true })));
 });
 
@@ -326,6 +334,77 @@ describe("authenticated execution receipt store", () => {
     await writeFile(headPath, failureHead);
     await writeFile(fixtureState.anchorPath, failureAnchor);
     await expect(fixtureState.store.verify(first.executionRecordId)).resolves.toMatchObject({
+      actionable: false,
+      reason: "catalog-refresh-not-current",
+    });
+  });
+
+  it("cannot restamp a consumed live success after an authenticated later failure", async () => {
+    const fixtureState = await fixture();
+    const store: CatalogStore = {
+      async hasSnapshot() {
+        return false;
+      },
+      async putObservation() {},
+      async putRefresh(snapshot, observation) {
+        return { observation: { ...observation, reusedSnapshot: false }, snapshot };
+      },
+      async putSnapshot(snapshot) {
+        return { reused: false, snapshot };
+      },
+    };
+    vi.useFakeTimers();
+    vi.setSystemTime("2026-08-10T00:00:00.000Z");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        Promise.resolve(
+          new Response(
+            JSON.stringify({
+              data: [
+                {
+                  architecture: { output_modalities: ["text"] },
+                  context_length: 128_000,
+                  id: "openai/gpt-4o-mini",
+                  pricing: { completion: "0.0000006", prompt: "0.00000015" },
+                  supported_parameters: ["response_format"],
+                },
+              ],
+            }),
+            { headers: { "content-type": "application/json" }, status: 200 },
+          ),
+        ),
+      ),
+    );
+    const refreshA = await refreshOpenRouterCatalog({
+      acquisition: "live-api",
+      refreshId: "refresh-a",
+      store,
+    });
+    if (refreshA.status !== "success") throw new Error("Expected refresh A to succeed.");
+    const currentA = createCurrentCatalogRefresh({
+      invocationId: "invocation-a",
+      refresh: refreshA,
+    });
+    const recordA = {
+      ...record,
+      catalogRefreshLineageDigest: createCatalogRefreshLineageDigest(currentA.lineage),
+      id: "execution-record:refresh-a",
+    };
+    await fixtureState.store.append(recordA, {
+      catalogRefreshLineage: currentA.lineage,
+      trustEpochId: "epoch-one",
+    });
+    await fixtureState.store.appendCatalogRefreshAttempt(refreshFailure, {
+      invocationId: "invocation-b",
+      ordinal: 1,
+      trustEpochId: "epoch-one",
+    });
+
+    expect(() =>
+      createCurrentCatalogRefresh({ invocationId: "invocation-c", refresh: refreshA }),
+    ).toThrow(/unconsumed canonical live acquisition/i);
+    await expect(fixtureState.store.verify(recordA.id)).resolves.toMatchObject({
       actionable: false,
       reason: "catalog-refresh-not-current",
     });
