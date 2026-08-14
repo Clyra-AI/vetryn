@@ -150,16 +150,21 @@ function candidateIdentity(document, taskId) {
 function assertLifecycleArtifact(name, document, taskId, candidate) {
   if (name === "work_proof_marker") {
     const bindings = document.authorized_task_bindings;
+    const tasks = taskIdentity(document);
+    assert(
+      tasks.size === 0 || (tasks.size === 1 && tasks.has(taskId)),
+      "work_proof_marker is not task-bound",
+    );
     const commits = candidateIdentity(document, taskId);
     if (bindings !== undefined) {
       assert(Array.isArray(bindings), "work_proof_marker bindings are invalid");
       for (const binding of bindings) {
         assert(
           binding &&
-            typeof binding.task_id === "string" &&
+            binding.task_id === taskId &&
             typeof binding.source_revision === "string" &&
             shaPattern.test(binding.source_revision),
-          "work_proof_marker binding is invalid",
+          "work_proof_marker binding is not task-bound",
         );
         commits.add(binding.source_revision);
       }
@@ -182,8 +187,17 @@ function assertLifecycleArtifact(name, document, taskId, candidate) {
       "validation_report contains a failed check",
     );
   }
-  if (name === "review_report")
+  if (name === "review_report") {
     assert(document.verdict === "approved", "review_report is not approved");
+    assert(
+      Array.isArray(document.findings) && document.findings.length === 0,
+      "review_report has unresolved findings",
+    );
+    assert(
+      Array.isArray(document.required_fixes) && document.required_fixes.length === 0,
+      "review_report has required fixes",
+    );
+  }
   if (name === "trust_review_report") {
     assert(document.verdict === "pass", "trust_review_report is not passing");
     assert(

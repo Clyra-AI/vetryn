@@ -1619,6 +1619,16 @@ describe("implementation plan validator", () => {
   it.each([
     ["protected exact path", ["scripts/task.mjs"], ["agent-workflow"]],
     ["maintainer authority path", ["MAINTAINERS.md"], ["agent-workflow"]],
+    [
+      "acceptance-ledger schema path",
+      ["product/plans/schemas/acceptance-ledger.schema.json"],
+      ["agent-workflow"],
+    ],
+    [
+      "task-state schema path",
+      ["product/plans/schemas/task-state.schema.json"],
+      ["agent-workflow"],
+    ],
     ["security workflow path", [".github/workflows/codeql.yml"], ["agent-workflow"]],
     [
       "dependency security workflow path",

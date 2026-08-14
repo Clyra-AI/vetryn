@@ -167,6 +167,8 @@ async function createFixture() {
       work_proof_markers: [{ ref: `${lifecycleRoot}/work_proof_marker.json` }],
     },
     evidence_refs: [`${lifecycleRoot}/validation_report.json`],
+    findings: [],
+    required_fixes: [],
   });
   await writeJson(root, `${lifecycleRoot}/trust_review_report.json`, {
     artifactType: "vetryn-trust-review-report",
@@ -402,5 +404,45 @@ describe("promotion-tail validator", () => {
     const result = run(fixture.root, fixture.candidate, delivery);
     expect(result.status).toBe(1);
     expect(result.stderr).toContain("work_proof_marker is not candidate-bound");
+  });
+
+  it.each([
+    ["top-level task identity", (artifact) => (artifact.taskId = "M0-12")],
+    [
+      "authorized task binding",
+      (artifact, fixture) => {
+        artifact.authorized_task_bindings = [
+          { task_id: "M0-12", source_revision: fixture.candidate },
+        ];
+      },
+    ],
+  ])("rejects a work-proof marker with another task in its %s", async (_name, mutate) => {
+    const fixture = await createFixture();
+    const relativePath = `${fixture.planRoot}/evidence/lifecycle/${taskId}/${fixture.candidate}/work_proof_marker.json`;
+    const delivery = await amend(fixture.root, async () => {
+      const artifact = await readJson(fixture.root, relativePath);
+      mutate(artifact, fixture);
+      await writeJson(fixture.root, relativePath, artifact);
+    });
+    const result = run(fixture.root, fixture.candidate, delivery);
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("work_proof_marker");
+    expect(result.stderr).toContain("task-bound");
+  });
+
+  it.each([
+    ["blocking findings", (artifact) => artifact.findings.push({ priority: "P1" })],
+    ["required fixes", (artifact) => artifact.required_fixes.push("repair the blocker")],
+  ])("rejects an approved review report with %s", async (_name, mutate) => {
+    const fixture = await createFixture();
+    const relativePath = `${fixture.planRoot}/evidence/lifecycle/${taskId}/${fixture.candidate}/review_report.json`;
+    const delivery = await amend(fixture.root, async () => {
+      const artifact = await readJson(fixture.root, relativePath);
+      mutate(artifact);
+      await writeJson(fixture.root, relativePath, artifact);
+    });
+    const result = run(fixture.root, fixture.candidate, delivery);
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("review_report");
   });
 });
