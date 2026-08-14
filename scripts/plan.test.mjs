@@ -907,6 +907,7 @@ describe("implementation plan validator", () => {
       expect.arrayContaining([
         "packages/cli/**",
         "packages/openrouter/**",
+        "docs/adr/0023-close-late-review-trust-and-delivery-gaps.md",
         "scripts/promotion-tail.mjs",
       ]),
     );
