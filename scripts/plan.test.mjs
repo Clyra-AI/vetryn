@@ -853,7 +853,7 @@ describe("implementation plan validator", () => {
     const v106 = plan.tasks.find((candidate) => candidate.id === "V1-06");
 
     expect(task).toMatchObject({
-      risk: { level: "medium" },
+      risk: { level: "high" },
       dependsOn: [{ taskId: "M0-10", kind: "hard" }],
       acceptanceItemIds: ["PROCESS-010", "PROCESS-011"],
       capabilities: { network: false, credentials: false, provider: false, githubWrite: false },

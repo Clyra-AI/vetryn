@@ -894,7 +894,7 @@
       "title": "Add a narrow next-task continuation helper",
       "objective": "Add one repository-owned helper that discovers the sole legal task, compiles its packet, and routes an agent into the existing implementation, validation, promotion, and protected-delivery workflows without duplicating those workflows.",
       "risk": {
-        "level": "medium",
+        "level": "high",
         "domains": ["agent-workflow", "delivery-policy", "portability"]
       },
       "dependsOn": [{ "taskId": "M0-10", "kind": "hard" }],

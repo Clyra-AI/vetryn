@@ -744,7 +744,7 @@ afterEach(async () => {
 });
 
 describe("task packet compiler", () => {
-  it("compiles narrow continuation as a bounded medium-risk process packet", async () => {
+  it("compiles narrow continuation as a bounded high-risk process packet", async () => {
     const root = await createFixture();
     const planPath = "product/plans/oss-v1/plan.json";
     const plan = await readFixtureJson(root, planPath);
@@ -776,11 +776,11 @@ describe("task packet compiler", () => {
     const packet = JSON.parse(result.stdout);
     expect(packet).toMatchObject({
       task_id: "M0-11",
-      risk_class: "medium",
-      required_worker_chain: ["task-executor", "validation-gate", "commit-push"],
+      risk_class: "high",
+      required_worker_chain: ["task-executor", "validation-gate", "code-review", "commit-push"],
       required_domain_review_chain: [],
       lifecycle_gates: {
-        code_review_required: false,
+        code_review_required: true,
         trust_review_required: false,
       },
       currentState: { state: "in_progress", candidate: null },
