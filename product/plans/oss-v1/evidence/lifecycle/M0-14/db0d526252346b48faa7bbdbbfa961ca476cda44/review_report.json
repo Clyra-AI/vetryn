@@ -1,0 +1,145 @@
+{
+  "artifact_type": "review_report",
+  "schema_version": "0.1",
+  "task_id": "M0-14",
+  "work_item_id": "M0-14",
+  "review_type": "architecture",
+  "review_scope": [
+    "scripts/plan.mjs",
+    "scripts/plan.test.mjs",
+    "scripts/promotion-tail.mjs",
+    "scripts/promotion-tail.test.mjs"
+  ],
+  "reviewer_class": "peer_agent",
+  "reviewer_id": "codex-local:v1_06_code_review",
+  "producer": {
+    "worker": "code-review",
+    "producer_id": "codex-local:v1_06_code_review",
+    "producer_class": "peer_agent"
+  },
+  "current_work": {
+    "validation_run_id": "validation:2026-08-14T17:20:42Z:M0-14",
+    "candidate_digest": "sha256:32441cb91add19a6df2b99168d4794759ff84440725377a8fd4d3cb5a89fb247",
+    "work_proof_markers": [
+      {
+        "ref": "product/plans/oss-v1/evidence/lifecycle/M0-14/db0d526252346b48faa7bbdbbfa961ca476cda44/work_proof_marker.json",
+        "sha256": "sha256:8afc44336ca48e6fca5852343b8692f9217c4c199ec700e2c891dd06438015c8"
+      }
+    ]
+  },
+  "risk_class": "high",
+  "context_isolation": {
+    "allowed_sources": [
+      "task_packet",
+      "candidate_diff",
+      "repo_contracts",
+      "tests",
+      "validation_report"
+    ],
+    "disallowed_sources": ["private_builder_notes", "unpromoted_chat_reasoning"],
+    "builder_notes_authoritative": false
+  },
+  "findings": [
+    {
+      "id": "M0-14-CURRENT-1",
+      "severity": "P1",
+      "summary": "Work-proof command and checkout outcomes were not enforced.",
+      "status": "resolved",
+      "claim_source": "independently_observed",
+      "verification_status": "independently_verified",
+      "location": "scripts/promotion-tail.mjs",
+      "failure_scenario": "A candidate-bound marker records a failed or unclean run.",
+      "impact": "Failed work could be promoted as passing.",
+      "minimum_fix": "Require complete passing Vetryn or Factory marker outcomes.",
+      "promotion_effect": "block_until_fixed",
+      "evidence_refs": ["ev-m0-14-contracts-db0d526"]
+    },
+    {
+      "id": "M0-14-CURRENT-2",
+      "severity": "P1",
+      "summary": "Equivalent raw lifecycle payload aliases were not rejected.",
+      "status": "resolved",
+      "claim_source": "independently_observed",
+      "verification_status": "independently_verified",
+      "location": "scripts/promotion-tail.mjs",
+      "failure_scenario": "A lifecycle artifact uses raw completion or log aliases.",
+      "impact": "Sensitive payload data could enter canonical evidence.",
+      "minimum_fix": "Normalize and reject raw, completion, log, payload, message, and content fields.",
+      "promotion_effect": "block_until_fixed",
+      "evidence_refs": ["ev-m0-14-contracts-db0d526"]
+    },
+    {
+      "id": "M0-14-CURRENT-3",
+      "severity": "P1",
+      "summary": "Factory checkpoint identity was omitted from candidate binding.",
+      "status": "resolved",
+      "claim_source": "independently_observed",
+      "verification_status": "independently_verified",
+      "location": "scripts/promotion-tail.mjs",
+      "failure_scenario": "A marker keeps the expected commit but cites another checkpoint.",
+      "impact": "Conflicting candidate provenance could be promoted.",
+      "minimum_fix": "Include retry checkpoint identity in the exact candidate set.",
+      "promotion_effect": "block_until_fixed",
+      "evidence_refs": ["ev-m0-14-contracts-db0d526"]
+    },
+    {
+      "id": "M0-14-CURRENT-4",
+      "severity": "P2",
+      "summary": "Canonical waivable acceptance dispositions were rejected.",
+      "status": "resolved",
+      "claim_source": "independently_observed",
+      "verification_status": "independently_verified",
+      "location": "scripts/promotion-tail.mjs",
+      "failure_scenario": "A waivable criterion uses a reviewed deferred or not-applicable disposition.",
+      "impact": "The promotion gate could reject a plan-valid transition.",
+      "minimum_fix": "Validate waivability and matching ledger and progress semantics.",
+      "promotion_effect": "block_until_fixed",
+      "evidence_refs": ["ev-m0-14-contracts-db0d526"]
+    },
+    {
+      "id": "M0-14-CURRENT-5",
+      "severity": "P2",
+      "summary": "Review-authentication validators were absent from the protected inventory.",
+      "status": "resolved",
+      "claim_source": "independently_observed",
+      "verification_status": "independently_verified",
+      "location": "scripts/plan.mjs",
+      "failure_scenario": "A lower-risk task directly changes an authorization validator.",
+      "impact": "Review authentication could weaken without high-risk handling.",
+      "minimum_fix": "Protect both exact validator paths.",
+      "promotion_effect": "block_until_fixed",
+      "evidence_refs": ["ev-m0-14-plan-check-db0d526"]
+    }
+  ],
+  "verdict": "approved",
+  "required_fixes": [],
+  "residual_risks": [
+    "The repo-local installed Factory bootstrap remains unavailable on this historical branch base."
+  ],
+  "evidence_refs": [
+    "product/plans/oss-v1/evidence/lifecycle/M0-14/db0d526252346b48faa7bbdbbfa961ca476cda44/validation_report.json",
+    "ev-m0-14-repo-check-db0d526",
+    "ev-m0-14-contracts-db0d526"
+  ],
+  "work_proof_marker_refs": [
+    "product/plans/oss-v1/evidence/lifecycle/M0-14/db0d526252346b48faa7bbdbbfa961ca476cda44/work_proof_marker.json"
+  ],
+  "approval_effect": {
+    "promotion_decision": "ready_for_pr",
+    "approvals_granted": ["architecture_review_passed"],
+    "blocks_promotion": false
+  },
+  "systems_questions": {
+    "state_impact": ["Only M0-14 canonical acceptance is rebound after review."],
+    "source_of_truth_changes": [
+      "Promotion markers, candidate checkpoints, waiver semantics, redaction, and auth-validator risk classification now fail closed."
+    ],
+    "feedback_plan": ["Protected CI validates the final DeliveryHead."],
+    "blast_radius": ["Task planning and promotion evidence only; no product packages."],
+    "rollback_or_deletion_test": [
+      "Focused regressions fail if any of the five closures is removed."
+    ],
+    "system_model_summary": "The terminal batch closes exact marker, evidence, waiver, and review-authentication boundaries without adding a framework."
+  },
+  "created_at": "2026-08-14T17:20:42Z"
+}
