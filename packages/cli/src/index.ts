@@ -30,7 +30,7 @@ import {
   type RefreshCatalogResult,
 } from "@vetryn/openrouter";
 
-import { evaluateFiles } from "./evaluation-files.js";
+import { assertEvaluationOutputPath, evaluateFiles } from "./evaluation-files.js";
 import { FileExecutionReceiptStore } from "./evidence-store.js";
 
 export { FileExecutionReceiptStore };
@@ -569,6 +569,11 @@ export function createProgram(dependencies: CliDependencies = {}): Command {
         suite: string;
         trustEpoch: string;
       }) => {
+        assertEvaluationOutputPath({
+          anchorPath: options.anchor,
+          evidencePath: options.evidenceStore,
+          outputPath: options.output,
+        });
         const providerKey = (await readBoundedTextFile(options.providerKeyFile)).trim();
         const receiptKey = Buffer.from((await readBoundedTextFile(options.receiptKeyFile)).trim());
         const receiptStore = new FileExecutionReceiptStore({

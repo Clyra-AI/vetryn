@@ -16,6 +16,54 @@ afterEach(async () => {
 });
 
 describe("vetryn eval", () => {
+  it("rejects output paths that overlap receipt or anchor trust state before I/O", async () => {
+    const root = await mkdtemp(path.join(tmpdir(), "vetryn-eval-overlap-"));
+    roots.push(root);
+    const repositoryRoot = path.join(root, "repo");
+    const evidencePath = path.join(repositoryRoot, ".vetryn", "evidence");
+    const anchorPath = path.join(root, "trust", "anchor.json");
+
+    for (const outputPath of [anchorPath, path.join(evidencePath, "head.json")]) {
+      await expect(
+        createProgram().parseAsync([
+          "node",
+          "vetryn",
+          "eval",
+          "--manifest",
+          "unused-manifest.json",
+          "--call-site",
+          "support-classification",
+          "--suite",
+          "unused-suite.json",
+          "--fixture",
+          "unused-fixture.jsonl",
+          "--catalog-store",
+          path.join(repositoryRoot, ".vetryn", "catalog"),
+          "--refresh-id",
+          "overlap-refresh",
+          "--candidate",
+          "openai/gpt-4o-mini",
+          "--run-id",
+          "overlap-run",
+          "--trust-epoch",
+          "overlap-epoch",
+          "--evidence-store",
+          evidencePath,
+          "--anchor",
+          anchorPath,
+          "--receipt-key-file",
+          "unused-receipt-key",
+          "--provider-key-file",
+          "unused-provider-key",
+          "--output",
+          outputPath,
+          "--root",
+          repositoryRoot,
+        ]),
+      ).rejects.toThrow(/must not overlap receipt or anchor trust state/i);
+    }
+  });
+
   it("emits redacted reproducible artifacts and an authenticated receipt using offline transport", async () => {
     const root = await mkdtemp(path.join(tmpdir(), "vetryn-eval-cli-"));
     roots.push(root);
@@ -73,7 +121,7 @@ describe("vetryn eval", () => {
         async execute(request) {
           return {
             latencyMs: request.model === "openai/gpt-4.1-mini" ? 600 : 300,
-            output: { classification: expected.get(request.caseId) },
+            outputText: JSON.stringify({ classification: expected.get(request.caseId) }),
             route: {
               attempts: [{ model: request.model, providerName: "Azure", statusCode: 200 }],
               selectedProvider: { model: request.model, providerName: "Azure" },
@@ -214,7 +262,7 @@ describe("vetryn eval", () => {
           async execute(request) {
             return {
               latencyMs: 100,
-              output: { classification: expected.get(request.caseId) },
+              outputText: JSON.stringify({ classification: expected.get(request.caseId) }),
               route: {
                 attempts: [{ model: request.model, providerName: "Azure", statusCode: 200 }],
                 selectedProvider: { model: request.model, providerName: "Azure" },

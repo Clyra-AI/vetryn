@@ -46,7 +46,21 @@ export interface EvaluateFilesResult {
   readonly receipt: ReceiptAppendResult;
 }
 
+export function assertEvaluationOutputPath(options: {
+  readonly anchorPath: string;
+  readonly evidencePath: string;
+  readonly outputPath: string;
+}): void {
+  const anchorPath = path.resolve(options.anchorPath);
+  const evidencePath = path.resolve(options.evidencePath);
+  const outputPath = path.resolve(options.outputPath);
+  if (outputPath === anchorPath || isWithin(evidencePath, outputPath)) {
+    throw new Error("Evaluation output must not overlap receipt or anchor trust state.");
+  }
+}
+
 export async function evaluateFiles(options: EvaluateFilesOptions): Promise<EvaluateFilesResult> {
+  assertEvaluationOutputPath(options);
   const [manifest, evalSuite, fixtureContents] = await Promise.all([
     readJson(options.manifestPath).then(parseCallSiteManifest),
     readJson(options.evalSuitePath).then(parseEvalSuite),
@@ -180,4 +194,9 @@ async function writeJsonAtomically(filePath: string, value: unknown): Promise<vo
 
 function sha256(value: string): string {
   return `sha256:${createHash("sha256").update(value, "utf8").digest("hex")}`;
+}
+
+function isWithin(parent: string, candidate: string): boolean {
+  const relative = path.relative(parent, candidate);
+  return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
 }

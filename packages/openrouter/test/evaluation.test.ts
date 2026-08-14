@@ -182,7 +182,9 @@ function transport(): EvaluationTransport {
     async execute(request) {
       return {
         latencyMs: request.model === callSite.currentModel ? 600 : 300,
-        output: { classification: request.caseId === "support-001" ? "billing" : "returns" },
+        outputText: JSON.stringify({
+          classification: request.caseId === "support-001" ? "billing" : "returns",
+        }),
         route: {
           attempts: [{ model: request.model, providerName: "Azure", statusCode: 200 }],
           selectedProvider: { model: request.model, providerName: "Azure" },
@@ -530,7 +532,7 @@ describe("bounded deterministic evaluation", () => {
         async execute(request) {
           return {
             ...(await transport().execute(request)),
-            output: { classification: `wrong ${protectedSegment}` },
+            outputText: JSON.stringify({ classification: `wrong ${protectedSegment}` }),
           };
         },
       },
@@ -543,7 +545,7 @@ describe("bounded deterministic evaluation", () => {
   it("detects protected numeric and boolean JSON primitives before redaction", async () => {
     const primitiveCases = cases.map((evaluationCase) => ({
       ...evaluationCase,
-      protectedSegments: ["12345", "true"],
+      protectedSegments: ["987654321.0", "true"],
     }));
     const options = baseOptions(await acquireCurrentCatalogRefresh());
     const result = await evaluateOpenRouterCandidate({
@@ -557,18 +559,31 @@ describe("bounded deterministic evaluation", () => {
         async execute(request) {
           return {
             ...(await transport().execute(request)),
-            output: {
-              classification: request.caseId === "support-001" ? "billing" : "returns",
-              leakedFlag: true,
-              leakedId: 12345,
-            },
+            outputText: `{"classification":"${
+              request.caseId === "support-001" ? "billing" : "returns"
+            }","leakedFlag":true,"leakedId":987654321.0}`,
           };
         },
       },
     });
 
     expect(result.candidateRun.gateOutcomes).toMatchObject({ privacy: "fail", quality: "pass" });
-    expect(JSON.stringify(result)).not.toContain("12345");
+    expect(JSON.stringify(result)).not.toContain("987654321.0");
+  });
+
+  it("keeps current catalog evidence immutable after branding", async () => {
+    const current = await acquireCurrentCatalogRefresh();
+    expect(Reflect.set(current.snapshot, "observedAt", "2099-01-01T00:00:00.000Z")).toBe(false);
+    expect(
+      Reflect.set(
+        current.lineage.attempts[0]?.observation ?? {},
+        "observedAt",
+        "2099-01-01T00:00:00.000Z",
+      ),
+    ).toBe(false);
+    const result = await evaluateOpenRouterCandidate(baseOptions(current));
+    expect(result.candidateRun.status).toBe("complete");
+    expect(current.snapshot.observedAt).toBe(snapshot.observedAt);
   });
 
   it("fails quality when the reviewed suite is below the call-site minimum", async () => {
@@ -583,6 +598,28 @@ describe("bounded deterministic evaluation", () => {
 
     expect(result.candidateRun).toMatchObject({
       gateOutcomes: { quality: "fail" },
+      status: "complete",
+    });
+  });
+
+  it("uses reviewed representative completion demand for the context gate", async () => {
+    const options = baseOptions(
+      await acquireCurrentCatalogRefresh({
+        data: rawCatalog.data.map((model) =>
+          model.id === "openai/gpt-4o-mini" ? { ...model, context_length: 50 } : model,
+        ),
+      }),
+    );
+    const result = await evaluateOpenRouterCandidate({
+      ...options,
+      callSite: {
+        ...callSite,
+        representativeUsage: { ...callSite.representativeUsage, completionTokens: 64 },
+      },
+    });
+
+    expect(result.candidateRun).toMatchObject({
+      gateOutcomes: { context: "fail" },
       status: "complete",
     });
   });
@@ -676,9 +713,13 @@ describe("bounded deterministic evaluation", () => {
           return {
             ...(await transport().execute(request)),
             latencyMs: candidateSecondAttempt ? 300 : 100,
-            output: candidateSecondAttempt
-              ? { classification: "wrong" }
-              : { classification: request.caseId === "support-001" ? "billing" : "returns" },
+            outputText: JSON.stringify(
+              candidateSecondAttempt
+                ? { classification: "wrong" }
+                : {
+                    classification: request.caseId === "support-001" ? "billing" : "returns",
+                  },
+            ),
             usage: { completionTokens: candidateSecondAttempt ? 2 : 1, promptTokens: 9 },
           };
         },

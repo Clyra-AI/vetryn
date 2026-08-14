@@ -204,7 +204,7 @@ describe("OpenRouter TypeScript golden scenario", () => {
           async execute(request) {
             return {
               latencyMs: request.model === "openai/gpt-4.1-mini" ? 600 : 300,
-              output: { classification: expected.get(request.caseId) },
+              outputText: JSON.stringify({ classification: expected.get(request.caseId) }),
               route: {
                 attempts: [{ model: request.model, providerName: "Azure", statusCode: 200 }],
                 selectedProvider: { model: request.model, providerName: "Azure" },

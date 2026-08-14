@@ -100,7 +100,7 @@ export function createCurrentCatalogRefresh(input: {
     snapshot,
     input.invocationId,
   );
-  const current = { [currentCatalogRefreshBrand]: true as const, lineage, snapshot };
+  const current = deepFreeze({ [currentCatalogRefreshBrand]: true as const, lineage, snapshot });
   unconsumedCurrentCatalogRefreshes.add(current);
   return current;
 }
@@ -137,7 +137,7 @@ export interface EvaluationTransportRequest {
 
 export interface EvaluationTransportResult {
   readonly latencyMs: number;
-  readonly output: unknown;
+  readonly outputText: string;
   readonly route: {
     readonly attempts: readonly {
       readonly model: string;
@@ -231,9 +231,8 @@ export function createOpenRouterEvaluationTransport(
       const message = isRecord(firstChoice?.message) ? firstChoice.message : undefined;
       if (typeof message?.content !== "string")
         throw new EvaluationTransportError("invalid-output");
-      let output: unknown;
       try {
-        output = JSON.parse(message.content) as unknown;
+        JSON.parse(message.content) as unknown;
       } catch {
         throw new EvaluationTransportError("invalid-output");
       }
@@ -265,7 +264,7 @@ export function createOpenRouterEvaluationTransport(
       });
       return {
         latencyMs: Math.max(1, Math.ceil(nowMilliseconds() - started)),
-        output,
+        outputText: message.content,
         route: {
           attempts,
           selectedProvider: { model: body.model, providerName: body.provider },
@@ -641,7 +640,8 @@ function buildCandidateRun(options: {
   const gateOutcomes = {
     context:
       candidateModel.contextWindowTokens >=
-      options.callSite.representativeUsage.promptTokens + options.sampling.maxOutputTokens
+      options.callSite.representativeUsage.promptTokens +
+        options.callSite.representativeUsage.completionTokens
         ? "pass"
         : "fail",
     cost: costSavingsAtLeast(
@@ -868,14 +868,20 @@ function normalizeResponse(
     ).length !== 1
   )
     throw new EvaluationTransportError("invalid-output");
-  const outputRecord = isRecord(response.output) ? response.output : undefined;
+  let output: unknown;
+  try {
+    output = JSON.parse(response.outputText) as unknown;
+  } catch {
+    throw new EvaluationTransportError("invalid-output");
+  }
+  const outputRecord = isRecord(output) ? output : undefined;
   const passed =
     outputRecord !== undefined &&
     Object.entries(evaluationCase.expected).every(([key, value]) => outputRecord[key] === value);
-  const privacySafe = !containsProtectedSegment(
-    response.output,
-    evaluationCase.protectedSegments ?? [],
-  );
+  const protectedSegments = evaluationCase.protectedSegments ?? [];
+  const privacySafe =
+    !containsProtectedSegment(output, protectedSegments) &&
+    !protectedSegments.some((segment) => response.outputText.includes(segment));
   return {
     caseId: evaluationCase.id,
     latencyMs: response.latencyMs,
@@ -1080,6 +1086,13 @@ function containsProtectedSegment(
       protectedSegments.some((segment) => key.includes(segment)) ||
       containsProtectedSegment(nested, protectedSegments, visited),
   );
+}
+
+function deepFreeze<T>(value: T, visited = new WeakSet<object>()): T {
+  if (typeof value !== "object" || value === null || visited.has(value)) return value;
+  visited.add(value);
+  for (const nested of Object.values(value)) deepFreeze(nested, visited);
+  return Object.freeze(value);
 }
 
 interface ExactDecimal {

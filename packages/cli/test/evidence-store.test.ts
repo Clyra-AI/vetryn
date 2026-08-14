@@ -516,7 +516,7 @@ describe("authenticated execution receipt store", () => {
         async execute(request: { model: string }) {
           return {
             latencyMs: 10,
-            output: { classification: "billing" },
+            outputText: JSON.stringify({ classification: "billing" }),
             route: {
               attempts: [{ model: request.model, providerName: "Azure", statusCode: 200 }],
               selectedProvider: { model: request.model, providerName: "Azure" },
