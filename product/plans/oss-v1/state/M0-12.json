@@ -1,0 +1,30 @@
+{
+  "$schema": "../../schemas/task-state.schema.json",
+  "schemaVersion": "1.0.0",
+  "taskId": "M0-12",
+  "revision": 0,
+  "state": "planned",
+  "attempt": 0,
+  "candidate": null,
+  "criteria": [
+    { "criterionId": "PROCESS-012", "status": "pending", "evidenceRefs": [] },
+    { "criterionId": "PROCESS-013", "status": "pending", "evidenceRefs": [] },
+    { "criterionId": "PROCESS-014", "status": "pending", "evidenceRefs": [] }
+  ],
+  "gates": [
+    { "gateId": "QG-PLAN-CHECK", "status": "pending", "evidenceRefs": [] },
+    { "gateId": "QG-REPO-CHECK", "status": "pending", "evidenceRefs": [] },
+    { "gateId": "QG-CONTRACTS", "status": "pending", "evidenceRefs": [] }
+  ],
+  "reviews": [{ "role": "maintainer", "status": "pending", "evidenceRefs": [] }],
+  "blockers": [],
+  "history": [
+    {
+      "from": null,
+      "to": "planned",
+      "at": "2026-08-14T11:25:00Z",
+      "actor": "planning-agent",
+      "reason": "Maintainer requested a smaller review and promotion lifecycle after V1-06 exposed repeated review-generation and promotion-tail churn."
+    }
+  ]
+}

@@ -18,6 +18,7 @@ const downstreamV1TaskIds = [
   "M0-09",
   "M0-10",
   "M0-11",
+  "M0-12",
   "V1-05",
   "V1-06",
   "V1-07",
