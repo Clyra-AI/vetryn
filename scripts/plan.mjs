@@ -458,13 +458,8 @@ async function main() {
       .map(({ document }) => document.taskId),
   );
   for (const task of plan.tasks) {
-    const state = stateByTask.get(task.id);
     const changesHighRiskPolicy = declaresHighRiskPolicyChange(task);
-    if (
-      !legacyRiskPolicyTaskIds.has(task.id) &&
-      state?.state !== "accepted" &&
-      changesHighRiskPolicy
-    )
+    if (!legacyRiskPolicyTaskIds.has(task.id) && changesHighRiskPolicy)
       assert(
         task.risk.level === "high",
         `${task.id} changes approval, evidence, persistence, credential, security, or release policy and must be high risk until accepted`,

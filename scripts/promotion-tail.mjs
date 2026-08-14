@@ -324,6 +324,13 @@ function assertLifecycleArtifact(name, document, taskId, candidate) {
   assert(commits.size === 1 && commits.has(candidate), `${name} is not candidate-bound`);
   if (name === "validation_report") {
     assert(document.result === "pass", "validation_report is not passing");
+    const markerRef = `${planRoot}/evidence/lifecycle/${taskId}/${candidate}/work_proof_marker.json`;
+    assert(
+      Array.isArray(document.work_proof_marker_refs) &&
+        document.work_proof_marker_refs.length === 1 &&
+        document.work_proof_marker_refs[0] === markerRef,
+      "validation_report is not bound to work_proof_marker",
+    );
     assert(
       Array.isArray(document.checks) &&
         document.checks.every((check) => ["pass", "skipped"].includes(check.status)),
@@ -434,7 +441,7 @@ function assertPromotionState(
   assert(
     state.criteria.every(
       (criterion) =>
-        ["pass", "waived"].includes(criterion.status) &&
+        criterion.status === "pass" &&
         Array.isArray(criterion.evidenceRefs) &&
         criterion.evidenceRefs.length > 0,
     ),
@@ -455,14 +462,7 @@ function assertPromotedLedger(ledger, state, taskId) {
   for (const item of items) {
     const criterion = criteria.get(item.id);
     assert(criterion, `promotion ledger contains undeclared item ${item.id}`);
-    if (criterion.status === "pass")
-      assert(item.status === "accepted", `promotion ledger item ${item.id} is not accepted`);
-    else
-      assert(
-        item.waivable === true &&
-          ["deferred_with_approval", "not_applicable"].includes(item.status),
-        `promotion ledger item ${item.id} has an invalid waiver disposition`,
-      );
+    assert(item.status === "accepted", `promotion ledger item ${item.id} is not accepted`);
     assert(
       JSON.stringify(item.evidenceRefs) === JSON.stringify(criterion.evidenceRefs),
       `promotion ledger evidence differs for ${item.id}`,

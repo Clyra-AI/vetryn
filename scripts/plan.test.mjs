@@ -1647,6 +1647,27 @@ describe("implementation plan validator", () => {
     expect(result.stderr).toContain("uses non-canonical scope path");
   });
 
+  it("reclassifies a rewritten accepted task that changes protected policy", async () => {
+    const root = await createFixture();
+    const planPath = "product/plans/oss-v1/plan.json";
+    const plan = await readFixtureJson(root, planPath);
+    const task = plan.tasks.find((candidate) => candidate.id === "M0-14");
+    task.risk = { level: "low", domains: ["agent-workflow"] };
+    task.scope.allowedPaths = ["scripts/plan.mjs"];
+    task.deliverables = ["scripts/plan.mjs"];
+    await writeFixtureJson(root, planPath, plan);
+
+    const statePath = "product/plans/oss-v1/state/M0-14.json";
+    const state = await readFixtureJson(root, statePath);
+    state.state = "accepted";
+    await writeFixtureJson(root, statePath, state);
+
+    const result = runPlan(root);
+
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain("M0-14 changes approval, evidence, persistence");
+  });
+
   it.each([
     ["protected exact path", ["scripts/task.mjs"], ["agent-workflow"]],
     ["maintainer authority path", ["MAINTAINERS.md"], ["agent-workflow"]],
