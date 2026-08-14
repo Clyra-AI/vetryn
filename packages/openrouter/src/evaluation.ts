@@ -64,6 +64,7 @@ const refreshLineageSchema = z
 
 export type CatalogRefreshLineage = z.infer<typeof refreshLineageSchema>;
 const currentCatalogRefreshBrand: unique symbol = Symbol("vetryn-current-catalog-refresh");
+const unconsumedCurrentCatalogRefreshes = new WeakSet<object>();
 
 export interface CurrentCatalogRefresh {
   readonly [currentCatalogRefreshBrand]: true;
@@ -99,7 +100,9 @@ export function createCurrentCatalogRefresh(input: {
     snapshot,
     input.invocationId,
   );
-  return { [currentCatalogRefreshBrand]: true, lineage, snapshot };
+  const current = { [currentCatalogRefreshBrand]: true as const, lineage, snapshot };
+  unconsumedCurrentCatalogRefreshes.add(current);
+  return current;
 }
 
 export interface EvaluationCase {
@@ -369,11 +372,16 @@ export function validateCatalogRefreshLineage(
 export async function evaluateOpenRouterCandidate(
   options: EvaluateOpenRouterCandidateOptions,
 ): Promise<EvaluationArtifacts> {
+  if (
+    options.currentCatalogRefresh[currentCatalogRefreshBrand] !== true ||
+    !unconsumedCurrentCatalogRefreshes.delete(options.currentCatalogRefresh)
+  ) {
+    throw new Error(
+      "Evaluation requires an unconsumed canonical same-invocation catalog refresh token.",
+    );
+  }
   const callSite = parseCallSite(options.callSite);
   const evalSuite = parseEvalSuite(options.evalSuite);
-  if (options.currentCatalogRefresh[currentCatalogRefreshBrand] !== true) {
-    throw new Error("Evaluation requires a canonical same-invocation catalog refresh result.");
-  }
   const snapshot = parseCatalogSnapshot(options.currentCatalogRefresh.snapshot);
   const limits = parseLimits(options.limits);
   const sampling = parseSampling(options.sampling);

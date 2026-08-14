@@ -522,14 +522,13 @@ describe("bounded deterministic evaluation", () => {
   });
 
   it("reserves the hard spend ceiling before zero, expensive, and equality-bound requests", async () => {
-    const currentCatalogRefresh = await acquireCurrentCatalogRefresh();
     for (const [maxSpendUsd, expectedCalls] of [
       ["0", 0],
       ["0.01", 0],
       ["0.100064", 1],
     ] as const) {
       let calls = 0;
-      const options = baseOptions(currentCatalogRefresh);
+      const options = baseOptions(await acquireCurrentCatalogRefresh());
       const result = await evaluateOpenRouterCandidate({
         ...options,
         clock: { now: () => "2026-08-10T00:00:01.000Z" },

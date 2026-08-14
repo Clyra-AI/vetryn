@@ -8,6 +8,8 @@ import { FileExecutionReceiptStore } from "../src/evidence-store.js";
 import {
   createCatalogRefreshLineageDigest,
   createCurrentCatalogRefresh,
+  createEvaluationCaseDigest,
+  evaluateOpenRouterCandidate,
   refreshOpenRouterCatalog,
   type CatalogStore,
 } from "@vetryn/openrouter";
@@ -365,6 +367,13 @@ describe("authenticated execution receipt store", () => {
                 {
                   architecture: { output_modalities: ["text"] },
                   context_length: 128_000,
+                  id: "openai/gpt-4.1-mini",
+                  pricing: { completion: "0.0000016", prompt: "0.0000004" },
+                  supported_parameters: ["response_format"],
+                },
+                {
+                  architecture: { output_modalities: ["text"] },
+                  context_length: 128_000,
                   id: "openai/gpt-4o-mini",
                   pricing: { completion: "0.0000006", prompt: "0.00000015" },
                   supported_parameters: ["response_format"],
@@ -386,12 +395,94 @@ describe("authenticated execution receipt store", () => {
       invocationId: "invocation-a",
       refresh: refreshA,
     });
-    const recordA = {
-      ...record,
-      catalogRefreshLineageDigest: createCatalogRefreshLineageDigest(currentA.lineage),
-      id: "execution-record:refresh-a",
+    const cases = [{ expected: { classification: "billing" }, id: "case-a", input: "fixture" }];
+    const callSite = {
+      currentModel: "openai/gpt-4.1-mini",
+      evalSuiteId: "eval-suite:refresh-a",
+      gates: {
+        maxP95LatencyMs: 100,
+        maxQualityRegression: 0,
+        minCases: 1,
+        minPassRate: 1,
+        minRecommendationConfidence: 0.8,
+        minSavingsPercent: 1,
+      },
+      id: "refresh-a",
+      name: "Refresh A",
+      owner: "test",
+      routePolicy: {
+        allowFallbacks: false,
+        dataCollection: "deny",
+        providerSlug: "azure",
+        requireParameters: true,
+        zdr: true,
+      },
+      representativeUsage: {
+        completionTokens: 1,
+        promptTokens: 1,
+        provenanceRef: "reviewed-fixture:refresh-a",
+        reviewed: true,
+      },
+      requiredCapabilities: {
+        structuredOutput: true,
+        textGeneration: true,
+        toolCalls: false,
+      },
+      sourceBinding: {
+        adapter: "openai.chat.completions.create",
+        file: "src/test.ts",
+        sourceFingerprint: digest("a"),
+        symbol: "test",
+      },
     };
-    await fixtureState.store.append(recordA, {
+    const evalSuite = {
+      artifactType: "eval-suite",
+      callSiteId: callSite.id,
+      caseCount: cases.length,
+      fixtureDigest: createEvaluationCaseDigest(cases),
+      fixturePath: "fixtures/refresh-a.jsonl",
+      id: callSite.evalSuiteId,
+      redactionMode: "no-raw-inputs-or-outputs",
+      reviewed: true,
+      schemaVersion: "1.0.0",
+    };
+    const evaluationOptions = {
+      callSite,
+      candidateModel: "openai/gpt-4o-mini",
+      cases,
+      clock: {
+        now: (() => {
+          const times = ["2026-08-10T00:00:01.000Z", "2026-08-10T00:00:02.000Z"];
+          return () => times.shift() ?? "2026-08-10T00:00:02.000Z";
+        })(),
+      },
+      currentCatalogRefresh: currentA,
+      evalSuite,
+      evaluator: { build: "git:test", id: "vetryn-evaluator", version: "0.1.0" },
+      executionRecordId: "execution-record:refresh-a",
+      limits: { concurrency: 1, maxRequests: 2, maxSpendUsd: "1", retries: 0, timeoutMs: 100 },
+      sampling: { attempts: 1, maxOutputTokens: 8, seed: 42, temperature: 0 },
+      scorer: {
+        configurationDigest: digest("c"),
+        id: "deterministic-assertions",
+        version: "1.0.0",
+      },
+      transport: {
+        async execute(request: { model: string }) {
+          return {
+            latencyMs: 10,
+            output: { classification: "billing" },
+            route: {
+              attempts: [{ model: request.model, providerName: "Azure", statusCode: 200 }],
+              selectedProvider: { model: request.model, providerName: "Azure" },
+            },
+            usage: { completionTokens: 1, promptTokens: 1 },
+          };
+        },
+      },
+    } as const;
+    const artifactsA = await evaluateOpenRouterCandidate(evaluationOptions);
+    await fixtureState.store.append(artifactsA.executionRecord, {
       catalogRefreshLineage: currentA.lineage,
       trustEpochId: "epoch-one",
     });
@@ -401,10 +492,14 @@ describe("authenticated execution receipt store", () => {
       trustEpochId: "epoch-one",
     });
 
-    expect(() =>
-      createCurrentCatalogRefresh({ invocationId: "invocation-c", refresh: refreshA }),
-    ).toThrow(/unconsumed canonical live acquisition/i);
-    await expect(fixtureState.store.verify(recordA.id)).resolves.toMatchObject({
+    await expect(
+      evaluateOpenRouterCandidate({
+        ...evaluationOptions,
+        clock: { now: () => "2026-08-10T00:00:03.000Z" },
+        executionRecordId: "execution-record:refresh-a-reused",
+      }),
+    ).rejects.toThrow(/unconsumed canonical same-invocation/i);
+    await expect(fixtureState.store.verify(artifactsA.executionRecord.id)).resolves.toMatchObject({
       actionable: false,
       reason: "catalog-refresh-not-current",
     });
