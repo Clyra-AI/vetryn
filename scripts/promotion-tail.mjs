@@ -175,6 +175,17 @@ function candidateIdentity(document, taskId) {
   return commits;
 }
 
+function workProofBase(document) {
+  const bases = [document.baseCommit, document.workspace_proof?.base_ref].filter(
+    (value) => value !== undefined,
+  );
+  assert(
+    bases.length > 0 && bases.every((value) => shaPattern.test(value)) && new Set(bases).size === 1,
+    "work proof has an invalid base",
+  );
+  return bases[0];
+}
+
 const lifecycleDeclarationKeys = new Set([
   "containsrawmodeloutput",
   "containssecrets",
@@ -364,13 +375,13 @@ function assertLifecycleArtifact(name, document, taskId, candidate) {
 }
 
 function assertPromotionState(
-  root,
   candidateState,
   state,
   task,
   taskId,
   productCandidate,
   workProofMarker,
+  candidateBase,
 ) {
   assert(state.taskId === taskId, "promotion state is for another task");
   assert(state.state === "accepted", "promotion state is not accepted");
@@ -383,17 +394,9 @@ function assertPromotionState(
     );
   } else
     assert(
-      shaPattern.test(workProofMarker?.baseCommit) &&
-        gitSucceeds(root, ["cat-file", "-e", `${workProofMarker.baseCommit}^{commit}`]) &&
-        gitSucceeds(root, [
-          "merge-base",
-          "--is-ancestor",
-          workProofMarker.baseCommit,
-          productCandidate,
-        ]) &&
-        typeof workProofMarker?.executor === "string" &&
+      typeof workProofMarker?.executor === "string" &&
         workProofMarker.executor.length > 0 &&
-        state.candidate?.baseCommit === workProofMarker.baseCommit &&
+        state.candidate?.baseCommit === candidateBase &&
         state.candidate?.executor === workProofMarker.executor,
       "promotion state has unbound initial candidate attribution",
     );
@@ -611,7 +614,7 @@ export function checkPromotionTail({ root, taskId, productCandidate, deliveryHea
   assertLedgerTail(candidateLedger, promotedLedger, taskId);
   const candidateState = jsonAt(root, productCandidate, statePath);
   const workProofMarker = addedLifecycle.get("work_proof_marker");
-  const candidateBase = workProofMarker?.baseCommit;
+  const candidateBase = workProofBase(workProofMarker);
   assert(
     shaPattern.test(candidateBase) &&
       candidateBase !== productCandidate &&
@@ -625,13 +628,13 @@ export function checkPromotionTail({ root, taskId, productCandidate, deliveryHea
   );
   const state = jsonAt(root, deliveryHead, statePath);
   assertPromotionState(
-    root,
     candidateState,
     state,
     task,
     taskId,
     productCandidate,
     workProofMarker,
+    candidateBase,
   );
   assertPromotedLedger(promotedLedger, state, taskId);
   assertProgress(

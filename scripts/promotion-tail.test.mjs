@@ -726,6 +726,19 @@ describe("promotion-tail validator", () => {
     expect(result.stderr).toContain("work_proof_marker is not candidate-bound");
   });
 
+  it("accepts a Factory-format work-proof base", async () => {
+    const fixture = await createFixture();
+    const relativePath = `${fixture.planRoot}/evidence/lifecycle/${taskId}/${fixture.candidate}/work_proof_marker.json`;
+    const delivery = await amend(fixture.root, async () => {
+      const artifact = await readJson(fixture.root, relativePath);
+      artifact.workspace_proof = { base_ref: artifact.baseCommit };
+      delete artifact.baseCommit;
+      await writeJson(fixture.root, relativePath, artifact);
+    });
+    const result = run(fixture.root, fixture.candidate, delivery);
+    expect(result.status, result.stderr).toBe(0);
+  });
+
   it("accepts a canonical waivable criterion disposition", async () => {
     const fixture = await createFixture();
     const delivery = await amend(fixture.root, async () => {
