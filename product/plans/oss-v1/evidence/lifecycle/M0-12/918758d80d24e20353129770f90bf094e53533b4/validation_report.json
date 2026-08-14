@@ -1,0 +1,106 @@
+{
+  "work_item_id": "M0-12",
+  "task_id": "M0-12",
+  "profile_ref": ".factory/profile.yaml",
+  "semantic_risk_report_ref": ".factory/artifacts/task-runs/M0-12/semantic-risk-report.json",
+  "semantic_risk_report_sha256": "sha256:6983a1e3df206f747ef9fdec63e10364e915dc667cf277fda52d56a9bb792e59",
+  "validation_contract_ref": "oss-v1:M0-12:r0",
+  "test_intent": [
+    {
+      "behavior": "Bind full validation to one ProductCandidate and keep the promotion tail canonical.",
+      "expected_signal": "Skill and workflow tests distinguish ProductCandidate and DeliveryHead and forbid product-bearing inheritance."
+    },
+    {
+      "behavior": "Batch review feedback without weakening P0/P1 or non-waivable blockers.",
+      "expected_signal": "Guidance requires one repair generation and an explicit maintainer-only standalone-P2 disposition."
+    },
+    {
+      "behavior": "Close an authorized task through protected merge and next-task reporting.",
+      "expected_signal": "Continuation-skill tests require post-merge verification and reporting the newly legal task."
+    }
+  ],
+  "red_evidence": [],
+  "green_evidence": [
+    {
+      "check": "pnpm check",
+      "summary": "The exact ProductCandidate passed the complete repository gate with 233 tests.",
+      "evidence_refs": ["ev-m0-12-repo-check-918758d"]
+    },
+    {
+      "check": "pnpm test:contracts",
+      "summary": "All deterministic skill and repository contract tests passed.",
+      "evidence_refs": ["ev-m0-12-contracts-918758d"]
+    },
+    {
+      "check": "skill-creator quick validation",
+      "summary": "All five changed Vetryn skills passed quick validation."
+    }
+  ],
+  "work_proof_marker_refs": [
+    "product/plans/oss-v1/evidence/lifecycle/M0-12/918758d80d24e20353129770f90bf094e53533b4/work_proof_marker.json"
+  ],
+  "test_scope": [".agents/skills/**", "scripts/continue-next-skill.test.mjs", "WORKFLOW.md"],
+  "checks": [
+    { "name": "pnpm plan:check", "status": "pass" },
+    { "name": "pnpm check", "status": "pass" },
+    { "name": "pnpm test:contracts", "status": "pass" },
+    { "name": "pnpm --silent task:compile -- M0-12", "status": "pass" },
+    { "name": "skill-creator quick_validate.py", "status": "pass" },
+    { "name": "git diff --check", "status": "pass" }
+  ],
+  "result": "pass",
+  "introduced_failures": [],
+  "pre_existing_failures": [],
+  "independent_validation": {
+    "risk_class": "medium",
+    "required_level": "maintainer",
+    "provided_levels": ["validation_gate", "contract", "integration", "maintainer_review"],
+    "status": "satisfied",
+    "evidence_refs": [
+      "ev-m0-12-plan-check-918758d",
+      "ev-m0-12-repo-check-918758d",
+      "ev-m0-12-contracts-918758d"
+    ],
+    "notes": "The packet does not require a separate code or trust review; exact command gates and maintainer review control promotion."
+  },
+  "test_first_skipped_reason": {
+    "status": "not_applicable",
+    "reason": "This process-only change modifies guidance and contract tests rather than executable product behavior."
+  },
+  "anti_fitting_notes": [
+    "Tests cover all five changed skills rather than a single wording path.",
+    "The review checklist is explicitly scoped to changed surfaces and cannot broaden task scope."
+  ],
+  "residual_risks": [
+    "Remote automated review can still identify a genuine P0/P1; those findings remain blocking.",
+    "Factory remains pinned at canonical main c1a21e1; no Factory change is required."
+  ],
+  "integrated_validation": {
+    "status": "task_only",
+    "scope_summary": "The complete repository and all skill validators passed on the exact process-only ProductCandidate.",
+    "integrated_checks": [
+      {
+        "name": "pnpm check",
+        "status": "pass",
+        "work_proof_marker_ref": "product/plans/oss-v1/evidence/lifecycle/M0-12/918758d80d24e20353129770f90bf094e53533b4/work_proof_marker.json"
+      }
+    ],
+    "fresh_checkout": {
+      "required": false,
+      "status": "not_required",
+      "work_proof_marker_refs": [],
+      "notes": "GitHub CI supplies clean-checkout replay."
+    },
+    "docs_schema_parity": {
+      "status": "pass",
+      "evidence_refs": ["AGENTS.md", "WORKFLOW.md", "docs/agent-map.md"]
+    },
+    "release_readiness": {
+      "claimed": false,
+      "status": "not_applicable",
+      "work_proof_marker_refs": [],
+      "notes": "No package release."
+    }
+  },
+  "promotion_decision": "ready_for_pr"
+}

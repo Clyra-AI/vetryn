@@ -1,0 +1,45 @@
+{
+  "marker_id": "M0-12-918758d-pnpm-check",
+  "command": "pnpm check",
+  "cwd": ".",
+  "workspace_ref": "codex/m0-12-simplify-lifecycle",
+  "git_sha": "918758d80d24e20353129770f90bf094e53533b4",
+  "exit_code": 0,
+  "stdout_digest": "sha256:0eb7cb55ee37effceee2f66b1f880c6561eb0d7679d1f240479f10829f4798d9",
+  "stderr_digest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855c",
+  "raw_log_refs": [],
+  "execution_status": "pass",
+  "started_at": "2026-08-14T11:47:04Z",
+  "finished_at": "2026-08-14T11:47:32Z",
+  "runner_id": "codex-local:validation-gate",
+  "generated_by": "trusted_runner",
+  "workspace_proof": {
+    "isolation_model": "exact_clean_branch",
+    "clean_checkout_verified": true,
+    "base_ref": "8f2aa4b7e9c509127ef9b3dd2003764f7a9bcfe9",
+    "branch_name": "codex/m0-12-simplify-lifecycle",
+    "allowed_paths": [
+      ".agents/skills/vetryn-continue-next/**",
+      ".agents/skills/vetryn-implement-task/**",
+      ".agents/skills/vetryn-promote-task/**",
+      ".agents/skills/vetryn-trust-review/**",
+      ".agents/skills/vetryn-verify-task/**",
+      ".factory/artifacts/task-runs/M0-12/**",
+      "AGENTS.md",
+      "WORKFLOW.md",
+      "docs/adr/0009-single-maintainer-v1-delivery.md",
+      "docs/agent-map.md",
+      "docs/implementation/oss-v1-execution.md",
+      "scripts/continue-next-skill.test.mjs"
+    ],
+    "forbidden_paths": ["packages/**", "examples/**", "action.yml", ".github/**", "llms.txt"],
+    "retry_preservation": {
+      "preserve_workspace_on_retry": true,
+      "checkpoint_ref": "918758d80d24e20353129770f90bf094e53533b4"
+    },
+    "cleanup_policy": {
+      "remove_after_terminal_state": "after merged-main verification",
+      "preserve_on_failure": true
+    }
+  }
+}

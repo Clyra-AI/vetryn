@@ -2,19 +2,47 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "M0-12",
-  "revision": 0,
-  "state": "planned",
-  "attempt": 0,
-  "candidate": null,
+  "revision": 1,
+  "state": "accepted",
+  "attempt": 1,
+  "candidate": {
+    "baseCommit": "8f2aa4b7e9c509127ef9b3dd2003764f7a9bcfe9",
+    "commit": "918758d80d24e20353129770f90bf094e53533b4",
+    "executor": "implementation-agent"
+  },
   "criteria": [
-    { "criterionId": "PROCESS-012", "status": "pending", "evidenceRefs": [] },
-    { "criterionId": "PROCESS-013", "status": "pending", "evidenceRefs": [] },
-    { "criterionId": "PROCESS-014", "status": "pending", "evidenceRefs": [] }
+    {
+      "criterionId": "PROCESS-012",
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-12-contracts-918758d"]
+    },
+    {
+      "criterionId": "PROCESS-013",
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-12-repo-check-918758d"]
+    },
+    {
+      "criterionId": "PROCESS-014",
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-12-repo-check-918758d"]
+    }
   ],
   "gates": [
-    { "gateId": "QG-PLAN-CHECK", "status": "pending", "evidenceRefs": [] },
-    { "gateId": "QG-REPO-CHECK", "status": "pending", "evidenceRefs": [] },
-    { "gateId": "QG-CONTRACTS", "status": "pending", "evidenceRefs": [] }
+    {
+      "gateId": "QG-PLAN-CHECK",
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-12-plan-check-918758d"]
+    },
+    {
+      "gateId": "QG-REPO-CHECK",
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-12-repo-check-918758d"]
+    },
+    {
+      "gateId": "QG-CONTRACTS",
+      "status": "pass",
+      "evidenceRefs": ["ev-m0-12-contracts-918758d"]
+    }
   ],
   "reviews": [{ "role": "maintainer", "status": "pending", "evidenceRefs": [] }],
   "blockers": [],
@@ -25,6 +53,13 @@
       "at": "2026-08-14T11:25:00Z",
       "actor": "planning-agent",
       "reason": "Maintainer requested a smaller review and promotion lifecycle after V1-06 exposed repeated review-generation and promotion-tail churn."
+    },
+    {
+      "from": "planned",
+      "to": "accepted",
+      "at": "2026-08-14T11:47:32Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer accepted the exact process-only ProductCandidate after all active command gates and skill validators passed."
     }
   ]
 }
