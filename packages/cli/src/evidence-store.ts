@@ -402,7 +402,6 @@ export class FileExecutionReceiptStore {
       authenticationTag: hmac(this.key, canonicalJson(nextHead)),
     };
     const entryPath = this.receiptPath(headDigest);
-    await publishImmutable(entryPath, `${JSON.stringify(entry, null, 2)}\n`);
     const transactionBody: PendingHeadTransactionBody = {
       artifactType: "execution-receipt-head-transaction",
       nextHead,
@@ -415,6 +414,7 @@ export class FileExecutionReceiptStore {
     };
     try {
       await atomicWrite(this.transactionPath(), `${JSON.stringify(transaction, null, 2)}\n`);
+      await publishImmutable(entryPath, `${JSON.stringify(entry, null, 2)}\n`);
       await atomicWrite(this.headPath(), `${JSON.stringify(nextHead, null, 2)}\n`);
       await this.advanceAnchor(`${JSON.stringify(nextAnchor, null, 2)}\n`);
     } catch (error: unknown) {
@@ -452,21 +452,25 @@ export class FileExecutionReceiptStore {
     if (transaction.nextHead.trustEpochId !== trustEpochId) {
       throw new Error("Interrupted receipt transaction belongs to another trust epoch.");
     }
-    const entry = parseChainEntry(
-      await readBoundedJson(this.receiptPath(transaction.nextHead.headDigest)),
-    );
-    if (
-      sha256(canonicalJson(entry)) !== transaction.nextHead.headDigest ||
-      entry.sequence !== transaction.nextHead.sequence ||
-      entry.trustEpochId !== transaction.nextHead.trustEpochId ||
-      entry.priorHeadDigest !== (transaction.priorHead?.headDigest ?? null)
-    ) {
-      throw new Error("Interrupted receipt transaction does not bind its pending entry.");
-    }
     const [head, anchor] = await Promise.all([
       readOptionalJson<RepositoryHead>(this.headPath()),
       readOptionalJson<Anchor>(this.anchorPath),
     ]);
+    const entryPath = this.receiptPath(transaction.nextHead.headDigest);
+    const entryInput = await readOptionalJson<unknown>(entryPath);
+    if (entryInput !== null) {
+      const entry = parseChainEntry(entryInput);
+      if (
+        sha256(canonicalJson(entry)) !== transaction.nextHead.headDigest ||
+        entry.sequence !== transaction.nextHead.sequence ||
+        entry.trustEpochId !== transaction.nextHead.trustEpochId ||
+        entry.priorHeadDigest !== (transaction.priorHead?.headDigest ?? null)
+      ) {
+        throw new Error("Interrupted receipt transaction does not bind its pending entry.");
+      }
+    } else if (sameOptionalHead(head, transaction.nextHead)) {
+      throw new Error("Interrupted receipt transaction is missing its pending entry.");
+    }
     if (
       sameOptionalHead(head, transaction.nextHead) &&
       sameOptionalHead(anchor, transaction.nextHead)
@@ -480,7 +484,9 @@ export class FileExecutionReceiptStore {
       sameOptionalHead(anchor, transaction.priorHead)
     ) {
       await this.restoreHead(transaction.priorHead);
-      await unlink(this.receiptPath(transaction.nextHead.headDigest));
+      await unlink(entryPath).catch((error: unknown) => {
+        if (!isMissingFileError(error)) throw error;
+      });
       await unlink(this.transactionPath());
       return;
     }
