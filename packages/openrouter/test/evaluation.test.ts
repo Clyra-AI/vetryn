@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   VETRYN_ARTIFACT_SCHEMA_VERSION,
@@ -12,7 +12,9 @@ import {
   createCurrentCatalogRefresh,
   createOpenRouterEvaluationTransport,
   evaluateOpenRouterCandidate,
+  refreshOpenRouterCatalog,
   validateCatalogRefreshLineage,
+  type CatalogStore,
   type EvaluationTransport,
 } from "../src/index.js";
 
@@ -124,6 +126,25 @@ const lineage = {
   terminalOrdinal: 1,
 } as const;
 
+const rawCatalog = {
+  data: [
+    {
+      architecture: { output_modalities: ["text"] },
+      context_length: 100_000,
+      id: callSite.currentModel,
+      pricing: { completion: "0.000002", prompt: "0.000001" },
+      supported_parameters: ["response_format"],
+    },
+    {
+      architecture: { output_modalities: ["text"] },
+      context_length: 100_000,
+      id: "openai/gpt-4o-mini",
+      pricing: { completion: "0.0000002", prompt: "0.0000001" },
+      supported_parameters: ["response_format"],
+    },
+  ],
+};
+
 const cases = [
   {
     expected: { classification: "billing" },
@@ -155,31 +176,81 @@ function transport(): EvaluationTransport {
   };
 }
 
-const baseOptions = {
-  callSite,
-  candidateModel: "openai/gpt-4o-mini",
-  cases,
-  currentCatalogRefresh: createCurrentCatalogRefresh({
-    attempts: lineage.attempts,
-    invocationId: lineage.invocationId,
-    snapshot,
-    terminalOrdinal: lineage.terminalOrdinal,
-  }),
-  clock: {
-    now: (() => {
-      const times = ["2026-08-10T00:00:01.000Z", "2026-08-10T00:00:02.000Z"];
-      return () => times.shift() ?? "2026-08-10T00:00:02.000Z";
-    })(),
-  },
-  evalSuite,
-  evaluator: { build: "git:test-build", id: "vetryn-evaluator", version: "0.1.0" },
-  executionRecordId: "execution-record:support-classification-test",
-  fixtureDigest: evalSuite.fixtureDigest,
-  limits: { concurrency: 2, maxRequests: 8, maxSpendUsd: "1", retries: 1, timeoutMs: 1000 },
-  sampling: { attempts: 1, maxOutputTokens: 32, seed: 42, temperature: 0 },
-  scorer: { configurationDigest: digest("c"), id: "deterministic-assertions", version: "1.0.0" },
-  transport: transport(),
-} as const;
+function memoryCatalogStore(): CatalogStore {
+  return {
+    async hasSnapshot() {
+      return false;
+    },
+    async putObservation() {},
+    async putRefresh(catalogSnapshot, observation) {
+      return {
+        observation: { ...observation, reusedSnapshot: false },
+        snapshot: catalogSnapshot,
+      };
+    },
+    async putSnapshot(catalogSnapshot) {
+      return { reused: false, snapshot: catalogSnapshot };
+    },
+  };
+}
+
+async function acquireCurrentCatalogRefresh() {
+  vi.useFakeTimers();
+  vi.setSystemTime(snapshot.observedAt);
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async () =>
+      Promise.resolve(
+        new Response(JSON.stringify(rawCatalog), {
+          headers: { "content-type": "application/json" },
+          status: 200,
+        }),
+      ),
+    ),
+  );
+  try {
+    const refresh = await refreshOpenRouterCatalog({
+      acquisition: "live-api",
+      refreshId: "refresh-success",
+      store: memoryCatalogStore(),
+    });
+    if (refresh.status !== "success") throw new Error("Expected the offline live refresh to pass.");
+    return createCurrentCatalogRefresh({ invocationId: lineage.invocationId, refresh });
+  } finally {
+    vi.unstubAllGlobals();
+    vi.useRealTimers();
+  }
+}
+
+function baseOptions(
+  currentCatalogRefresh: Awaited<ReturnType<typeof acquireCurrentCatalogRefresh>>,
+) {
+  const times = ["2026-08-10T00:00:01.000Z", "2026-08-10T00:00:02.000Z"];
+  return {
+    callSite,
+    candidateModel: "openai/gpt-4o-mini",
+    cases,
+    currentCatalogRefresh,
+    clock: { now: () => times.shift() ?? "2026-08-10T00:00:02.000Z" },
+    evalSuite,
+    evaluator: { build: "git:test-build", id: "vetryn-evaluator", version: "0.1.0" },
+    executionRecordId: "execution-record:support-classification-test",
+    fixtureDigest: evalSuite.fixtureDigest,
+    limits: { concurrency: 2, maxRequests: 8, maxSpendUsd: "1", retries: 1, timeoutMs: 1000 },
+    sampling: { attempts: 1, maxOutputTokens: 32, seed: 42, temperature: 0 },
+    scorer: {
+      configurationDigest: digest("c"),
+      id: "deterministic-assertions",
+      version: "1.0.0",
+    },
+    transport: transport(),
+  } as const;
+}
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.useRealTimers();
+});
 
 describe("bounded deterministic evaluation", () => {
   it("applies the reviewed route policy at the OpenRouter request boundary", async () => {
@@ -239,10 +310,11 @@ describe("bounded deterministic evaluation", () => {
   });
 
   it("emits reproducible complete candidate and execution artifacts from pinned inputs", async () => {
-    const result = await evaluateOpenRouterCandidate(baseOptions);
+    const options = baseOptions(await acquireCurrentCatalogRefresh());
+    const result = await evaluateOpenRouterCandidate(options);
 
     expect(parseCandidateRun(result.candidateRun)).toMatchObject({
-      executionRecordId: baseOptions.executionRecordId,
+      executionRecordId: options.executionRecordId,
       gateOutcomes: {
         context: "pass",
         cost: "pass",
@@ -251,7 +323,7 @@ describe("bounded deterministic evaluation", () => {
         quality: "pass",
       },
       provenance: {
-        limits: baseOptions.limits,
+        limits: options.limits,
         observed: { providerRequestCount: 4 },
       },
       status: "complete",
@@ -259,7 +331,7 @@ describe("bounded deterministic evaluation", () => {
     expect(parseEvaluationExecutionRecord(result.executionRecord)).toMatchObject({
       candidateRunId: result.candidateRun.id,
       completedAt: "2026-08-10T00:00:02.000Z",
-      id: baseOptions.executionRecordId,
+      id: options.executionRecordId,
       startedAt: "2026-08-10T00:00:01.000Z",
     });
     expect(result.candidateRun.routeObservation?.requestCount).toBe(2);
@@ -268,11 +340,12 @@ describe("bounded deterministic evaluation", () => {
   });
 
   it("bounds retries and spend and leaves partial route evidence non-promotable", async () => {
+    const options = baseOptions(await acquireCurrentCatalogRefresh());
     let calls = 0;
     const result = await evaluateOpenRouterCandidate({
-      ...baseOptions,
+      ...options,
       clock: { now: () => "2026-08-10T00:00:01.000Z" },
-      limits: { ...baseOptions.limits, maxRequests: 2 },
+      limits: { ...options.limits, maxRequests: 2 },
       transport: {
         async execute() {
           calls += 1;
@@ -290,8 +363,9 @@ describe("bounded deterministic evaluation", () => {
   });
 
   it("fails hard gates deterministically without leaking protected output", async () => {
+    const options = baseOptions(await acquireCurrentCatalogRefresh());
     const result = await evaluateOpenRouterCandidate({
-      ...baseOptions,
+      ...options,
       clock: { now: () => "2026-08-10T00:00:01.000Z" },
       transport: {
         async execute(request) {
@@ -305,6 +379,44 @@ describe("bounded deterministic evaluation", () => {
 
     expect(result.candidateRun.gateOutcomes).toMatchObject({ privacy: "fail", quality: "fail" });
     expect(JSON.stringify(result)).not.toContain("customer-secret");
+  });
+
+  it("rejects cases with no required facts instead of passing them vacuously", async () => {
+    const options = baseOptions(await acquireCurrentCatalogRefresh());
+    await expect(
+      evaluateOpenRouterCandidate({
+        ...options,
+        cases: cases.map((evaluationCase) => ({ ...evaluationCase, expected: {} })),
+      }),
+    ).rejects.toThrow(/at least one expected fact/i);
+  });
+
+  it("reserves the hard spend ceiling before zero, expensive, and equality-bound requests", async () => {
+    const currentCatalogRefresh = await acquireCurrentCatalogRefresh();
+    for (const [maxSpendUsd, expectedCalls] of [
+      ["0", 0],
+      ["0.01", 0],
+      ["0.100064", 1],
+    ] as const) {
+      let calls = 0;
+      const options = baseOptions(currentCatalogRefresh);
+      const result = await evaluateOpenRouterCandidate({
+        ...options,
+        clock: { now: () => "2026-08-10T00:00:01.000Z" },
+        limits: { ...options.limits, maxSpendUsd },
+        transport: {
+          async execute(request) {
+            calls += 1;
+            return transport().execute(request);
+          },
+        },
+      });
+      expect(calls).toBe(expectedCalls);
+      expect(result.candidateRun).toMatchObject({
+        failureCode: "budget-exhausted",
+        status: "incomplete",
+      });
+    }
   });
 
   it("requires a complete ordered lineage whose terminal attempt is the cited success", () => {
@@ -335,15 +447,33 @@ describe("bounded deterministic evaluation", () => {
     }
   });
 
-  it("rejects a serialized caller-supplied lineage in place of current-invocation evidence", async () => {
+  it("rejects serialized lineage and public captured-response branding as current evidence", async () => {
+    const options = baseOptions(await acquireCurrentCatalogRefresh());
     await expect(
       evaluateOpenRouterCandidate({
-        ...baseOptions,
+        ...options,
         currentCatalogRefresh: {
           lineage,
           snapshot,
-        } as unknown as typeof baseOptions.currentCatalogRefresh,
+        } as unknown as typeof options.currentCatalogRefresh,
       }),
     ).rejects.toThrow(/same-invocation/i);
+
+    const captured = await refreshOpenRouterCatalog({
+      acquisition: "captured-response",
+      fetch: async () =>
+        new Response(JSON.stringify(rawCatalog), {
+          headers: { "content-type": "application/json" },
+          status: 200,
+        }),
+      observedAt: snapshot.observedAt,
+      refreshId: "captured-refresh",
+      store: memoryCatalogStore(),
+    });
+    if (captured.status !== "success")
+      throw new Error("Expected captured fixture refresh to pass.");
+    expect(() =>
+      createCurrentCatalogRefresh({ invocationId: "captured-invocation", refresh: captured }),
+    ).toThrow(/canonical live acquisition/i);
   });
 });

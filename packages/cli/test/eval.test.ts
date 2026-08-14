@@ -5,12 +5,13 @@ import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { createProgram } from "../src/index.js";
-import { createCurrentCatalogRefresh } from "@vetryn/openrouter";
 
 const roots: string[] = [];
 
 afterEach(async () => {
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
+  vi.useRealTimers();
   await Promise.all(roots.splice(0).map((root) => rm(root, { force: true, recursive: true })));
 });
 
@@ -35,25 +36,38 @@ describe("vetryn eval", () => {
     const expected = new Map(cases.map((entry) => [entry.id, entry.expectedClass]));
     const times = ["2026-08-10T00:00:01.000Z", "2026-08-10T00:00:02.000Z"];
     const outputPath = path.join(repositoryRoot, ".vetryn", "runs", "result.json");
-    const snapshot = JSON.parse(
-      await readFile(path.join(exampleRoot, "fixtures/catalog-snapshot.json"), "utf8"),
-    ) as Parameters<typeof createCurrentCatalogRefresh>[0]["snapshot"];
-    const lineage = JSON.parse(
-      await readFile(path.join(exampleRoot, "fixtures/catalog-refresh-lineage.json"), "utf8"),
-    ) as {
-      attempts: Parameters<typeof createCurrentCatalogRefresh>[0]["attempts"];
-      invocationId: string;
-      terminalOrdinal: number;
-    };
+    vi.useFakeTimers();
+    vi.setSystemTime("2026-08-10T00:00:00.000Z");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        Promise.resolve(
+          new Response(
+            JSON.stringify({
+              data: [
+                {
+                  architecture: { output_modalities: ["text"] },
+                  context_length: 1_047_576,
+                  id: "openai/gpt-4.1-mini",
+                  pricing: { completion: "0.0000016", prompt: "0.0000004" },
+                  supported_parameters: ["response_format"],
+                },
+                {
+                  architecture: { output_modalities: ["text"] },
+                  context_length: 128_000,
+                  id: "openai/gpt-4o-mini",
+                  pricing: { completion: "0.0000006", prompt: "0.00000015" },
+                  supported_parameters: ["response_format"],
+                },
+              ],
+            }),
+            { headers: { "content-type": "application/json" }, status: 200 },
+          ),
+        ),
+      ),
+    );
     const stdout = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
     const program = createProgram({
-      catalogRefreshFactory: async ({ invocationId }) =>
-        createCurrentCatalogRefresh({
-          attempts: lineage.attempts,
-          invocationId,
-          snapshot,
-          terminalOrdinal: lineage.terminalOrdinal,
-        }),
       clock: { now: () => times.shift() ?? "2026-08-10T00:00:02.000Z" },
       evaluationTransportFactory: () => ({
         async execute(request) {

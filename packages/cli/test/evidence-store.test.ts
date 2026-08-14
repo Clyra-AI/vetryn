@@ -145,6 +145,50 @@ describe("authenticated execution receipt store", () => {
     });
   });
 
+  it("restores the prior repository head when the external anchor cannot advance", async () => {
+    const fixtureState = await fixture();
+    const first = await fixtureState.store.append(record, {
+      catalogRefreshLineage: lineage,
+      trustEpochId: "epoch-one",
+    });
+    const headPath = path.join(fixtureState.evidencePath, "head.json");
+    const priorHead = await readFile(headPath, "utf8");
+    const secondRecord = { ...record, id: "execution-record:support-classification-retry" };
+    class FailingAnchorStore extends FileExecutionReceiptStore {
+      protected override async advanceAnchor(): Promise<void> {
+        throw new Error("injected external anchor failure");
+      }
+    }
+    const failingStore = new FailingAnchorStore({
+      anchorPath: fixtureState.anchorPath,
+      evidencePath: fixtureState.evidencePath,
+      key: fixtureState.key,
+      repositoryRoot: fixtureState.repositoryRoot,
+    });
+
+    await expect(
+      failingStore.append(secondRecord, {
+        catalogRefreshLineage: lineage,
+        trustEpochId: "epoch-one",
+      }),
+    ).rejects.toThrow(/injected external anchor failure/i);
+    await expect(readFile(headPath, "utf8")).resolves.toBe(priorHead);
+    await expect(fixtureState.store.verify(first.executionRecordId)).resolves.toMatchObject({
+      actionable: true,
+    });
+    await expect(fixtureState.store.verify(secondRecord.id)).resolves.toMatchObject({
+      actionable: false,
+      reason: "record-not-in-current-epoch",
+    });
+
+    await expect(
+      fixtureState.store.append(secondRecord, {
+        catalogRefreshLineage: lineage,
+        trustEpochId: "epoch-one",
+      }),
+    ).resolves.toMatchObject({ sequence: 2 });
+  });
+
   it("rejects symlink paths that cross repository and external-anchor boundaries", async () => {
     const root = await mkdtemp(path.join(tmpdir(), "vetryn-receipt-links-"));
     roots.push(root);

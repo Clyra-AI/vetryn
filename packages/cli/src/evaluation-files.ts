@@ -69,7 +69,7 @@ export async function evaluateFiles(options: EvaluateFilesOptions): Promise<Eval
     limits: {
       concurrency: 4,
       maxRequests: 1_000,
-      maxSpendUsd: "10",
+      maxSpendUsd: "100",
       retries: 2,
       timeoutMs: 30_000,
     },

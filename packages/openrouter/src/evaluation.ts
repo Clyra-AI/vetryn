@@ -18,6 +18,8 @@ import {
 } from "@vetryn/core";
 import { z } from "zod";
 
+import { isLiveCatalogRefreshResult } from "./live-refresh.js";
+
 const digestSchema = z.string().regex(/^sha256:[0-9a-f]{64}$/);
 const decimalSchema = z.string().regex(/^(?:0|[1-9][0-9]*)(?:\.[0-9]+)?$/);
 const stableIdSchema = z.string().regex(/^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/);
@@ -70,21 +72,27 @@ export interface CurrentCatalogRefresh {
 }
 
 export function createCurrentCatalogRefresh(input: {
-  readonly attempts: readonly {
-    readonly observation: RefreshObservation;
-    readonly ordinal: number;
-  }[];
   readonly invocationId: string;
-  readonly snapshot: unknown;
-  readonly terminalOrdinal: number;
+  readonly refresh: {
+    readonly observation: RefreshObservation;
+    readonly snapshot: unknown;
+    readonly status: "success";
+  };
 }): CurrentCatalogRefresh {
-  const snapshot = parseCatalogSnapshot(input.snapshot);
+  if (!isLiveCatalogRefreshResult(input.refresh)) {
+    throw new Error("Current evaluation requires the canonical live acquisition result object.");
+  }
+  const observation = evaluationRefreshObservationSchema.parse(input.refresh.observation);
+  if (observation.acquisition !== "live-api") {
+    throw new Error("Captured or imported catalog responses remain replay-only.");
+  }
+  const snapshot = parseCatalogSnapshot(input.refresh.snapshot);
   const lineage = validateCatalogRefreshLineage(
     {
-      attempts: input.attempts,
+      attempts: [{ observation, ordinal: 1 }],
       invocationId: input.invocationId,
       schemaVersion: "1.0.0",
-      terminalOrdinal: input.terminalOrdinal,
+      terminalOrdinal: 1,
     },
     snapshot,
     input.invocationId,
@@ -399,6 +407,8 @@ export async function evaluateOpenRouterCandidate(
   );
   let requestsStarted = 0;
   let spend = 0;
+  let committedBudgetUnits = 0n;
+  const maxSpendUnits = decimalUnitsFloor(limits.maxSpendUsd);
   let exhausted = false;
   let terminalFailure: EvaluationTransportErrorCode | undefined;
   const results = new Array<EvaluatedRequest | undefined>(jobs.length);
@@ -414,10 +424,17 @@ export async function evaluateOpenRouterCandidate(
       if (evaluationCase === undefined)
         throw new Error("Evaluation job references a missing case.");
       for (let retry = 0; retry <= limits.retries; retry += 1) {
-        if (requestsStarted >= limits.maxRequests || spend > Number(limits.maxSpendUsd)) {
+        const model = snapshot.models.find(({ id }) => id === job.model);
+        if (model === undefined) throw new EvaluationTransportError("provider-error");
+        const requestBudgetUnits = maximumRequestCostUnits(model, sampling.maxOutputTokens);
+        if (
+          requestsStarted >= limits.maxRequests ||
+          committedBudgetUnits + requestBudgetUnits > maxSpendUnits
+        ) {
           exhausted = true;
           return;
         }
+        committedBudgetUnits += requestBudgetUnits;
         requestsStarted += 1;
         try {
           const response = await executeWithTimeout(
@@ -433,13 +450,13 @@ export async function evaluateOpenRouterCandidate(
             limits.timeoutMs,
           );
           const normalized = normalizeResponse(response, evaluationCase, callSite.routePolicy);
-          const model = snapshot.models.find(({ id }) => id === job.model);
-          if (model === undefined) throw new EvaluationTransportError("provider-error");
-          spend += requestCost(normalized.usage, model);
-          if (spend > Number(limits.maxSpendUsd)) {
-            exhausted = true;
-            return;
+          if (
+            normalized.usage.promptTokens > model.contextWindowTokens ||
+            normalized.usage.completionTokens > sampling.maxOutputTokens
+          ) {
+            throw new EvaluationTransportError("invalid-output");
           }
+          spend += requestCost(normalized.usage, model);
           results[jobIndex] = normalized;
           break;
         } catch (error: unknown) {
@@ -638,7 +655,16 @@ function parseCases(input: readonly EvaluationCase[]): readonly EvaluationCase[]
           input: z.string().min(1).max(100_000),
           protectedSegments: z.array(z.string().min(1).max(1_000)).max(100).optional(),
         })
-        .strict(),
+        .strict()
+        .superRefine((evaluationCase, context) => {
+          if (Object.keys(evaluationCase.expected).length === 0) {
+            context.addIssue({
+              code: "custom",
+              message: "Evaluation cases require at least one expected fact.",
+              path: ["expected"],
+            });
+          }
+        }),
     )
     .min(1)
     .max(10_000);
@@ -862,6 +888,37 @@ function requestCost(
       usage.completionTokens * Number(model.outputPricePerMillionUsd)) /
     1_000_000
   );
+}
+
+const BUDGET_DECIMAL_PLACES = 12;
+const BUDGET_SCALE = 10n ** BigInt(BUDGET_DECIMAL_PLACES);
+const PRICE_DENOMINATOR = 1_000_000n;
+
+function decimalUnitsFloor(value: string): bigint {
+  const [whole = "0", fraction = ""] = value.split(".");
+  const normalizedFraction = fraction
+    .slice(0, BUDGET_DECIMAL_PLACES)
+    .padEnd(BUDGET_DECIMAL_PLACES, "0");
+  return BigInt(whole) * BUDGET_SCALE + BigInt(normalizedFraction || "0");
+}
+
+function maximumRequestCostUnits(
+  model: CatalogSnapshot["models"][number],
+  maxOutputTokens: number,
+): bigint {
+  return (
+    tokenCostUnitsCeil(model.contextWindowTokens, model.inputPricePerMillionUsd) +
+    tokenCostUnitsCeil(maxOutputTokens, model.outputPricePerMillionUsd)
+  );
+}
+
+function tokenCostUnitsCeil(tokens: number, pricePerMillionUsd: string): bigint {
+  const [whole = "0", fraction = ""] = pricePerMillionUsd.split(".");
+  const decimalScale = 10n ** BigInt(fraction.length);
+  const price = BigInt(`${whole}${fraction}`);
+  const numerator = BigInt(tokens) * price * BUDGET_SCALE;
+  const denominator = decimalScale * PRICE_DENOMINATOR;
+  return (numerator + denominator - 1n) / denominator;
 }
 
 function mapFailure(code: EvaluationTransportErrorCode | undefined): CandidateRun["failureCode"] {
