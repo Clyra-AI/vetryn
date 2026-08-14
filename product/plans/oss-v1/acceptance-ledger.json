@@ -198,6 +198,45 @@
       "evidenceRefs": ["ev-m0-11-repo-check-161971b"]
     },
     {
+      "id": "PROCESS-012",
+      "taskId": "M0-12",
+      "statement": "Validation and required reviews bind the exact product candidate, while a deterministic promotion-tail check permits only canonical state, ledger, evidence, generated progress, and packet-declared promotion artifacts before protected delivery; a valid promotion-only tail inherits candidate evidence without rerunning the full local or domain-review suite.",
+      "verification": {
+        "method": "test",
+        "testLevel": "contract",
+        "gateId": "QG-CONTRACTS"
+      },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
+      "id": "PROCESS-013",
+      "taskId": "M0-12",
+      "statement": "The delivery workflow batches current-head automated findings, performs at most one bounded repair and exact-candidate revalidation per batch, blocks P0/P1 and non-waivable findings, and permits a maintainer to record one standalone post-repair P2 as delivery debt without starting an endless new product-review generation.",
+      "verification": {
+        "method": "test",
+        "testLevel": "integration",
+        "gateId": "QG-REPO-CHECK"
+      },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
+      "id": "PROCESS-014",
+      "taskId": "M0-12",
+      "statement": "Repository implementation guidance encodes the recurring defect patterns observed through V1-06 as a concise adversarial pre-push checklist, and the continuation skill closes an authorized task through promotion, protected merge, post-merge verification, and next-task reporting.",
+      "verification": {
+        "method": "test",
+        "testLevel": "integration",
+        "gateId": "QG-REPO-CHECK"
+      },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
       "id": "ROUTE-001",
       "taskId": "M0-09",
       "statement": "Catalog and call-site contracts model the canonical model-ID namespace as model-author identity and model execution as a separate reviewed OpenRouter route policy.",

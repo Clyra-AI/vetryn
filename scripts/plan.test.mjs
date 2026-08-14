@@ -19,6 +19,7 @@ const downstreamV1TaskIds = [
   "M0-09",
   "M0-10",
   "M0-11",
+  "M0-12",
   "V1-05",
   "V1-06",
   "V1-07",
@@ -842,6 +843,41 @@ afterEach(async () => {
 });
 
 describe("implementation plan validator", () => {
+  it("places one bounded review-lifecycle simplification before V1-07", async () => {
+    const plan = await readFixtureJson(repositoryRoot, "product/plans/oss-v1/plan.json");
+    const ledger = await readFixtureJson(
+      repositoryRoot,
+      "product/plans/oss-v1/acceptance-ledger.json",
+    );
+    const state = await readFixtureJson(repositoryRoot, "product/plans/oss-v1/state/M0-12.json");
+    const task = plan.tasks.find((candidate) => candidate.id === "M0-12");
+    const v107 = plan.tasks.find((candidate) => candidate.id === "V1-07");
+
+    expect(task).toMatchObject({
+      risk: { level: "medium" },
+      dependsOn: [{ taskId: "M0-11", kind: "hard" }],
+      acceptanceItemIds: ["PROCESS-012", "PROCESS-013", "PROCESS-014"],
+      capabilities: { network: false, credentials: false, provider: false, githubWrite: false },
+      maxAttempts: 1,
+    });
+    expect(task.scope.forbiddenPaths).toEqual(
+      expect.arrayContaining(["packages/**", ".github/**", "llms.txt"]),
+    );
+    expect(task.semanticInvariants.join(" ")).toContain("product candidate");
+    expect(task.semanticInvariants.join(" ").toLowerCase()).toContain("promotion-only commits");
+    expect(task.semanticInvariants.join(" ")).toContain("one batch per product candidate");
+    expect(task.semanticInvariants.join(" ")).toContain("standalone P2");
+    expect(v107.dependsOn).toContainEqual({ taskId: "M0-12", kind: "hard" });
+    expect(ledger.items.filter((item) => item.taskId === "M0-12")).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: "PROCESS-012", waivable: false }),
+        expect.objectContaining({ id: "PROCESS-013", waivable: false }),
+        expect.objectContaining({ id: "PROCESS-014", waivable: false }),
+      ]),
+    );
+    expect(state).toMatchObject({ taskId: "M0-12", revision: 0, state: "planned" });
+  });
+
   it("locks narrow continuation behind one bounded process task", async () => {
     const plan = await readFixtureJson(repositoryRoot, "product/plans/oss-v1/plan.json");
     const ledger = await readFixtureJson(

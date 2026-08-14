@@ -984,6 +984,86 @@
       ]
     },
     {
+      "id": "M0-12",
+      "milestone": "M0",
+      "title": "Simplify task review and promotion",
+      "objective": "Encode one bounded implementation, validation, review, promotion, and delivery lifecycle that distinguishes the reviewed product candidate from its canonical promotion tail, batches review findings, and prevents non-blocking feedback from creating an endless repair loop.",
+      "risk": {
+        "level": "medium",
+        "domains": ["agent-workflow", "delivery-policy", "review-economics"]
+      },
+      "dependsOn": [{ "taskId": "M0-11", "kind": "hard" }],
+      "acceptanceItemIds": ["PROCESS-012", "PROCESS-013", "PROCESS-014"],
+      "scope": {
+        "allowedPaths": [
+          ".agents/skills/vetryn-continue-next/**",
+          ".agents/skills/vetryn-implement-task/**",
+          ".agents/skills/vetryn-promote-task/**",
+          ".agents/skills/vetryn-trust-review/**",
+          ".agents/skills/vetryn-verify-task/**",
+          ".factory/profile.yaml",
+          ".factory/README.md",
+          "AGENTS.md",
+          "CHANGELOG.md",
+          "WORKFLOW.md",
+          "docs/adr/0009-single-maintainer-v1-delivery.md",
+          "docs/agent-map.md",
+          "docs/implementation/oss-v1-execution.md",
+          "product/plans/oss-v1/**",
+          "scripts/continue-next-skill.test.mjs",
+          "scripts/plan.test.mjs",
+          "scripts/task.test.mjs"
+        ],
+        "forbiddenPaths": ["packages/**", "examples/**", "action.yml", ".github/**", "llms.txt"]
+      },
+      "semanticInvariants": [
+        "The product candidate is the final product, contract, test, or task-scoped documentation commit; command gates and required reviews bind that exact candidate.",
+        "A delivery head may add only canonical task state, ledger, evidence, generated progress, and other packet-declared promotion artifacts; a deterministic tail-shape check proves no product byte changed before candidate evidence is inherited.",
+        "Promotion-only commits do not trigger another full local validation or domain-review cycle; repository CI validates the delivery head after push.",
+        "Current-head automated review findings are collected into one batch per product candidate. One bounded repair and exact-candidate revalidation addresses the batch rather than serially chasing comments.",
+        "P0 and P1 findings remain blocking. After one completed repair generation, a new standalone P2 may be explicitly classified by the maintainer as delivery debt and merged without another product cycle; the classification is never available for privacy, fail-closed, provider-safety, evidence-integrity, or another non-waivable requirement.",
+        "The implementation skill runs a concise adversarial pre-push checklist derived from observed Vetryn defects, including producer-consumer parity, pre-effect validation, exact evidence identity, symlink aliases, crash recovery, concurrency, deterministic ordering, exact decimal arithmetic, and bounded external input.",
+        "The continuation skill closes the selected task through implementation, active gates, required reviews, maintainer promotion, protected PR delivery, post-merge main verification, and reporting the next legal task when the per-run grant authorizes those actions.",
+        "The change does not modify Vetryn product behavior, package code, examples, GitHub workflows, accepted product evidence, or non-waivable safety requirements."
+      ],
+      "deliverables": [
+        ".agents/skills/vetryn-continue-next/**",
+        ".agents/skills/vetryn-implement-task/**",
+        ".agents/skills/vetryn-promote-task/**",
+        ".agents/skills/vetryn-trust-review/**",
+        ".agents/skills/vetryn-verify-task/**",
+        ".factory/profile.yaml",
+        ".factory/README.md",
+        "AGENTS.md",
+        "CHANGELOG.md",
+        "WORKFLOW.md",
+        "docs/adr/0009-single-maintainer-v1-delivery.md",
+        "docs/agent-map.md",
+        "docs/implementation/oss-v1-execution.md",
+        "product/plans/oss-v1/**",
+        "scripts/continue-next-skill.test.mjs",
+        "scripts/plan.test.mjs",
+        "scripts/task.test.mjs"
+      ],
+      "requiredTestLevels": ["static", "contract", "integration"],
+      "requiredGates": ["QG-PLAN-CHECK", "QG-REPO-CHECK", "QG-CONTRACTS"],
+      "requiredReviews": ["maintainer"],
+      "capabilities": {
+        "network": false,
+        "credentials": false,
+        "provider": false,
+        "githubWrite": false
+      },
+      "maxAttempts": 1,
+      "stopConditions": [
+        "A promotion tail changes product, contract, test, or task-scoped documentation bytes.",
+        "A P0, P1, non-waivable finding, or failed required command is classified as delivery debt.",
+        "The workflow starts another broad review cycle for promotion-only bytes or serially repairs unbatched non-blocking comments.",
+        "The implementation duplicates the plan compiler, review helper, promotion validator, or protected delivery workflow.",
+        "A product package, example, GitHub workflow, consumer-facing llms.txt interface, or accepted product evidence changes."
+      ]
+    },
+    {
       "id": "V1-02",
       "milestone": "M1",
       "title": "Build the deterministic golden repository",
@@ -1288,7 +1368,8 @@
       "risk": { "level": "high", "domains": ["decision-policy", "trust"] },
       "dependsOn": [
         { "taskId": "V1-05", "kind": "hard" },
-        { "taskId": "V1-06", "kind": "hard" }
+        { "taskId": "V1-06", "kind": "hard" },
+        { "taskId": "M0-12", "kind": "hard" }
       ],
       "acceptanceItemIds": [
         "RECOMMEND-001",
