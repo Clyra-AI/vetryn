@@ -2,7 +2,7 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "M0-13",
-  "revision": 0,
+  "revision": 1,
   "state": "planned",
   "attempt": 0,
   "candidate": null,
@@ -33,6 +33,13 @@
       "at": "2026-08-14T12:15:00Z",
       "actor": "planning-agent",
       "reason": "Created one bounded corrective task for the late Codex findings on PRs 38 through 40 before V1-07."
+    },
+    {
+      "from": "planned",
+      "to": "planned",
+      "at": "2026-08-14T13:30:00Z",
+      "actor": "planning-agent",
+      "reason": "Authorized the repository-native Factory worker-pack bootstrap required by M0-13's existing high-risk code-review gate."
     }
   ]
 }
