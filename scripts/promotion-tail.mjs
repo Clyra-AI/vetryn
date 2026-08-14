@@ -153,7 +153,44 @@ function candidateIdentity(document, taskId) {
   return commits;
 }
 
+const sensitiveLifecycleKeys = new Set([
+  "prompt",
+  "promptText",
+  "rawPrompt",
+  "raw_prompt",
+  "rawOutput",
+  "raw_output",
+  "outputText",
+  "requestBody",
+  "responseBody",
+  "trace",
+  "transcript",
+]);
+
+function assertLifecycleRedacted(value) {
+  if (Array.isArray(value)) {
+    for (const entry of value) assertLifecycleRedacted(entry);
+    return;
+  }
+  if (!value || typeof value !== "object") return;
+  for (const [key, entry] of Object.entries(value)) {
+    assert(
+      !(
+        ["containsSecrets", "containsRawModelOutput", "rawLogsPersisted"].includes(key) &&
+        entry === true
+      ),
+      "lifecycle artifact declares sensitive content",
+    );
+    assert(
+      !(sensitiveLifecycleKeys.has(key) && entry !== null && entry !== ""),
+      "lifecycle artifact contains a raw payload field",
+    );
+    assertLifecycleRedacted(entry);
+  }
+}
+
 function assertLifecycleArtifact(name, document, taskId, candidate) {
+  assertLifecycleRedacted(document);
   if (name === "work_proof_marker") {
     const bindings = document.authorized_task_bindings;
     const tasks = taskIdentity(document);
@@ -195,28 +232,18 @@ function assertLifecycleArtifact(name, document, taskId, candidate) {
   }
   if (name === "review_report") {
     assert(document.verdict === "approved", "review_report is not approved");
-    const acceptedRisks = Array.isArray(document.findings)
-      ? document.findings.filter((finding) => finding?.status === "accepted_risk")
-      : [];
+    const validationRef = `${planRoot}/evidence/lifecycle/${taskId}/${candidate}/validation_report.json`;
+    assert(
+      Array.isArray(document.evidence_refs) && document.evidence_refs.includes(validationRef),
+      "review_report is not bound to validation_report",
+    );
     assert(
       Array.isArray(document.findings) &&
         document.findings.every(
           (finding) =>
-            ["P0", "P1", "P2", "P3"].includes(finding?.severity) &&
-            (finding.status === "resolved" ||
-              (finding.status === "accepted_risk" && ["P2", "P3"].includes(finding.severity))),
+            ["P0", "P1", "P2", "P3"].includes(finding?.severity) && finding.status === "resolved",
         ),
       "review_report has unresolved findings",
-    );
-    assert(
-      acceptedRisks.length <= 1 &&
-        (acceptedRisks.length === 0 ||
-          (acceptedRisks[0].severity === "P2" &&
-            Array.isArray(document.approval_effect?.approvals_granted) &&
-            document.approval_effect.approvals_granted.includes(
-              "maintainer_classified_standalone_p2_delivery_debt",
-            ))),
-      "review_report has unclassified delivery debt",
     );
     assert(
       Array.isArray(document.required_fixes) && document.required_fixes.length === 0,
@@ -253,6 +280,23 @@ function assertPromotionState(candidateState, state, task, taskId, productCandid
       "promotion state changed candidate attribution",
     );
   }
+  assert(state.attempt === candidateState.attempt, "promotion state changed the attempt");
+  assert(
+    Number.isInteger(candidateState.revision) && state.revision === candidateState.revision + 1,
+    "promotion state has an invalid revision transition",
+  );
+  assert(
+    Array.isArray(candidateState.history) &&
+      Array.isArray(state.history) &&
+      state.history.length === candidateState.history.length + 1 &&
+      JSON.stringify(state.history.slice(0, -1)) === JSON.stringify(candidateState.history),
+    "promotion state history is not append-only",
+  );
+  const transition = state.history.at(-1);
+  assert(
+    transition?.from === candidateState.state && transition.to === "accepted",
+    "promotion state history has an invalid transition",
+  );
   assert(
     Array.isArray(state.blockers) && state.blockers.length === 0,
     "promotion state has blockers",

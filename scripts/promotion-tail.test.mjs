@@ -94,12 +94,23 @@ async function createFixture() {
   });
   await writeJson(root, `${planRoot}/state/${taskId}.json`, {
     taskId,
+    revision: 0,
     state: "review_pending",
+    attempt: 1,
     candidate: null,
     criteria: [{ criterionId: item.id, status: "pending", evidenceRefs: [] }],
     gates: [],
     reviews: [],
     blockers: [],
+    history: [
+      {
+        from: null,
+        to: "review_pending",
+        at: "2026-08-14T00:00:00Z",
+        actor: "implementation-agent",
+        reason: "Fixture candidate is ready for review.",
+      },
+    ],
   });
   await writeJson(root, `${planRoot}/progress.json`, {
     $schema: "../schemas/progress.schema.json",
@@ -124,9 +135,20 @@ async function createFixture() {
   const evidenceId = `ev-m0-14-contracts-${candidate.slice(0, 7)}`;
   const state = await readJson(root, `${planRoot}/state/${taskId}.json`);
   Object.assign(state, {
+    revision: 1,
     state: "accepted",
     candidate: { baseCommit: "0".repeat(40), commit: candidate, executor: "implementation-agent" },
     criteria: [{ criterionId: item.id, status: "pass", evidenceRefs: [evidenceId] }],
+    history: [
+      ...state.history,
+      {
+        from: "review_pending",
+        to: "accepted",
+        at: "2026-08-14T00:01:00Z",
+        actor: "maintainer",
+        reason: "Accepted the fixture candidate.",
+      },
+    ],
   });
   await writeJson(root, `${planRoot}/state/${taskId}.json`, state);
   const ledger = await readJson(root, `${planRoot}/acceptance-ledger.json`);
@@ -341,6 +363,23 @@ describe("promotion-tail validator", () => {
   );
 
   it.each([
+    ["revision", (state) => (state.revision += 2), "invalid revision transition"],
+    ["attempt", (state) => (state.attempt += 1), "changed the attempt"],
+    ["history", (state) => (state.history = state.history.slice(1)), "not append-only"],
+  ])("rejects a promotion that rewrites state %s", async (_name, mutate, message) => {
+    const fixture = await createFixture();
+    const delivery = await amend(fixture.root, async () => {
+      const statePath = `${fixture.planRoot}/state/${taskId}.json`;
+      const state = await readJson(fixture.root, statePath);
+      mutate(state);
+      await writeJson(fixture.root, statePath, state);
+    });
+    const result = run(fixture.root, fixture.candidate, delivery);
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain(message);
+  });
+
+  it.each([
     [
       "product bytes",
       async (fixture) => writeFile(path.join(fixture.root, "product.txt"), "changed\n"),
@@ -483,6 +522,35 @@ describe("promotion-tail validator", () => {
     const result = run(fixture.root, fixture.candidate, delivery);
     expect(result.status).toBe(1);
     expect(result.stderr).toContain("lifecycle artifact references another task");
+  });
+
+  it("rejects a review report that does not cite its validation report", async () => {
+    const fixture = await createFixture();
+    const relativePath = `${fixture.planRoot}/evidence/lifecycle/${taskId}/${fixture.candidate}/review_report.json`;
+    const delivery = await amend(fixture.root, async () => {
+      const artifact = await readJson(fixture.root, relativePath);
+      artifact.evidence_refs = [];
+      await writeJson(fixture.root, relativePath, artifact);
+    });
+    const result = run(fixture.root, fixture.candidate, delivery);
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("review_report is not bound to validation_report");
+  });
+
+  it.each([
+    ["a secret declaration", (artifact) => (artifact.containsSecrets = true), "sensitive content"],
+    ["raw output", (artifact) => (artifact.rawOutput = "private"), "raw payload field"],
+  ])("rejects lifecycle evidence with %s", async (_name, mutate, message) => {
+    const fixture = await createFixture();
+    const relativePath = `${fixture.planRoot}/evidence/lifecycle/${taskId}/${fixture.candidate}/validation_report.json`;
+    const delivery = await amend(fixture.root, async () => {
+      const artifact = await readJson(fixture.root, relativePath);
+      mutate(artifact);
+      await writeJson(fixture.root, relativePath, artifact);
+    });
+    const result = run(fixture.root, fixture.candidate, delivery);
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain(message);
   });
 
   it.each([
@@ -629,19 +697,4 @@ describe("promotion-tail validator", () => {
       expect(result.status, result.stderr).toBe(0);
     },
   );
-
-  it("accepts one explicitly classified standalone P2 delivery debt", async () => {
-    const fixture = await createFixture();
-    const relativePath = `${fixture.planRoot}/evidence/lifecycle/${taskId}/${fixture.candidate}/review_report.json`;
-    const delivery = await amend(fixture.root, async () => {
-      const artifact = await readJson(fixture.root, relativePath);
-      artifact.findings.push({ severity: "P2", status: "accepted_risk" });
-      artifact.approval_effect.approvals_granted.push(
-        "maintainer_classified_standalone_p2_delivery_debt",
-      );
-      await writeJson(fixture.root, relativePath, artifact);
-    });
-    const result = run(fixture.root, fixture.candidate, delivery);
-    expect(result.status, result.stderr).toBe(0);
-  });
 });

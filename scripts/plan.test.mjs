@@ -1646,6 +1646,12 @@ describe("implementation plan validator", () => {
       ["agent-workflow"],
     ],
     ["semantic-risk validator path", ["scripts/semantic-risk.mjs"], ["agent-workflow"]],
+    [
+      "trust-review skill path",
+      [".agents/skills/vetryn-trust-review/SKILL.md"],
+      ["agent-workflow"],
+    ],
+    ["verification skill path", [".agents/skills/vetryn-verify-task/SKILL.md"], ["agent-workflow"]],
     ["security workflow path", [".github/workflows/codeql.yml"], ["agent-workflow"]],
     [
       "dependency security workflow path",

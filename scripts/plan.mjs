@@ -50,6 +50,8 @@ const legacyRiskPolicyTaskIds = new Set([
 ]);
 const highRiskPolicyPaths = new Set([
   ".agents/skills/vetryn-promote-task/SKILL.md",
+  ".agents/skills/vetryn-trust-review/SKILL.md",
+  ".agents/skills/vetryn-verify-task/SKILL.md",
   ".changeset/config.json",
   ".factory/profile.yaml",
   ".github/CODEOWNERS",
