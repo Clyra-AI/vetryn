@@ -1067,25 +1067,17 @@
       "id": "M0-13",
       "milestone": "M0",
       "title": "Close late-review trust and delivery gaps",
-      "objective": "Repair the concrete late Codex findings from PRs 38 through 40 in one bounded high-risk task, add an executable promotion-tail gate, and make late-review convergence terminal without weakening trust or delivery policy.",
+      "objective": "Repair the concrete late Codex findings from PRs 38 through 40 in one bounded high-risk task and make late-review convergence terminal without weakening trust or delivery policy.",
       "risk": {
         "level": "high",
         "domains": ["credentials", "evaluation-cost", "evidence-integrity", "delivery-policy"]
       },
-      "dependsOn": [{ "taskId": "M0-12", "kind": "hard" }],
-      "acceptanceItemIds": [
-        "HARDEN-001",
-        "HARDEN-002",
-        "HARDEN-003",
-        "PROCESS-015",
-        "PROCESS-016",
-        "PROCESS-017"
-      ],
+      "dependsOn": [{ "taskId": "M0-14", "kind": "hard" }],
+      "acceptanceItemIds": ["HARDEN-001", "HARDEN-002", "HARDEN-003", "PROCESS-016"],
       "scope": {
         "allowedPaths": [
           ".agents/skills/vetryn-continue-next/**",
           ".agents/skills/vetryn-implement-task/**",
-          ".agents/skills/vetryn-promote-task/**",
           ".changeset/**",
           ".factory/profile.yaml",
           "AGENTS.md",
@@ -1095,15 +1087,10 @@
           "docs/adr/0023-close-late-review-trust-and-delivery-gaps.md",
           "docs/implementation/oss-v1-execution.md",
           "docs/oss-v1.md",
-          "package.json",
           "packages/cli/**",
           "packages/openrouter/**",
           "product/plans/oss-v1/**",
-          "scripts/plan.mjs",
-          "scripts/plan.test.mjs",
           "scripts/continue-next-skill.test.mjs",
-          "scripts/promotion-tail.mjs",
-          "scripts/promotion-tail.test.mjs",
           "scripts/task.mjs",
           "scripts/task.test.mjs",
           "scripts/verify_installed_worker_packs.py"
@@ -1121,16 +1108,13 @@
         "Receipt-signing credentials are canonicalized and rejected when repository-controlled before credential or provider I/O; symlink aliases cannot bypass the boundary.",
         "Observed spend includes every billable provider response even when normalization fails and retries continue, and prompt plus completion usage cannot exceed the selected model context window.",
         "Candidate-run identity includes exact execution identity so distinct evaluations cannot collide while identical inputs remain deterministic within one execution.",
-        "One executable promotion-tail command validates ProductCandidate through DeliveryHead and rejects product bytes, cross-task state or ledger edits, mutable prior evidence, missing generated progress, and undeclared artifacts.",
         "A task lifecycle permits at most one repair generation after the first complete finding batch; the entire post-repair batch has one terminal disposition, with every P0 or P1 blocking and only one eligible standalone P2 recordable as delivery debt.",
         "Late post-merge Codex findings are audited once; a late P0 or P1 creates corrective work and a late P2 is recorded as debt without pretending the earlier merge was reviewed cleanly.",
-        "New unaccepted tasks that change approval, evidence inheritance, persistence, credentials, security controls, or release policy cannot declare medium or low risk.",
         "The task stays offline, uses no provider credentials or spend, and does not broaden Vetryn recommendation semantics beyond the seven reviewed findings."
       ],
       "deliverables": [
         ".agents/skills/vetryn-continue-next/**",
         ".agents/skills/vetryn-implement-task/**",
-        ".agents/skills/vetryn-promote-task/**",
         ".changeset/**",
         ".factory/profile.yaml",
         "AGENTS.md",
@@ -1140,14 +1124,9 @@
         "docs/adr/0023-close-late-review-trust-and-delivery-gaps.md",
         "docs/implementation/oss-v1-execution.md",
         "docs/oss-v1.md",
-        "package.json",
         "packages/cli/**",
         "packages/openrouter/**",
         "scripts/continue-next-skill.test.mjs",
-        "scripts/plan.mjs",
-        "scripts/plan.test.mjs",
-        "scripts/promotion-tail.mjs",
-        "scripts/promotion-tail.test.mjs",
         "scripts/task.mjs",
         "scripts/task.test.mjs",
         "scripts/verify_installed_worker_packs.py"
@@ -1172,10 +1151,75 @@
         "A receipt-signing credential inside repository-controlled content is read or accepted.",
         "A billable response is omitted from observed spend or aggregate usage can exceed the context window.",
         "Two executions can emit the same candidate-run identity.",
-        "Promotion evidence is inherited without the executable tail validator passing on the exact two commits.",
         "A second repair generation starts instead of applying the terminal post-repair disposition.",
         "A P0, P1, privacy, fail-closed, provider-safety, evidence-integrity, or other non-waivable finding is recorded as delivery debt.",
         "The implementation expands into recommendation behavior, provider access, GitHub workflow changes, or unrelated hardening."
+      ]
+    },
+    {
+      "id": "M0-14",
+      "milestone": "M0",
+      "title": "Close terminal review policy gaps",
+      "objective": "Land the executable promotion-tail validator and future-task high-risk classifier on canonical main with the two terminal M0-13 P1 corrections: singular candidate identity in promotion markers and conservative broad-scope matching.",
+      "risk": {
+        "level": "high",
+        "domains": ["evidence-integrity", "release-policy"]
+      },
+      "dependsOn": [{ "taskId": "M0-12", "kind": "hard" }],
+      "acceptanceItemIds": ["PROCESS-015", "PROCESS-017", "PROCESS-018", "PROCESS-019"],
+      "scope": {
+        "allowedPaths": [
+          ".agents/skills/vetryn-promote-task/**",
+          "CHANGELOG.md",
+          "WORKFLOW.md",
+          "docs/adr/0024-close-terminal-review-policy-gaps.md",
+          "docs/implementation/oss-v1-execution.md",
+          "package.json",
+          "product/plans/oss-v1/**",
+          "scripts/plan.mjs",
+          "scripts/plan.test.mjs",
+          "scripts/promotion-tail.mjs",
+          "scripts/promotion-tail.test.mjs",
+          "scripts/task.test.mjs"
+        ],
+        "forbiddenPaths": ["packages/**", "examples/**", "action.yml", ".github/**", "llms.txt"]
+      },
+      "semanticInvariants": [
+        "Canonical main gains the executable promotion-tail validator and the future-task high-risk classifier needed to exercise these corrections before M0-13 resumes.",
+        "Every candidate identity present in a promotion lifecycle artifact, including work-proof marker git_sha and authorized task bindings, resolves to exactly one ProductCandidate.",
+        "Future unaccepted low- or medium-risk tasks fail validation whenever a declared exact path or broad scope pattern can cover protected approval, evidence, persistence, credential, security-control, or release-policy paths.",
+        "The correction does not alter M0-13 product behavior, reset its repair-generation budget, or weaken terminal P0/P1 handling.",
+        "Accepted historical tasks and evidence remain unchanged.",
+        "The task stays offline and changes no product package, example, GitHub workflow, consumer onboarding interface, or provider behavior."
+      ],
+      "deliverables": [
+        ".agents/skills/vetryn-promote-task/**",
+        "CHANGELOG.md",
+        "WORKFLOW.md",
+        "docs/adr/0024-close-terminal-review-policy-gaps.md",
+        "docs/implementation/oss-v1-execution.md",
+        "package.json",
+        "scripts/plan.mjs",
+        "scripts/plan.test.mjs",
+        "scripts/promotion-tail.mjs",
+        "scripts/promotion-tail.test.mjs",
+        "scripts/task.test.mjs"
+      ],
+      "requiredTestLevels": ["contract", "integration", "adversarial"],
+      "requiredGates": ["QG-PLAN-CHECK", "QG-REPO-CHECK", "QG-CONTRACTS", "QG-INDEPENDENT-VERIFY"],
+      "requiredReviews": ["maintainer"],
+      "capabilities": {
+        "network": false,
+        "credentials": false,
+        "provider": false,
+        "githubWrite": false
+      },
+      "maxAttempts": 1,
+      "stopConditions": [
+        "A promotion artifact can cite zero, conflicting, or multiple ProductCandidates.",
+        "A broad task scope can cover protected delivery-policy paths while declaring low or medium risk.",
+        "The implementation changes product packages, examples, GitHub workflows, provider behavior, or accepted historical evidence.",
+        "The correction is used to reset M0-13's repair-generation budget or waive its terminal P1 findings."
       ]
     },
     {
