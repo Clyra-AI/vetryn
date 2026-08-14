@@ -207,6 +207,57 @@ async function amend(root, edit) {
   return git(root, "rev-parse", "HEAD");
 }
 
+async function createAcceptedRebindFixture() {
+  const fixture = await createFixture();
+  await writeFile(path.join(fixture.root, "product.txt"), "repaired candidate\n");
+  const candidate = commit(fixture.root, "repair candidate");
+  const evidenceId = `ev-m0-14-contracts-${candidate.slice(0, 7)}`;
+  const statePath = `${fixture.planRoot}/state/${taskId}.json`;
+  const state = await readJson(fixture.root, statePath);
+  state.candidate.commit = candidate;
+  state.revision = 2;
+  state.criteria[0].evidenceRefs = [evidenceId];
+  state.history = [
+    ...(state.history ?? []),
+    {
+      from: "accepted",
+      to: "accepted",
+      at: "2026-08-14T00:00:00Z",
+      actor: "maintainer",
+      reason: "Rebound the accepted task to the repaired candidate.",
+    },
+  ];
+  await writeJson(fixture.root, statePath, state);
+  const ledgerPath = `${fixture.planRoot}/acceptance-ledger.json`;
+  const ledger = await readJson(fixture.root, ledgerPath);
+  ledger.items[0].evidenceRefs = [evidenceId];
+  await writeJson(fixture.root, ledgerPath, ledger);
+  await writeJson(
+    fixture.root,
+    `${fixture.planRoot}/evidence/${evidenceId}.json`,
+    evidence(evidenceId, candidate),
+  );
+  const oldLifecycleRoot = `${fixture.planRoot}/evidence/lifecycle/${taskId}/${fixture.candidate}`;
+  const lifecycleRoot = `${fixture.planRoot}/evidence/lifecycle/${taskId}/${candidate}`;
+  for (const name of [
+    "validation_report",
+    "work_proof_marker",
+    "review_report",
+    "trust_review_report",
+    "canonical_promotion",
+  ]) {
+    const prior = await readJson(fixture.root, `${oldLifecycleRoot}/${name}.json`);
+    const rebound = JSON.parse(
+      JSON.stringify(prior)
+        .replaceAll(fixture.candidate, candidate)
+        .replaceAll(fixture.evidenceId, evidenceId),
+    );
+    await writeJson(fixture.root, `${lifecycleRoot}/${name}.json`, rebound);
+  }
+  const delivery = commit(fixture.root, "accepted repair promotion");
+  return { ...fixture, candidate, delivery, evidenceId };
+}
+
 afterEach(async () => {
   await Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true })));
 });
@@ -217,6 +268,15 @@ describe("promotion-tail validator", () => {
     const result = run(fixture.root, fixture.candidate, fixture.delivery);
     expect(result.status, result.stderr).toBe(0);
     expect(JSON.parse(result.stdout)).toMatchObject({ status: "pass", task_id: taskId });
+  });
+
+  it("accepts an accepted-task rebind when generated progress is unchanged", async () => {
+    const fixture = await createAcceptedRebindFixture();
+    const result = run(fixture.root, fixture.candidate, fixture.delivery);
+    expect(result.status, result.stderr).toBe(0);
+    expect(
+      git(fixture.root, "diff", "--name-only", fixture.candidate, fixture.delivery),
+    ).not.toContain(`${fixture.planRoot}/progress.json`);
   });
 
   it("accepts passing evidence cited only by an active command gate", async () => {

@@ -377,14 +377,16 @@ export function checkPromotionTail({ root, taskId, productCandidate, deliveryHea
   const statePath = `${planRoot}/state/${taskId}.json`;
   const ledgerPath = `${planRoot}/acceptance-ledger.json`;
   const progressPath = `${planRoot}/progress.json`;
-  const requiredPaths = new Set([statePath, ledgerPath, progressPath]);
+  const allowedCanonicalPaths = new Set([statePath, ledgerPath, progressPath]);
+  const requiredPaths = new Set([statePath, ledgerPath]);
   const files = changedFiles(root, productCandidate, deliveryHead);
   const addedFlatEvidence = new Map();
   const addedLifecycle = new Map();
 
   for (const file of files) {
     const lifecycleName = lifecycleArtifactName(file.path, taskId, productCandidate);
-    const allowed = requiredPaths.has(file.path) || flatEvidencePath(file.path) || lifecycleName;
+    const allowed =
+      allowedCanonicalPaths.has(file.path) || flatEvidencePath(file.path) || lifecycleName;
     assert(allowed, `promotion tail changes forbidden path ${file.path}`);
     if (flatEvidencePath(file.path) || lifecycleName)
       assert(file.status === "A", `promotion tail mutates prior evidence ${file.path}`);
