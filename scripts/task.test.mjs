@@ -744,7 +744,7 @@ afterEach(async () => {
 });
 
 describe("task packet compiler", () => {
-  it("compiles portable continuation as a bounded high-risk process packet", async () => {
+  it("compiles narrow continuation as a bounded high-risk process packet", async () => {
     const root = await createFixture();
     const planPath = "product/plans/oss-v1/plan.json";
     const plan = await readFixtureJson(root, planPath);

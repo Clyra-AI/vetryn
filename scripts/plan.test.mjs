@@ -842,7 +842,7 @@ afterEach(async () => {
 });
 
 describe("implementation plan validator", () => {
-  it("locks portable continuation behind one bounded process task", async () => {
+  it("locks narrow continuation behind one bounded process task", async () => {
     const plan = await readFixtureJson(repositoryRoot, "product/plans/oss-v1/plan.json");
     const ledger = await readFixtureJson(
       repositoryRoot,
@@ -887,6 +887,8 @@ describe("implementation plan validator", () => {
     expect(task.semanticInvariants.join(" ")).toContain("per-run grants");
     expect(task.semanticInvariants.join(" ")).toContain("MAINTAINERS.md");
     expect(task.semanticInvariants.join(" ")).toContain("sibling Factory checkout");
+    expect(task.semanticInvariants.join(" ")).toContain("trusts the local developer runtime");
+    expect(task.semanticInvariants.join(" ")).toContain("does not sandbox the host");
     expect(v106.dependsOn).toContainEqual({ taskId: "M0-11", kind: "hard" });
     expect(ledger.items.filter((item) => item.taskId === "M0-11")).toEqual(
       expect.arrayContaining([
