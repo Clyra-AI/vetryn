@@ -431,7 +431,8 @@ export async function evaluateOpenRouterCandidate(
   let committedBudgetUnits = 0n;
   const maxSpendUnits = decimalUnitsFloor(limits.maxSpendUsd);
   let exhausted = false;
-  let terminalFailure: EvaluationTransportErrorCode | undefined;
+  const terminalFailures = new Array<EvaluationTransportErrorCode | undefined>(jobs.length);
+  let terminalFailureObserved = false;
   const results = new Array<EvaluatedRequest | undefined>(jobs.length);
   let nextJob = 0;
 
@@ -440,7 +441,7 @@ export async function evaluateOpenRouterCandidate(
       const jobIndex = nextJob;
       nextJob += 1;
       const job = jobs[jobIndex];
-      if (job === undefined || exhausted || terminalFailure !== undefined) return;
+      if (job === undefined || exhausted || terminalFailureObserved) return;
       const evaluationCase = cases[job.caseIndex];
       if (evaluationCase === undefined)
         throw new Error("Evaluation job references a missing case.");
@@ -487,12 +488,16 @@ export async function evaluateOpenRouterCandidate(
           break;
         } catch (error: unknown) {
           const failure = error instanceof EvaluationTransportError ? error.code : "provider-error";
-          if (retry === limits.retries) terminalFailure = failure;
+          if (retry === limits.retries) {
+            terminalFailures[jobIndex] = failure;
+            terminalFailureObserved = true;
+          }
         }
       }
     }
   };
   await Promise.all(Array.from({ length: Math.min(limits.concurrency, jobs.length) }, worker));
+  const terminalFailure = selectTerminalFailure(terminalFailures);
   const completedAt = parseClock(options.clock);
   const candidateRun = buildCandidateRun({
     callSite,
@@ -552,6 +557,20 @@ function buildCandidateRun(options: {
   startedAt: string;
   terminalFailure?: EvaluationTransportErrorCode;
 }): CandidateRun {
+  const complete =
+    !options.exhausted &&
+    options.terminalFailure === undefined &&
+    options.results.every((result) => result !== undefined);
+  const variance = complete
+    ? candidateVariance(
+        options.cases,
+        options.jobs,
+        options.results,
+        options.sampling.attempts,
+        options.snapshot,
+        options.candidateModel,
+      )
+    : { costUsdStdDev: "0", p95LatencyMsStdDev: 0, passRateStdDev: 0 };
   const common = {
     artifactType: "candidate-run" as const,
     baselineModel: options.callSite.currentModel,
@@ -580,16 +599,12 @@ function buildCandidateRun(options: {
       },
       scorer: options.scorer,
       startedAt: options.startedAt,
-      variance: { costUsdStdDev: "0", p95LatencyMsStdDev: 0, passRateStdDev: 0 },
+      variance,
     },
     routePolicy: options.callSite.routePolicy,
     schemaVersion: VETRYN_ARTIFACT_SCHEMA_VERSION,
   };
-  if (
-    options.exhausted ||
-    options.terminalFailure !== undefined ||
-    options.results.some((result) => result === undefined)
-  ) {
+  if (!complete) {
     return parseCandidateRun({
       ...common,
       failureCode: options.exhausted ? "budget-exhausted" : mapFailure(options.terminalFailure),
@@ -612,14 +627,6 @@ function buildCandidateRun(options: {
     options.snapshot,
     options.candidateModel,
   );
-  const passRate = candidateMetrics.passedCases / candidateMetrics.caseCount;
-  const baselinePassRate = baselineMetrics.passedCases / baselineMetrics.caseCount;
-  const savingsPercent =
-    Number(baselineMetrics.costUsd) === 0
-      ? -Infinity
-      : ((Number(baselineMetrics.costUsd) - Number(candidateMetrics.costUsd)) /
-          Number(baselineMetrics.costUsd)) *
-        100;
   const candidateModel = options.snapshot.models.find(({ id }) => id === options.candidateModel);
   if (candidateModel === undefined) throw new Error("Candidate model disappeared from snapshot.");
   const gateOutcomes = {
@@ -628,7 +635,13 @@ function buildCandidateRun(options: {
       options.callSite.representativeUsage.promptTokens + options.sampling.maxOutputTokens
         ? "pass"
         : "fail",
-    cost: savingsPercent >= options.callSite.gates.minSavingsPercent ? "pass" : "fail",
+    cost: costSavingsAtLeast(
+      baselineMetrics.costUsd,
+      candidateMetrics.costUsd,
+      options.callSite.gates.minSavingsPercent,
+    )
+      ? "pass"
+      : "fail",
     latency:
       options.callSite.gates.maxP95LatencyMs === undefined ||
       candidateMetrics.p95LatencyMs <= options.callSite.gates.maxP95LatencyMs
@@ -636,8 +649,18 @@ function buildCandidateRun(options: {
         : "fail",
     privacy: candidate.every(({ privacySafe }) => privacySafe) ? "pass" : "fail",
     quality:
-      passRate >= options.callSite.gates.minPassRate &&
-      baselinePassRate - passRate <= options.callSite.gates.maxQualityRegression
+      candidateMetrics.caseCount >= options.callSite.gates.minCases &&
+      ratioAtLeast(
+        candidateMetrics.passedCases,
+        candidateMetrics.caseCount,
+        options.callSite.gates.minPassRate,
+      ) &&
+      qualityRegressionWithinLimit(
+        baselineMetrics.passedCases,
+        candidateMetrics.passedCases,
+        candidateMetrics.caseCount,
+        options.callSite.gates.maxQualityRegression,
+      )
         ? "pass"
         : "fail",
   } as const;
@@ -840,9 +863,9 @@ function normalizeResponse(
   const passed =
     outputRecord !== undefined &&
     Object.entries(evaluationCase.expected).every(([key, value]) => outputRecord[key] === value);
-  const serializedOutput = JSON.stringify(response.output);
-  const privacySafe = (evaluationCase.protectedSegments ?? []).every(
-    (segment) => !serializedOutput.includes(segment),
+  const privacySafe = !containsProtectedSegment(
+    response.output,
+    evaluationCase.protectedSegments ?? [],
   );
   return {
     caseId: evaluationCase.id,
@@ -934,6 +957,115 @@ function metrics(
   };
 }
 
+function candidateVariance(
+  cases: readonly EvaluationCase[],
+  jobs: readonly Job[],
+  results: readonly (EvaluatedRequest | undefined)[],
+  attempts: number,
+  snapshot: CatalogSnapshot,
+  modelId: string,
+) {
+  const repetitionMetrics = Array.from({ length: attempts }, (_, index) => {
+    const repetition = index + 1;
+    const repetitionResults = jobs.flatMap((job, jobIndex) => {
+      const result = results[jobIndex];
+      return job.role === "candidate" && job.repetition === repetition && result !== undefined
+        ? [result]
+        : [];
+    });
+    return metrics(cases, repetitionResults, 1, snapshot, modelId);
+  });
+  return {
+    costUsdStdDev: formatDecimal(
+      populationStandardDeviation(repetitionMetrics.map(({ costUsd }) => Number(costUsd))),
+    ),
+    p95LatencyMsStdDev: populationStandardDeviation(
+      repetitionMetrics.map(({ p95LatencyMs }) => p95LatencyMs),
+    ),
+    passRateStdDev: populationStandardDeviation(
+      repetitionMetrics.map(({ caseCount, passedCases }) => passedCases / caseCount),
+    ),
+  };
+}
+
+function populationStandardDeviation(values: readonly number[]): number {
+  if (values.length <= 1) return 0;
+  const mean = values.reduce((sum, value) => sum + value, 0) / values.length;
+  return Math.sqrt(values.reduce((sum, value) => sum + (value - mean) ** 2, 0) / values.length);
+}
+
+function ratioAtLeast(numerator: number, denominator: number, minimum: number): boolean {
+  const threshold = decimalFraction(minimum);
+  return BigInt(numerator) * threshold.denominator >= BigInt(denominator) * threshold.numerator;
+}
+
+function qualityRegressionWithinLimit(
+  baselinePassedCases: number,
+  candidatePassedCases: number,
+  caseCount: number,
+  maximumRegression: number,
+): boolean {
+  const regression = baselinePassedCases - candidatePassedCases;
+  if (regression <= 0) return true;
+  const limit = decimalFraction(maximumRegression);
+  return BigInt(regression) * limit.denominator <= BigInt(caseCount) * limit.numerator;
+}
+
+function costSavingsAtLeast(
+  baselineCost: string,
+  candidateCost: string,
+  minimumSavingsPercent: number,
+): boolean {
+  const baseline = decimalFraction(baselineCost);
+  const candidate = decimalFraction(candidateCost);
+  const minimum = decimalFraction(minimumSavingsPercent);
+  const baselineScaled = baseline.numerator * candidate.denominator;
+  const candidateScaled = candidate.numerator * baseline.denominator;
+  if (baselineScaled === 0n) {
+    return candidateScaled === 0n && minimum.numerator === 0n;
+  }
+  return (
+    (baselineScaled - candidateScaled) * 100n * minimum.denominator >=
+    baselineScaled * minimum.numerator
+  );
+}
+
+function decimalFraction(value: number | string): { numerator: bigint; denominator: bigint } {
+  const match = String(value)
+    .toLowerCase()
+    .match(/^(\d+)(?:\.(\d+))?(?:e([+-]?\d+))?$/u);
+  if (match === null) throw new Error("Policy comparison requires a non-negative decimal value.");
+  const [, whole, fractional = "", exponentText = "0"] = match;
+  const exponent = Number(exponentText);
+  const scale = fractional.length - exponent;
+  const numerator = BigInt(`${whole}${fractional}`);
+  if (scale <= 0) {
+    return { denominator: 1n, numerator: numerator * 10n ** BigInt(-scale) };
+  }
+  return { denominator: 10n ** BigInt(scale), numerator };
+}
+
+function containsProtectedSegment(
+  value: unknown,
+  protectedSegments: readonly string[],
+  visited = new WeakSet<object>(),
+): boolean {
+  if (typeof value === "string") {
+    return protectedSegments.some((segment) => value.includes(segment));
+  }
+  if (value === null || typeof value !== "object") return false;
+  if (visited.has(value)) return false;
+  visited.add(value);
+  if (Array.isArray(value)) {
+    return value.some((item) => containsProtectedSegment(item, protectedSegments, visited));
+  }
+  return Object.entries(value).some(
+    ([key, nested]) =>
+      protectedSegments.some((segment) => key.includes(segment)) ||
+      containsProtectedSegment(nested, protectedSegments, visited),
+  );
+}
+
 function requestCost(
   usage: EvaluationTransportResult["usage"],
   model: CatalogSnapshot["models"][number],
@@ -981,6 +1113,15 @@ function mapFailure(code: EvaluationTransportErrorCode | undefined): CandidateRu
   if (code === "timeout") return "timeout";
   if (code === "invalid-output") return "invalid-output";
   return "provider-error";
+}
+
+function selectTerminalFailure(
+  failures: readonly (EvaluationTransportErrorCode | undefined)[],
+): EvaluationTransportErrorCode | undefined {
+  const observed = new Set(failures.filter((failure) => failure !== undefined));
+  return (["invalid-output", "provider-error", "rate-limited", "timeout"] as const).find(
+    (failure) => observed.has(failure),
+  );
 }
 
 function normalizeProvider(value: string): string {

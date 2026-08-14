@@ -211,14 +211,14 @@ function memoryCatalogStore(): CatalogStore {
   };
 }
 
-async function acquireCurrentCatalogRefresh() {
+async function acquireCurrentCatalogRefresh(catalog: unknown = rawCatalog) {
   vi.useFakeTimers();
   vi.setSystemTime(snapshot.observedAt);
   vi.stubGlobal(
     "fetch",
     vi.fn(async () =>
       Promise.resolve(
-        new Response(JSON.stringify(rawCatalog), {
+        new Response(JSON.stringify(catalog), {
           headers: { "content-type": "application/json" },
           status: 200,
         }),
@@ -512,15 +512,25 @@ describe("bounded deterministic evaluation", () => {
   });
 
   it("fails hard gates deterministically without leaking protected output", async () => {
+    const protectedSegment = "customer-\nsecret\u0007";
+    const protectedCases = cases.map((evaluationCase) => ({
+      ...evaluationCase,
+      protectedSegments: [protectedSegment],
+    }));
     const options = baseOptions(await acquireCurrentCatalogRefresh());
     const result = await evaluateOpenRouterCandidate({
       ...options,
+      cases: protectedCases,
       clock: { now: () => "2026-08-10T00:00:01.000Z" },
+      evalSuite: {
+        ...evalSuite,
+        fixtureDigest: createEvaluationCaseDigest(protectedCases),
+      },
       transport: {
         async execute(request) {
           return {
             ...(await transport().execute(request)),
-            output: { classification: `wrong customer-secret` },
+            output: { classification: `wrong ${protectedSegment}` },
           };
         },
       },
@@ -528,6 +538,116 @@ describe("bounded deterministic evaluation", () => {
 
     expect(result.candidateRun.gateOutcomes).toMatchObject({ privacy: "fail", quality: "fail" });
     expect(JSON.stringify(result)).not.toContain("customer-secret");
+  });
+
+  it("fails quality when the reviewed suite is below the call-site minimum", async () => {
+    const options = baseOptions(await acquireCurrentCatalogRefresh());
+    const result = await evaluateOpenRouterCandidate({
+      ...options,
+      callSite: {
+        ...callSite,
+        gates: { ...callSite.gates, minCases: cases.length + 1 },
+      },
+    });
+
+    expect(result.candidateRun).toMatchObject({
+      gateOutcomes: { quality: "fail" },
+      status: "complete",
+    });
+  });
+
+  it("uses exact decimal arithmetic at the cost-savings boundary", async () => {
+    const boundaryCatalog = {
+      ...rawCatalog,
+      data: rawCatalog.data.map((model) =>
+        model.id === callSite.currentModel
+          ? { ...model, pricing: { completion: "0", prompt: "0.000003" } }
+          : model.id === "openai/gpt-4o-mini"
+            ? { ...model, pricing: { completion: "0", prompt: "0.0000027" } }
+            : model,
+      ),
+    };
+    const options = baseOptions(await acquireCurrentCatalogRefresh(boundaryCatalog));
+    const result = await evaluateOpenRouterCandidate({
+      ...options,
+      callSite: {
+        ...callSite,
+        gates: { ...callSite.gates, minSavingsPercent: 10 },
+      },
+      limits: { ...options.limits, maxSpendUsd: "2" },
+      sampling: { ...options.sampling, maxOutputTokens: 1 },
+      transport: {
+        async execute(request) {
+          return {
+            ...(await transport().execute(request)),
+            usage: { completionTokens: 0, promptTokens: 100_000 },
+          };
+        },
+      },
+    });
+
+    expect(result.candidateRun).toMatchObject({
+      baselineMetrics: { costUsd: "0.6" },
+      gateOutcomes: { cost: "pass" },
+      metrics: { costUsd: "0.54" },
+      status: "complete",
+    });
+  });
+
+  it("records repetition variance instead of a constant zero placeholder", async () => {
+    const options = baseOptions(await acquireCurrentCatalogRefresh());
+    const candidateAttempts = new Map<string, number>();
+    const result = await evaluateOpenRouterCandidate({
+      ...options,
+      limits: { ...options.limits, concurrency: 1 },
+      sampling: { ...options.sampling, attempts: 2 },
+      transport: {
+        async execute(request) {
+          const attempt = (candidateAttempts.get(request.caseId) ?? 0) + 1;
+          if (request.model === "openai/gpt-4o-mini") {
+            candidateAttempts.set(request.caseId, attempt);
+          }
+          const candidateSecondAttempt = request.model === "openai/gpt-4o-mini" && attempt === 2;
+          return {
+            ...(await transport().execute(request)),
+            latencyMs: candidateSecondAttempt ? 300 : 100,
+            output: candidateSecondAttempt
+              ? { classification: "wrong" }
+              : { classification: request.caseId === "support-001" ? "billing" : "returns" },
+            usage: { completionTokens: candidateSecondAttempt ? 2 : 1, promptTokens: 9 },
+          };
+        },
+      },
+    });
+
+    expect(result.candidateRun.provenance.variance).toMatchObject({
+      p95LatencyMsStdDev: 100,
+      passRateStdDev: 0.5,
+    });
+    expect(Number(result.candidateRun.provenance.variance.costUsdStdDev)).toBeGreaterThan(0);
+  });
+
+  it("chooses concurrent terminal failures by stable precedence", async () => {
+    const failureCodes: string[] = [];
+    for (const reverseCompletion of [false, true]) {
+      const options = baseOptions(await acquireCurrentCatalogRefresh());
+      const result = await evaluateOpenRouterCandidate({
+        ...options,
+        limits: { ...options.limits, retries: 0 },
+        transport: {
+          async execute(request) {
+            const firstCase = request.caseId === "support-001";
+            await new Promise((resolve) =>
+              setTimeout(resolve, firstCase === reverseCompletion ? 5 : 0),
+            );
+            throw new EvaluationTransportError(firstCase ? "timeout" : "rate-limited");
+          },
+        },
+      });
+      failureCodes.push(result.candidateRun.failureCode ?? "missing");
+    }
+
+    expect(failureCodes).toEqual(["rate-limited", "rate-limited"]);
   });
 
   it("rejects cases with no required facts instead of passing them vacuously", async () => {
