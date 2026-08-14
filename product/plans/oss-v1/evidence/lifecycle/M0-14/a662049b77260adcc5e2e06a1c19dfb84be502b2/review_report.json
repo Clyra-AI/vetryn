@@ -1,0 +1,79 @@
+{
+  "artifact_type": "review_report",
+  "schema_version": "0.1",
+  "task_id": "M0-14",
+  "work_item_id": "M0-14",
+  "review_type": "architecture",
+  "review_scope": [
+    "scripts/plan.mjs",
+    "scripts/plan.test.mjs",
+    "scripts/promotion-tail.mjs",
+    "scripts/promotion-tail.test.mjs"
+  ],
+  "reviewer_class": "peer_agent",
+  "reviewer_id": "codex-local:v1_06_code_review",
+  "producer": {
+    "worker": "code-review",
+    "producer_id": "codex-local:v1_06_code_review",
+    "producer_class": "peer_agent"
+  },
+  "current_work": {
+    "validation_run_id": "validation:2026-08-14T19:00:32Z:M0-14",
+    "candidate_digest": "sha256:e2ef0380635f877bd45d25b4efcf39d094e1d167253374cd0fa735a33c9aa8f5",
+    "work_proof_markers": [
+      {
+        "ref": "product/plans/oss-v1/evidence/lifecycle/M0-14/a662049b77260adcc5e2e06a1c19dfb84be502b2/work_proof_marker.json",
+        "sha256": "sha256:0bab0dbd2243a59e5d893a851feeb58f14877230e3387e0862b184b66de446a7"
+      }
+    ]
+  },
+  "risk_class": "high",
+  "findings": [
+    {
+      "id": "M0-14-CURRENT-15",
+      "severity": "P1",
+      "summary": "Validation reports could omit their exact work-proof marker.",
+      "status": "resolved",
+      "location": "scripts/promotion-tail.mjs",
+      "promotion_effect": "block_until_fixed",
+      "evidence_refs": ["ev-m0-14-contracts-a662049"]
+    },
+    {
+      "id": "M0-14-CURRENT-16",
+      "severity": "P1",
+      "summary": "Waivable criteria could enter promotion without authenticated approval evidence.",
+      "status": "resolved",
+      "location": "scripts/promotion-tail.mjs",
+      "promotion_effect": "block_until_fixed",
+      "evidence_refs": ["ev-m0-14-contracts-a662049"]
+    },
+    {
+      "id": "M0-14-CURRENT-17",
+      "severity": "P1",
+      "summary": "Accepted-task policy rewrites bypassed high-risk reclassification.",
+      "status": "resolved",
+      "location": "scripts/plan.mjs",
+      "promotion_effect": "block_until_fixed",
+      "evidence_refs": ["ev-m0-14-plan-check-a662049"]
+    }
+  ],
+  "verdict": "approved",
+  "required_fixes": [],
+  "residual_risks": [
+    "The standalone P2 about empty passing-check sets is deferred as delivery debt; this exact validation report records three passing checks."
+  ],
+  "evidence_refs": [
+    "product/plans/oss-v1/evidence/lifecycle/M0-14/a662049b77260adcc5e2e06a1c19dfb84be502b2/validation_report.json",
+    "ev-m0-14-repo-check-a662049",
+    "ev-m0-14-contracts-a662049"
+  ],
+  "work_proof_marker_refs": [
+    "product/plans/oss-v1/evidence/lifecycle/M0-14/a662049b77260adcc5e2e06a1c19dfb84be502b2/work_proof_marker.json"
+  ],
+  "approval_effect": {
+    "promotion_decision": "ready_for_pr",
+    "approvals_granted": ["architecture_review_passed"],
+    "blocks_promotion": false
+  },
+  "created_at": "2026-08-14T19:00:32Z"
+}
