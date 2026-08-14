@@ -898,9 +898,9 @@ describe("implementation plan validator", () => {
     );
     expect(state).toMatchObject({
       taskId: "M0-11",
-      revision: 0,
-      state: "planned",
-      attempt: 0,
+      revision: 1,
+      state: "in_progress",
+      attempt: 1,
       candidate: null,
     });
   });

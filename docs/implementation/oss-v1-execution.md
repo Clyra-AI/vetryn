@@ -182,3 +182,9 @@ The repository-local `$vetryn-implement-task`, `$vetryn-verify-task`, `$vetryn-p
 evaluation, recommendation, and patch work when `QG-TRUST-REVIEW` is declared. They deliberately reuse Factory's
 universal execution, validation, structured review, and shipping skills instead of copying them into this
 repository.
+
+`$vetryn-continue-next` adds only repository discovery and routing. Its script requires a clean checkout, runs the
+existing plan check, chooses exactly one active task or otherwise one next-legal task, compiles the packet, and
+checks that HEAD and worktree status did not change. The procedure then delegates to the packet-selected skills.
+The developer host and installed skills are trusted local inputs; the helper is not a security sandbox, does not
+require a sibling Factory checkout, and cannot supply mutation or delivery authority.

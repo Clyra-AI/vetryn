@@ -1,0 +1,6 @@
+interface:
+  display_name: "Continue Next Vetryn Task"
+  short_description: "Safely continue the sole legal Vetryn task"
+  default_prompt: "Use $vetryn-continue-next to preflight and continue the sole legal Vetryn task."
+policy:
+  allow_implicit_invocation: false

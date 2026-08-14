@@ -11,6 +11,9 @@
 
 ### Added
 
+- Added a narrow repository-owned `$vetryn-continue-next` skill that discovers the sole active or next-legal task,
+  compiles its packet, and routes existing implementation and protected-delivery workflows without machine paths
+  or standing authority.
 - Added bounded representative-workload-cost OpenRouter candidate ranking, idempotent catalog-refresh,
   opt-in scheduling, immutable freshness observations, evaluator-version-bound digests, and
   complete-and-integrity-valid evidence reuse contracts to the executable V1 plan.
