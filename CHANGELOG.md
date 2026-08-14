@@ -11,6 +11,8 @@
 
 ### Added
 
+- Added an executable promotion-tail gate and conservative high-risk classification for future tasks that can
+  change approval, evidence, persistence, credential, security-control, or release policy.
 - Added a narrow repository-owned `$vetryn-continue-next` skill that discovers the sole active or next-legal task,
   compiles its packet, and routes existing implementation and protected-delivery workflows without machine paths
   or standing authority.

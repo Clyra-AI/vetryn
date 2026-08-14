@@ -1,0 +1,233 @@
+{
+  "artifact_lifecycle_matrix": [
+    {
+      "artifact": "ProductCandidate-to-DeliveryHead promotion tail",
+      "producer_or_authority": "Maintainer promotion workflow",
+      "mutable_owner": "Maintainer before protected merge",
+      "states": ["generated", "persisted", "actionable"],
+      "freshness": "Exact ProductCandidate and DeliveryHead commits supplied to the validator",
+      "integrity": "Repository-owned validation over task state, ledger, evidence, and generated progress",
+      "authenticity": "Protected history plus explicit current-run maintainer authority",
+      "actionable_states": ["actionable"],
+      "transitions_and_recovery": [
+        "Reject missing, conflicting, cross-task, or multi-candidate bindings and rebuild only the canonical promotion tail."
+      ]
+    },
+    {
+      "artifact": "Future task risk classification",
+      "producer_or_authority": "Reviewed implementation plan",
+      "mutable_owner": "Planning workflow before task acceptance",
+      "states": ["persisted", "actionable"],
+      "freshness": "Canonical plan validation at the current repository head",
+      "integrity": "Deterministic comparison of declared scope patterns with protected policy paths",
+      "authenticity": "Canonical reviewed plan and repository validator",
+      "actionable_states": ["actionable"],
+      "transitions_and_recovery": [
+        "Reject a low- or medium-risk future task whose exact or broad scope can cover protected policy paths; reclassify it high before implementation."
+      ]
+    }
+  ],
+  "authorization_boundary_trace": [
+    {
+      "stage": "input_validation",
+      "authority": "Canonical M0-14 packet and strict JSON inputs",
+      "input": "ProductCandidate, DeliveryHead, lifecycle artifacts, task scope patterns, and protected paths",
+      "decision": "allow",
+      "denied_behavior": "Stop before evidence inheritance or task activation when inputs are missing or contradictory"
+    },
+    {
+      "stage": "reuse_or_persistence",
+      "authority": "Promotion-tail validator and canonical plan validator",
+      "input": "Candidate-bound lifecycle evidence and future task definitions",
+      "decision": "allow",
+      "denied_behavior": "Do not reuse ambiguous candidate evidence or persist an under-classified task"
+    },
+    {
+      "stage": "plan_authorization",
+      "authority": "Canonical M0-14 task packet",
+      "input": "Exact allowed paths, four acceptance items, and active gates",
+      "decision": "allow",
+      "denied_behavior": "Do not change product packages, accepted historical evidence, or M0-13 repair policy"
+    },
+    {
+      "stage": "workspace_mutation",
+      "authority": "Explicit current-run maintainer grant and compiled task scope",
+      "input": "M0-14 scripts, tests, skill, and scoped documentation",
+      "decision": "allow",
+      "denied_behavior": "Do not modify main directly or write outside the packet"
+    },
+    {
+      "stage": "command_execution",
+      "authority": "Packet-declared deterministic commands",
+      "input": "Focused adversarial tests, plan check, contracts, and repository check",
+      "decision": "allow",
+      "denied_behavior": "Do not substitute prose or stale review for executable validation"
+    },
+    {
+      "stage": "remote_effect",
+      "authority": "Later protected-delivery workflow",
+      "input": "Push, PR, review, promotion, and merge",
+      "decision": "deny",
+      "denied_behavior": "Implementation performs no GitHub write or merge"
+    },
+    {
+      "stage": "external_status",
+      "authority": "Repository CI and protected branch state",
+      "input": "Latest-head checks and review findings",
+      "decision": "deny",
+      "denied_behavior": "Local evidence cannot fabricate external status"
+    }
+  ],
+  "normative_adversarial_matrix": [
+    {
+      "invariant": "Every lifecycle artifact resolves to exactly one ProductCandidate.",
+      "positive": "One exact candidate identity is accepted.",
+      "missing": "An artifact without a candidate identity rejects.",
+      "stale": "A prior candidate identity rejects.",
+      "contradictory": "Different git_sha and authorized binding candidates reject.",
+      "tampered": "Multiple task bindings with different candidates reject.",
+      "transition_or_recovery": "Regenerate the artifact from the exact ProductCandidate.",
+      "concurrency": "A changed DeliveryHead invalidates the earlier result."
+    },
+    {
+      "invariant": "Broad task scopes cannot evade protected-path high-risk classification.",
+      "positive": "A high-risk task may declare a protected scope.",
+      "missing": "A task without usable scope fails existing plan validation.",
+      "stale": "Accepted historical tasks remain unchanged while new tasks are checked.",
+      "contradictory": "A low- or medium-risk task covering a protected path rejects.",
+      "tampered": "scripts/**, .factory/**, product/plans/**, and docs/** cannot hide protected coverage.",
+      "transition_or_recovery": "Raise the task to high risk and rerun plan validation.",
+      "concurrency": "A changed plan must pass the validator again before task selection."
+    }
+  ],
+  "external_effect_preflight": {
+    "actions": [
+      {
+        "action": "agent_runner",
+        "disposition": "not_applicable",
+        "authority_ref": null,
+        "invalid_authority_effect": {
+          "calls": 0,
+          "spend_usd": 0,
+          "writes": 0
+        }
+      },
+      {
+        "action": "model",
+        "disposition": "not_applicable",
+        "authority_ref": null,
+        "invalid_authority_effect": {
+          "calls": 0,
+          "spend_usd": 0,
+          "writes": 0
+        }
+      },
+      {
+        "action": "repository_command",
+        "disposition": "not_applicable",
+        "authority_ref": null,
+        "invalid_authority_effect": {
+          "calls": 0,
+          "spend_usd": 0,
+          "writes": 0
+        }
+      },
+      {
+        "action": "package_registry",
+        "disposition": "blocked",
+        "authority_ref": null,
+        "invalid_authority_effect": {
+          "calls": 0,
+          "spend_usd": 0,
+          "writes": 0
+        }
+      },
+      {
+        "action": "provider_sandbox",
+        "disposition": "blocked",
+        "authority_ref": null,
+        "invalid_authority_effect": {
+          "calls": 0,
+          "spend_usd": 0,
+          "writes": 0
+        }
+      },
+      {
+        "action": "github",
+        "disposition": "blocked",
+        "authority_ref": null,
+        "invalid_authority_effect": {
+          "calls": 0,
+          "spend_usd": 0,
+          "writes": 0
+        }
+      },
+      {
+        "action": "provider_status",
+        "disposition": "blocked",
+        "authority_ref": null,
+        "invalid_authority_effect": {
+          "calls": 0,
+          "spend_usd": 0,
+          "writes": 0
+        }
+      }
+    ]
+  },
+  "persistence_threat_matrix": [
+    {
+      "threat": "integrity",
+      "attack_cases": ["A lifecycle artifact names conflicting candidate commits."],
+      "expected_disposition": "reject"
+    },
+    {
+      "threat": "authenticity",
+      "attack_cases": ["A self-asserted marker replaces repository history."],
+      "expected_disposition": "reject"
+    },
+    {
+      "threat": "freshness",
+      "attack_cases": [
+        "A prior candidate or plan classification is reused after the head changes."
+      ],
+      "expected_disposition": "reject"
+    },
+    {
+      "threat": "completeness",
+      "attack_cases": ["Required progress, task evidence, or candidate identities are omitted."],
+      "expected_disposition": "reject"
+    },
+    {
+      "threat": "ordering",
+      "attack_cases": ["Promotion precedes exact-candidate validation or task risk validation."],
+      "expected_disposition": "reject"
+    },
+    {
+      "threat": "anti_rollback",
+      "attack_cases": ["An older ProductCandidate or plan version is substituted."],
+      "expected_disposition": "reject"
+    }
+  ],
+  "review_convergence": {
+    "implementation_design_pass": "pass",
+    "same_subsystem_p1_rounds_seen": 0,
+    "decision": "proceed"
+  },
+  "residual_risks": [
+    "The local developer runtime remains a trusted host input.",
+    "A genuine latest-head P0 or P1 remains blocking and routes to separate corrective work after the bounded review generation."
+  ],
+  "artifact_type": "semantic_risk_report",
+  "schema_version": "0.2",
+  "task_id": "M0-14",
+  "work_item_id": "M0-14",
+  "risk_class": "high",
+  "profile_ref": ".factory/profile.yaml",
+  "source_revision": "be81357d3979f83f7f1d54a6819e7a524b788db8",
+  "phase": "implementation_design",
+  "created_at": "2026-08-14T14:25:09.026Z",
+  "baseline_evidence": {
+    "work_proof_marker_ref": ".factory/artifacts/task-runs/M0-14/semantic-risk-integrity-marker.json",
+    "work_proof_marker_sha256": "sha256:48563c58277034d8d7fa2f31206398e66a3d7add3e138437a0cd7ceaf4c12c2d"
+  }
+}

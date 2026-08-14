@@ -1585,4 +1585,57 @@ describe("implementation plan validator", () => {
     expect(result.status).not.toBe(0);
     expect(result.stderr).toContain("exceeds maxAttempts 2");
   });
+
+  it.each(["scripts/**", ".factory/**", "product/plans/**", "docs/**"])(
+    "rejects an unaccepted low-risk task whose broad %s scope covers protected policy",
+    async (scopePattern) => {
+      const root = await createFixture();
+      const planPath = "product/plans/oss-v1/plan.json";
+      const plan = await readFixtureJson(root, planPath);
+      const task = plan.tasks.find((candidate) => candidate.id === "M0-14");
+      task.risk = { level: "low", domains: ["agent-workflow"] };
+      task.scope.allowedPaths = [scopePattern];
+      task.deliverables = [scopePattern];
+      await writeFixtureJson(root, planPath, plan);
+
+      const result = runPlan(root);
+
+      expect(result.status).not.toBe(0);
+      expect(result.stderr).toContain("M0-14 changes approval, evidence, persistence");
+    },
+  );
+
+  it.each([
+    ["protected exact path", ["scripts/task.mjs"], ["agent-workflow"]],
+    ["protected risk domain", ["packages/openrouter/**"], ["release-policy"]],
+  ])("rejects an unaccepted medium-risk task with a %s", async (_name, paths, domains) => {
+    const root = await createFixture();
+    const planPath = "product/plans/oss-v1/plan.json";
+    const plan = await readFixtureJson(root, planPath);
+    const task = plan.tasks.find((candidate) => candidate.id === "M0-14");
+    task.risk = { level: "medium", domains };
+    task.scope.allowedPaths = paths;
+    task.deliverables = paths;
+    await writeFixtureJson(root, planPath, plan);
+
+    const result = runPlan(root);
+
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain("M0-14 changes approval, evidence, persistence");
+  });
+
+  it("allows a low-risk package scope that cannot cover protected policy", async () => {
+    const root = await createFixture();
+    const planPath = "product/plans/oss-v1/plan.json";
+    const plan = await readFixtureJson(root, planPath);
+    const task = plan.tasks.find((candidate) => candidate.id === "M0-14");
+    task.risk = { level: "low", domains: ["agent-workflow"] };
+    task.scope.allowedPaths = ["packages/openrouter/**"];
+    task.deliverables = ["packages/openrouter/**"];
+    await writeFixtureJson(root, planPath, plan);
+
+    const result = runPlan(root);
+
+    expect(result.status, result.stderr).toBe(0);
+  });
 });

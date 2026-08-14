@@ -16,13 +16,15 @@ description: Perform maintainer-controlled promotion of a locally validated Vetr
 4. Change only the task's canonical state, its acceptance-ledger status/evidence references, newly added compact
    lifecycle evidence, and generated progress. Run `pnpm plan:write`; never edit `progress.json` directly. Commit
    these changes together as one promotion-only **DeliveryHead** on the existing task branch.
-5. Run formatting, `pnpm plan:check`, the focused plan/task structural tests, and the deterministic promotion-tail
-   check. Prove every path in the `ProductCandidate..DeliveryHead` diff is canonical state, that task's ledger entries, compact
+5. Run formatting, `pnpm plan:check`, the focused plan/task structural tests, and
+   `pnpm --silent task:promotion-tail -- TASK-ID PRODUCT-CANDIDATE DELIVERY-HEAD`. The executable gate must pass
+   on the exact two full commit SHAs. Prove every path in the `ProductCandidate..DeliveryHead` diff is canonical state, that task's ledger entries, compact
    lifecycle evidence, generated progress, or another packet-declared promotion artifact. Do not rerun the full
    product or domain-review suite merely because this valid tail exists. A product, contract, test, fixture, or
    task-scoped documentation change invalidates inheritance and must return to implementation.
 6. With explicit maintainer authority, push the DeliveryHead once and use Factory's `commit-push` in `land` mode to
-   monitor required CI, the bounded remote review generation, merge, and post-merge validation. P0/P1 and
-   non-waivable findings remain blocking. After one completed repair generation, exactly one standalone P2 may be
-   recorded as delivery debt only through ADR-0009 maintainer classification. Acceptance does not imply merge,
+   monitor required CI, one remote finding batch, merge, and one post-merge audit. The task lifecycle has one repair
+   generation total; a new ProductCandidate or re-entry does not reset it. After that repair, the entire new batch is
+   terminal: any P0/P1 or non-waivable finding blocks and routes to explicit corrective work, while at most one
+   eligible standalone P2 may be recorded as delivery debt through ADR-0009 maintainer classification. Acceptance does not imply merge,
    and merge does not retroactively supply missing evidence.

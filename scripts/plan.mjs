@@ -12,6 +12,82 @@ const root = path.resolve(
   process.env.VETRYN_PLAN_REPO_ROOT ?? path.resolve(import.meta.dirname, ".."),
 );
 const planRoot = path.join(root, "product/plans/oss-v1");
+const highRiskPolicyDomains = new Set([
+  "approval",
+  "authorization",
+  "credentials",
+  "delivery-policy",
+  "evidence",
+  "evidence-integrity",
+  "evidence-inheritance",
+  "persistence",
+  "release",
+  "release-policy",
+  "security",
+  "security-controls",
+]);
+const legacyRiskPolicyTaskIds = new Set([
+  "M0-00",
+  "V1-00",
+  "M0-01",
+  "V1-01",
+  "M0-02",
+  "M0-03",
+  "M0-04",
+  "M0-05",
+  "M0-06",
+  "M0-07",
+  "M0-08",
+  "M0-09",
+  "M0-10",
+  "M0-11",
+  "M0-12",
+  "V1-02",
+  "V1-03",
+  "V1-04",
+  "V1-05",
+  "V1-06",
+]);
+const highRiskPolicyPaths = new Set([
+  ".agents/skills/vetryn-promote-task/SKILL.md",
+  ".factory/profile.yaml",
+  "AGENTS.md",
+  "WORKFLOW.md",
+  "docs/adr/0009-single-maintainer-v1-delivery.md",
+  "product/plans/schemas/evidence.schema.json",
+  "product/plans/schemas/task-packet.schema.json",
+  "scripts/plan.mjs",
+  "scripts/promotion-tail.mjs",
+  "scripts/task.mjs",
+]);
+
+function scopePatternCoversPath(pattern, relativePath) {
+  let expression = "";
+  for (let index = 0; index < pattern.length; index += 1) {
+    const character = pattern[index];
+    if (character === "*" && pattern[index + 1] === "*") {
+      expression += ".*";
+      index += 1;
+    } else if (character === "*") expression += "[^/]*";
+    else if (character === "?") expression += "[^/]";
+    else expression += "\\^$+.()|{}[]".includes(character) ? `\\${character}` : character;
+  }
+  return new RegExp(`^${expression}$`, "u").test(relativePath);
+}
+
+function declaresHighRiskPolicyChange(task) {
+  const paths = [...task.scope.allowedPaths, ...task.deliverables];
+  return (
+    task.risk.domains.some((domain) => highRiskPolicyDomains.has(domain)) ||
+    paths.some(
+      (candidate) =>
+        candidate.includes("vetryn-promote-task") ||
+        [...highRiskPolicyPaths].some((protectedPath) =>
+          scopePatternCoversPath(candidate, protectedPath),
+        ),
+    )
+  );
+}
 
 async function readJson(relativePath) {
   return JSON.parse(await readFile(path.join(root, relativePath), "utf8"));
@@ -328,6 +404,19 @@ async function main() {
       .filter(({ document }) => document.state === "accepted")
       .map(({ document }) => document.taskId),
   );
+  for (const task of plan.tasks) {
+    const state = stateByTask.get(task.id);
+    const changesHighRiskPolicy = declaresHighRiskPolicyChange(task);
+    if (
+      !legacyRiskPolicyTaskIds.has(task.id) &&
+      state?.state !== "accepted" &&
+      changesHighRiskPolicy
+    )
+      assert(
+        task.risk.level === "high",
+        `${task.id} changes approval, evidence, persistence, credential, security, or release policy and must be high risk until accepted`,
+      );
+  }
   assertUnique(stateTaskIds, "task-state task IDs");
   for (const { file, document: state } of stateFiles) {
     assert(file === `${state.taskId}.json`, `${file} does not match task ID ${state.taskId}`);
