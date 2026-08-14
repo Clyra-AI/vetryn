@@ -1105,7 +1105,8 @@
           "scripts/promotion-tail.mjs",
           "scripts/promotion-tail.test.mjs",
           "scripts/task.mjs",
-          "scripts/task.test.mjs"
+          "scripts/task.test.mjs",
+          "scripts/verify_installed_worker_packs.py"
         ],
         "forbiddenPaths": [
           "packages/core/**",
@@ -1148,7 +1149,8 @@
         "scripts/promotion-tail.mjs",
         "scripts/promotion-tail.test.mjs",
         "scripts/task.mjs",
-        "scripts/task.test.mjs"
+        "scripts/task.test.mjs",
+        "scripts/verify_installed_worker_packs.py"
       ],
       "requiredTestLevels": ["unit", "contract", "integration", "adversarial"],
       "requiredGates": [

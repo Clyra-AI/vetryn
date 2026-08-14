@@ -913,6 +913,7 @@ describe("implementation plan validator", () => {
         "docs/oss-v1.md",
         "scripts/continue-next-skill.test.mjs",
         "scripts/promotion-tail.mjs",
+        "scripts/verify_installed_worker_packs.py",
         "scripts/task.mjs",
       ]),
     );
@@ -922,6 +923,7 @@ describe("implementation plan validator", () => {
         "scripts/plan.test.mjs",
         "scripts/promotion-tail.test.mjs",
         "scripts/task.test.mjs",
+        "scripts/verify_installed_worker_packs.py",
       ]),
     );
     expect(task.scope.allowedPaths).not.toContain(".factory/artifacts/task-runs/M0-13/**");
@@ -934,7 +936,7 @@ describe("implementation plan validator", () => {
     expect(m013Items.find((item) => item.id === "HARDEN-001")?.verification.gateId).toBe(
       "QG-CONTRACTS",
     );
-    expect(state).toMatchObject({ taskId: "M0-13", revision: 0, state: "planned" });
+    expect(state).toMatchObject({ taskId: "M0-13", revision: 1, state: "planned" });
   });
 
   it("locks narrow continuation behind one bounded process task", async () => {
