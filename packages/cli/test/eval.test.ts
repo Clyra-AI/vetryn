@@ -4,13 +4,6 @@ import path from "node:path";
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import {
-  createCurrentCatalogRefresh,
-  refreshOpenRouterCatalog,
-  type CatalogStore,
-} from "@vetryn/openrouter";
-
-import { evaluateFiles } from "../src/evaluation-files.js";
 import { createProgram } from "../src/index.js";
 
 const roots: string[] = [];
@@ -157,11 +150,18 @@ describe("vetryn eval", () => {
     expect(stdout).toHaveBeenCalled();
   });
 
-  it("does not commit a receipt when the output destination cannot be published", async () => {
+  it("authenticates a successful refresh before a later output failure", async () => {
     const root = await mkdtemp(path.join(tmpdir(), "vetryn-eval-output-failure-"));
     roots.push(root);
     const repositoryRoot = path.join(root, "repo");
+    const anchorPath = path.join(root, "trust", "anchor.json");
+    const keyPath = path.join(root, "keys", "receipt.key");
+    const providerKeyPath = path.join(root, "keys", "provider.key");
+    const evidencePath = path.join(repositoryRoot, ".vetryn", "evidence");
     const outputPath = path.join(repositoryRoot, "blocked-output");
+    await mkdir(path.dirname(keyPath), { recursive: true });
+    await writeFile(keyPath, "offline-test-receipt-key-material");
+    await writeFile(providerKeyPath, "offline-provider-key");
     await mkdir(outputPath, { recursive: true });
     const exampleRoot = path.resolve("examples/openrouter-typescript");
     vi.useFakeTimers();
@@ -194,28 +194,6 @@ describe("vetryn eval", () => {
         ),
       ),
     );
-    const catalogStore: CatalogStore = {
-      async hasSnapshot() {
-        return false;
-      },
-      async putObservation() {},
-      async putRefresh(snapshot, observation) {
-        return { observation: { ...observation, reusedSnapshot: false }, snapshot };
-      },
-      async putSnapshot(snapshot) {
-        return { reused: false, snapshot };
-      },
-    };
-    const refresh = await refreshOpenRouterCatalog({
-      acquisition: "live-api",
-      refreshId: "output-failure-refresh",
-      store: catalogStore,
-    });
-    if (refresh.status !== "success") throw new Error("Expected offline catalog refresh success.");
-    const currentCatalogRefresh = createCurrentCatalogRefresh({
-      invocationId: "output-failure-invocation",
-      refresh,
-    });
     const expected = new Map(
       (
         await readFile(
@@ -230,22 +208,9 @@ describe("vetryn eval", () => {
     );
 
     await expect(
-      evaluateFiles({
-        anchorPath: path.join(root, "trust", "anchor.json"),
-        callSiteId: "support-classification",
-        candidateModel: "openai/gpt-4o-mini",
+      createProgram({
         clock: { now: () => "2026-08-10T00:00:01.000Z" },
-        currentCatalogRefresh,
-        evaluatorBuild: "git:output-failure",
-        evalSuitePath: path.join(exampleRoot, "fixtures/eval-suite.json"),
-        evidencePath: path.join(repositoryRoot, ".vetryn", "evidence"),
-        executionRecordId: "execution-record:output-failure",
-        fixturePath: path.join(exampleRoot, "fixtures/support-classification.evals.jsonl"),
-        key: Buffer.from("offline-test-receipt-key-material"),
-        manifestPath: path.join(exampleRoot, "fixtures/manifest.json"),
-        outputPath,
-        repositoryRoot,
-        transport: {
+        evaluationTransportFactory: () => ({
           async execute(request) {
             return {
               latencyMs: 100,
@@ -257,13 +222,60 @@ describe("vetryn eval", () => {
               usage: { completionTokens: 1, promptTokens: 9 },
             };
           },
-        },
-        trustEpochId: "output-failure-epoch",
-      }),
+        }),
+      }).parseAsync([
+        "node",
+        "vetryn",
+        "eval",
+        "--manifest",
+        path.join(exampleRoot, "fixtures/manifest.json"),
+        "--call-site",
+        "support-classification",
+        "--suite",
+        path.join(exampleRoot, "fixtures/eval-suite.json"),
+        "--fixture",
+        path.join(exampleRoot, "fixtures/support-classification.evals.jsonl"),
+        "--catalog-store",
+        path.join(repositoryRoot, ".vetryn", "catalog"),
+        "--refresh-id",
+        "output-failure-refresh",
+        "--candidate",
+        "openai/gpt-4o-mini",
+        "--run-id",
+        "output-failure-invocation",
+        "--trust-epoch",
+        "output-failure-epoch",
+        "--evidence-store",
+        evidencePath,
+        "--anchor",
+        anchorPath,
+        "--receipt-key-file",
+        keyPath,
+        "--provider-key-file",
+        providerKeyPath,
+        "--output",
+        outputPath,
+        "--root",
+        repositoryRoot,
+        "--evaluator-build",
+        "git:output-failure",
+      ]),
     ).rejects.toThrow();
-    await expect(
-      readFile(path.join(repositoryRoot, ".vetryn", "evidence", "head.json"), "utf8"),
-    ).rejects.toMatchObject({ code: "ENOENT" });
+    const head = JSON.parse(await readFile(path.join(evidencePath, "head.json"), "utf8")) as {
+      headDigest: string;
+      sequence: number;
+    };
+    const entry = JSON.parse(
+      await readFile(
+        path.join(evidencePath, "receipts", `${head.headDigest.slice("sha256:".length)}.json`),
+        "utf8",
+      ),
+    ) as { artifactType: string; observation: { status: string } };
+    expect(head.sequence).toBe(1);
+    expect(entry).toMatchObject({
+      artifactType: "authenticated-catalog-refresh-attempt",
+      observation: { status: "success" },
+    });
   });
 
   it("authenticates a terminal live catalog failure before refusing evaluation", async () => {

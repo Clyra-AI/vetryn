@@ -739,6 +739,53 @@ describe("bounded deterministic evaluation", () => {
     ).rejects.toThrow(/reviewed fixture digest/i);
   });
 
+  it("rejects baseline and capability-incompatible candidates before provider requests", async () => {
+    const incompatibleCatalog = {
+      ...rawCatalog,
+      data: rawCatalog.data.map((model) =>
+        model.id === "openai/gpt-4o-mini" ? { ...model, supported_parameters: ["tools"] } : model,
+      ),
+    };
+    const attempts = [
+      {
+        candidateModel: callSite.currentModel,
+        currentCatalogRefresh: await acquireCurrentCatalogRefresh(),
+        expectedError: /differ from the current baseline/i,
+        requiredCapabilities: callSite.requiredCapabilities,
+      },
+      {
+        candidateModel: "openai/gpt-4o-mini",
+        currentCatalogRefresh: await acquireCurrentCatalogRefresh(incompatibleCatalog),
+        expectedError: /incompatible/i,
+        requiredCapabilities: callSite.requiredCapabilities,
+      },
+      {
+        candidateModel: "openai/gpt-4o-mini",
+        currentCatalogRefresh: await acquireCurrentCatalogRefresh(),
+        expectedError: /incompatible/i,
+        requiredCapabilities: { ...callSite.requiredCapabilities, toolCalls: true },
+      },
+    ] as const;
+
+    for (const attempt of attempts) {
+      let providerRequests = 0;
+      await expect(
+        evaluateOpenRouterCandidate({
+          ...baseOptions(attempt.currentCatalogRefresh),
+          callSite: { ...callSite, requiredCapabilities: attempt.requiredCapabilities },
+          candidateModel: attempt.candidateModel,
+          transport: {
+            async execute(request) {
+              providerRequests += 1;
+              return transport().execute(request);
+            },
+          },
+        }),
+      ).rejects.toThrow(attempt.expectedError);
+      expect(providerRequests).toBe(0);
+    }
+  });
+
   it("reserves the hard spend ceiling before zero, expensive, and equality-bound requests", async () => {
     for (const [maxSpendUsd, expectedCalls] of [
       ["0", 0],

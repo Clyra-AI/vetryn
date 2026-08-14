@@ -102,6 +102,28 @@ describe("authenticated execution receipt store", () => {
     ).rejects.toThrow(/collision/i);
   });
 
+  it("rejects an oversized receipt through the bounded reader", async () => {
+    const fixtureState = await fixture();
+    const appended = await fixtureState.store.append(record, {
+      catalogRefreshLineage: lineage,
+      trustEpochId: "epoch-one",
+    });
+    await writeFile(
+      path.join(
+        fixtureState.evidencePath,
+        "receipts",
+        `${appended.headDigest.slice("sha256:".length)}.json`,
+      ),
+      Buffer.alloc(1_000_001, 0x20),
+    );
+
+    await expect(fixtureState.store.verify(record.id)).resolves.toEqual({
+      actionable: false,
+      reason: "invalid-chain",
+      receipt: null,
+    });
+  });
+
   it("fails closed on missing anchor, tamper, and rollback", async () => {
     const fixtureState = await fixture();
     const first = await fixtureState.store.append(record, {

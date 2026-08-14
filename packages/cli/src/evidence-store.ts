@@ -3,7 +3,7 @@ import {
   link,
   lstat,
   mkdir,
-  readFile,
+  open,
   readdir,
   realpath,
   rename,
@@ -673,10 +673,25 @@ function assertLineageExtendsAuthenticatedHistory(
 }
 
 async function readBoundedJson(filePath: string): Promise<unknown> {
-  const contents = await readFile(filePath, "utf8");
-  if (Buffer.byteLength(contents) > MAX_RECEIPT_BYTES)
-    throw new Error("Execution receipt is oversized.");
-  return JSON.parse(contents) as unknown;
+  const handle = await open(filePath, "r");
+  try {
+    const contents = Buffer.allocUnsafe(MAX_RECEIPT_BYTES + 1);
+    let offset = 0;
+    while (offset < contents.byteLength) {
+      const { bytesRead } = await handle.read(
+        contents,
+        offset,
+        contents.byteLength - offset,
+        offset,
+      );
+      if (bytesRead === 0) break;
+      offset += bytesRead;
+    }
+    if (offset > MAX_RECEIPT_BYTES) throw new Error("Execution receipt is oversized.");
+    return JSON.parse(contents.subarray(0, offset).toString("utf8")) as unknown;
+  } finally {
+    await handle.close();
+  }
 }
 
 async function readOptionalJson<Value>(filePath: string): Promise<Value | null> {

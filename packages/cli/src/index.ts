@@ -571,6 +571,12 @@ export function createProgram(dependencies: CliDependencies = {}): Command {
       }) => {
         const providerKey = (await readBoundedTextFile(options.providerKeyFile)).trim();
         const receiptKey = Buffer.from((await readBoundedTextFile(options.receiptKeyFile)).trim());
+        const receiptStore = new FileExecutionReceiptStore({
+          anchorPath: options.anchor,
+          evidencePath: options.evidenceStore,
+          key: receiptKey,
+          repositoryRoot: options.root,
+        });
         const currentCatalogRefresh = await (dependencies.catalogRefreshFactory?.({
           catalogStorePath: options.catalogStore,
           invocationId: options.runId,
@@ -583,12 +589,7 @@ export function createProgram(dependencies: CliDependencies = {}): Command {
               store: new FileCatalogStore(options.catalogStore),
             });
             if (refresh.status !== "success") {
-              await new FileExecutionReceiptStore({
-                anchorPath: options.anchor,
-                evidencePath: options.evidenceStore,
-                key: receiptKey,
-                repositoryRoot: options.root,
-              }).appendCatalogRefreshAttempt(refresh.observation, {
+              await receiptStore.appendCatalogRefreshAttempt(refresh.observation, {
                 invocationId: options.runId,
                 ordinal: 1,
                 trustEpochId: options.trustEpoch,
@@ -600,6 +601,13 @@ export function createProgram(dependencies: CliDependencies = {}): Command {
               refresh,
             });
           })());
+        for (const attempt of currentCatalogRefresh.lineage.attempts) {
+          await receiptStore.appendCatalogRefreshAttempt(attempt.observation, {
+            invocationId: currentCatalogRefresh.lineage.invocationId,
+            ordinal: attempt.ordinal,
+            trustEpochId: options.trustEpoch,
+          });
+        }
         const result = await evaluateFiles({
           anchorPath: options.anchor,
           callSiteId: options.callSite,

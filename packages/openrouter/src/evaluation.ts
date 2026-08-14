@@ -396,7 +396,16 @@ export async function evaluateOpenRouterCandidate(
     throw new Error("Evaluation cases do not match the reviewed fixture digest and case count.");
   }
   const candidate = snapshot.models.find(({ id }) => id === options.candidateModel);
-  if (candidate === undefined || candidate.retired || !candidate.capabilities.textGeneration) {
+  if (options.candidateModel === callSite.currentModel) {
+    throw new Error("Candidate model must differ from the current baseline model.");
+  }
+  if (
+    candidate === undefined ||
+    candidate.retired ||
+    !candidate.capabilities.textGeneration ||
+    (callSite.requiredCapabilities.structuredOutput && !candidate.capabilities.structuredOutput) ||
+    (callSite.requiredCapabilities.toolCalls && !candidate.capabilities.toolCalls)
+  ) {
     throw new Error("Candidate model is missing or incompatible with the pinned catalog snapshot.");
   }
   const lineage = validateCatalogRefreshLineage(
