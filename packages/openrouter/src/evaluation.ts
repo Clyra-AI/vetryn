@@ -135,10 +135,11 @@ export interface EvaluationTransportResult {
   readonly output: unknown;
   readonly route: {
     readonly attempts: readonly {
+      readonly model: string;
       readonly providerName: string;
       readonly statusCode: number;
     }[];
-    readonly selectedProvider: { readonly providerName: string } | null;
+    readonly selectedProvider: { readonly model: string; readonly providerName: string } | null;
   };
   readonly usage: { readonly completionTokens: number; readonly promptTokens: number };
 }
@@ -204,9 +205,13 @@ export function createOpenRouterEvaluationTransport(
           response.status === 429 ? "rate-limited" : "provider-error",
         );
       }
-      const bodyText = await response.text();
-      if (Buffer.byteLength(bodyText) > 1_000_000)
+      const declaredLength = response.headers.get("content-length");
+      if (declaredLength !== null && Number(declaredLength) > 1_000_000) {
+        await response.body?.cancel().catch(() => undefined);
         throw new EvaluationTransportError("invalid-output");
+      }
+      const bodyText = await readBoundedEvaluationBody(response, 1_000_000);
+      if (bodyText === undefined) throw new EvaluationTransportError("invalid-output");
       let body: unknown;
       try {
         body = JSON.parse(bodyText) as unknown;
@@ -236,27 +241,29 @@ export function createOpenRouterEvaluationTransport(
       const promptTokens = usage?.prompt_tokens as number;
       const completionTokens = usage?.completion_tokens as number;
       const rawAttempts = Array.isArray(body.route_attempts) ? body.route_attempts : undefined;
-      const attempts =
-        rawAttempts === undefined
-          ? [{ providerName: body.provider, statusCode: response.status }]
-          : rawAttempts.map((attempt) => {
-              if (
-                !isRecord(attempt) ||
-                typeof attempt.provider_name !== "string" ||
-                !Number.isSafeInteger(attempt.status_code)
-              )
-                throw new EvaluationTransportError("invalid-output");
-              return {
-                providerName: attempt.provider_name,
-                statusCode: attempt.status_code as number,
-              };
-            });
+      if (rawAttempts === undefined || rawAttempts.length === 0) {
+        throw new EvaluationTransportError("invalid-output");
+      }
+      const attempts = rawAttempts.map((attempt) => {
+        if (
+          !isRecord(attempt) ||
+          typeof attempt.model !== "string" ||
+          typeof attempt.provider_name !== "string" ||
+          !Number.isSafeInteger(attempt.status_code)
+        )
+          throw new EvaluationTransportError("invalid-output");
+        return {
+          model: attempt.model,
+          providerName: attempt.provider_name,
+          statusCode: attempt.status_code as number,
+        };
+      });
       return {
         latencyMs: Math.max(1, Math.ceil(nowMilliseconds() - started)),
         output,
         route: {
           attempts,
-          selectedProvider: { providerName: body.provider },
+          selectedProvider: { model: body.model, providerName: body.provider },
         },
         usage: {
           completionTokens,
@@ -276,7 +283,6 @@ export interface EvaluateOpenRouterCandidateOptions {
   readonly evalSuite: unknown;
   readonly evaluator: Readonly<{ build: string; id: string; version: string }>;
   readonly executionRecordId: string;
-  readonly fixtureDigest: string;
   readonly limits: Readonly<{
     concurrency: number;
     maxRequests: number;
@@ -318,6 +324,10 @@ interface Job {
 export function createCatalogRefreshLineageDigest(lineageInput: unknown): string {
   const lineage = parseCatalogRefreshLineage(lineageInput);
   return sha256(canonicalJson(lineage));
+}
+
+export function createEvaluationCaseDigest(casesInput: readonly EvaluationCase[]): string {
+  return sha256(canonicalJson(parseCases(casesInput)));
 }
 
 export function parseCatalogRefreshLineage(lineageInput: unknown): CatalogRefreshLineage {
@@ -368,11 +378,11 @@ export async function evaluateOpenRouterCandidate(
   const cases = parseCases(options.cases);
   const evaluator = parseRunner(options.evaluator);
   const scorer = parseScorer(options.scorer);
-  digestSchema.parse(options.fixtureDigest);
   if (evalSuite.callSiteId !== callSite.id || evalSuite.id !== callSite.evalSuiteId) {
     throw new Error("Evaluation suite does not match the reviewed call site.");
   }
-  if (evalSuite.fixtureDigest !== options.fixtureDigest || evalSuite.caseCount !== cases.length) {
+  const fixtureDigest = createEvaluationCaseDigest(cases);
+  if (evalSuite.fixtureDigest !== fixtureDigest || evalSuite.caseCount !== cases.length) {
     throw new Error("Evaluation cases do not match the reviewed fixture digest and case count.");
   }
   const candidate = snapshot.models.find(({ id }) => id === options.candidateModel);
@@ -388,6 +398,7 @@ export async function evaluateOpenRouterCandidate(
   const evaluationInputDigest = sha256(
     canonicalJson({
       callSite,
+      cases,
       candidateModel: options.candidateModel,
       catalogContentDigest: snapshot.contentDigest,
       catalogRefreshLineageDigest: lineageDigest,
@@ -449,7 +460,12 @@ export async function evaluateOpenRouterCandidate(
             },
             limits.timeoutMs,
           );
-          const normalized = normalizeResponse(response, evaluationCase, callSite.routePolicy);
+          const normalized = normalizeResponse(
+            response,
+            evaluationCase,
+            callSite.routePolicy,
+            job.model,
+          );
           if (
             normalized.usage.promptTokens > model.contextWindowTokens ||
             normalized.usage.completionTokens > sampling.maxOutputTokens
@@ -620,7 +636,7 @@ function buildCandidateRun(options: {
       result.route.attempts.map((attempt, attemptIndex) => ({
         attemptOrdinal: attemptIndex + 1,
         caseOrdinal: Math.floor(requestIndex / options.sampling.attempts) + 1,
-        model: options.candidateModel,
+        model: attempt.model,
         providerName: attempt.providerName,
         requestOrdinal: requestIndex + 1,
         repetitionOrdinal: (requestIndex % options.sampling.attempts) + 1,
@@ -629,7 +645,7 @@ function buildCandidateRun(options: {
     ),
     requestCount: candidate.length,
     selectedProvider: {
-      model: options.candidateModel,
+      model: candidate[0]?.route.selectedProvider?.model,
       providerName: candidate[0]?.route.selectedProvider?.providerName,
       providerSlug: options.callSite.routePolicy.providerSlug,
     },
@@ -673,7 +689,8 @@ function parseCases(input: readonly EvaluationCase[]): readonly EvaluationCase[]
     expected: evaluationCase.expected,
     id: evaluationCase.id,
     input: evaluationCase.input,
-    ...(evaluationCase.protectedSegments === undefined
+    ...(evaluationCase.protectedSegments === undefined ||
+    evaluationCase.protectedSegments.length === 0
       ? {}
       : { protectedSegments: evaluationCase.protectedSegments }),
   }));
@@ -777,6 +794,7 @@ function normalizeResponse(
   response: EvaluationTransportResult,
   evaluationCase: EvaluationCase,
   routePolicy: OpenRouterRoutePolicy,
+  expectedModel: string,
 ): EvaluatedRequest {
   if (
     !Number.isSafeInteger(response.latencyMs) ||
@@ -792,9 +810,11 @@ function normalizeResponse(
   const expectedProvider = routePolicy.providerSlug.split("/", 1)[0];
   const providerMatches = (name: string) => normalizeProvider(name) === expectedProvider;
   if (
+    response.route.selectedProvider.model !== expectedModel ||
     !providerMatches(response.route.selectedProvider.providerName) ||
     response.route.attempts.some(
-      ({ providerName, statusCode }) =>
+      ({ model, providerName, statusCode }) =>
+        model !== expectedModel ||
         !providerMatches(providerName) ||
         !Number.isSafeInteger(statusCode) ||
         statusCode < 100 ||
@@ -822,6 +842,31 @@ function normalizeResponse(
     route: response.route,
     usage: response.usage,
   };
+}
+
+async function readBoundedEvaluationBody(
+  response: Response,
+  maximumBytes: number,
+): Promise<string | undefined> {
+  if (response.body === null) return undefined;
+  const reader = response.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let totalBytes = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      totalBytes += value.byteLength;
+      if (totalBytes > maximumBytes) {
+        await reader.cancel().catch(() => undefined);
+        return undefined;
+      }
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+  return Buffer.concat(chunks, totalBytes).toString("utf8");
 }
 
 function createRouteRequestPolicy(routePolicyInput: OpenRouterRoutePolicy) {

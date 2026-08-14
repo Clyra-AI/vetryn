@@ -26,5 +26,8 @@ evaluation-input digest, runner identity, timestamps, and canonical candidate-ru
 the configured concurrency, request, retry, timeout, and spend limits plus observed request count and spend without
 persisting prompts or outputs.
 
+`assertRecommendationArtifactConsistency` is deliberately a pure artifact check. It does not authenticate an
+execution record or external receipt state and must not be used by itself to authorize a recommendation or patch.
+
 This is an incompatible pre-release contract migration from `providerPolicy` and catalog `provider`. Regenerate
 checked-in manifests, catalog snapshots, and candidate-run fixtures before evaluation.

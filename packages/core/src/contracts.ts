@@ -1239,7 +1239,12 @@ function recommendationConfidenceUpperBound(candidateRun: CandidateRun): number 
   );
 }
 
-export function assertRecommendationEvidence(
+/**
+ * Checks only the internal consistency of a recommendation and its supplied
+ * artifacts. This pure contract helper does not authenticate execution records
+ * or receipt-store state and therefore cannot authorize a recommendation or patch.
+ */
+export function assertRecommendationArtifactConsistency(
   recommendation: Recommendation,
   candidateRuns: readonly CandidateRun[],
   expectedEvaluationInputDigest: string,

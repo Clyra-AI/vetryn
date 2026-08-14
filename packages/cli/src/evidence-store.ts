@@ -17,7 +17,9 @@ import { parseEvaluationExecutionRecord, type EvaluationExecutionRecord } from "
 import {
   createCatalogRefreshLineageDigest,
   parseCatalogRefreshLineage,
+  refreshObservationSchema,
   type CatalogRefreshLineage,
+  type RefreshObservation,
 } from "@vetryn/openrouter";
 
 const MAX_RECEIPT_BYTES = 1_000_000;
@@ -33,7 +35,7 @@ interface Anchor extends RepositoryHead {
   readonly authenticationTag: string;
 }
 
-export interface AuthenticatedExecutionReceipt {
+interface AuthenticatedExecutionReceipt {
   readonly artifactType: "authenticated-evaluation-receipt";
   readonly authenticationTag: string;
   readonly catalogRefreshLineage: CatalogRefreshLineage;
@@ -44,9 +46,34 @@ export interface AuthenticatedExecutionReceipt {
   readonly trustEpochId: string;
 }
 
+interface AuthenticatedCatalogRefreshAttempt {
+  readonly artifactType: "authenticated-catalog-refresh-attempt";
+  readonly authenticationTag: string;
+  readonly invocationId: string;
+  readonly observation: RefreshObservation;
+  readonly ordinal: number;
+  readonly priorHeadDigest: string | null;
+  readonly schemaVersion: "1.0.0";
+  readonly sequence: number;
+  readonly trustEpochId: string;
+}
+
+type AuthenticatedChainEntry = AuthenticatedCatalogRefreshAttempt | AuthenticatedExecutionReceipt;
+type ChainEntryBody =
+  | Omit<AuthenticatedCatalogRefreshAttempt, "authenticationTag">
+  | Omit<AuthenticatedExecutionReceipt, "authenticationTag">;
+
 export interface ReceiptAppendResult {
   readonly executionRecordId: string;
   readonly headDigest: string;
+  readonly sequence: number;
+  readonly trustEpochId: string;
+}
+
+export interface CatalogRefreshAttemptAppendResult {
+  readonly headDigest: string;
+  readonly invocationId: string;
+  readonly ordinal: number;
   readonly sequence: number;
   readonly trustEpochId: string;
 }
@@ -61,6 +88,7 @@ export type ReceiptVerificationResult =
       readonly actionable: false;
       readonly reason:
         | "anchor-head-mismatch"
+        | "catalog-refresh-not-current"
         | "invalid-authentication"
         | "invalid-chain"
         | "missing-trust-state"
@@ -119,22 +147,8 @@ export class FileExecutionReceiptStore {
       if (await this.hasRecordCollision(record.id)) {
         throw new Error(`Execution record ID collision for ${record.id}.`);
       }
-      const [head, anchor] = await Promise.all([
-        readOptionalJson<RepositoryHead>(this.headPath()),
-        readOptionalJson<Anchor>(this.anchorPath),
-      ]);
-      let prior: RepositoryHead | null = null;
-      if (head !== null && anchor !== null) {
-        const verified = await this.verifyChain(head, anchor);
-        if (!verified.valid)
-          throw new Error(`Existing execution receipt chain is invalid: ${verified.reason}.`);
-        if (head.trustEpochId !== options.trustEpochId) {
-          throw new Error("A verified receipt chain cannot change trust epochs implicitly.");
-        }
-        prior = head;
-      } else if (anchor !== null) {
-        throw new Error("External execution anchor exists without its repository head.");
-      }
+      const { entries, head, prior } = await this.loadChain(options.trustEpochId);
+      assertLineageExtendsAuthenticatedHistory(catalogRefreshLineage, entries);
 
       const body = {
         artifactType: "authenticated-evaluation-receipt" as const,
@@ -145,36 +159,64 @@ export class FileExecutionReceiptStore {
         sequence: (prior?.sequence ?? 0) + 1,
         trustEpochId: options.trustEpochId,
       };
-      const receipt: AuthenticatedExecutionReceipt = {
-        ...body,
-        authenticationTag: hmac(this.key, canonicalJson(body)),
-      };
-      const headDigest = sha256(canonicalJson(receipt));
-      const nextHead: RepositoryHead = {
-        headDigest,
-        sequence: receipt.sequence,
-        trustEpochId: receipt.trustEpochId,
-      };
-      const anchorBody = nextHead;
-      const nextAnchor: Anchor = {
-        ...anchorBody,
-        authenticationTag: hmac(this.key, canonicalJson(anchorBody)),
-      };
-      const receiptPath = this.receiptPath(headDigest);
-      await publishImmutable(receiptPath, `${JSON.stringify(receipt, null, 2)}\n`);
-      try {
-        await atomicWrite(this.headPath(), `${JSON.stringify(nextHead, null, 2)}\n`);
-        await this.advanceAnchor(`${JSON.stringify(nextAnchor, null, 2)}\n`);
-      } catch (error: unknown) {
-        await this.restoreHead(head);
-        await unlink(receiptPath).catch(() => undefined);
-        throw error;
-      }
+      const { entry: receipt, headDigest } = await this.persistEntry(body, head);
       return {
         executionRecordId: record.id,
         headDigest,
         sequence: receipt.sequence,
         trustEpochId: receipt.trustEpochId,
+      };
+    });
+  }
+
+  async appendCatalogRefreshAttempt(
+    observationInput: unknown,
+    options: {
+      readonly invocationId: string;
+      readonly ordinal: number;
+      readonly trustEpochId: string;
+    },
+  ): Promise<CatalogRefreshAttemptAppendResult> {
+    const observation = refreshObservationSchema.parse(observationInput);
+    if (observation.acquisition !== "live-api") {
+      throw new Error("Only live catalog attempts can advance actionable refresh state.");
+    }
+    assertStableId(options.invocationId, "catalog refresh invocation ID");
+    assertStableId(options.trustEpochId, "trust epoch ID");
+    if (!Number.isSafeInteger(options.ordinal) || options.ordinal < 1) {
+      throw new Error("Invalid catalog refresh attempt ordinal.");
+    }
+    await this.ensureDirectories();
+    return this.withLock(async () => {
+      const { entries, head, prior } = await this.loadChain(options.trustEpochId);
+      const latestAttempt = latestCatalogAttempt(entries);
+      if (
+        (latestAttempt?.invocationId === options.invocationId &&
+          options.ordinal !== latestAttempt.ordinal + 1) ||
+        (latestAttempt?.invocationId !== options.invocationId && options.ordinal !== 1)
+      ) {
+        throw new Error("Catalog refresh attempts must extend the complete ordered lineage.");
+      }
+      const body: Omit<AuthenticatedCatalogRefreshAttempt, "authenticationTag"> = {
+        artifactType: "authenticated-catalog-refresh-attempt",
+        invocationId: options.invocationId,
+        observation,
+        ordinal: options.ordinal,
+        priorHeadDigest: prior?.headDigest ?? null,
+        schemaVersion: "1.0.0",
+        sequence: (prior?.sequence ?? 0) + 1,
+        trustEpochId: options.trustEpochId,
+      };
+      const { entry, headDigest } = await this.persistEntry(body, head);
+      if (entry.artifactType !== "authenticated-catalog-refresh-attempt") {
+        throw new Error("Unexpected execution receipt store entry type.");
+      }
+      return {
+        headDigest,
+        invocationId: entry.invocationId,
+        ordinal: entry.ordinal,
+        sequence: entry.sequence,
+        trustEpochId: entry.trustEpochId,
       };
     });
   }
@@ -197,19 +239,32 @@ export class FileExecutionReceiptStore {
     }
     const verified = await this.verifyChain(head, anchor);
     if (!verified.valid) return { actionable: false, reason: verified.reason, receipt: null };
-    const receipt = verified.receipts.find(
-      (candidate) => candidate.executionRecord.id === executionRecordId,
+    const receipt = verified.entries.find(
+      (candidate): candidate is AuthenticatedExecutionReceipt =>
+        candidate.artifactType === "authenticated-evaluation-receipt" &&
+        candidate.executionRecord.id === executionRecordId,
     );
-    return receipt === undefined
-      ? { actionable: false, reason: "record-not-in-current-epoch", receipt: null }
-      : { actionable: true, reason: "verified", receipt };
+    if (receipt === undefined) {
+      return { actionable: false, reason: "record-not-in-current-epoch", receipt: null };
+    }
+    const latestAttempt = latestCatalogAttempt(verified.entries);
+    const receiptAttempt = latestCatalogAttempt([receipt]);
+    if (
+      latestAttempt === undefined ||
+      receiptAttempt === undefined ||
+      latestAttempt.observation.status !== "success" ||
+      canonicalJson(latestAttempt) !== canonicalJson(receiptAttempt)
+    ) {
+      return { actionable: false, reason: "catalog-refresh-not-current", receipt: null };
+    }
+    return { actionable: true, reason: "verified", receipt };
   }
 
   private async verifyChain(
     head: RepositoryHead,
     anchor: Anchor,
   ): Promise<
-    | { readonly valid: true; readonly receipts: readonly AuthenticatedExecutionReceipt[] }
+    | { readonly valid: true; readonly entries: readonly AuthenticatedChainEntry[] }
     | {
         readonly valid: false;
         readonly reason: "invalid-authentication" | "invalid-chain";
@@ -223,45 +278,46 @@ export class FileExecutionReceiptStore {
     if (!safeEqual(anchor.authenticationTag, hmac(this.key, canonicalJson(anchorBody)))) {
       return { valid: false, reason: "invalid-authentication" };
     }
-    const receipts: AuthenticatedExecutionReceipt[] = [];
+    const entries: AuthenticatedChainEntry[] = [];
     let expectedDigest: string | null = head.headDigest;
     let expectedSequence = head.sequence;
     while (expectedDigest !== null) {
-      let receipt: AuthenticatedExecutionReceipt;
+      let entry: AuthenticatedChainEntry;
       try {
-        receipt = parseReceipt(await readBoundedJson(this.receiptPath(expectedDigest)));
+        entry = parseChainEntry(await readBoundedJson(this.receiptPath(expectedDigest)));
       } catch {
         return { valid: false, reason: "invalid-chain" };
       }
       if (
-        sha256(canonicalJson(receipt)) !== expectedDigest ||
-        receipt.sequence !== expectedSequence ||
-        receipt.trustEpochId !== head.trustEpochId
+        sha256(canonicalJson(entry)) !== expectedDigest ||
+        entry.sequence !== expectedSequence ||
+        entry.trustEpochId !== head.trustEpochId
       ) {
         return { valid: false, reason: "invalid-chain" };
       }
       try {
         if (
-          createCatalogRefreshLineageDigest(receipt.catalogRefreshLineage) !==
-          receipt.executionRecord.catalogRefreshLineageDigest
+          entry.artifactType === "authenticated-evaluation-receipt" &&
+          createCatalogRefreshLineageDigest(entry.catalogRefreshLineage) !==
+            entry.executionRecord.catalogRefreshLineageDigest
         ) {
           return { valid: false, reason: "invalid-chain" };
         }
       } catch {
         return { valid: false, reason: "invalid-chain" };
       }
-      const { authenticationTag, ...body } = receipt;
+      const { authenticationTag, ...body } = entry;
       if (!safeEqual(authenticationTag, hmac(this.key, canonicalJson(body)))) {
         return { valid: false, reason: "invalid-authentication" };
       }
-      receipts.push(receipt);
-      expectedDigest = receipt.priorHeadDigest;
+      entries.push(entry);
+      expectedDigest = entry.priorHeadDigest;
       expectedSequence -= 1;
     }
-    if (expectedSequence !== 0 || receipts.length !== head.sequence) {
+    if (expectedSequence !== 0 || entries.length !== head.sequence) {
       return { valid: false, reason: "invalid-chain" };
     }
-    return { valid: true, receipts };
+    return { valid: true, entries };
   }
 
   private async hasRecordCollision(id: string): Promise<boolean> {
@@ -269,8 +325,10 @@ export class FileExecutionReceiptStore {
     for (const entry of await readdir(directory).catch(() => [] as string[])) {
       if (!entry.endsWith(".json")) continue;
       try {
+        const parsed = parseChainEntry(await readBoundedJson(path.join(directory, entry)));
         if (
-          parseReceipt(await readBoundedJson(path.join(directory, entry))).executionRecord.id === id
+          parsed.artifactType === "authenticated-evaluation-receipt" &&
+          parsed.executionRecord.id === id
         ) {
           return true;
         }
@@ -279,6 +337,66 @@ export class FileExecutionReceiptStore {
       }
     }
     return false;
+  }
+
+  private async loadChain(trustEpochId: string): Promise<{
+    readonly entries: readonly AuthenticatedChainEntry[];
+    readonly head: RepositoryHead | null;
+    readonly prior: RepositoryHead | null;
+  }> {
+    const [head, anchor] = await Promise.all([
+      readOptionalJson<RepositoryHead>(this.headPath()),
+      readOptionalJson<Anchor>(this.anchorPath),
+    ]);
+    if (head !== null && anchor !== null) {
+      const verified = await this.verifyChain(head, anchor);
+      if (!verified.valid)
+        throw new Error(`Existing execution receipt chain is invalid: ${verified.reason}.`);
+      if (head.trustEpochId !== trustEpochId) {
+        throw new Error("A verified receipt chain cannot change trust epochs implicitly.");
+      }
+      return { entries: verified.entries, head, prior: head };
+    }
+    if (anchor !== null) {
+      throw new Error("External execution anchor exists without its repository head.");
+    }
+    // Repository-only history is not actionable without its external exact-head
+    // anchor. Preserve it only for rollback if the new epoch cannot be anchored.
+    return { entries: [], head, prior: null };
+  }
+
+  private async persistEntry<Body extends ChainEntryBody>(
+    body: Body,
+    previousHead: RepositoryHead | null,
+  ): Promise<{
+    readonly entry: Body & { readonly authenticationTag: string };
+    readonly headDigest: string;
+  }> {
+    const entry = {
+      ...body,
+      authenticationTag: hmac(this.key, canonicalJson(body)),
+    };
+    const headDigest = sha256(canonicalJson(entry));
+    const nextHead: RepositoryHead = {
+      headDigest,
+      sequence: entry.sequence,
+      trustEpochId: entry.trustEpochId,
+    };
+    const nextAnchor: Anchor = {
+      ...nextHead,
+      authenticationTag: hmac(this.key, canonicalJson(nextHead)),
+    };
+    const entryPath = this.receiptPath(headDigest);
+    await publishImmutable(entryPath, `${JSON.stringify(entry, null, 2)}\n`);
+    try {
+      await atomicWrite(this.headPath(), `${JSON.stringify(nextHead, null, 2)}\n`);
+      await this.advanceAnchor(`${JSON.stringify(nextAnchor, null, 2)}\n`);
+    } catch (error: unknown) {
+      await this.restoreHead(previousHead);
+      await unlink(entryPath).catch(() => undefined);
+      throw error;
+    }
+    return { entry, headDigest };
   }
 
   protected async advanceAnchor(contents: string): Promise<void> {
@@ -403,6 +521,137 @@ function parseReceipt(value: unknown): AuthenticatedExecutionReceipt {
     sequence: value.sequence as number,
     trustEpochId: value.trustEpochId,
   };
+}
+
+function parseCatalogRefreshAttempt(value: unknown): AuthenticatedCatalogRefreshAttempt {
+  if (!isRecord(value)) throw new Error("Invalid authenticated catalog refresh attempt.");
+  const keys = Object.keys(value).sort().join(",");
+  if (
+    keys !==
+      [
+        "artifactType",
+        "authenticationTag",
+        "invocationId",
+        "observation",
+        "ordinal",
+        "priorHeadDigest",
+        "schemaVersion",
+        "sequence",
+        "trustEpochId",
+      ]
+        .sort()
+        .join(",") ||
+    value.artifactType !== "authenticated-catalog-refresh-attempt" ||
+    value.schemaVersion !== "1.0.0" ||
+    typeof value.authenticationTag !== "string" ||
+    !/^hmac-sha256:[0-9a-f]{64}$/.test(value.authenticationTag) ||
+    typeof value.invocationId !== "string" ||
+    !/^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/.test(value.invocationId) ||
+    !Number.isSafeInteger(value.ordinal) ||
+    (value.ordinal as number) < 1 ||
+    !Number.isSafeInteger(value.sequence) ||
+    (value.sequence as number) < 1 ||
+    typeof value.trustEpochId !== "string" ||
+    (value.priorHeadDigest !== null &&
+      (typeof value.priorHeadDigest !== "string" ||
+        !/^sha256:[0-9a-f]{64}$/.test(value.priorHeadDigest)))
+  ) {
+    throw new Error("Invalid authenticated catalog refresh attempt.");
+  }
+  return {
+    artifactType: "authenticated-catalog-refresh-attempt",
+    authenticationTag: value.authenticationTag,
+    invocationId: value.invocationId,
+    observation: refreshObservationSchema.parse(value.observation),
+    ordinal: value.ordinal as number,
+    priorHeadDigest: value.priorHeadDigest as string | null,
+    schemaVersion: "1.0.0",
+    sequence: value.sequence as number,
+    trustEpochId: value.trustEpochId,
+  };
+}
+
+function parseChainEntry(value: unknown): AuthenticatedChainEntry {
+  if (!isRecord(value)) throw new Error("Invalid execution receipt store entry.");
+  return value.artifactType === "authenticated-catalog-refresh-attempt"
+    ? parseCatalogRefreshAttempt(value)
+    : parseReceipt(value);
+}
+
+interface CatalogAttemptCursor {
+  readonly invocationId: string;
+  readonly observation: RefreshObservation;
+  readonly ordinal: number;
+}
+
+function latestCatalogAttempt(
+  entries: readonly AuthenticatedChainEntry[],
+): CatalogAttemptCursor | undefined {
+  for (const entry of entries) {
+    if (entry.artifactType === "authenticated-catalog-refresh-attempt") {
+      return {
+        invocationId: entry.invocationId,
+        observation: entry.observation,
+        ordinal: entry.ordinal,
+      };
+    }
+    const attempt = entry.catalogRefreshLineage.attempts.at(-1);
+    if (attempt !== undefined) {
+      return {
+        invocationId: entry.catalogRefreshLineage.invocationId,
+        observation: attempt.observation,
+        ordinal: attempt.ordinal,
+      };
+    }
+  }
+  return undefined;
+}
+
+function assertLineageExtendsAuthenticatedHistory(
+  lineage: CatalogRefreshLineage,
+  entries: readonly AuthenticatedChainEntry[],
+): void {
+  const latest = latestCatalogAttempt(entries);
+  if (latest === undefined) return;
+  const knownAttempts = new Map<number, RefreshObservation>();
+  for (const entry of entries) {
+    if (
+      entry.artifactType === "authenticated-catalog-refresh-attempt" &&
+      entry.invocationId === lineage.invocationId
+    ) {
+      knownAttempts.set(entry.ordinal, entry.observation);
+    } else if (
+      entry.artifactType === "authenticated-evaluation-receipt" &&
+      entry.catalogRefreshLineage.invocationId === lineage.invocationId
+    ) {
+      for (const attempt of entry.catalogRefreshLineage.attempts) {
+        knownAttempts.set(attempt.ordinal, attempt.observation);
+      }
+    }
+  }
+  if (latest.invocationId !== lineage.invocationId) {
+    if (knownAttempts.size > 0) {
+      throw new Error("Catalog refresh lineage cannot roll back to an older invocation.");
+    }
+    return;
+  }
+  for (const [ordinal, observation] of knownAttempts) {
+    const candidate = lineage.attempts.find((attempt) => attempt.ordinal === ordinal);
+    if (
+      candidate === undefined ||
+      canonicalJson(candidate.observation) !== canonicalJson(observation)
+    ) {
+      throw new Error("Catalog refresh lineage omits or changes an authenticated attempt.");
+    }
+  }
+  if (
+    lineage.terminalOrdinal < latest.ordinal ||
+    (latest.observation.status === "failure" && lineage.terminalOrdinal === latest.ordinal)
+  ) {
+    throw new Error(
+      "A failed terminal catalog refresh remains non-actionable until a later success.",
+    );
+  }
 }
 
 async function readBoundedJson(filePath: string): Promise<unknown> {

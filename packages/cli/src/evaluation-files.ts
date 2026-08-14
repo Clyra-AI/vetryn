@@ -11,6 +11,7 @@ import {
 } from "@vetryn/core";
 import {
   evaluateOpenRouterCandidate,
+  createEvaluationCaseDigest,
   type CurrentCatalogRefresh,
   type EvaluationClock,
   type EvaluationTransport,
@@ -54,8 +55,11 @@ export async function evaluateFiles(options: EvaluateFilesOptions): Promise<Eval
   const callSite = manifest.callSites.find(({ id }) => id === options.callSiteId);
   if (callSite === undefined)
     throw new Error(`Call site ${options.callSiteId} is not in the manifest.`);
-  const fixtureDigest = `sha256:${createHash("sha256").update(fixtureContents).digest("hex")}`;
   const cases = parseFixtureCases(fixtureContents);
+  const fixtureDigest = createEvaluationCaseDigest(cases);
+  if (evalSuite.fixtureDigest !== fixtureDigest) {
+    throw new Error("Evaluation fixture cases do not match the reviewed suite digest.");
+  }
   const artifacts = await evaluateOpenRouterCandidate({
     callSite,
     candidateModel: options.candidateModel,
@@ -65,7 +69,6 @@ export async function evaluateFiles(options: EvaluateFilesOptions): Promise<Eval
     evalSuite,
     evaluator: { build: options.evaluatorBuild, id: "vetryn-evaluator", version: "0.0.0" },
     executionRecordId: options.executionRecordId,
-    fixtureDigest,
     limits: {
       concurrency: 4,
       maxRequests: 1_000,

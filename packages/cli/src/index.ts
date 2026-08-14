@@ -31,8 +31,9 @@ import {
 } from "@vetryn/openrouter";
 
 import { evaluateFiles } from "./evaluation-files.js";
+import { FileExecutionReceiptStore } from "./evidence-store.js";
 
-export { FileExecutionReceiptStore } from "./evidence-store.js";
+export { FileExecutionReceiptStore };
 export { evaluateFiles } from "./evaluation-files.js";
 
 export const VERSION = "0.0.0";
@@ -582,6 +583,16 @@ export function createProgram(dependencies: CliDependencies = {}): Command {
               store: new FileCatalogStore(options.catalogStore),
             });
             if (refresh.status !== "success") {
+              await new FileExecutionReceiptStore({
+                anchorPath: options.anchor,
+                evidencePath: options.evidenceStore,
+                key: receiptKey,
+                repositoryRoot: options.root,
+              }).appendCatalogRefreshAttempt(refresh.observation, {
+                invocationId: options.runId,
+                ordinal: 1,
+                trustEpochId: options.trustEpoch,
+              });
               throw new Error("The current invocation's terminal catalog refresh failed.");
             }
             return createCurrentCatalogRefresh({

@@ -10,6 +10,7 @@ import {
 import {
   EvaluationTransportError,
   createCurrentCatalogRefresh,
+  createEvaluationCaseDigest,
   createOpenRouterEvaluationTransport,
   evaluateOpenRouterCandidate,
   refreshOpenRouterCatalog,
@@ -58,18 +59,6 @@ const callSite = {
     sourceFingerprint: digest("a"),
     symbol: "classifySupportTicket",
   },
-} as const;
-
-const evalSuite = {
-  artifactType: "eval-suite",
-  callSiteId: callSite.id,
-  caseCount: 2,
-  fixtureDigest: digest("b"),
-  fixturePath: "fixtures/support-classification.evals.jsonl",
-  id: callSite.evalSuiteId,
-  redactionMode: "no-raw-inputs-or-outputs",
-  reviewed: true,
-  schemaVersion: VETRYN_ARTIFACT_SCHEMA_VERSION,
 } as const;
 
 const models = [
@@ -160,6 +149,18 @@ const cases = [
   },
 ] as const;
 
+const evalSuite = {
+  artifactType: "eval-suite",
+  callSiteId: callSite.id,
+  caseCount: 2,
+  fixtureDigest: createEvaluationCaseDigest(cases),
+  fixturePath: "fixtures/support-classification.evals.jsonl",
+  id: callSite.evalSuiteId,
+  redactionMode: "no-raw-inputs-or-outputs",
+  reviewed: true,
+  schemaVersion: VETRYN_ARTIFACT_SCHEMA_VERSION,
+} as const;
+
 function transport(): EvaluationTransport {
   return {
     async execute(request) {
@@ -167,8 +168,8 @@ function transport(): EvaluationTransport {
         latencyMs: request.model === callSite.currentModel ? 600 : 300,
         output: { classification: request.caseId === "support-001" ? "billing" : "returns" },
         route: {
-          attempts: [{ providerName: "Azure", statusCode: 200 }],
-          selectedProvider: { providerName: "Azure" },
+          attempts: [{ model: request.model, providerName: "Azure", statusCode: 200 }],
+          selectedProvider: { model: request.model, providerName: "Azure" },
         },
         usage: { completionTokens: 1, promptTokens: 9 },
       };
@@ -235,7 +236,6 @@ function baseOptions(
     evalSuite,
     evaluator: { build: "git:test-build", id: "vetryn-evaluator", version: "0.1.0" },
     executionRecordId: "execution-record:support-classification-test",
-    fixtureDigest: evalSuite.fixtureDigest,
     limits: { concurrency: 2, maxRequests: 8, maxSpendUsd: "1", retries: 1, timeoutMs: 1000 },
     sampling: { attempts: 1, maxOutputTokens: 32, seed: 42, temperature: 0 },
     scorer: {
@@ -265,6 +265,13 @@ describe("bounded deterministic evaluation", () => {
             choices: [{ message: { content: '{"classification":"billing"}' } }],
             model: "openai/gpt-4o-mini",
             provider: "Azure",
+            route_attempts: [
+              {
+                model: "openai/gpt-4o-mini",
+                provider_name: "Azure",
+                status_code: 200,
+              },
+            ],
             usage: { completion_tokens: 1, prompt_tokens: 9 },
           }),
           { headers: { "content-type": "application/json" }, status: 200 },
@@ -304,9 +311,118 @@ describe("bounded deterministic evaluation", () => {
       },
     });
     expect(result.route).toEqual({
-      attempts: [{ providerName: "Azure", statusCode: 200 }],
-      selectedProvider: { providerName: "Azure" },
+      attempts: [{ model: "openai/gpt-4o-mini", providerName: "Azure", statusCode: 200 }],
+      selectedProvider: { model: "openai/gpt-4o-mini", providerName: "Azure" },
     });
+  });
+
+  it("rejects missing route metadata and inconsistent attempt models", async () => {
+    const missingMetadataTransport = createOpenRouterEvaluationTransport({
+      apiKey: "offline-fixture-key",
+      fetch: async () =>
+        new Response(
+          JSON.stringify({
+            choices: [{ message: { content: '{"classification":"billing"}' } }],
+            model: "openai/gpt-4o-mini",
+            provider: "Azure",
+            usage: { completion_tokens: 1, prompt_tokens: 9 },
+          }),
+          { headers: { "content-type": "application/json" }, status: 200 },
+        ),
+      nowMilliseconds: () => 1,
+    });
+    await expect(
+      missingMetadataTransport.execute({
+        caseId: "support-001",
+        input: "synthetic",
+        maxOutputTokens: 32,
+        model: "openai/gpt-4o-mini",
+        routePolicy: {
+          headers: { "X-OpenRouter-Metadata": "enabled" },
+          provider: {
+            allow_fallbacks: false,
+            data_collection: "deny",
+            only: ["azure"],
+            require_parameters: true,
+            zdr: true,
+          },
+        },
+        sampling: { seed: 42, temperature: 0 },
+        signal: new AbortController().signal,
+      }),
+    ).rejects.toMatchObject({ code: "invalid-output" });
+
+    const options = baseOptions(await acquireCurrentCatalogRefresh());
+    const artifacts = await evaluateOpenRouterCandidate({
+      ...options,
+      clock: { now: () => "2026-08-10T00:00:01.000Z" },
+      transport: {
+        async execute(request) {
+          return {
+            ...(await transport().execute(request)),
+            route: {
+              attempts: [{ model: "other/model", providerName: "Azure", statusCode: 200 }],
+              selectedProvider: { model: "other/model", providerName: "Azure" },
+            },
+          };
+        },
+      },
+    });
+    expect(artifacts.candidateRun).toMatchObject({
+      failureCode: "invalid-output",
+      status: "incomplete",
+    });
+    expect(artifacts.candidateRun).not.toHaveProperty("routeObservation");
+  });
+
+  it("cancels a chunked provider body as soon as it exceeds one megabyte", async () => {
+    let cancelled = false;
+    let chunksProduced = 0;
+    const chunk = new Uint8Array(600_000);
+    const providerTransport = createOpenRouterEvaluationTransport({
+      apiKey: "offline-fixture-key",
+      fetch: async () =>
+        new Response(
+          new ReadableStream<Uint8Array>(
+            {
+              cancel() {
+                cancelled = true;
+              },
+              pull(controller) {
+                chunksProduced += 1;
+                controller.enqueue(chunk);
+                if (chunksProduced === 3) controller.close();
+              },
+            },
+            { highWaterMark: 0 },
+          ),
+          { headers: { "content-type": "application/json" }, status: 200 },
+        ),
+      nowMilliseconds: () => 1,
+    });
+
+    await expect(
+      providerTransport.execute({
+        caseId: "support-001",
+        input: "synthetic",
+        maxOutputTokens: 32,
+        model: "openai/gpt-4o-mini",
+        routePolicy: {
+          headers: { "X-OpenRouter-Metadata": "enabled" },
+          provider: {
+            allow_fallbacks: false,
+            data_collection: "deny",
+            only: ["azure"],
+            require_parameters: true,
+            zdr: true,
+          },
+        },
+        sampling: { seed: 42, temperature: 0 },
+        signal: new AbortController().signal,
+      }),
+    ).rejects.toMatchObject({ code: "invalid-output" });
+    expect(cancelled).toBe(true);
+    expect(chunksProduced).toBe(2);
   });
 
   it("emits reproducible complete candidate and execution artifacts from pinned inputs", async () => {
@@ -389,6 +505,20 @@ describe("bounded deterministic evaluation", () => {
         cases: cases.map((evaluationCase) => ({ ...evaluationCase, expected: {} })),
       }),
     ).rejects.toThrow(/at least one expected fact/i);
+  });
+
+  it("rejects same-count case substitution against the reviewed fixture digest", async () => {
+    const options = baseOptions(await acquireCurrentCatalogRefresh());
+    await expect(
+      evaluateOpenRouterCandidate({
+        ...options,
+        cases: cases.map((evaluationCase, index) =>
+          index === 0
+            ? { ...evaluationCase, input: "Substituted same-count case" }
+            : evaluationCase,
+        ),
+      }),
+    ).rejects.toThrow(/reviewed fixture digest/i);
   });
 
   it("reserves the hard spend ceiling before zero, expensive, and equality-bound requests", async () => {

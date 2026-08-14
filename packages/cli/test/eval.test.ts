@@ -75,8 +75,8 @@ describe("vetryn eval", () => {
             latencyMs: request.model === "openai/gpt-4.1-mini" ? 600 : 300,
             output: { classification: expected.get(request.caseId) },
             route: {
-              attempts: [{ providerName: "Azure", statusCode: 200 }],
-              selectedProvider: { providerName: "Azure" },
+              attempts: [{ model: request.model, providerName: "Azure", statusCode: 200 }],
+              selectedProvider: { model: request.model, providerName: "Azure" },
             },
             usage: { completionTokens: 1, promptTokens: 9 },
           };
@@ -148,5 +148,74 @@ describe("vetryn eval", () => {
     expect(artifactText).not.toContain("Synthetic request");
     expect(artifactText).not.toContain("offline-provider-key");
     expect(stdout).toHaveBeenCalled();
+  });
+
+  it("authenticates a terminal live catalog failure before refusing evaluation", async () => {
+    const root = await mkdtemp(path.join(tmpdir(), "vetryn-eval-failure-"));
+    roots.push(root);
+    const repositoryRoot = path.join(root, "repo");
+    const anchorPath = path.join(root, "trust", "anchor.json");
+    const keyPath = path.join(root, "keys", "receipt.key");
+    const providerKeyPath = path.join(root, "keys", "provider.key");
+    const evidencePath = path.join(repositoryRoot, ".vetryn", "evidence");
+    await mkdir(path.dirname(keyPath), { recursive: true });
+    await writeFile(keyPath, "offline-test-receipt-key-material");
+    await writeFile(providerKeyPath, "offline-provider-key");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response("unavailable", { status: 503 })),
+    );
+
+    await expect(
+      createProgram().parseAsync([
+        "node",
+        "vetryn",
+        "eval",
+        "--manifest",
+        "unused-manifest.json",
+        "--call-site",
+        "support-classification",
+        "--suite",
+        "unused-suite.json",
+        "--fixture",
+        "unused-fixture.jsonl",
+        "--catalog-store",
+        path.join(repositoryRoot, ".vetryn", "catalog"),
+        "--refresh-id",
+        "failed-refresh",
+        "--candidate",
+        "openai/gpt-4o-mini",
+        "--run-id",
+        "failed-evaluation",
+        "--trust-epoch",
+        "golden-epoch",
+        "--evidence-store",
+        evidencePath,
+        "--anchor",
+        anchorPath,
+        "--receipt-key-file",
+        keyPath,
+        "--provider-key-file",
+        providerKeyPath,
+        "--output",
+        path.join(repositoryRoot, "unused-output.json"),
+        "--root",
+        repositoryRoot,
+      ]),
+    ).rejects.toThrow(/terminal catalog refresh failed/i);
+
+    const head = JSON.parse(await readFile(path.join(evidencePath, "head.json"), "utf8")) as {
+      headDigest: string;
+    };
+    const entry = JSON.parse(
+      await readFile(
+        path.join(evidencePath, "receipts", `${head.headDigest.slice("sha256:".length)}.json`),
+        "utf8",
+      ),
+    ) as { artifactType: string; observation: { status: string } };
+    expect(entry).toMatchObject({
+      artifactType: "authenticated-catalog-refresh-attempt",
+      observation: { status: "failure" },
+    });
   });
 });
