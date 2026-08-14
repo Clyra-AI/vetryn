@@ -178,6 +178,8 @@ async function createFixture() {
   });
   await writeJson(root, `${lifecycleRoot}/work_proof_marker.json`, {
     git_sha: candidate,
+    baseCommit: "0".repeat(40),
+    executor: "implementation-agent",
     cleanCandidateVerified: true,
     commands: [{ command: "pnpm test", exitCode: 0, status: "pass" }],
   });
@@ -232,15 +234,14 @@ async function amend(root, edit) {
   return git(root, "rev-parse", "HEAD");
 }
 
-async function createAcceptedRebindFixture() {
-  const fixture = await createFixture();
-  await writeFile(path.join(fixture.root, "product.txt"), "repaired candidate\n");
+async function rebindAcceptedFixture(fixture, contents) {
+  await writeFile(path.join(fixture.root, "product.txt"), `${contents}\n`);
   const candidate = commit(fixture.root, "repair candidate");
   const evidenceId = `ev-m0-14-contracts-${candidate.slice(0, 7)}`;
   const statePath = `${fixture.planRoot}/state/${taskId}.json`;
   const state = await readJson(fixture.root, statePath);
   state.candidate.commit = candidate;
-  state.revision = 2;
+  state.revision += 1;
   state.criteria[0].evidenceRefs = [evidenceId];
   state.history = [
     ...(state.history ?? []),
@@ -283,6 +284,25 @@ async function createAcceptedRebindFixture() {
   return { ...fixture, candidate, delivery, evidenceId };
 }
 
+async function createAcceptedRebindFixture({ repairBudget = false } = {}) {
+  const fixture = await createFixture();
+  if (repairBudget) {
+    const planPath = `${fixture.planRoot}/plan.json`;
+    const plan = await readJson(fixture.root, planPath);
+    plan.tasks[0].acceptanceItemIds = ["PROCESS-016"];
+    await writeJson(fixture.root, planPath, plan);
+    const statePath = `${fixture.planRoot}/state/${taskId}.json`;
+    const state = await readJson(fixture.root, statePath);
+    state.criteria[0].criterionId = "PROCESS-016";
+    await writeJson(fixture.root, statePath, state);
+    const ledgerPath = `${fixture.planRoot}/acceptance-ledger.json`;
+    const ledger = await readJson(fixture.root, ledgerPath);
+    ledger.items[0].id = "PROCESS-016";
+    await writeJson(fixture.root, ledgerPath, ledger);
+  }
+  return rebindAcceptedFixture(fixture, "repaired candidate");
+}
+
 afterEach(async () => {
   await Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true })));
 });
@@ -302,6 +322,20 @@ describe("promotion-tail validator", () => {
     expect(
       git(fixture.root, "diff", "--name-only", fixture.candidate, fixture.delivery),
     ).not.toContain(`${fixture.planRoot}/progress.json`);
+  });
+
+  it("accepts the one repair generation declared by PROCESS-016", async () => {
+    const fixture = await createAcceptedRebindFixture({ repairBudget: true });
+    const result = run(fixture.root, fixture.candidate, fixture.delivery);
+    expect(result.status, result.stderr).toBe(0);
+  });
+
+  it("rejects a second repair generation declared by PROCESS-016", async () => {
+    const firstRepair = await createAcceptedRebindFixture({ repairBudget: true });
+    const secondRepair = await rebindAcceptedFixture(firstRepair, "second repaired candidate");
+    const result = run(secondRepair.root, secondRepair.candidate, secondRepair.delivery);
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("promotion state exceeds the repair-generation budget");
   });
 
   it("accepts passing evidence cited only by an active command gate", async () => {
@@ -362,6 +396,22 @@ describe("promotion-tail validator", () => {
       const result = run(fixture.root, fixture.candidate, delivery);
       expect(result.status).toBe(1);
       expect(result.stderr).toContain("promotion state changed candidate attribution");
+    },
+  );
+
+  it.each(["baseCommit", "executor"])(
+    "rejects initial candidate attribution not bound by the work proof %s",
+    async (field) => {
+      const fixture = await createFixture();
+      const delivery = await amend(fixture.root, async () => {
+        const statePath = `${fixture.planRoot}/state/${taskId}.json`;
+        const state = await readJson(fixture.root, statePath);
+        state.candidate[field] = field === "baseCommit" ? "f".repeat(40) : "other-agent";
+        await writeJson(fixture.root, statePath, state);
+      });
+      const result = run(fixture.root, fixture.candidate, delivery);
+      expect(result.status).toBe(1);
+      expect(result.stderr).toContain("promotion state has unbound initial candidate attribution");
     },
   );
 
@@ -795,4 +845,19 @@ describe("promotion-tail validator", () => {
       expect(result.status, result.stderr).toBe(0);
     },
   );
+
+  it("accepts one explicitly classified standalone P2 as delivery debt", async () => {
+    const fixture = await createFixture();
+    const relativePath = `${fixture.planRoot}/evidence/lifecycle/${taskId}/${fixture.candidate}/review_report.json`;
+    const delivery = await amend(fixture.root, async () => {
+      const artifact = await readJson(fixture.root, relativePath);
+      artifact.findings.push({ severity: "P2", status: "accepted_risk" });
+      artifact.approval_effect.approvals_granted.push(
+        "maintainer_classified_standalone_p2_delivery_debt",
+      );
+      await writeJson(fixture.root, relativePath, artifact);
+    });
+    const result = run(fixture.root, fixture.candidate, delivery);
+    expect(result.status, result.stderr).toBe(0);
+  });
 });
