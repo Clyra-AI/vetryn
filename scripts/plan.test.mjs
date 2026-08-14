@@ -908,9 +908,11 @@ describe("implementation plan validator", () => {
         "packages/cli/**",
         "packages/openrouter/**",
         "docs/adr/0023-close-late-review-trust-and-delivery-gaps.md",
+        "docs/oss-v1.md",
         "scripts/promotion-tail.mjs",
       ]),
     );
+    expect(task.scope.allowedPaths).not.toContain(".factory/artifacts/task-runs/M0-13/**");
     expect(task.scope.forbiddenPaths).toEqual(
       expect.arrayContaining(["packages/core/**", ".github/**", "llms.txt"]),
     );
