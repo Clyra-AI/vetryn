@@ -243,7 +243,7 @@
       "verification": {
         "method": "test",
         "testLevel": "adversarial",
-        "gateId": "QG-TRUST-REVIEW"
+        "gateId": "QG-CONTRACTS"
       },
       "waivable": false,
       "status": "planned",

@@ -919,7 +919,11 @@ describe("implementation plan validator", () => {
       expect.arrayContaining(["packages/core/**", ".github/**", "llms.txt"]),
     );
     expect(v107.dependsOn).toContainEqual({ taskId: "M0-13", kind: "hard" });
-    expect(ledger.items.filter((item) => item.taskId === "M0-13")).toHaveLength(6);
+    const m013Items = ledger.items.filter((item) => item.taskId === "M0-13");
+    expect(m013Items).toHaveLength(6);
+    expect(m013Items.find((item) => item.id === "HARDEN-001")?.verification.gateId).toBe(
+      "QG-CONTRACTS",
+    );
     expect(state).toMatchObject({ taskId: "M0-13", revision: 0, state: "planned" });
   });
 
