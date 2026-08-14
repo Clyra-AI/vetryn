@@ -33,11 +33,6 @@ open-ended workload.
   existing recommendation identity and evidence only if that evidence is complete, integrity-valid, and
   reusable under current policy. Failed, partial, exhausted, privacy-unsafe, or otherwise non-reusable
   evidence must not suppress a later bounded retry.
-- Bind candidate-run artifact identity to the canonical model ID with a digest suffix; human-readable
-  normalization alone is not an identity function.
-- Publish the redacted evaluation output before advancing its authenticated receipt, reject repository/external
-  head mismatches before append, and keep the receipt directory inside the configured evidence root without
-  symbolic-link traversal.
 - Keep LLM judges outside OSS V1. The V1 field criterion records positive blocked-call-site evidence, a
   representative no-findings outcome, or an explicit insufficient-coverage outcome. No-findings requires
   a predeclared eligibility census, direct assessment of at least ten eligible open-ended call sites across
