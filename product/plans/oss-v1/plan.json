@@ -1064,6 +1064,105 @@
       ]
     },
     {
+      "id": "M0-13",
+      "milestone": "M0",
+      "title": "Close late-review trust and delivery gaps",
+      "objective": "Repair the concrete late Codex findings from PRs 38 through 40 in one bounded high-risk task, add an executable promotion-tail gate, and make late-review convergence terminal without weakening trust or delivery policy.",
+      "risk": {
+        "level": "high",
+        "domains": ["credentials", "evaluation-cost", "evidence-integrity", "delivery-policy"]
+      },
+      "dependsOn": [{ "taskId": "M0-12", "kind": "hard" }],
+      "acceptanceItemIds": [
+        "HARDEN-001",
+        "HARDEN-002",
+        "HARDEN-003",
+        "PROCESS-015",
+        "PROCESS-016",
+        "PROCESS-017"
+      ],
+      "scope": {
+        "allowedPaths": [
+          ".agents/skills/vetryn-continue-next/**",
+          ".agents/skills/vetryn-promote-task/**",
+          ".changeset/**",
+          ".factory/artifacts/task-runs/M0-13/**",
+          "AGENTS.md",
+          "CHANGELOG.md",
+          "WORKFLOW.md",
+          "docs/adr/0009-single-maintainer-v1-delivery.md",
+          "docs/implementation/oss-v1-execution.md",
+          "package.json",
+          "packages/cli/**",
+          "packages/openrouter/**",
+          "product/plans/oss-v1/**",
+          "scripts/plan.mjs",
+          "scripts/plan.test.mjs",
+          "scripts/promotion-tail.mjs",
+          "scripts/promotion-tail.test.mjs",
+          "scripts/task.test.mjs"
+        ],
+        "forbiddenPaths": [
+          "packages/core/**",
+          "packages/typescript/**",
+          "examples/**",
+          "action.yml",
+          ".github/**",
+          "llms.txt"
+        ]
+      },
+      "semanticInvariants": [
+        "Receipt-signing credentials are canonicalized and rejected when repository-controlled before credential or provider I/O; symlink aliases cannot bypass the boundary.",
+        "Observed spend includes every billable provider response even when normalization fails and retries continue, and prompt plus completion usage cannot exceed the selected model context window.",
+        "Candidate-run identity includes exact execution identity so distinct evaluations cannot collide while identical inputs remain deterministic within one execution.",
+        "One executable promotion-tail command validates ProductCandidate through DeliveryHead and rejects product bytes, cross-task state or ledger edits, mutable prior evidence, missing generated progress, and undeclared artifacts.",
+        "A task lifecycle permits at most one repair generation after the first complete finding batch; the entire post-repair batch has one terminal disposition, with every P0 or P1 blocking and only one eligible standalone P2 recordable as delivery debt.",
+        "Late post-merge Codex findings are audited once; a late P0 or P1 creates corrective work and a late P2 is recorded as debt without pretending the earlier merge was reviewed cleanly.",
+        "New unaccepted tasks that change approval, evidence inheritance, persistence, credentials, security controls, or release policy cannot declare medium or low risk.",
+        "The task stays offline, uses no provider credentials or spend, and does not broaden Vetryn recommendation semantics beyond the seven reviewed findings."
+      ],
+      "deliverables": [
+        ".agents/skills/vetryn-continue-next/**",
+        ".agents/skills/vetryn-promote-task/**",
+        ".changeset/**",
+        "AGENTS.md",
+        "CHANGELOG.md",
+        "WORKFLOW.md",
+        "docs/adr/0009-single-maintainer-v1-delivery.md",
+        "docs/implementation/oss-v1-execution.md",
+        "package.json",
+        "packages/cli/**",
+        "packages/openrouter/**",
+        "scripts/plan.mjs",
+        "scripts/promotion-tail.mjs"
+      ],
+      "requiredTestLevels": ["unit", "contract", "integration", "adversarial"],
+      "requiredGates": [
+        "QG-PLAN-CHECK",
+        "QG-REPO-CHECK",
+        "QG-CONTRACTS",
+        "QG-INDEPENDENT-VERIFY",
+        "QG-TRUST-REVIEW"
+      ],
+      "requiredReviews": ["maintainer", "trust-reviewer"],
+      "capabilities": {
+        "network": false,
+        "credentials": false,
+        "provider": false,
+        "githubWrite": false
+      },
+      "maxAttempts": 2,
+      "stopConditions": [
+        "A receipt-signing credential inside repository-controlled content is read or accepted.",
+        "A billable response is omitted from observed spend or aggregate usage can exceed the context window.",
+        "Two executions can emit the same candidate-run identity.",
+        "Promotion evidence is inherited without the executable tail validator passing on the exact two commits.",
+        "A second repair generation starts instead of applying the terminal post-repair disposition.",
+        "A P0, P1, privacy, fail-closed, provider-safety, evidence-integrity, or other non-waivable finding is recorded as delivery debt.",
+        "The implementation expands into recommendation behavior, provider access, GitHub workflow changes, or unrelated hardening."
+      ]
+    },
+    {
       "id": "V1-02",
       "milestone": "M1",
       "title": "Build the deterministic golden repository",
@@ -1369,7 +1468,7 @@
       "dependsOn": [
         { "taskId": "V1-05", "kind": "hard" },
         { "taskId": "V1-06", "kind": "hard" },
-        { "taskId": "M0-12", "kind": "hard" }
+        { "taskId": "M0-13", "kind": "hard" }
       ],
       "acceptanceItemIds": [
         "RECOMMEND-001",

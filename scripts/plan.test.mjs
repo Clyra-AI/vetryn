@@ -20,6 +20,7 @@ const downstreamV1TaskIds = [
   "M0-10",
   "M0-11",
   "M0-12",
+  "M0-13",
   "V1-05",
   "V1-06",
   "V1-07",
@@ -867,7 +868,7 @@ describe("implementation plan validator", () => {
     expect(task.semanticInvariants.join(" ").toLowerCase()).toContain("promotion-only commits");
     expect(task.semanticInvariants.join(" ")).toContain("one batch per product candidate");
     expect(task.semanticInvariants.join(" ")).toContain("standalone P2");
-    expect(v107.dependsOn).toContainEqual({ taskId: "M0-12", kind: "hard" });
+    expect(v107.dependsOn).toContainEqual({ taskId: "M0-13", kind: "hard" });
     expect(ledger.items.filter((item) => item.taskId === "M0-12")).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ id: "PROCESS-012", waivable: false }),
@@ -876,6 +877,45 @@ describe("implementation plan validator", () => {
       ]),
     );
     expect(state.taskId).toBe("M0-12");
+  });
+
+  it("places one high-risk late-review correction before V1-07", async () => {
+    const plan = await readFixtureJson(repositoryRoot, "product/plans/oss-v1/plan.json");
+    const ledger = await readFixtureJson(
+      repositoryRoot,
+      "product/plans/oss-v1/acceptance-ledger.json",
+    );
+    const state = await readFixtureJson(repositoryRoot, "product/plans/oss-v1/state/M0-13.json");
+    const task = plan.tasks.find((candidate) => candidate.id === "M0-13");
+    const v107 = plan.tasks.find((candidate) => candidate.id === "V1-07");
+
+    expect(task).toMatchObject({
+      risk: { level: "high" },
+      dependsOn: [{ taskId: "M0-12", kind: "hard" }],
+      acceptanceItemIds: [
+        "HARDEN-001",
+        "HARDEN-002",
+        "HARDEN-003",
+        "PROCESS-015",
+        "PROCESS-016",
+        "PROCESS-017",
+      ],
+      capabilities: { network: false, credentials: false, provider: false, githubWrite: false },
+      maxAttempts: 2,
+    });
+    expect(task.scope.allowedPaths).toEqual(
+      expect.arrayContaining([
+        "packages/cli/**",
+        "packages/openrouter/**",
+        "scripts/promotion-tail.mjs",
+      ]),
+    );
+    expect(task.scope.forbiddenPaths).toEqual(
+      expect.arrayContaining(["packages/core/**", ".github/**", "llms.txt"]),
+    );
+    expect(v107.dependsOn).toContainEqual({ taskId: "M0-13", kind: "hard" });
+    expect(ledger.items.filter((item) => item.taskId === "M0-13")).toHaveLength(6);
+    expect(state).toMatchObject({ taskId: "M0-13", revision: 0, state: "planned" });
   });
 
   it("locks narrow continuation behind one bounded process task", async () => {

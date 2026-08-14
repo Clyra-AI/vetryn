@@ -1,0 +1,38 @@
+{
+  "$schema": "../../schemas/task-state.schema.json",
+  "schemaVersion": "1.0.0",
+  "taskId": "M0-13",
+  "revision": 0,
+  "state": "planned",
+  "attempt": 0,
+  "candidate": null,
+  "criteria": [
+    { "criterionId": "HARDEN-001", "status": "pending", "evidenceRefs": [] },
+    { "criterionId": "HARDEN-002", "status": "pending", "evidenceRefs": [] },
+    { "criterionId": "HARDEN-003", "status": "pending", "evidenceRefs": [] },
+    { "criterionId": "PROCESS-015", "status": "pending", "evidenceRefs": [] },
+    { "criterionId": "PROCESS-016", "status": "pending", "evidenceRefs": [] },
+    { "criterionId": "PROCESS-017", "status": "pending", "evidenceRefs": [] }
+  ],
+  "gates": [
+    { "gateId": "QG-PLAN-CHECK", "status": "pending", "evidenceRefs": [] },
+    { "gateId": "QG-REPO-CHECK", "status": "pending", "evidenceRefs": [] },
+    { "gateId": "QG-CONTRACTS", "status": "pending", "evidenceRefs": [] },
+    { "gateId": "QG-INDEPENDENT-VERIFY", "status": "pending", "evidenceRefs": [] },
+    { "gateId": "QG-TRUST-REVIEW", "status": "pending", "evidenceRefs": [] }
+  ],
+  "reviews": [
+    { "role": "maintainer", "status": "pending", "evidenceRefs": [] },
+    { "role": "trust-reviewer", "status": "pending", "evidenceRefs": [] }
+  ],
+  "blockers": [],
+  "history": [
+    {
+      "from": null,
+      "to": "planned",
+      "at": "2026-08-14T12:15:00Z",
+      "actor": "planning-agent",
+      "reason": "Created one bounded corrective task for the late Codex findings on PRs 38 through 40 before V1-07."
+    }
+  ]
+}
