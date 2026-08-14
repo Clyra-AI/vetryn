@@ -628,6 +628,7 @@ export function checkPromotionTail({ root, taskId, productCandidate, deliveryHea
     JSON.stringify(candidateState) === JSON.stringify(jsonAt(root, candidateBase, statePath)),
     "ProductCandidate changed canonical task state from its work-proof base",
   );
+  assertLedgerTail(jsonAt(root, candidateBase, ledgerPath), candidateLedger, taskId);
   const state = jsonAt(root, deliveryHead, statePath);
   assertPromotionState(
     candidateState,

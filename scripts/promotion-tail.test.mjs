@@ -46,7 +46,7 @@ function evidence(id, candidate) {
   };
 }
 
-async function createFixture({ criterionId = "PROCESS-015" } = {}) {
+async function createFixture({ criterionId = "PROCESS-015", mutateCandidate } = {}) {
   const root = await mkdtemp(path.join(tmpdir(), "vetryn-promotion-tail-"));
   roots.push(root);
   git(root, "init", "--quiet");
@@ -131,6 +131,7 @@ async function createFixture({ criterionId = "PROCESS-015" } = {}) {
   });
   const baseCommit = commit(root, "canonical base");
   await writeFile(path.join(root, "product.txt"), "candidate\n");
+  if (mutateCandidate) await mutateCandidate({ root, planRoot });
   const candidate = commit(root, "product candidate");
 
   const evidenceId = `ev-m0-14-contracts-${candidate.slice(0, 7)}`;
@@ -400,6 +401,20 @@ describe("promotion-tail validator", () => {
     const result = run(fixture.root, fixture.candidate, delivery);
     expect(result.status).toBe(1);
     expect(result.stderr).toContain("work proof has no strict ProductCandidate base");
+  });
+
+  it("rejects candidate ledger policy changed from the strict base", async () => {
+    const fixture = await createFixture({
+      mutateCandidate: async ({ root, planRoot }) => {
+        const ledgerPath = `${planRoot}/acceptance-ledger.json`;
+        const ledger = await readJson(root, ledgerPath);
+        ledger.items[0].statement = "Weakened after the strict base.";
+        await writeJson(root, ledgerPath, ledger);
+      },
+    });
+    const result = run(fixture.root, fixture.candidate, fixture.delivery);
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("ledger policy changed");
   });
 
   it.each(["baseCommit", "executor"])(
