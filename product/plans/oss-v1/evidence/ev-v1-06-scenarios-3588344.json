@@ -1,0 +1,35 @@
+{
+  "$schema": "../../schemas/evidence.schema.json",
+  "schemaVersion": "1.0.0",
+  "id": "ev-v1-06-scenarios-3588344",
+  "taskId": "V1-06",
+  "type": "command-run",
+  "actor": "validation-gate",
+  "commit": "35883443e8fd3d14245952ea5f2325fcf4dfed55",
+  "createdAt": "2026-08-14T06:36:40Z",
+  "result": {
+    "status": "pass",
+    "checks": [
+      {
+        "name": "pnpm test:scenarios",
+        "status": "pass",
+        "summary": "All 10 offline golden scenarios passed with deterministic, redacted evaluation and catalog artifacts."
+      }
+    ]
+  },
+  "inputs": {
+    "planDigest": "sha256:1c759a5f00ef6e2afdd4214e595947231da0d6f5ce63135b162e98c48223f056",
+    "lockfileDigest": "sha256:0d73c2bc837d2f12314c6fb3b2f28c4389a3887a5fdda7b6898913b2b20c91d9"
+  },
+  "gateBinding": {
+    "gateId": "QG-SCENARIOS",
+    "kind": "command",
+    "command": "pnpm test:scenarios"
+  },
+  "review": null,
+  "redaction": {
+    "status": "verified",
+    "containsRawModelOutput": false,
+    "containsSecrets": false
+  }
+}

@@ -2,66 +2,66 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "V1-06",
-  "revision": 7,
+  "revision": 8,
   "state": "accepted",
   "attempt": 1,
   "candidate": {
     "baseCommit": "69aed39824e090347d2da31f2bfd8cbaf6970b23",
-    "commit": "7a3a8fa4b99a0cdb67c30509d1c25742dc0fb1f1",
+    "commit": "35883443e8fd3d14245952ea5f2325fcf4dfed55",
     "executor": "implementation-agent"
   },
   "criteria": [
     {
       "criterionId": "EVAL-001",
       "status": "pass",
-      "evidenceRefs": ["ev-v1-06-scenarios-7a3a8fa"]
+      "evidenceRefs": ["ev-v1-06-scenarios-3588344"]
     },
     {
       "criterionId": "EVAL-002",
       "status": "pass",
-      "evidenceRefs": ["ev-v1-06-contracts-7a3a8fa"]
+      "evidenceRefs": ["ev-v1-06-contracts-3588344"]
     },
     {
       "criterionId": "EVAL-003",
       "status": "pass",
-      "evidenceRefs": ["ev-v1-06-scenarios-7a3a8fa"]
+      "evidenceRefs": ["ev-v1-06-scenarios-3588344"]
     },
     {
       "criterionId": "EVAL-004",
       "status": "pass",
-      "evidenceRefs": ["ev-v1-06-contracts-7a3a8fa"]
+      "evidenceRefs": ["ev-v1-06-contracts-3588344"]
     },
     {
       "criterionId": "EVAL-005",
       "status": "pass",
-      "evidenceRefs": ["ev-v1-06-scenarios-7a3a8fa"]
+      "evidenceRefs": ["ev-v1-06-scenarios-3588344"]
     },
     {
       "criterionId": "EVAL-006",
       "status": "pass",
-      "evidenceRefs": ["ev-v1-06-contracts-7a3a8fa"]
+      "evidenceRefs": ["ev-v1-06-contracts-3588344"]
     },
     {
       "criterionId": "EVAL-007",
       "status": "pass",
-      "evidenceRefs": ["ev-v1-06-contracts-7a3a8fa"]
+      "evidenceRefs": ["ev-v1-06-contracts-3588344"]
     }
   ],
   "gates": [
     {
       "gateId": "QG-REPO-CHECK",
       "status": "pass",
-      "evidenceRefs": ["ev-v1-06-repo-check-7a3a8fa"]
+      "evidenceRefs": ["ev-v1-06-repo-check-3588344"]
     },
     {
       "gateId": "QG-CONTRACTS",
       "status": "pass",
-      "evidenceRefs": ["ev-v1-06-contracts-7a3a8fa"]
+      "evidenceRefs": ["ev-v1-06-contracts-3588344"]
     },
     {
       "gateId": "QG-SCENARIOS",
       "status": "pass",
-      "evidenceRefs": ["ev-v1-06-scenarios-7a3a8fa"]
+      "evidenceRefs": ["ev-v1-06-scenarios-3588344"]
     },
     {
       "gateId": "QG-INDEPENDENT-VERIFY",
@@ -157,6 +157,13 @@
       "at": "2026-08-14T05:17:02Z",
       "actor": "davidahmann",
       "reason": "Maintainer accepted the exact candidate after command gates, independent verification, structured code review, and Vetryn trust review passed."
+    },
+    {
+      "from": "accepted",
+      "to": "accepted",
+      "at": "2026-08-14T06:36:40Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer rebound acceptance to the exact PR-repair candidate after all active commands and candidate-bound independent, structured, and trust reviews passed."
     }
   ]
 }
