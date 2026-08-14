@@ -21,6 +21,7 @@ const downstreamV1TaskIds = [
   "M0-11",
   "M0-12",
   "M0-13",
+  "M0-14",
   "V1-05",
   "V1-06",
   "V1-07",
@@ -891,15 +892,8 @@ describe("implementation plan validator", () => {
 
     expect(task).toMatchObject({
       risk: { level: "high" },
-      dependsOn: [{ taskId: "M0-12", kind: "hard" }],
-      acceptanceItemIds: [
-        "HARDEN-001",
-        "HARDEN-002",
-        "HARDEN-003",
-        "PROCESS-015",
-        "PROCESS-016",
-        "PROCESS-017",
-      ],
+      dependsOn: [{ taskId: "M0-14", kind: "hard" }],
+      acceptanceItemIds: ["HARDEN-001", "HARDEN-002", "HARDEN-003", "PROCESS-016"],
       capabilities: { network: false, credentials: false, provider: false, githubWrite: false },
       maxAttempts: 2,
     });
@@ -932,11 +926,43 @@ describe("implementation plan validator", () => {
     );
     expect(v107.dependsOn).toContainEqual({ taskId: "M0-13", kind: "hard" });
     const m013Items = ledger.items.filter((item) => item.taskId === "M0-13");
-    expect(m013Items).toHaveLength(6);
+    expect(m013Items).toHaveLength(4);
     expect(m013Items.find((item) => item.id === "HARDEN-001")?.verification.gateId).toBe(
       "QG-CONTRACTS",
     );
-    expect(state).toMatchObject({ taskId: "M0-13", revision: 1, state: "planned" });
+    expect(state).toMatchObject({ taskId: "M0-13", revision: 2, state: "planned" });
+  });
+
+  it("places one terminal-review correction before M0-13", async () => {
+    const plan = await readFixtureJson(repositoryRoot, "product/plans/oss-v1/plan.json");
+    const ledger = await readFixtureJson(
+      repositoryRoot,
+      "product/plans/oss-v1/acceptance-ledger.json",
+    );
+    const state = await readFixtureJson(repositoryRoot, "product/plans/oss-v1/state/M0-14.json");
+    const task = plan.tasks.find((candidate) => candidate.id === "M0-14");
+    const m013 = plan.tasks.find((candidate) => candidate.id === "M0-13");
+
+    expect(task).toMatchObject({
+      risk: { level: "high" },
+      dependsOn: [{ taskId: "M0-12", kind: "hard" }],
+      acceptanceItemIds: ["PROCESS-015", "PROCESS-017", "PROCESS-018", "PROCESS-019"],
+      capabilities: { network: false, credentials: false, provider: false, githubWrite: false },
+      maxAttempts: 1,
+    });
+    expect(task.scope.forbiddenPaths).toEqual(
+      expect.arrayContaining(["packages/**", ".github/**", "llms.txt"]),
+    );
+    expect(m013.dependsOn).toContainEqual({ taskId: "M0-14", kind: "hard" });
+    expect(ledger.items.filter((item) => item.taskId === "M0-14")).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: "PROCESS-015", waivable: false }),
+        expect.objectContaining({ id: "PROCESS-017", waivable: false }),
+        expect.objectContaining({ id: "PROCESS-018", waivable: false }),
+        expect.objectContaining({ id: "PROCESS-019", waivable: false }),
+      ]),
+    );
+    expect(state).toMatchObject({ taskId: "M0-14", revision: 0, state: "planned" });
   });
 
   it("locks narrow continuation behind one bounded process task", async () => {

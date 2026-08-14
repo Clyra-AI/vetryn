@@ -277,7 +277,7 @@
     },
     {
       "id": "PROCESS-015",
-      "taskId": "M0-13",
+      "taskId": "M0-14",
       "statement": "A named executable promotion-tail command deterministically proves the exact ProductCandidate-to-DeliveryHead diff contains only the selected task's canonical promotion artifacts and fails closed on product, cross-task, prior-evidence, missing-progress, or undeclared changes.",
       "verification": {
         "method": "test",
@@ -303,8 +303,34 @@
     },
     {
       "id": "PROCESS-017",
-      "taskId": "M0-13",
+      "taskId": "M0-14",
       "statement": "Plan validation rejects any new unaccepted task that declares low or medium risk while changing approval, evidence inheritance, persistence, credentials, security controls, or release policy, while preserving accepted historical task evidence.",
+      "verification": {
+        "method": "test",
+        "testLevel": "contract",
+        "gateId": "QG-PLAN-CHECK"
+      },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
+      "id": "PROCESS-018",
+      "taskId": "M0-14",
+      "statement": "Promotion-tail validation collects every candidate identity from each lifecycle artifact, including work-proof marker git_sha and authorized task bindings, and accepts exactly one identity equal to the ProductCandidate.",
+      "verification": {
+        "method": "test",
+        "testLevel": "adversarial",
+        "gateId": "QG-CONTRACTS"
+      },
+      "waivable": false,
+      "status": "planned",
+      "evidenceRefs": []
+    },
+    {
+      "id": "PROCESS-019",
+      "taskId": "M0-14",
+      "statement": "Plan validation conservatively rejects new unaccepted low- or medium-risk tasks whose exact paths or broad scope patterns can cover protected approval, evidence, persistence, credential, security-control, or release-policy paths.",
       "verification": {
         "method": "test",
         "testLevel": "contract",
