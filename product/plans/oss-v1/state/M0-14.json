@@ -2,51 +2,51 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "M0-14",
-  "revision": 11,
+  "revision": 12,
   "state": "accepted",
   "attempt": 1,
   "candidate": {
     "baseCommit": "be81357d3979f83f7f1d54a6819e7a524b788db8",
-    "commit": "ee3bf20fd1af15eac6fdfae16c04c23332190e07",
+    "commit": "411bdf3eee0996a971a7e3edfa3f758ccab5a14a",
     "executor": "implementation-agent"
   },
   "criteria": [
     {
       "criterionId": "PROCESS-015",
       "status": "pass",
-      "evidenceRefs": ["ev-m0-14-contracts-ee3bf20"]
+      "evidenceRefs": ["ev-m0-14-contracts-411bdf3"]
     },
     {
       "criterionId": "PROCESS-017",
       "status": "pass",
-      "evidenceRefs": ["ev-m0-14-plan-check-ee3bf20"]
+      "evidenceRefs": ["ev-m0-14-plan-check-411bdf3"]
     },
     {
       "criterionId": "PROCESS-018",
       "status": "pass",
-      "evidenceRefs": ["ev-m0-14-contracts-ee3bf20"]
+      "evidenceRefs": ["ev-m0-14-contracts-411bdf3"]
     },
     {
       "criterionId": "PROCESS-019",
       "status": "pass",
-      "evidenceRefs": ["ev-m0-14-plan-check-ee3bf20"]
+      "evidenceRefs": ["ev-m0-14-plan-check-411bdf3"]
     }
   ],
   "gates": [
     {
       "gateId": "QG-PLAN-CHECK",
       "status": "pass",
-      "evidenceRefs": ["ev-m0-14-plan-check-ee3bf20"]
+      "evidenceRefs": ["ev-m0-14-plan-check-411bdf3"]
     },
     {
       "gateId": "QG-REPO-CHECK",
       "status": "pass",
-      "evidenceRefs": ["ev-m0-14-repo-check-ee3bf20"]
+      "evidenceRefs": ["ev-m0-14-repo-check-411bdf3"]
     },
     {
       "gateId": "QG-CONTRACTS",
       "status": "pass",
-      "evidenceRefs": ["ev-m0-14-contracts-ee3bf20"]
+      "evidenceRefs": ["ev-m0-14-contracts-411bdf3"]
     },
     { "gateId": "QG-INDEPENDENT-VERIFY", "status": "pending", "evidenceRefs": [] }
   ],
@@ -136,6 +136,13 @@
       "at": "2026-08-14T18:37:48Z",
       "actor": "davidahmann",
       "reason": "Maintainer rebound acceptance to the exact input-normalization ProductCandidate after all active commands, independent verification, and candidate-bound code review passed."
+    },
+    {
+      "from": "accepted",
+      "to": "accepted",
+      "at": "2026-08-14T18:46:51Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer rebound acceptance to the exact canonical-input ProductCandidate after all active commands, independent verification, and candidate-bound code review passed."
     }
   ]
 }
