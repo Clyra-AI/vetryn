@@ -191,7 +191,9 @@ function assertLifecycleArtifact(name, document, taskId, candidate) {
     assert(document.verdict === "approved", "review_report is not approved");
     assert(
       Array.isArray(document.findings) &&
-        document.findings.every((finding) => finding?.status !== "open"),
+        document.findings.every((finding) =>
+          ["resolved", "accepted_risk"].includes(finding?.status),
+        ),
       "review_report has unresolved findings",
     );
     assert(

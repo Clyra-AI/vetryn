@@ -437,6 +437,11 @@ describe("promotion-tail validator", () => {
 
   it.each([
     ["open findings", (artifact) => artifact.findings.push({ severity: "P1", status: "open" })],
+    ["missing finding status", (artifact) => artifact.findings.push({ severity: "P1" })],
+    [
+      "unknown finding status",
+      (artifact) => artifact.findings.push({ severity: "P1", status: "unknown" }),
+    ],
     ["required fixes", (artifact) => artifact.required_fixes.push("repair the blocker")],
     [
       "a blocking approval effect",
@@ -459,15 +464,18 @@ describe("promotion-tail validator", () => {
     expect(result.stderr).toContain("review_report");
   });
 
-  it("accepts an approved review report that retains a resolved finding", async () => {
-    const fixture = await createFixture();
-    const relativePath = `${fixture.planRoot}/evidence/lifecycle/${taskId}/${fixture.candidate}/review_report.json`;
-    const delivery = await amend(fixture.root, async () => {
-      const artifact = await readJson(fixture.root, relativePath);
-      artifact.findings.push({ severity: "P1", status: "resolved" });
-      await writeJson(fixture.root, relativePath, artifact);
-    });
-    const result = run(fixture.root, fixture.candidate, delivery);
-    expect(result.status, result.stderr).toBe(0);
-  });
+  it.each(["resolved", "accepted_risk"])(
+    "accepts an approved review report that retains a %s finding",
+    async (status) => {
+      const fixture = await createFixture();
+      const relativePath = `${fixture.planRoot}/evidence/lifecycle/${taskId}/${fixture.candidate}/review_report.json`;
+      const delivery = await amend(fixture.root, async () => {
+        const artifact = await readJson(fixture.root, relativePath);
+        artifact.findings.push({ severity: "P1", status });
+        await writeJson(fixture.root, relativePath, artifact);
+      });
+      const result = run(fixture.root, fixture.candidate, delivery);
+      expect(result.status, result.stderr).toBe(0);
+    },
+  );
 });
