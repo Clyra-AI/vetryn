@@ -153,19 +153,33 @@ function candidateIdentity(document, taskId) {
   return commits;
 }
 
+const lifecycleDeclarationKeys = new Set([
+  "containsrawmodeloutput",
+  "containssecrets",
+  "rawlogspersisted",
+]);
+
 const sensitiveLifecycleKeys = new Set([
+  "content",
+  "messages",
+  "modeloutput",
+  "outputtext",
   "prompt",
-  "promptText",
-  "rawPrompt",
-  "raw_prompt",
-  "rawOutput",
-  "raw_output",
-  "outputText",
-  "requestBody",
-  "responseBody",
+  "prompttext",
+  "rawmodeloutput",
+  "rawoutput",
+  "rawprompt",
+  "rawrequest",
+  "rawresponse",
+  "requestbody",
+  "responsebody",
   "trace",
   "transcript",
 ]);
+
+function normalizedLifecycleKey(key) {
+  return key.replaceAll(/[^a-zA-Z0-9]/gu, "").toLowerCase();
+}
 
 function assertLifecycleRedacted(value) {
   if (Array.isArray(value)) {
@@ -174,15 +188,13 @@ function assertLifecycleRedacted(value) {
   }
   if (!value || typeof value !== "object") return;
   for (const [key, entry] of Object.entries(value)) {
+    const normalizedKey = normalizedLifecycleKey(key);
     assert(
-      !(
-        ["containsSecrets", "containsRawModelOutput", "rawLogsPersisted"].includes(key) &&
-        entry === true
-      ),
-      "lifecycle artifact declares sensitive content",
+      !lifecycleDeclarationKeys.has(normalizedKey) || entry === false,
+      "lifecycle artifact has an invalid redaction declaration",
     );
     assert(
-      !(sensitiveLifecycleKeys.has(key) && entry !== null && entry !== ""),
+      !(sensitiveLifecycleKeys.has(normalizedKey) && entry !== null && entry !== ""),
       "lifecycle artifact contains a raw payload field",
     );
     assertLifecycleRedacted(entry);

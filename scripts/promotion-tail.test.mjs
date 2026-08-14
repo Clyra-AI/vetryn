@@ -538,8 +538,23 @@ describe("promotion-tail validator", () => {
   });
 
   it.each([
-    ["a secret declaration", (artifact) => (artifact.containsSecrets = true), "sensitive content"],
+    [
+      "a secret declaration",
+      (artifact) => (artifact.containsSecrets = true),
+      "invalid redaction declaration",
+    ],
+    [
+      "a malformed secret declaration",
+      (artifact) => (artifact.containsSecrets = "true"),
+      "invalid redaction declaration",
+    ],
     ["raw output", (artifact) => (artifact.rawOutput = "private"), "raw payload field"],
+    [
+      "camel-case raw model output",
+      (artifact) => (artifact.rawModelOutput = "private"),
+      "raw payload field",
+    ],
+    ["message content", (artifact) => (artifact.messages = ["private"]), "raw payload field"],
   ])("rejects lifecycle evidence with %s", async (_name, mutate, message) => {
     const fixture = await createFixture();
     const relativePath = `${fixture.planRoot}/evidence/lifecycle/${taskId}/${fixture.candidate}/validation_report.json`;
