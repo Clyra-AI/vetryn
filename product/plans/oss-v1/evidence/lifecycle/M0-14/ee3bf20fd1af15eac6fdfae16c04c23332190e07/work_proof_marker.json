@@ -1,0 +1,33 @@
+{
+  "artifactType": "vetryn-work-proof-marker",
+  "schemaVersion": "1.0.0",
+  "taskId": "M0-14",
+  "candidateCommit": "ee3bf20fd1af15eac6fdfae16c04c23332190e07",
+  "baseCommit": "9aebbca044c28148ccde9b97a3fce0567a737da2",
+  "executor": "implementation-agent",
+  "runner": "codex-exec-tool",
+  "workspaceRef": "codex/m0-14-terminal-review-final",
+  "cleanCandidateVerified": true,
+  "observedAt": "2026-08-14T18:37:48Z",
+  "commands": [
+    { "command": "pnpm plan:check", "exitCode": 0, "status": "pass" },
+    { "command": "pnpm check", "exitCode": 0, "status": "pass" },
+    { "command": "pnpm test:contracts", "exitCode": 0, "status": "pass" },
+    {
+      "command": "pnpm exec vitest run scripts/plan.test.mjs scripts/promotion-tail.test.mjs",
+      "exitCode": 0,
+      "status": "pass"
+    }
+  ],
+  "authorized_task_bindings": [
+    {
+      "task_id": "M0-14",
+      "source_revision": "ee3bf20fd1af15eac6fdfae16c04c23332190e07"
+    }
+  ],
+  "redaction": {
+    "containsRawModelOutput": false,
+    "containsSecrets": false,
+    "rawLogsPersisted": false
+  }
+}

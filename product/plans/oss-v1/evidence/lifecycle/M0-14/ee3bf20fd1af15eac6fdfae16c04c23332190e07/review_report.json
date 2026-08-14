@@ -1,0 +1,103 @@
+{
+  "artifact_type": "review_report",
+  "schema_version": "0.1",
+  "task_id": "M0-14",
+  "work_item_id": "M0-14",
+  "review_type": "architecture",
+  "review_scope": [
+    "scripts/plan.mjs",
+    "scripts/plan.test.mjs",
+    "scripts/promotion-tail.mjs",
+    "scripts/promotion-tail.test.mjs"
+  ],
+  "reviewer_class": "peer_agent",
+  "reviewer_id": "codex-local:v1_06_code_review",
+  "producer": {
+    "worker": "code-review",
+    "producer_id": "codex-local:v1_06_code_review",
+    "producer_class": "peer_agent"
+  },
+  "current_work": {
+    "validation_run_id": "validation:2026-08-14T18:37:48Z:M0-14",
+    "candidate_digest": "sha256:bd3634b17bca5469c67c15956002843d61161e4431296df8b4d4851a06bf4e25",
+    "work_proof_markers": [
+      {
+        "ref": "product/plans/oss-v1/evidence/lifecycle/M0-14/ee3bf20fd1af15eac6fdfae16c04c23332190e07/work_proof_marker.json",
+        "sha256": "sha256:9c3f6e6567201d29c11b718f34a933acc01882eebc985e232792f7ece81cbcbb"
+      }
+    ]
+  },
+  "risk_class": "high",
+  "context_isolation": {
+    "allowed_sources": [
+      "task_packet",
+      "candidate_diff",
+      "repo_contracts",
+      "tests",
+      "validation_report"
+    ],
+    "disallowed_sources": ["private_builder_notes", "unpromoted_chat_reasoning"],
+    "builder_notes_authoritative": false
+  },
+  "findings": [
+    {
+      "id": "M0-14-CURRENT-11",
+      "severity": "P1",
+      "summary": "Dot-prefixed scope aliases bypassed protected-path risk classification.",
+      "status": "resolved",
+      "claim_source": "independently_observed",
+      "verification_status": "independently_verified",
+      "location": "scripts/plan.mjs",
+      "failure_scenario": "A low-risk task uses ./ before a protected canonical path.",
+      "impact": "The same repository path could evade high-risk classification.",
+      "minimum_fix": "Reject dot segments before custom scope matching.",
+      "promotion_effect": "block_until_fixed",
+      "evidence_refs": ["ev-m0-14-plan-check-ee3bf20"]
+    },
+    {
+      "id": "M0-14-CURRENT-12",
+      "severity": "P1",
+      "summary": "Credential-bearing lifecycle fields were not rejected.",
+      "status": "resolved",
+      "claim_source": "independently_observed",
+      "verification_status": "independently_verified",
+      "location": "scripts/promotion-tail.mjs",
+      "failure_scenario": "Lifecycle evidence embeds a credential under a normalized exact or compound key.",
+      "impact": "Promotion could commit secret material despite a false redaction declaration.",
+      "minimum_fix": "Fail closed on normalized credential containment and suffix aliases.",
+      "promotion_effect": "block_until_fixed",
+      "evidence_refs": ["ev-m0-14-contracts-ee3bf20"]
+    }
+  ],
+  "verdict": "approved",
+  "required_fixes": [],
+  "residual_risks": [
+    "The repo-local installed Factory bootstrap remains unavailable on this historical branch base."
+  ],
+  "evidence_refs": [
+    "product/plans/oss-v1/evidence/lifecycle/M0-14/ee3bf20fd1af15eac6fdfae16c04c23332190e07/validation_report.json",
+    "ev-m0-14-repo-check-ee3bf20",
+    "ev-m0-14-contracts-ee3bf20"
+  ],
+  "work_proof_marker_refs": [
+    "product/plans/oss-v1/evidence/lifecycle/M0-14/ee3bf20fd1af15eac6fdfae16c04c23332190e07/work_proof_marker.json"
+  ],
+  "approval_effect": {
+    "promotion_decision": "ready_for_pr",
+    "approvals_granted": ["architecture_review_passed"],
+    "blocks_promotion": false
+  },
+  "systems_questions": {
+    "state_impact": ["Only M0-14 canonical acceptance is rebound after review."],
+    "source_of_truth_changes": [
+      "Scope paths and lifecycle credential fields now require canonical safe shapes."
+    ],
+    "feedback_plan": ["Protected CI validates the final DeliveryHead."],
+    "blast_radius": ["Task plan validation and lifecycle evidence validation only."],
+    "rollback_or_deletion_test": [
+      "Focused regressions fail if either current-head closure is removed."
+    ],
+    "system_model_summary": "The bounded batch closes two concrete input-normalization gaps without adding a new schema."
+  },
+  "created_at": "2026-08-14T18:37:48Z"
+}
