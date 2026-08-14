@@ -619,6 +619,7 @@ export function createProgram(dependencies: CliDependencies = {}): Command {
           callSiteId: options.callSite,
           candidateModel: options.candidate,
           clock: dependencies.clock ?? { now: () => new Date().toISOString() },
+          credentialPaths: [options.receiptKeyFile, options.providerKeyFile],
           currentCatalogRefresh,
           evaluatorBuild: options.evaluatorBuild,
           evalSuitePath: options.suite,

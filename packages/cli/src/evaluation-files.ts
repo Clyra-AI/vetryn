@@ -26,6 +26,7 @@ export interface EvaluateFilesOptions {
   readonly callSiteId: string;
   readonly candidateModel: string;
   readonly clock: EvaluationClock;
+  readonly credentialPaths?: readonly string[];
   readonly currentCatalogRefresh: CurrentCatalogRefresh;
   readonly evaluatorBuild: string;
   readonly evalSuitePath: string;
