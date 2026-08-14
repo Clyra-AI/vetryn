@@ -1,0 +1,18 @@
+{
+  "artifactType": "canonical_promotion",
+  "schemaVersion": "1.0.0",
+  "taskId": "M0-14",
+  "candidateCommit": "93ac0971c746666f80978e38f322aad43772194f",
+  "decision": "accepted",
+  "authority": "davidahmann",
+  "policyRef": "docs/adr/0009-single-maintainer-v1-delivery.md",
+  "createdAt": "2026-08-14T16:18:59Z",
+  "evidenceRefs": [
+    "ev-m0-14-plan-check-93ac097",
+    "ev-m0-14-repo-check-93ac097",
+    "ev-m0-14-contracts-93ac097",
+    "product/plans/oss-v1/evidence/lifecycle/M0-14/93ac0971c746666f80978e38f322aad43772194f/validation_report.json",
+    "product/plans/oss-v1/evidence/lifecycle/M0-14/93ac0971c746666f80978e38f322aad43772194f/review_report.json"
+  ],
+  "advisoryRecords": ["maintainer"]
+}

@@ -1,0 +1,119 @@
+{
+  "artifact_type": "review_report",
+  "schema_version": "0.1",
+  "task_id": "M0-14",
+  "work_item_id": "M0-14",
+  "review_type": "architecture",
+  "review_scope": [
+    "scripts/plan.mjs",
+    "scripts/plan.test.mjs",
+    "scripts/promotion-tail.mjs",
+    "scripts/promotion-tail.test.mjs"
+  ],
+  "reviewer_class": "peer_agent",
+  "reviewer_id": "codex-local:v1_06_code_review",
+  "producer": {
+    "worker": "code-review",
+    "producer_id": "codex-local:v1_06_code_review",
+    "producer_class": "peer_agent"
+  },
+  "current_work": {
+    "validation_run_id": "validation:2026-08-14T16:18:59Z:M0-14",
+    "candidate_digest": "sha256:a4fc0135ebe68e645f256e54bb5674a163bea1222a0ce2b99183d6646aacf2ca",
+    "work_proof_markers": [
+      {
+        "ref": "product/plans/oss-v1/evidence/lifecycle/M0-14/93ac0971c746666f80978e38f322aad43772194f/work_proof_marker.json",
+        "sha256": "sha256:19a1795ce3a9b910271c1e62546a4f146c12d2e5aaed4db0c7cdd589906e43a1"
+      }
+    ]
+  },
+  "risk_class": "high",
+  "context_isolation": {
+    "allowed_sources": [
+      "task_packet",
+      "candidate_diff",
+      "repo_contracts",
+      "tests",
+      "validation_report"
+    ],
+    "disallowed_sources": ["private_builder_notes", "unpromoted_chat_reasoning"],
+    "builder_notes_authoritative": false
+  },
+  "findings": [
+    {
+      "id": "M0-14-FINAL-1",
+      "severity": "P1",
+      "summary": "Lifecycle references belonging to another task were ignored by candidate binding.",
+      "status": "resolved",
+      "claim_source": "independently_observed",
+      "verification_status": "independently_verified",
+      "location": "scripts/promotion-tail.mjs",
+      "failure_scenario": "A candidate-bound report also cites lifecycle evidence under another task path.",
+      "impact": "Conflicting cross-task provenance could be inherited.",
+      "minimum_fix": "Parse every lifecycle task and candidate segment and reject mismatches.",
+      "promotion_effect": "block_until_fixed",
+      "evidence_refs": ["ev-m0-14-contracts-93ac097"]
+    },
+    {
+      "id": "M0-14-FINAL-2",
+      "severity": "P1",
+      "summary": "Review evidence did not enforce the single classified P2 delivery-debt limit.",
+      "status": "resolved",
+      "claim_source": "independently_observed",
+      "verification_status": "independently_verified",
+      "location": "scripts/promotion-tail.mjs",
+      "failure_scenario": "Multiple, unclassified, or scalar-classified accepted-risk findings pass promotion.",
+      "impact": "A batch of unresolved review debt could bypass the terminal policy.",
+      "minimum_fix": "Require at most one P2 and an exact marker in a canonical approval array.",
+      "promotion_effect": "block_until_fixed",
+      "evidence_refs": ["ev-m0-14-contracts-93ac097"]
+    },
+    {
+      "id": "M0-14-FINAL-3",
+      "severity": "P2",
+      "summary": "Semantic-risk integrity controls were omitted from the protected risk inventory.",
+      "status": "resolved",
+      "claim_source": "independently_observed",
+      "verification_status": "independently_verified",
+      "location": "scripts/plan.mjs",
+      "failure_scenario": "A future lower-risk task names the semantic-risk validator or pinned schema exactly.",
+      "impact": "Evidence-integrity policy could change without high-risk review.",
+      "minimum_fix": "Protect the validator and both pinned schema paths.",
+      "promotion_effect": "block_until_fixed",
+      "evidence_refs": ["ev-m0-14-plan-check-93ac097"]
+    }
+  ],
+  "verdict": "approved",
+  "required_fixes": [],
+  "residual_risks": [
+    "The protected inventory must be updated when new authority or evidence-integrity surfaces are introduced."
+  ],
+  "evidence_refs": [
+    "product/plans/oss-v1/evidence/lifecycle/M0-14/93ac0971c746666f80978e38f322aad43772194f/validation_report.json",
+    "ev-m0-14-repo-check-93ac097",
+    "ev-m0-14-contracts-93ac097"
+  ],
+  "work_proof_marker_refs": [
+    "product/plans/oss-v1/evidence/lifecycle/M0-14/93ac0971c746666f80978e38f322aad43772194f/work_proof_marker.json"
+  ],
+  "approval_effect": {
+    "promotion_decision": "ready_for_pr",
+    "approvals_granted": ["architecture_review_passed"],
+    "blocks_promotion": false
+  },
+  "systems_questions": {
+    "state_impact": ["Only M0-14 canonical acceptance is rebound after review."],
+    "source_of_truth_changes": [
+      "Promotion evidence and future task risk classification fail closed for the reviewed cases."
+    ],
+    "feedback_plan": [
+      "Protected CI and the terminal latest-head review validate the DeliveryHead."
+    ],
+    "blast_radius": ["Task planning and promotion evidence only; no product packages."],
+    "rollback_or_deletion_test": [
+      "Focused adversarial cases fail if any of the three closures is removed."
+    ],
+    "system_model_summary": "One bounded final review batch produces one replacement ProductCandidate and one promotion-only DeliveryHead."
+  },
+  "created_at": "2026-08-14T16:18:59Z"
+}
