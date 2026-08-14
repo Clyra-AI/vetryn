@@ -202,9 +202,19 @@ const sensitiveLifecycleKeys = new Set([
   "trace",
   "transcript",
 ]);
-
 function normalizedLifecycleKey(key) {
   return key.replaceAll(/[^a-zA-Z0-9]/gu, "").toLowerCase();
+}
+
+function isCredentialLifecycleKey(key) {
+  return (
+    key.includes("authorization") ||
+    key.includes("credential") ||
+    key.endsWith("apikey") ||
+    key.endsWith("password") ||
+    key.endsWith("secret") ||
+    key.endsWith("token")
+  );
 }
 
 function assertLifecycleRedacted(value) {
@@ -215,6 +225,10 @@ function assertLifecycleRedacted(value) {
   if (!value || typeof value !== "object") return;
   for (const [key, entry] of Object.entries(value)) {
     const normalizedKey = normalizedLifecycleKey(key);
+    assert(
+      !isCredentialLifecycleKey(normalizedKey),
+      "lifecycle artifact contains a credential field",
+    );
     if (lifecycleDeclarationKeys.has(normalizedKey)) {
       assert(entry === false, "lifecycle artifact has an invalid redaction declaration");
       continue;

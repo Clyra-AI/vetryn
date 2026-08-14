@@ -95,11 +95,16 @@ function assertSupportedScopeGlobs(task) {
     ...task.scope.allowedPaths,
     ...task.scope.forbiddenPaths,
     ...task.deliverables,
-  ])
+  ]) {
     assert(
       !unsupportedScopeGlobSyntax.test(pattern),
       `${task.id} uses unsupported scope glob syntax: ${pattern}`,
     );
+    assert(
+      !pattern.split("/").some((segment) => segment === "." || segment === ".."),
+      `${task.id} uses non-canonical scope path: ${pattern}`,
+    );
+  }
 }
 
 function scopePatternCoversPath(pattern, relativePath) {

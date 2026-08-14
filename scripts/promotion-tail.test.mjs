@@ -635,6 +635,14 @@ describe("promotion-tail validator", () => {
     ["raw completion", (artifact) => (artifact.rawCompletion = "private"), "raw payload field"],
     ["completion text", (artifact) => (artifact.completionText = "private"), "raw payload field"],
     ["raw logs", (artifact) => (artifact.rawLogs = ["private"]), "raw payload field"],
+    ["credentials", (artifact) => (artifact.credentials = "private"), "credential field"],
+    ["an API key", (artifact) => (artifact.apiKey = "private"), "credential field"],
+    ["authorization", (artifact) => (artifact.authorization = "private"), "credential field"],
+    ["a secret", (artifact) => (artifact.secret = "private"), "credential field"],
+    ["a token", (artifact) => (artifact.token = "private"), "credential field"],
+    ["an access token", (artifact) => (artifact.accessToken = "private"), "credential field"],
+    ["a client secret", (artifact) => (artifact.clientSecret = "private"), "credential field"],
+    ["a provider API key", (artifact) => (artifact.openai_api_key = "private"), "credential field"],
   ])("rejects lifecycle evidence with %s", async (_name, mutate, message) => {
     const fixture = await createFixture();
     const relativePath = `${fixture.planRoot}/evidence/lifecycle/${taskId}/${fixture.candidate}/validation_report.json`;
