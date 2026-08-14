@@ -1,0 +1,42 @@
+{
+  "artifactType": "vetryn-trust-review-report",
+  "schemaVersion": "1.0.0",
+  "taskId": "V1-06",
+  "candidateCommit": "4830146051b07d612340c0439415e78ad3332c97",
+  "validationReportRef": "product/plans/oss-v1/evidence/lifecycle/V1-06/4830146051b07d612340c0439415e78ad3332c97/validation_report.json",
+  "reviewer": "vetryn-trust-review:codex-local",
+  "verdict": "pass",
+  "surfaceMatrix": [
+    {
+      "surface": "output-trust-state-separation",
+      "status": "pass",
+      "summary": "Canonical destination checks reject direct and symlink aliases into receipt and anchor state before effects and publication."
+    },
+    {
+      "surface": "catalog-refresh-integrity",
+      "status": "pass",
+      "summary": "The current refresh wrapper and nested lineage remain immutable and invocation-bound."
+    },
+    {
+      "surface": "privacy-and-context",
+      "status": "pass",
+      "summary": "Raw lexeme privacy checks and representative prompt-plus-completion context gates remain fail closed."
+    },
+    {
+      "surface": "prior-evaluation-trust-boundaries",
+      "status": "pass",
+      "summary": "Route lineage, exact economics, bounded spend, and deterministic outcomes remain covered."
+    }
+  ],
+  "unresolvedFindings": [],
+  "evidenceRefs": [
+    "ev-v1-06-contracts-4830146",
+    "ev-v1-06-scenarios-4830146",
+    "product/plans/oss-v1/evidence/lifecycle/V1-06/4830146051b07d612340c0439415e78ad3332c97/review_report.json"
+  ],
+  "residualRisks": [
+    "Live OpenRouter behavior remains outside offline CI and needs an explicit field-operation grant.",
+    "V1-07 must compose recommendation authorization with current receipt and policy verification."
+  ],
+  "createdAt": "2026-08-14T10:42:59Z"
+}

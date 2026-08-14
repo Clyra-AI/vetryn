@@ -2,66 +2,66 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "V1-06",
-  "revision": 10,
+  "revision": 11,
   "state": "accepted",
   "attempt": 1,
   "candidate": {
     "baseCommit": "69aed39824e090347d2da31f2bfd8cbaf6970b23",
-    "commit": "bd52e07df008edf27d10c221ba29cf2c9dbd3eb9",
+    "commit": "4830146051b07d612340c0439415e78ad3332c97",
     "executor": "implementation-agent"
   },
   "criteria": [
     {
       "criterionId": "EVAL-001",
       "status": "pass",
-      "evidenceRefs": ["ev-v1-06-scenarios-bd52e07"]
+      "evidenceRefs": ["ev-v1-06-scenarios-4830146"]
     },
     {
       "criterionId": "EVAL-002",
       "status": "pass",
-      "evidenceRefs": ["ev-v1-06-contracts-bd52e07"]
+      "evidenceRefs": ["ev-v1-06-contracts-4830146"]
     },
     {
       "criterionId": "EVAL-003",
       "status": "pass",
-      "evidenceRefs": ["ev-v1-06-scenarios-bd52e07"]
+      "evidenceRefs": ["ev-v1-06-scenarios-4830146"]
     },
     {
       "criterionId": "EVAL-004",
       "status": "pass",
-      "evidenceRefs": ["ev-v1-06-contracts-bd52e07"]
+      "evidenceRefs": ["ev-v1-06-contracts-4830146"]
     },
     {
       "criterionId": "EVAL-005",
       "status": "pass",
-      "evidenceRefs": ["ev-v1-06-scenarios-bd52e07"]
+      "evidenceRefs": ["ev-v1-06-scenarios-4830146"]
     },
     {
       "criterionId": "EVAL-006",
       "status": "pass",
-      "evidenceRefs": ["ev-v1-06-contracts-bd52e07"]
+      "evidenceRefs": ["ev-v1-06-contracts-4830146"]
     },
     {
       "criterionId": "EVAL-007",
       "status": "pass",
-      "evidenceRefs": ["ev-v1-06-contracts-bd52e07"]
+      "evidenceRefs": ["ev-v1-06-contracts-4830146"]
     }
   ],
   "gates": [
     {
       "gateId": "QG-REPO-CHECK",
       "status": "pass",
-      "evidenceRefs": ["ev-v1-06-repo-check-bd52e07"]
+      "evidenceRefs": ["ev-v1-06-repo-check-4830146"]
     },
     {
       "gateId": "QG-CONTRACTS",
       "status": "pass",
-      "evidenceRefs": ["ev-v1-06-contracts-bd52e07"]
+      "evidenceRefs": ["ev-v1-06-contracts-4830146"]
     },
     {
       "gateId": "QG-SCENARIOS",
       "status": "pass",
-      "evidenceRefs": ["ev-v1-06-scenarios-bd52e07"]
+      "evidenceRefs": ["ev-v1-06-scenarios-4830146"]
     },
     {
       "gateId": "QG-INDEPENDENT-VERIFY",
@@ -178,6 +178,13 @@
       "at": "2026-08-14T07:39:45Z",
       "actor": "davidahmann",
       "reason": "Maintainer rebound acceptance to the final preflight-boundary candidate after all active commands and candidate-bound independent, structured, and trust reviews passed."
+    },
+    {
+      "from": "accepted",
+      "to": "accepted",
+      "at": "2026-08-14T10:42:59Z",
+      "actor": "davidahmann",
+      "reason": "Maintainer rebound acceptance to the final trust-state-separation candidate after all active commands and candidate-bound independent, structured, and trust reviews passed."
     }
   ]
 }

@@ -1,0 +1,80 @@
+{
+  "artifact_type": "review_report",
+  "schema_version": "0.1",
+  "task_id": "V1-06",
+  "work_item_id": "V1-06",
+  "review_type": "security",
+  "review_scope": ["packages/cli/**", "packages/openrouter/**"],
+  "reviewer_class": "security_reviewer",
+  "reviewer_id": "security-reviewer:codex-local",
+  "producer": {
+    "worker": "code-review",
+    "producer_id": "security-reviewer:codex-local",
+    "producer_class": "security_reviewer"
+  },
+  "current_work": {
+    "validation_run_id": "validation:2026-08-14T10:42:59Z:V1-06",
+    "candidate_digest": "sha256:542a931088d845c928ee470f99215221b2bc92db577b7ff54d9d9eb95372d899",
+    "work_proof_markers": [
+      {
+        "ref": "product/plans/oss-v1/evidence/lifecycle/V1-06/4830146051b07d612340c0439415e78ad3332c97/work_proof_marker.json",
+        "sha256": "sha256:d92cc7e0d8f6ba160feaba4d6bcd6fca0b751085ca2bc66f412f9aa45095e742"
+      }
+    ]
+  },
+  "risk_class": "high",
+  "context_isolation": {
+    "allowed_sources": ["task_packet", "diff", "repo_contracts", "tests", "validation_report"],
+    "disallowed_sources": ["private_builder_notes", "unpromoted_chat_reasoning"],
+    "builder_notes_authoritative": false
+  },
+  "findings": [
+    {
+      "id": "V1-06-PR38-OUTPUT-ALIAS",
+      "severity": "P1",
+      "summary": "Lexical output paths allowed symlink aliases into receipt or anchor trust state.",
+      "status": "resolved",
+      "claim_source": "independently_observed",
+      "verification_status": "independently_verified",
+      "location": "packages/cli/src/evaluation-files.ts",
+      "failure_scenario": "A repository-controlled output parent symlink targets the evidence head or external anchor.",
+      "impact": "Artifact publication could overwrite authenticated trust state.",
+      "minimum_fix": "Compare canonical destinations and recheck immediately before every publication.",
+      "promotion_effect": "block_until_fixed",
+      "evidence_refs": ["ev-v1-06-contracts-4830146"]
+    }
+  ],
+  "verdict": "approved",
+  "required_fixes": [],
+  "residual_risks": [
+    "Live provider behavior is not exercised in offline CI.",
+    "Recommendation authorization composition remains a V1-07 concern."
+  ],
+  "evidence_refs": [
+    "ev-v1-06-repo-check-4830146",
+    "ev-v1-06-contracts-4830146",
+    "ev-v1-06-scenarios-4830146",
+    "product/plans/oss-v1/evidence/lifecycle/V1-06/4830146051b07d612340c0439415e78ad3332c97/validation_report.json"
+  ],
+  "work_proof_marker_refs": [
+    "product/plans/oss-v1/evidence/lifecycle/V1-06/4830146051b07d612340c0439415e78ad3332c97/work_proof_marker.json"
+  ],
+  "approval_effect": {
+    "promotion_decision": "ready_for_pr",
+    "approvals_granted": ["candidate-bound-structured-review"],
+    "blocks_promotion": false
+  },
+  "systems_questions": {
+    "state_impact": [
+      "Canonical path checks prevent artifact output from mutating authenticated receipt or anchor state."
+    ],
+    "source_of_truth_changes": ["None; the repair protects existing trust-state boundaries."],
+    "feedback_plan": ["GitHub CI replays the complete offline suite after push."],
+    "blast_radius": ["CLI evaluation output publication."],
+    "rollback_or_deletion_test": [
+      "Tests cover direct and symlink-aliased evidence and anchor destinations."
+    ],
+    "system_model_summary": "Evaluation output is canonically separated from receipt and anchor trust state before effects and publication."
+  },
+  "created_at": "2026-08-14T10:42:59Z"
+}
