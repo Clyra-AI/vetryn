@@ -1,0 +1,56 @@
+{
+  "artifact_type": "review_report",
+  "schema_version": "0.1",
+  "task_id": "M0-14",
+  "work_item_id": "M0-14",
+  "review_type": "architecture",
+  "review_scope": ["scripts/promotion-tail.mjs", "scripts/promotion-tail.test.mjs"],
+  "reviewer_class": "peer_agent",
+  "reviewer_id": "codex-local:v1_06_code_review",
+  "producer": {
+    "worker": "code-review",
+    "producer_id": "codex-local:v1_06_code_review",
+    "producer_class": "peer_agent"
+  },
+  "current_work": {
+    "validation_run_id": "validation:2026-08-14T19:24:12Z:M0-14",
+    "candidate_digest": "sha256:f5638f8d57c9f452c4b9d0ec1eecc57c0e60a6d2774bac51dd72c1ecd1712f9d",
+    "work_proof_markers": [
+      {
+        "ref": "product/plans/oss-v1/evidence/lifecycle/M0-14/919a1292bb56449988a8519acc94ae357a19b4e7/work_proof_marker.json",
+        "sha256": "sha256:d94cd85d01f7ad9e658e7a85c2f714bbd08a3d5f83532be0116e5b11adffd47b"
+      }
+    ]
+  },
+  "risk_class": "high",
+  "findings": [
+    {
+      "id": "M0-14-CURRENT-19",
+      "severity": "P1",
+      "summary": "Candidate acceptance-ledger policy was not bound to the strict base.",
+      "status": "resolved",
+      "location": "scripts/promotion-tail.mjs",
+      "promotion_effect": "block_until_fixed",
+      "evidence_refs": ["ev-m0-14-contracts-919a129"]
+    }
+  ],
+  "verdict": "approved",
+  "required_fixes": [],
+  "residual_risks": [
+    "Two standalone P2 review comments remain deferred; they do not waive any P0/P1 or non-waivable requirement."
+  ],
+  "evidence_refs": [
+    "product/plans/oss-v1/evidence/lifecycle/M0-14/919a1292bb56449988a8519acc94ae357a19b4e7/validation_report.json",
+    "ev-m0-14-repo-check-919a129",
+    "ev-m0-14-contracts-919a129"
+  ],
+  "work_proof_marker_refs": [
+    "product/plans/oss-v1/evidence/lifecycle/M0-14/919a1292bb56449988a8519acc94ae357a19b4e7/work_proof_marker.json"
+  ],
+  "approval_effect": {
+    "promotion_decision": "ready_for_pr",
+    "approvals_granted": ["architecture_review_passed"],
+    "blocks_promotion": false
+  },
+  "created_at": "2026-08-14T19:24:12Z"
+}
