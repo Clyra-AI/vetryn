@@ -11,11 +11,20 @@ class PreflightBlock extends Error {
   }
 }
 
+export function childEnvironment(root, source = process.env) {
+  return {
+    ...source,
+    GIT_OPTIONAL_LOCKS: "0",
+    GIT_TERMINAL_PROMPT: "0",
+    VETRYN_PLAN_REPO_ROOT: root,
+  };
+}
+
 function defaultRun(command, args, options = {}) {
   return spawnSync(command, args, {
     cwd: options.cwd,
     encoding: "utf8",
-    env: { ...process.env, GIT_OPTIONAL_LOCKS: "0", GIT_TERMINAL_PROMPT: "0" },
+    env: childEnvironment(options.cwd),
   });
 }
 

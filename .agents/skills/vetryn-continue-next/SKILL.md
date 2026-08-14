@@ -23,10 +23,11 @@ After a passing preflight:
 4. Run each packet-required local or domain review, including Factory `code-review` when declared.
    Candidate changes invalidate validation and review.
 5. Invoke the packet's promotion skill only after required gates pass and the current-run grant includes
-   maintainer promotion.
-6. Invoke Factory `commit-push` in protected `land` mode only when the grant includes branch, PR, merge,
-   and GitHub writes. Monitor latest-head CI, applicable review, merge, and post-merge main status.
-7. Resync the default branch and rerun `pnpm --silent task:next` to report the newly legal task.
+   maintainer promotion. That skill owns promotion checkpoints and the single handoff to Factory `commit-push`
+   for protected landing; do not invoke the land lifecycle a second time. Delivery still requires the grant to
+   include branch, PR, merge, and GitHub writes.
+6. After that lifecycle completes, resync the default branch and rerun `pnpm --silent task:next` to report the
+   newly legal task.
 
 Never infer positive authority from this skill, the packet, `MAINTAINERS.md`, `CODEOWNERS`, prior chat, or
 ambient credentials. Never push directly to `main`, use live-provider access or credentials without a

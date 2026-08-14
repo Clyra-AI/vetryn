@@ -3,7 +3,10 @@ import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { runPreflight } from "../.agents/skills/vetryn-continue-next/scripts/preflight.mjs";
+import {
+  childEnvironment,
+  runPreflight,
+} from "../.agents/skills/vetryn-continue-next/scripts/preflight.mjs";
 
 const root = "/arbitrary/vetryn-checkout";
 
@@ -70,6 +73,14 @@ function fixture({
 }
 
 describe("vetryn-continue-next preflight", () => {
+  it("binds repository adapters to the discovered checkout", () => {
+    expect(childEnvironment(root, { VETRYN_PLAN_REPO_ROOT: "/other/repository" })).toMatchObject({
+      VETRYN_PLAN_REPO_ROOT: root,
+      GIT_OPTIONAL_LOCKS: "0",
+      GIT_TERMINAL_PROMPT: "0",
+    });
+  });
+
   it("selects one active task and reports packet-owned routing", () => {
     const taskId = "V1-42";
     const { run } = fixture({
@@ -177,5 +188,14 @@ describe("vetryn-continue-next preflight", () => {
       "utf8",
     );
     expect(source).not.toMatch(/M0-11|\.\.\/factory|\bgh\b|\bcurl\b|\bfetch\s*\(/u);
+  });
+
+  it("assigns the protected land lifecycle to the promotion skill once", async () => {
+    const instructions = await readFile(
+      path.resolve(import.meta.dirname, "../.agents/skills/vetryn-continue-next/SKILL.md"),
+      "utf8",
+    );
+    expect(instructions).toContain("single handoff to Factory `commit-push`");
+    expect(instructions).toContain("do not invoke the land lifecycle a second time");
   });
 });

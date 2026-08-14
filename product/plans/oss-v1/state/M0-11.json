@@ -2,41 +2,37 @@
   "$schema": "../../schemas/task-state.schema.json",
   "schemaVersion": "1.0.0",
   "taskId": "M0-11",
-  "revision": 2,
-  "state": "accepted",
+  "revision": 3,
+  "state": "in_progress",
   "attempt": 1,
-  "candidate": {
-    "baseCommit": "a4d0849c7e4ce37c78511526933ae9b1d193f8c3",
-    "commit": "e2fb1ce10b873c0bb5359038f9625a3032b553d9",
-    "executor": "implementation-agent"
-  },
+  "candidate": null,
   "criteria": [
     {
       "criterionId": "PROCESS-010",
-      "status": "pass",
-      "evidenceRefs": ["ev-m0-11-contracts-e2fb1ce"]
+      "status": "pending",
+      "evidenceRefs": []
     },
     {
       "criterionId": "PROCESS-011",
-      "status": "pass",
-      "evidenceRefs": ["ev-m0-11-repo-check-e2fb1ce"]
+      "status": "pending",
+      "evidenceRefs": []
     }
   ],
   "gates": [
     {
       "gateId": "QG-PLAN-CHECK",
-      "status": "pass",
-      "evidenceRefs": ["ev-m0-11-plan-check-e2fb1ce"]
+      "status": "pending",
+      "evidenceRefs": []
     },
     {
       "gateId": "QG-REPO-CHECK",
-      "status": "pass",
-      "evidenceRefs": ["ev-m0-11-repo-check-e2fb1ce"]
+      "status": "pending",
+      "evidenceRefs": []
     },
     {
       "gateId": "QG-CONTRACTS",
-      "status": "pass",
-      "evidenceRefs": ["ev-m0-11-contracts-e2fb1ce"]
+      "status": "pending",
+      "evidenceRefs": []
     }
   ],
   "reviews": [
@@ -68,6 +64,13 @@
       "at": "2026-08-14T00:33:46Z",
       "actor": "davidahmann",
       "reason": "Maintainer accepted the exact candidate after all active command gates and the required candidate-bound architecture review passed under ADR 0009."
+    },
+    {
+      "from": "accepted",
+      "to": "in_progress",
+      "at": "2026-08-14T00:44:11Z",
+      "actor": "implementation-agent",
+      "reason": "Latest-head Codex review found an inherited plan-root override and duplicate land-lifecycle routing; prior candidate evidence was invalidated for the bounded repair."
     }
   ]
 }
