@@ -203,6 +203,7 @@ async function createFixture() {
     artifactType: "vetryn-trust-review-report",
     taskId,
     candidateCommit: candidate,
+    validationReportRef: `${lifecycleRoot}/validation_report.json`,
     verdict: "pass",
     unresolvedFindings: [],
   });
@@ -481,7 +482,13 @@ describe("promotion-tail validator", () => {
         artifact.evidence_refs = [];
       },
     ],
-    ["trust_review_report", (artifact) => delete artifact.candidateCommit],
+    [
+      "trust_review_report",
+      (artifact) => {
+        delete artifact.candidateCommit;
+        delete artifact.validationReportRef;
+      },
+    ],
     ["canonical_promotion", (artifact) => delete artifact.candidateCommit],
   ])("rejects an unbound %s", async (name, unbind) => {
     const fixture = await createFixture();
@@ -509,6 +516,21 @@ describe("promotion-tail validator", () => {
     const result = run(fixture.root, fixture.candidate, delivery);
     expect(result.status).toBe(1);
     expect(result.stderr).toContain("validation_report is not candidate-bound");
+  });
+
+  it("rejects a trust review not bound to the exact validation report", async () => {
+    const fixture = await createFixture();
+    const relativePath = `${fixture.planRoot}/evidence/lifecycle/${taskId}/${fixture.candidate}/trust_review_report.json`;
+    const delivery = await amend(fixture.root, async () => {
+      const artifact = await readJson(fixture.root, relativePath);
+      artifact.validationReportRef = `${fixture.planRoot}/evidence/lifecycle/${taskId}/${fixture.candidate}/other_validation_report.json`;
+      await writeJson(fixture.root, relativePath, artifact);
+    });
+
+    const result = run(fixture.root, fixture.candidate, delivery);
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("trust_review_report is not bound to validation_report");
   });
 
   it("rejects a lifecycle report that also references another task", async () => {

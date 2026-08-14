@@ -1616,6 +1616,21 @@ describe("implementation plan validator", () => {
     },
   );
 
+  it("rejects scope syntax outside the repository glob subset", async () => {
+    const root = await createFixture();
+    const planPath = "product/plans/oss-v1/plan.json";
+    const plan = await readFixtureJson(root, planPath);
+    const task = plan.tasks.find((candidate) => candidate.id === "M0-14");
+    task.scope.allowedPaths = ["scripts/[p]lan.mjs"];
+    task.deliverables = ["scripts/[p]lan.mjs"];
+    await writeFixtureJson(root, planPath, plan);
+
+    const result = runPlan(root);
+
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain("uses unsupported scope glob syntax");
+  });
+
   it.each([
     ["protected exact path", ["scripts/task.mjs"], ["agent-workflow"]],
     ["maintainer authority path", ["MAINTAINERS.md"], ["agent-workflow"]],

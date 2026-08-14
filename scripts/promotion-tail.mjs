@@ -318,6 +318,11 @@ function assertLifecycleArtifact(name, document, taskId, candidate) {
   }
   if (name === "trust_review_report") {
     assert(document.verdict === "pass", "trust_review_report is not passing");
+    const validationRef = `${planRoot}/evidence/lifecycle/${taskId}/${candidate}/validation_report.json`;
+    assert(
+      document.validationReportRef === validationRef,
+      "trust_review_report is not bound to validation_report",
+    );
     assert(
       Array.isArray(document.unresolvedFindings) && document.unresolvedFindings.length === 0,
       "trust_review_report has unresolved findings",

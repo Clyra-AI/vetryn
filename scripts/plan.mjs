@@ -88,6 +88,19 @@ const highRiskPolicyPaths = new Set([
   "scripts/semantic-risk.mjs",
   "scripts/task.mjs",
 ]);
+const unsupportedScopeGlobSyntax = /[[\]{}()!+@\\]/u;
+
+function assertSupportedScopeGlobs(task) {
+  for (const pattern of [
+    ...task.scope.allowedPaths,
+    ...task.scope.forbiddenPaths,
+    ...task.deliverables,
+  ])
+    assert(
+      !unsupportedScopeGlobSyntax.test(pattern),
+      `${task.id} uses unsupported scope glob syntax: ${pattern}`,
+    );
+}
 
 function scopePatternCoversPath(pattern, relativePath) {
   let expression = "";
@@ -394,6 +407,7 @@ async function main() {
   );
 
   for (const task of plan.tasks) {
+    assertSupportedScopeGlobs(task);
     for (const dependency of task.dependsOn)
       assert(
         taskSet.has(dependency.taskId),
